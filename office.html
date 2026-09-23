@@ -353,6 +353,9 @@ function attention(){
     const realMiss=first?miss.filter(d=>d>=first&&d>=co):[];
     if(noPhoto.length) items.push({sev:"warn",kind:"photo",pid:p.id,text:`<b>${esc(p.name)}</b> — closing report without photos: ${noPhoto.map(nice).join(", ")}`,action:`<a class="btn sm wa" href="${esc(wa(p.phone,`Hi ${p.contact||p.name} team, please send the closing photos (chiller + waste) for ${noPhoto.map(nice).join(", ")}. Thank you!`))}" target="_blank" rel="noopener">Ask for photos</a>`,go:{tab:"daily",date:noPhoto[noPhoto.length-1]}});
     if(realMiss.length) items.push({sev:"bad",kind:"report",pid:p.id,text:`<b>${esc(p.name)}</b> — no closing report for ${realMiss.map(nice).join(", ")} <span class="muted small">(closes ${hoursOf(p.id,realMiss[realMiss.length-1]).close})</span>`,action:`<a class="btn sm wa" href="${esc(wa(p.phone,chaseText(p,realMiss)))}" target="_blank" rel="noopener">Chase on WhatsApp</a>`});
+    for(let i=7;i>=0;i--){const dd=add(t,-i); const ww=S.weeks[wid(p.id,weekStartOf(dd))]; const rr=ww&&ww.days&&ww.days[dd]; if(!rr||!rr.check) continue; const pr=rr.check.filter(c=>c.diff);
+      if(rr.readOk&&pr.length) items.push({sev:"warn",kind:"sales",pid:p.id,text:`<b>${esc(p.name)}</b> ${nice(dd)} — sales photo doesn't match the count: ${pr.map(c=>`${esc(prod(c.productId).name)} ${c.diff>0?c.diff+" missing":(-c.diff)+" more than sent"}`).join(", ")}`,go:{tab:"daily",date:dd}});
+      else if(!rr.readOk&&(rr.salesPhotos||[]).length) items.push({sev:"info",kind:"sales",pid:p.id,text:`<b>${esc(p.name)}</b> ${nice(dd)} — sales photo not read automatically: open the report and check it`,go:{tab:"daily",date:dd}});}
     // current stock age
     const c=calcWeek(p.id,weekStartOf(t)); const lastDay=[...c.days].reverse().find(d=>d.date<=t);
     if(lastDay){ for(const k of Object.values(c.keys)){ const q=lastDay.stock[k.key]; if(!(q>0)||!k.batchDate) continue;
@@ -431,8 +434,8 @@ function vDeliveries(){
       </div>
       <div class="tw"><table><thead><tr><th>Cake</th><th>SKU</th><th class="r">Unit price</th><th class="r">Qty sent</th>${e.mode==="receive"?`<th class="r">Accepted</th>`:""}</tr></thead><tbody>
       ${products().map(p=>{const l=e.lines[p.id]||{};const pr=priceFor(pid,p.id,e.date);return `<tr><td>${cake(p.id)}</td><td class="mono small">${esc(p.sku)}</td><td class="r mono">${fm(pr.net)}${pr.approved?"":` <span class="pill warn" title="Default % of retail, no approved price">default</span>`}</td>
-        <td class="r">${e.mode==="receive"?`<span class="mono">${l.qty||0}</span>`:`<input type="number" min="0" id="dq-${p.id}" data-doline="${p.id}" data-k="qty" value="${esc(l.qty??"")}">`}</td>
-        ${e.mode==="receive"?`<td class="r"><input type="number" min="0" id="da-${p.id}" data-doline="${p.id}" data-k="accepted" value="${esc(l.accepted??l.qty??"")}" ${l.qty?"":"disabled"}></td>`:""}</tr>`}).join("")}
+        <td class="r">${e.mode==="receive"?`<span class="mono">${l.qty||0}</span>`:`<input type="number" min="0" step="1" inputmode="numeric" id="dq-${p.id}" data-doline="${p.id}" data-k="qty" value="${esc(l.qty??"")}">`}</td>
+        ${e.mode==="receive"?`<td class="r"><input type="number" min="0" step="1" inputmode="numeric" id="da-${p.id}" data-doline="${p.id}" data-k="accepted" value="${esc(l.accepted??l.qty??"")}" ${l.qty?"":"disabled"}></td>`:""}</tr>`}).join("")}
       </tbody></table></div>
       <label class="f">Note (short delivery, damage, reason for rejected units)<input id="do-n" data-do="note" value="${esc(e.note||"")}"></label>
       <div class="row">${e.mode==="receive"?`<button class="btn pri" data-act="receiveDO">Confirm delivered</button>`:`<button class="btn pri" data-act="saveDO">${e.no?"Save changes":"Create DO"}</button>`}</div>
@@ -487,12 +490,17 @@ function vDaily(){
         ${editing?`<button class="btn sm" data-act="cancelDay">Cancel</button><button class="btn sm pri" data-act="saveDay">Save report</button>`:(c.week.settlement?`<span class="pill info">Week billed — locked</span>`:`<button class="btn sm" data-act="editDay">${rep?"Correct report":"Enter report"}</button>`)}</div></div>
       ${editing?`<div class="row"><label class="f">Reported by<input id="dd-by" data-ui="dayBy" value="${esc(S.ui.dayBy||"")}"></label><label class="f">Add a cake/colour<span class="row"><select id="dd-ap">${products().map(x=>opt(x.id,x.name,"")).join("")}</select><select id="dd-ac">${cfg().colours.map(x=>opt(x.name,x.name,"")).join("")}</select><button class="btn sm" data-act="addDayLine">Add</button></span></label></div>`:""}
       ${tbl}
+      ${salesCheck(rep)}
       ${rep&&rep.note?`<p class="small" style="margin:0"><b>Outlet note:</b> ${esc(rep.note)}</p>`:""}
       ${rep?`<div class="spread" style="border-top:1px solid var(--line);padding-top:12px"><h3>Closing photos ${(rep.photos||[]).length?`<span class="pill ok">${rep.photos.length}</span>`:`<span class="pill bad">required — none yet</span>`}</h3>
         <div class="row">${S.assets?`<label class="btn sm">Add photos from WhatsApp<input type="file" accept="image/&#42;" multiple data-repphoto="${pid}|${date}" hidden></label>`:""}${rep.drive?driveLink(rep.drive):(S.mcp?`<button class="btn sm" data-act="fileDaily">File report + photos to Drive</button>`:"")}</div></div>
         ${(rep.photos||[]).length?`<div class="photos">${rep.photos.map(id=>`<a href="${esc(photoLink(id))}" target="_blank" rel="noopener"><img src="${esc(photoSrc(id))}" alt="Closing photo"></a>`).join("")}</div>`:`<p class="small muted" style="margin:0">Save the outlet's WhatsApp photos to your phone/computer, then add them here so they're kept with this report.</p>`}`:""}
     </div>`;
 }
+function salesCheck(rep){ if(!rep||!rep.check) return "";
+  const probs=rep.check.filter(c=>c.diff);
+  return `<div style="border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px"><div class="spread"><h3>Sales photo check ${rep.readOk?(probs.length?`<span class="pill warn">${probs.length} don't add up</span>`:`<span class="pill ok">adds up</span>`):`<span class="pill mute">not read automatically</span>`}</h3>${rep.pdf?`<a class="btn sm" href="${esc(rep.pdf)}" target="_blank" rel="noopener">PDF report</a>`:""}</div>
+  ${rep.readOk?`<div class="tw"><table><thead><tr><th>Cake</th><th class="r">Expected</th><th class="r">Sold (photo)</th><th class="r">Waste</th><th class="r">Left</th><th>Check</th></tr></thead><tbody>${rep.check.map(c=>`<tr><td>${thumb(c.productId,24)} ${esc(prod(c.productId).name)}</td><td class="r">${c.avail}</td><td class="r">${c.sold??"–"}</td><td class="r">${c.waste||""}</td><td class="r">${c.balance||""}</td><td>${c.diff?`<span class="pill warn">${c.diff>0?c.diff+" missing":(-c.diff)+" more than sent"}</span>`:`<span class="pill ok">OK</span>`}</td></tr>`).join("")}</tbody></table></div>${(rep.other||[]).length?`<p class="small muted" style="margin:0">Also on the sales report, not matched: ${rep.other.map(o=>esc(o.seen)+" ×"+o.qty).join(", ")}</p>`:""}`:`<p class="small muted" style="margin:0">Open the sales report photo below and check the numbers.</p>`}</div>`;}
 function editLines(day){
   const base=day.lines.map(l=>({...l}));
   for(const key of Object.keys(S.ui.dayDraft)) if(!base.find(l=>l.productId+"|"+l.colour===key)){const [pId,col]=key.split("|");base.push({productId:pId,colour:col,open:0,recv:0,exp:0,var:0});}
@@ -750,6 +758,10 @@ function vSetup(){
         <label class="f">Staff audit form link<input id="g-af" data-g="auditFormUrl" value="${esc(g.auditFormUrl||"")}"></label>
         <label class="f">Report deadline<input type="time" id="g-dl" data-g="reportDeadline" value="${esc(g.reportDeadline||"")}"></label></div>
       <div class="row"><button class="btn pri" data-act="saveGeneral">Save settings</button></div></div>
+      ${MGR()?`<div class="panel"><h2>Sales photo reader</h2><p class="small muted" style="margin:0">Reads the outlet's sales-report photo when they submit the closing form, so sold, waste and missing cakes are checked straight away. It uses your OpenAI or Anthropic API key (about a sen per report). The key is kept in the Google backend and is never shown again.</p>
+        <div class="row">${S.ui.readerOn==null?(S.ui.readerAsk||(S.ui.readerAsk=GS("readerStatus").then(r=>{S.ui.readerOn=r.on;S.ui.readerProv=r.provider;render();}).catch(()=>{S.ui.readerOn=false;render();})),`<span class="pill mute">Checking…</span>`):(S.ui.readerOn?`<span class="pill ok">On${S.ui.readerProv?` (${S.ui.readerProv==="openai"?"OpenAI":"Anthropic"})`:""}</span>`:`<span class="pill warn">Off: outlets' sales photos are checked by hand</span>`)}</div>
+        <div class="fgrid"><label class="f">OpenAI or Anthropic API key<input id="rd-key" type="password" autocomplete="off" placeholder="sk-…"></label></div>
+        <div class="row"><button class="btn pri" data-act="saveReader">${S.ui.readerOn?"Replace key":"Switch on"}</button>${S.ui.readerOn?`<button class="btn sm" data-act="readerOff">Switch off</button>`:""}</div></div>`:""}
       <div class="panel"><h2>Sample data</h2><p class="small muted" style="margin:0">The sample outlet, its weeks, audits and the Claude check marked "sample" were added so you can see the system working. Remove them before go-live.</p>
       ${S.ui.confirm==="clear"?`<div class="confirm">Delete all sample weeks, audits and alerts?<button class="btn sm danger" data-act="clearSample">Delete sample data</button><button class="btn sm" data-act="noconfirm">Cancel</button></div>`:`<div class="row"><button class="btn danger" data-act="askClear">Clear sample data</button></div>`}</div>`;
   }
@@ -913,7 +925,7 @@ document.addEventListener("input",e=>{
     if(d.do==="colour") E.colourTouched=true;
     if((d.do==="date"||d.do==="batchDate")&&!E.colourTouched&&(E.batchDate||E.date)) E.colour=colourOf(E.batchDate||E.date).name;
     if(d.do!=="note") render(); return;}
-  if(d.doline){const L=S.ui.doEdit.lines[d.doline]||(S.ui.doEdit.lines[d.doline]={}); L[d.k]=t.value; return;}
+  if(d.doline){const L=S.ui.doEdit.lines[d.doline]||(S.ui.doEdit.lines[d.doline]={}); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); if(v!==t.value) t.value=v; L[d.k]=v; return;}
   if(d.dd){const v=S.ui.dayDraft[d.dd]||(S.ui.dayDraft[d.dd]={}); v[d.k]=t.value; render(); return;}
   if(d.au){S.ui.auditDraft[d.au]=t.value; if(d.au==="partnerId"||d.au==="date") render(); return;}
   if(d.aup){S.ui.auditDraft.prices[d.aup]=t.value; render(); return;}
@@ -984,16 +996,19 @@ document.addEventListener("click",async e=>{
   if(d.oprm!==undefined){S.ui.opDraft.lines.splice(+d.oprm,1);render();return;}
   if(d.act) await act(d.act,b);
 });
+document.addEventListener("keydown",e=>{const t=e.target; if(t&&t.dataset&&t.dataset.doline&&/^[.,eE+\-]$/.test(e.key)) e.preventDefault();});
 async function act(a,b){
   const t=today();
   switch(a){
+    case "saveReader": { const k=(($("#rd-key")||{}).value||"").trim(); if(!k){toast("Paste the API key first");return;} b.disabled=true; toast("Checking the key…"); try{const rr=await GS("setReaderKey",k); S.ui.readerOn=true; S.ui.readerProv=rr.provider; toast("Sales photo reader is on"); render();}catch(e){toast(e.message);} b.disabled=false; return; }
+    case "readerOff": { try{await GS("readerOff"); S.ui.readerOn=false; toast("Sales photo reader switched off"); render();}catch(e){toast(e.message);} return; }
   case "goNewDO": S.tab="deliveries"; return act("newDO");
   case "goPaste": S.tab="daily"; render(); setTimeout(()=>{const x=$("#paste"); x&&x.focus()},50); return;
   case "goAudit": S.tab="audits"; return act("newAudit");
   case "noconfirm": S.ui.confirm=null; render(); return;
   case "newDO":{const pid=curPartner(), bd=add(t,-(+cfg().prepLeadDays||0)); S.ui.doEdit={partnerId:pid,date:t,batchDate:bd,colour:colourOf(bd).name,lines:{},note:"",mode:"new"}; render(); return;}
   case "cancelDO": S.ui.doEdit=null; render(); return;
-  case "saveDO":{const e=S.ui.doEdit; const lines=Object.entries(e.lines).filter(([k,v])=>+v.qty>0).map(([k,v])=>({productId:k,qty:+v.qty}));
+  case "saveDO":{const e=S.ui.doEdit; const lines=Object.entries(e.lines).filter(([k,v])=>Math.round(+v.qty)>0).map(([k,v])=>({productId:k,qty:Math.round(+v.qty)}));
     if(!e.partnerId||!e.date){toast("Choose outlet and date");return;} if(!lines.length){toast("Enter at least one quantity");return;}
     const ws=weekStartOf(e.date);
     const w=clone(weekDoc(e.partnerId,ws)); if(w.settlement){toast("That week is already billed — choose another date or void the bill.");return;}
@@ -1002,7 +1017,7 @@ async function act(a,b){
     w.dos=w.dos||{}; w.days=w.days||{}; w.dos[id]={id,no,date:e.date,batchDate:e.batchDate||e.date,colour:e.colour,lines,status:"planned",note:e.note||"",createdAt:new Date().toISOString()};
     await saveWeek(w); S.ui.doEdit=null; toast(`${no} saved`); return;}
   case "receiveDO":{const e=S.ui.doEdit; const w=clone(weekDoc(e.partnerId,e.weekStart)); const x=w.dos[e.id];
-    x.lines=x.lines.map(l=>({...l,accepted:+(e.lines[l.productId]?.accepted??l.qty)}));
+    x.lines=x.lines.map(l=>({...l,accepted:Math.max(0,Math.round(+(e.lines[l.productId]?.accepted??l.qty)))}));
     x.status="delivered"; x.receivedBy=e.receivedBy||""; x.receivedAt=e.receivedAt||""; x.note=e.note||"";
     await saveWeek(w); S.ui.doEdit=null; toast(`${x.no} delivered`); return;}
   case "parse":{S.ui.parsed=parseMsg(S.ui.paste||""); render(); return;}
