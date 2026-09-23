@@ -2,10 +2,11 @@
 <html><head><meta charset="utf-8"><title>Chaleur · Spot audit</title><meta name="theme-color" content="#780a13"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
-function call(fn,args,ok,fail){fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})})
- .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.json();})
- .then(function(j){if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
- .catch(function(e){fail&&fail(new Error(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again."));});}
+function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new AbortController():null,tm=ac?setTimeout(function(){ac.abort();},150000):null,done=function(){if(tm)clearTimeout(tm);};
+ fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args}),signal:ac?ac.signal:undefined})
+ .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.text();})
+ .then(function(t){done();var j;try{j=JSON.parse(t);}catch(x){throw new Error("The server sent an unexpected reply. Please try again.");}if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
+ .catch(function(e){done();fail&&fail(new Error(e&&e.name==="AbortError"?"This is taking too long. Check your internet and try again.":(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again.")));});}
 function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
 window.google={script:{run:mk(null,null)}};})();
 </script>
@@ -166,12 +167,13 @@ function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}
 <script>
 const chk={},cnt={},EX=[]; let staff=null, CAT=[], ONHAND=new Set(), SHOWALL=false, AI=[];
 const LIST=()=>{const on=CAT.filter(p=>ONHAND.has(p.id)); return SHOWALL||!on.length?CAT:on;};
-function loadCat(){ google.script.run.withSuccessHandler(r=>{ if(r.outlets&&r.outlets.length){const cur=$("#outlet").value; $("#outlet").innerHTML=r.outlets.map(o=>`<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join(""); if(r.outlets.some(o=>o.code===cur)) $("#outlet").value=cur;} CAT=(r.products||[]).map(p=>({...p,img:p.photo})); ONHAND=new Set((r.stock||[]).map(s=>s.productId)); renderPrices(); render(); refresh();}).withFailureHandler(e=>{$("#prices").innerHTML=`<p class="err">${esc((e&&e.message)||"Could not load the cake list. Check your internet.")}</p>`;}).auditInfo(staff&&staff.pin,$("#outlet").value,$("#date").value); }
+function loadCat(){ google.script.run.withSuccessHandler(r=>{ if(r.outlets&&r.outlets.length){r.outlets.forEach(o=>{OUTM[o.code]=o.menu||"";}); const cur=$("#outlet").value; $("#outlet").innerHTML=r.outlets.map(o=>`<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join(""); if(r.outlets.some(o=>o.code===cur)) $("#outlet").value=cur;} CAT=(r.products||[]).map(p=>({...p,img:p.photo})); ONHAND=new Set((r.stock||[]).map(s=>s.productId)); renderPrices(); render(); refresh();}).withFailureHandler(e=>{$("#prices").innerHTML=`<p class="err">${esc((e&&e.message)||"Could not load the cake list. Check your internet.")}</p>`;}).auditInfo(staff&&staff.pin,$("#outlet").value,$("#date").value); }
 function renderPrices(){const keep={}; document.querySelectorAll("[id^=pr-]").forEach(i=>{if(i.value) keep[i.id]=i.value;}); $("#prices").innerHTML=LIST().map(p=>`<div class="pr"><span class="id">${pic(p)}<span>${esc(p.name)}${ONHAND.has(p.id)?"":` <span class="sku">${esc(p.category||"")}</span>`}</span></span><input id="pr-${esc(p.id)}" inputmode="decimal" placeholder="RM" value="${esc(keep["pr-"+p.id]||"")}"></div>`).join("")||`<p class="hint">No cakes found.</p>`; $("#showall").textContent=SHOWALL?"Only cakes on hand":`Show all cakes (${CAT.length})`; $("#showall").hidden=!ONHAND.size;}
 function applies(c){const m=$("#menu").value; return !c.menu||m==="both"||m===c.menu;}
 $("#outlet").innerHTML=CONFIG.outlets.map(o=>`<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join("");
 if(CONFIG.outlets.some(o=>o.code===PRESET)) $("#outlet").value=PRESET;
-function menuDefault(){const o=CONFIG.outlets.find(o=>o.code===$("#outlet").value); if(o&&o.menu) $("#menu").value=o.menu;}
+let SENDING=false, OUTM={};
+function menuDefault(){const o=CONFIG.outlets.find(o=>o.code===$("#outlet").value), m=OUTM[$("#outlet").value]||(o&&o.menu)||""; if(m&&!$("#menu").value) $("#menu").value=m;}
 menuDefault(); $("#outlet").addEventListener("change",()=>{menuDefault(); if(staff) loadCat(); render();refresh();});
 $("#menu").addEventListener("change",()=>{render();refresh();});
 $("#date").value=todayISO();
@@ -193,31 +195,31 @@ $("#aigo").onclick=()=>{ if(!staff){$("#ailist").innerHTML=`<p class="err">Sign 
 function missing(){const m=[];
   if(!staff) m.push("sign in with your staff PIN");
   if(!$("#menu").value) m.push("menu type");
-  for(const c of CONFIG.checks.filter(c=>c.photo&&applies(c))){ if(!chk[c.k]) m.push(`result for "${c.l}"`); if(!PH[c.k]) m.push(`${c.l.toLowerCase()} photo`);}
+  for(const c of CONFIG.checks.filter(c=>applies(c))){ if(!chk[c.k]) m.push(`result for "${c.l}"`); if(c.photo&&!PH[c.k]) m.push(`${c.l.toLowerCase()} photo`);}
   if(!/^-?\d+(\.\d+)?$/.test($("#temp").value.trim().replace(",","."))) m.push("chiller temperature");
   if(!PH.temp) m.push("thermometer photo");
   return m;}
-function refresh(){const m=missing();$("#send").disabled=!!m.length;$("#status").textContent=m.length?"Still needed: "+m.join(", ")+".":"Ready. Tap Submit to save the audit and photos.";}
+function refresh(){ if(SENDING) return; const m=missing();$("#send").disabled=!!m.length;$("#status").textContent=m.length?"Still needed: "+m.join(", ")+".":"Ready. Tap Submit to save the audit and photos.";}
 window.onShot=()=>{render();refresh();};
 $("#pinok").onclick=()=>{const p=$("#pin").value.trim(); if(!p) return; $("#pinmsg").textContent="Checking…";
-  google.script.run.withSuccessHandler(r=>{ if(r.ok){staff={pin:p,name:r.name};$("#pinmsg").innerHTML=`Signed in as <b>${esc(r.name)}</b>`; loadCat();} else {staff=null;$("#pinmsg").innerHTML=`<span class="err">${esc(r.error)}</span>`;} refresh();}).checkPin(p);};
+  google.script.run.withSuccessHandler(r=>{ if(r.ok){staff={pin:p,name:r.name};$("#pinmsg").innerHTML=`Signed in as <b>${esc(r.name)}</b>`; loadCat();} else {staff=null;$("#pinmsg").innerHTML=`<span class="err">${esc(r.error)}</span>`;} refresh();}).withFailureHandler(e=>{$("#pinmsg").innerHTML=`<span class="err">${esc((e&&e.message)||"No connection. Check your internet and try again.")}</span>`;}).checkPin(p);};
 $("#pin").addEventListener("input",()=>{staff=null;$("#pinmsg").textContent="";refresh();});
-document.addEventListener("change",async e=>{const t=e.target; if(!t.dataset||!t.dataset.extra) return; const f=t.files&&t.files[0]; if(!f||EX.length>=6) return; EX.push(await shrink(f)); t.value=""; render(); refresh();});
+document.addEventListener("change",async e=>{const t=e.target; if(t.id==="date"&&staff){loadCat();return;} if(!t.dataset||!t.dataset.extra) return; const f=t.files&&t.files[0]; if(!f) return; if(EX.length>=6){alert0("Up to 6 extra photos.");t.value="";return;} try{EX.push(await shrink(f));}catch(err){alert0("That photo could not be read. Please try another one.");} t.value=""; render(); refresh();});
 document.addEventListener("click",e=>{
   const x=e.target.closest("[data-rmx]"); if(x){EX.splice(+x.dataset.rmx,1);render();return;}
   const ch=e.target.closest(".chip"); if(ch){const {sku,col}=ch.dataset; cnt[sku]=cnt[sku]||{}; if(cnt[sku][col]!==undefined) delete cnt[sku][col]; else cnt[sku][col]=""; render(); refresh(); return;}
   const b=e.target.closest("[data-chk]"); if(b){chk[b.dataset.chk]=b.dataset.v; render(); refresh();}
 });
 document.addEventListener("input",e=>{const t=e.target; if(t.dataset.csku) cnt[t.dataset.csku][t.dataset.ccol]=t.value; refresh();});
-$("#send").onclick=()=>{ if(missing().length){refresh();return;}
-  $("#send").disabled=true; $("#status").textContent="Uploading audit and photos… keep this page open.";
-  const prices={}; document.querySelectorAll("[id^=pr-]").forEach(i=>{const v=i.value.trim(); if(v) prices[i.id.slice(3)]=v;});
+$("#send").onclick=()=>{ if(SENDING) return; if(missing().length){refresh();return;}
+  SENDING=true; $("#send").disabled=true; $("#status").textContent="Uploading audit and photos… keep this page open.";
+  const prices={}; document.querySelectorAll("[id^=pr-]").forEach(i=>{const v=i.value.trim(); if(v) prices[i.id.slice(3)]=v.replace(",",".");});
   const counts=[]; for(const [pid,s] of Object.entries(cnt)){ for(const c of CONFIG.colours) if(s[c.name]!==undefined&&s[c.name]!=="") counts.push({productId:pid,colour:c.name,n:s[c.name]});}
   const photos={temp:PH.temp}; CONFIG.checks.filter(c=>c.photo&&applies(c)).forEach(c=>photos[c.k]=PH[c.k]);
   const d={menu:$("#menu").value,pin:staff.pin,outlet:$("#outlet").value,date:$("#date").value,checks:chk,temp:$("#temp").value.trim().replace(",","."),prices,counts,note:$("#anote").value.trim(),photos,extra:EX,ai:AI};
   google.script.run.withSuccessHandler(r=>{ $("#bar").hidden=true;
-    $("#app").innerHTML=`<div class="done-card"><div class="ok">✓</div><h1 style="font-size:28px">Audit saved</h1><p>Thank you, ${esc(r.auditor)}. Reference <b style="font-family:var(--mono)">${esc(r.id)}</b>.</p><p class="hint">All photos are stored with this audit and it shows in the office desk under Audits.</p>${AI.length?`<div class="card" style="text-align:left"><b>Suggestions</b><ul style="margin:6px 0 0;padding-left:18px">${AI.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}<a class="btn primary" style="flex:none" target="_blank" rel="noopener" href="https:\/\/wa.me/${String(r.wa||"").replace(/\D/g,"")}?text=${encodeURIComponent(r.summary)}">Send PDF report to WhatsApp</a><a class="btn" target="_blank" rel="noopener" href="${esc(r.pdf)}">Open PDF</a><button class="btn" onclick="location.reload()">Start a new audit</button></div>`;
-  }).withFailureHandler(err=>{$("#send").disabled=false; alert0((err&&err.message)||"Upload failed. Check your internet and try again.");}).submitAudit(d);
+    $("#app").innerHTML=`<div class="done-card"><div class="ok">✓</div><h1 style="font-size:28px">Audit saved</h1><p>Thank you, ${esc(r.auditor)}. Reference <b style="font-family:var(--mono)">${esc(r.id)}</b>.</p><p class="hint">All photos are stored with this audit and it shows in the office desk under Audits.</p>${(r.photoIssues||[]).length?`<div class="card" style="text-align:left;border-color:var(--bad)"><b>Photo check</b><ul style="margin:6px 0 0;padding-left:18px">${r.photoIssues.map(x=>`<li>${esc(x.label)}: ${esc(x.why)}</li>`).join("")}</ul><p class="hint" style="margin:6px 0 0">The office will see this. If a photo was wrong, send it to Chaleur on WhatsApp.</p></div>`:""}${AI.length?`<div class="card" style="text-align:left"><b>Suggestions</b><ul style="margin:6px 0 0;padding-left:18px">${AI.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}<a class="btn primary" style="flex:none" target="_blank" rel="noopener" href="https:\/\/wa.me/${String(r.wa||"").replace(/\D/g,"")}?text=${encodeURIComponent(r.summary)}">Send PDF report to WhatsApp</a><a class="btn" target="_blank" rel="noopener" href="${esc(r.pdf)}">Open PDF</a><button class="btn" onclick="location.reload()">Start a new audit</button></div>`;
+  }).withFailureHandler(err=>{SENDING=false; $("#send").disabled=false; alert0((err&&err.message)||"Upload failed. Check your internet and try again.");}).submitAudit(d);
 };
 render(); refresh();
 </script>
