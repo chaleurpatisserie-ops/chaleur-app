@@ -2,10 +2,11 @@
 <html lang="en"><head><meta charset="utf-8"><title>Chaleur · Outlet closing</title><meta name="theme-color" content="#780a13"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
-function call(fn,args,ok,fail){fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})})
- .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.json();})
- .then(function(j){if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
- .catch(function(e){fail&&fail(new Error(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again."));});}
+function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new AbortController():null,tm=ac?setTimeout(function(){ac.abort();},150000):null,done=function(){if(tm)clearTimeout(tm);};
+ fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args}),signal:ac?ac.signal:undefined})
+ .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.text();})
+ .then(function(t){done();var j;try{j=JSON.parse(t);}catch(x){throw new Error("The server sent an unexpected reply. Please try again.");}if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
+ .catch(function(e){done();fail&&fail(new Error(e&&e.name==="AbortError"?"This is taking too long. Check your internet and try again.":(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again.")));});}
 function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
 window.google={script:{run:mk(null,null)}};})();
 </script>
@@ -143,7 +144,8 @@ async function load(){
   render();
 }
 const DK=()=>"chaleur.draft."+KEY+"."+DATE;
-function saveDraft(){ if(!INFO||!INFO.outlet) return; try{localStorage.setItem(DK(),JSON.stringify({at:new Date().toISOString(),who:($("#who")||{value:WHO}).value,note:($("#note")||{value:NOTE}).value,rows:ORDER.map(k=>[k,ROWS[k].w,ROWS[k].b]),shown:SHOWN}));}catch(e){} try{sessionStorage.setItem(DK()+".ph",JSON.stringify(PH));}catch(e){} }
+let PHSIG="";
+function saveDraft(){ if(!INFO||!INFO.outlet) return; try{localStorage.setItem(DK(),JSON.stringify({at:new Date().toISOString(),who:($("#who")||{value:WHO}).value,note:($("#note")||{value:NOTE}).value,rows:ORDER.map(k=>[k,ROWS[k].w,ROWS[k].b]),shown:SHOWN}));}catch(e){} const sig=PH.sales.map(u=>u.length).join(",")+"|"+(PH.display||"").length+"|"+(PH.waste||"").length; if(sig!==PHSIG){ PHSIG=sig; try{sessionStorage.setItem(DK()+".ph",JSON.stringify(PH));}catch(e){ try{sessionStorage.removeItem(DK()+".ph");}catch(_){} } } }
 function loadDraft(ex){ let d=null; try{d=JSON.parse(localStorage.getItem(DK())||"null");}catch(e){} if(!d||(ex&&ex.at&&d.at<ex.at)) return false;
   let changed=false; for(const [k,w,b] of d.rows||[]){ const [p,c]=k.split("|"); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} if((w||"")!==ROWS[k].w||(b||"")!==ROWS[k].b) changed=true; ROWS[k].w=w||""; ROWS[k].b=b||""; if(!SHOWN.includes(p)) SHOWN.push(p); }
   for(const p of d.shown||[]) if(!SHOWN.includes(p)) SHOWN.push(p); if(d.who) WHO=d.who; if(d.note) NOTE=d.note;
@@ -158,10 +160,12 @@ function renderNeedLink(){
     ${wa?`<a class="btn go" href="${wa}" target="_blank" rel="noopener">Ask Chaleur on WhatsApp</a>`:""}</div>`;
 }
 const head=()=>`<header><div class="ca" aria-hidden="true">${MARK}</div><div><div class="brand">Chaleur Atelier · Outlet</div><h1>Closing count</h1></div></header>`;
+const CATL={"Cheesecake":"Cheesecake (slice)","Whole cake":"Whole cake (entremet)","Whole cheesecake":"Whole cheesecake"};
+const isoAdd=(iso,n)=>{const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
 function grouped(){
   const by={}; SHOWN.forEach(p=>by[p]=[]); ORDER.forEach(k=>{const r=ROWS[k]; (by[r.productId]=by[r.productId]||[]).push(k);});
   const cats={}; Object.keys(by).forEach(pid=>{const p=prod(pid); (cats[p.category]=cats[p.category]||[]).push(pid);});
-  const catOrder=["Petit gâteau","Cheesecake","Whole cake"]; const names=Object.keys(cats).sort((a,b)=>(catOrder.indexOf(a)+99)%99-(catOrder.indexOf(b)+99)%99);
+  const catOrder=["Petit gâteau","Cheesecake","Whole cake","Whole cheesecake"]; const names=Object.keys(cats).sort((a,b)=>(catOrder.indexOf(a)+99)%99-(catOrder.indexOf(b)+99)%99);
   return names.map(c=>({cat:c,items:cats[c].sort((a,b)=>INFO.products.findIndex(p=>p.id===a)-INFO.products.findIndex(p=>p.id===b)).map(pid=>({p:prod(pid),keys:by[pid].sort((x,y)=>COL().findIndex(c=>c.name===ROWS[x].colour)-COL().findIndex(c=>c.name===ROWS[y].colour))}))}));
 }
 function stepper(k,f,label){const v=ROWS[k][f];return `<div class="stp ${f}"><span class="lb">${label}</span><div class="ctl"><button type="button" data-step="${esc(k)}" data-sf="${f}" data-sn="-1" aria-label="${label} minus one">−</button><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(v)}" data-k="${esc(k)}" data-f="${f}" aria-label="${label}"><button type="button" data-step="${esc(k)}" data-sf="${f}" data-sn="1" aria-label="${label} plus one">+</button></div></div>`;}
@@ -170,7 +174,7 @@ function render(){
   $("#app").innerHTML=`${head()}
   <div class="card stack">
     <div class="g2"><label class="f">Outlet<span class="fixed">${esc(INFO.outlet.name)}</span></label>
-    <label class="f">Date<input id="date" type="date" value="${esc(DATE)}"></label></div>
+    <label class="f">Date<input id="date" type="date" value="${esc(DATE)}" min="${esc(isoAdd(todayISO(),-2))}" max="${esc(todayISO())}"></label></div>
     <label class="f">Your name<input id="who" value="${esc(WHO)}" placeholder="e.g. Aina" autocomplete="name"></label>
   </div>
   ${ex?`<div class="banner ${ex.locked?"warn":"info"}" style="margin-top:12px">${ex.locked?"This week is already billed. Your changes will be sent to the office to review.":`A report for this day was already sent${ex.by?` by <b>${esc(ex.by)}</b>`:""}${ex.at?` at ${esc(new Date(ex.at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}))}`:""}. Fix anything below and send again — the new report replaces the old one.`}</div>`:""}
@@ -179,7 +183,7 @@ function render(){
     <h2>Count the cakes</h2>
     <p class="hint">Colours we delivered are already open. Found another colour? Tap its dot to add it. For each colour: <b>Waste</b> = thrown away or damaged, <b>Left</b> = still in the chiller now. Leave a box empty if it's 0.</p>
     ${safetyBanner()}
-    ${g.length?g.map(c=>`<div class="cat">${esc(c.cat)}</div>${c.items.map(({p,keys})=>`<div class="cake" id="cake-${esc(p.id)}"><div class="hd">${pic(p)}<div class="tt"><div class="nm">${esc(p.name)}</div><div class="sub">${keys.length?`${keys.length} colour${keys.length>1?"s":""}`:"Tap the colour dot on the cake"}</div></div>
+    ${g.length?g.map(c=>`<div class="cat">${esc(CATL[c.cat]||c.cat)}</div>${c.items.map(({p,keys})=>`<div class="cake" id="cake-${esc(p.id)}"><div class="hd">${pic(p)}<div class="tt"><div class="nm">${esc(p.name)}</div><div class="sub">${keys.length?`${keys.length} colour${keys.length>1?"s":""}`:"Tap the colour dot on the cake"}</div></div>
       <div class="dots" role="group" aria-label="Colour dots for ${esc(p.name)}">${COL().map(c=>{const k=K(p.id,c.name), on=!!ROWS[k]; return `<button type="button" class="cd${on?" on":""}" data-cd="${esc(k)}" aria-pressed="${on}" aria-label="${esc(c.name)}, made ${esc(colDay(c.name))}"><i style="background:${esc(c.hex)}"></i><span>${esc(colDay(c.name))}</span></button>`;}).join("")}</div></div>
       ${keys.map(k=>{const r=ROWS[k];return `<div class="ln"><div class="dot"><i style="background:${esc(colHex(r.colour))}"></i><span>${esc(r.colour)}<small>made ${esc(colDay(r.colour))}</small>${(()=>{const q=sfOf(r.productId,r.colour);return q==="bad"?`<small class="sf bad">Past shelf life: throw away</small>`:q==="warn"?`<small class="sf warn">Last day: sell first</small>`:"";})()}</span></div>${stepper(k,"w","Waste")}${stepper(k,"b","Left")}</div>`}).join("")}</div>`).join("")}`).join("")
       :`<div class="empty">No cakes on record for this outlet today. Use the button below to add what you have.</div>`}
@@ -215,17 +219,17 @@ function openAdd(step,pid){
   const shown=new Set(SHOWN);
   let body;
   if(false){const p=prod(pid); body=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${pic(p)}<h2>${esc(p.name)}</h2></div><p class="hint" style="margin-bottom:10px">Which colour dot is on the cake?</p><div class="cols">${COL().map(c=>`<button type="button" data-addcol="${esc(pid)}|${esc(c.name)}"><i style="background:${esc(c.hex)}"></i>${esc(c.name.slice(0,1)+c.name.slice(1).toLowerCase())}<br>${esc(colDay(c.name))}</button>`).join("")}</div>`;}
-  else{const cats={}; INFO.products.forEach(p=>(cats[p.category]=cats[p.category]||[]).push(p)); body=`<h2 style="margin-bottom:6px">Add a cake</h2>${Object.keys(cats).map(c=>`<div class="cat">${esc(c)}</div>${cats[c].map(p=>`<button class="pick" type="button" data-addp="${esc(p.id)}">${pic(p)}<span>${esc(p.name)}${shown.has(p.id)?` <span class="tag mute">listed</span>`:""}</span></button>`).join("")}`).join("")}`;}
+  else{const cats={}; INFO.products.forEach(p=>(cats[p.category]=cats[p.category]||[]).push(p)); body=`<h2 style="margin-bottom:6px">Add a cake</h2>${Object.keys(cats).map(c=>`<div class="cat">${esc(CATL[c]||c)}</div>${cats[c].map(p=>`<button class="pick" type="button" data-addp="${esc(p.id)}">${pic(p)}<span>${esc(p.name)}${shown.has(p.id)?` <span class="tag mute">listed</span>`:""}</span></button>`).join("")}`).join("")}`;}
   $("#sheet").innerHTML=`<div class="sheet" data-close="1"><div class="box" role="dialog" aria-label="Add a cake">${body}<div style="margin-top:14px"><button class="btn" type="button" data-close="1" style="width:100%">Cancel</button></div></div></div>`;
 }
 function collect(){ WHO=($("#who")||{value:WHO}).value.trim(); NOTE=($("#note")||{value:NOTE}).value; store.set("chaleur.who",WHO);
-  return {key:KEY,date:DATE,who:WHO,note:NOTE,lines:ORDER.map(k=>ROWS[k]).filter(r=>r.w!==""||r.b!==""||true).map(r=>({productId:r.productId,colour:r.colour,w:+r.w||0,b:+r.b||0})),photos:{sales:PH.sales,display:PH.display,waste:hasWaste()?PH.waste:null}}; }
+  return {key:KEY,date:DATE,who:WHO,note:NOTE,lines:ORDER.map(k=>ROWS[k]).filter(r=>r.w!==""||r.b!==""||true).map(r=>({productId:r.productId,colour:r.colour,w:+r.w||0,b:+r.b||0})),photos:{sales:[...PH.sales],display:PH.display,waste:hasWaste()?PH.waste:null},baseAt:(INFO.existing&&INFO.existing.at)||""}; }
 async function review(){
   const m=missing(); if(m.length){ status("Still needed: "+m.join(", ")+".",true); const first=!PH.sales.length?"#shot-sales":!PH.display?"#shot-display":hasWaste()&&!PH.waste?"#shot-waste":"#who"; const el=$(first); if(el){el.classList&&el.classList.add("need"); el.scrollIntoView({behavior:"smooth",block:"center"});} return; }
   const d=collect(); window.scrollTo(0,0);
   $("#app").innerHTML=`${head()}<div class="card" style="text-align:center;padding:26px"><span class="spin"></span><p style="margin:12px 0 0">Reading your sales photo and checking the numbers…</p><p class="hint">This takes a few seconds.</p></div>`;
   $("#bar").hidden=true;
-  try{ PREV=await run("previewClosing",d); }catch(e){ PREV={read:{ok:false,note:"Could not check the numbers right now. You can still send the report."},check:[]}; }
+  try{ PREV=await run("previewClosing",d); }catch(e){ const msg=(e&&e.message)||""; if(msg&&!/No connection|Server busy|taking too long|unexpected reply/i.test(msg)){ restoreBar(); render(); status(msg,true); return; } PREV={read:{ok:false,note:"Could not check the numbers right now. You can still send the report."},check:[]}; }
   renderPreview(d);
 }
 function renderPreview(d){
@@ -243,11 +247,12 @@ function renderPreview(d){
     <p class="hint">Total waste <b>${tot("w")}</b> · total left <b>${tot("b")}</b>${r.ok?` · sold <b>${Object.values(r.sold||{}).reduce((a,b)=>a+b,0)}</b>`:""}</p>
     ${r.ok&&(r.other||[]).length?`<p class="hint">Also on the sales report (not matched to our cakes): ${r.other.map(o=>esc(o.seen)+" ×"+o.qty).join(", ")}</p>`:""}
     ${r.ok&&r.note?`<p class="hint">Note from the reader: ${esc(r.note)}</p>`:""}
+    ${(()=>{const bad=(PREV.photos||[]).filter(x=>!x.ok);return bad.length?`<div class="banner warn"><b>${bad.length===1?"This photo doesn't":"These photos don't"} look right:</b><br>${bad.map(x=>`${esc(x.label)}: ${esc(x.why)}`).join("<br>")}<br>Please tap <b>Edit</b> and take ${bad.length===1?"it":"them"} again. If the photo is right, you can still send; Chaleur will check it.</div>`:"";})()}
     ${r.ok&&r.date&&r.date!==DATE?`<div class="banner warn">The sales report looks like it's for <b>${esc(niceDate(r.date))}</b>, not ${esc(niceDate(DATE))}. Please check the photo.</div>`:""}
     <div class="thumbs">${d.photos.sales.concat([d.photos.display]).concat(d.photos.waste?[d.photos.waste]:[]).map(u=>`<img src="${u}" alt="">`).join("")}</div>
     ${d.note?`<p class="hint">Note: ${esc(d.note)}</p>`:""}
   </div>`;
-  $("#bar").hidden=false; $("#bar .in").innerHTML=`<button class="btn" id="edit" type="button">Edit</button><button class="btn go" id="send" type="button">Confirm &amp; send</button><div class="status" id="status"></div>`;
+  $("#bar").hidden=false; $("#bar .in").innerHTML=`<button class="btn" id="edit" type="button">Edit</button><button class="btn go" id="send" type="button">${(PREV.photos||[]).some(x=>!x.ok)?"Send anyway":"Confirm &amp; send"}</button><div class="status" id="status"></div>`;
   $("#edit").onclick=()=>{restoreBar();render();};
   $("#send").onclick=()=>send(d);
 }
@@ -283,7 +288,10 @@ document.addEventListener("click",e=>{
 });
 function keep(){ if($("#who")) WHO=$("#who").value; if($("#note")) NOTE=$("#note").value; }
 let wasW=false;
-function softRefresh(){ const hw=hasWaste(); if(hw!==wasW){wasW=hw; keep(); const y=window.scrollY; render(); window.scrollTo(0,y);} else status(missing().length?"Still needed: "+missing().join(", ")+".":"Ready — tap Review report."); }
+function softRefresh(){ const hw=hasWaste(), box=$("#shot-waste"); wasW=hw;
+  const html=hw?shotBox("waste",`Waste photo (you entered ${wasteN()} wasted)`,"Needed only because you entered waste. Take a photo of the cakes you are throwing away."):"";
+  if(box){ if(hw) box.outerHTML=html; else box.remove(); } else if(hw){ const dsp=$("#shot-display"); if(dsp) dsp.insertAdjacentHTML("afterend",html); }
+  status(missing().length?"Still needed: "+missing().join(", ")+".":"Ready — tap Review report."); }
 document.addEventListener("input",e=>{const t=e.target;
   if(t.dataset.k){const v=t.value.replace(/[^0-9]/g,""); ROWS[t.dataset.k][t.dataset.f]=v===""?"":String(+v); if(t.dataset.f==="w") softRefresh(); saveDraft(); return;}
   if(t.id==="who"){WHO=t.value; status(missing().length?"Still needed: "+missing().join(", ")+".":"Ready — tap Review report.");}
@@ -291,8 +299,8 @@ document.addEventListener("input",e=>{const t=e.target;
   if(t.id==="who"||t.id==="note") saveDraft();
 });
 document.addEventListener("change",async e=>{const t=e.target;
-  if(t.id==="date"&&t.value){keep();DATE=t.value;return load();}
-  if(t.dataset.shot&&t.files&&t.files[0]){const key=t.dataset.shot; keep(); status("Processing photo…");
+  if(t.id==="date"&&t.value){keep();DATE=t.value;PH={sales:[],display:null,waste:null};NOTE="";PREV=null;PHSIG="";return load();}
+  if(t.dataset.shot&&t.files&&t.files[0]){const key=t.dataset.shot; keep(); status("Processing photo…"); const nx=$("#next"); if(nx) nx.disabled=true;
     try{const u=await shrink(t.files[0],key==="sales"?2000:1400); if(key==="sales") PH.sales.push(u); else PH[key]=u;}catch(err){status("That photo couldn't be read. Please try again.",true);}
     const y=window.scrollY; render(); window.scrollTo(0,y);}
 });
