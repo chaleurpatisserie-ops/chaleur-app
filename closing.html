@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Chaleur · Outlet closing</title><meta name="theme-color" content="#7b1c2b"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
+<html lang="en"><head><meta charset="utf-8"><title>Chaleur · Outlet closing</title><meta name="theme-color" content="#780a13"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
 function call(fn,args,ok,fail){fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})})
@@ -19,7 +19,7 @@ window.google={script:{run:mk(null,null)}};})();
 body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.45 var(--body)}
 .wrap{max-width:640px;margin:0 auto;padding:16px 16px 130px}
 header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.ca{width:40px;height:40px;border-radius:10px;background:#7b1c2b;color:#f7f2ec;display:grid;place-items:center;font:600 18px var(--display);flex:none}
+.ca{width:46px;height:46px;border-radius:11px;background:#780a13;color:#e3c466;display:grid;place-items:center;flex:none}.ca svg{width:36px;height:auto;display:block}
 .brand{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
 h1{font:600 30px/1.05 var(--display);margin:0}
 h2{font:600 22px/1.15 var(--display);margin:0}
@@ -53,6 +53,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .dot{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;line-height:1.1}
 .dot i{width:16px;height:16px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
 .dot small{display:block;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
+.dot small.sf{font-weight:700;margin-top:2px}.sf.bad{color:var(--bad)!important}.sf.warn{color:var(--warn)!important}
 .stp{display:flex;flex-direction:column;align-items:center;gap:3px}
 .stp .lb{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
 .stp .ctl{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}
@@ -109,13 +110,20 @@ const run=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler
 function todayISO(){const d=new Date();if(d.getHours()<5)d.setDate(d.getDate()-1);return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
 const niceDate=iso=>{const d=new Date(iso+"T00:00:00");return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})};
 let INFO=null, KEY=(PRESET||store.get("chaleur.key")||"").trim().toUpperCase(), DATE=todayISO();
-let ROWS={}, ORDER=[], SHOWN=[], EXP=new Set(), PH={sales:[],display:null,waste:null}, NOTE="", WHO=store.get("chaleur.who")||"", PREV=null, SENDING=false;
+let DRAFTED=false, ROWS={}, ORDER=[], SHOWN=[], EXP=new Set(), PH={sales:[],display:null,waste:null}, NOTE="", WHO=store.get("chaleur.who")||"", PREV=null, SENDING=false;
 const COL=()=>INFO.colours||CONFIG.colours;
 const colHex=n=>(COL().find(c=>c.name===n)||{}).hex||"#999";
 const colDay=n=>WD[COL().findIndex(c=>c.name===n)]||"";
 const prod=id=>INFO.products.find(p=>p.id===id)||{id,name:id,category:"Other"};
 const pic=(p,cls="pic")=>p.photo?`<img class="${cls}" src="${esc(p.photo)}" alt="" loading="lazy">`:`<span class="${cls} ph" aria-hidden="true">${esc((p.name||"?").slice(0,2))}</span>`;
 const K=(p,c)=>p+"|"+c;
+const MARK='<svg viewBox="0 0 800 523" aria-hidden="true" focusable="false"><g transform="translate(0,523) scale(0.1,-0.1)" fill="currentColor"><path d="M2260 5159c-180 -12 -420 -57 -615 -114 -577 -169 -1068 -529 -1396 -1025 -52 -77 -179 -298 -179 -310 0 -3 62 -5 137 -5 117 0 147 -4 196 -22 42 -16 59 -19 62 -10 3 7 23 66 45 132 199 586 592 1002 1107 1174 606 202 1172 99 1673 -304 263 -212 512 -516 681 -831 23 -44 46 -83 50 -89 5 -5 9 153 9 358l0 368 -102 103c-336 337 -787 537 -1303 576 -142 11 -207 11 -365 -1zM5723 5053c-3 -10 -12 -34 -20 -53 -15 -37 -169 -444 -358 -945 -62 -165 -152 -403 -200 -530 -201 -531 -195 -513 -195 -577 0 -133 87 -178 227 -118 56 25 128 93 226 215 112 140 174 203 229 231 153 78 248 -54 159 -220 -61 -115 -219 -241 -606 -486 -596 -377 -867 -603 -1047 -875 -153 -231 -203 -396 -196 -656l3 -145 -64 -90c-440 -609 -1262 -830 -1968 -528 -445 190 -881 602 -1162 1097 -33 59 -49 68 -71 42 -19 -23 -109 -72 -186 -101 -59 -23 -85 -27 -181 -28 -70 -1 -113 -5 -113 -11 0 -18 108 -175 189 -274 623 -771 1595 -1100 2543 -860 371 93 716 259 989 475l83 64 40 -78c165 -315 447 -469 826 -449 456 25 819 236 1073 627 274 422 386 995 337 1724 -6 82 -9 151 -7 153 4 4 27 -53 233 -597 67 -179 157 -415 199 -525 135 -354 197 -528 221 -625 95 -378 -31 -572 -398 -610 -55 -5 -109 -10 -119 -10 -12 0 -19 -7 -19 -20 0 -20 7 -20 775 -20 688 0 775 2 775 15 0 18 -39 35 -78 35 -46 0 -150 57 -212 116 -79 76 -138 167 -225 347 -86 181 -106 231 -280 692 -48 127 -148 390 -222 585 -74 195 -179 472 -233 615 -54 143 -142 375 -195 515 -53 140 -102 271 -110 290 -8 19 -57 150 -110 290 -53 140 -109 289 -125 330 -16 41 -72 190 -125 330 -53 140 -102 271 -110 290 -8 19 -39 102 -70 184 -31 82 -60 157 -66 168 -12 23 -48 24 -56 1zm-49 -803c53 -140 103 -271 111 -290 8 -19 75 -197 150 -395 75 -198 147 -387 160 -420 59 -151 85 -248 117 -430 34 -199 34 -819 0 -1005 -132 -715 -444 -1168 -898 -1301 -122 -36 -366 -34 -479 4 -232 77 -392 250 -466 502 -37 124 -34 408 5 550 99 363 333 626 896 1010 299 203 480 361 547 475 129 221 42 444 -150 386 -69 -21 -143 -81 -243 -198 -227 -266 -320 -329 -398 -267 -52 41 -42 86 112 494 27 72 133 355 236 630 189 502 195 519 201 513 2 -2 47 -118 99 -258zM298 3456c-31 -12 -60 -25 -64 -29 -12 -12 -21 -8 -27 11 -6 25 -41 33 -66 15 -27 -18 -27 -37 -1 -21 17 11 25 10 49 -3 27 -16 111 -12 141 6 9 5 35 47 28 44 -2 -1 -29 -11 -60 -23zM100 3341c0 -13 18 -17 127 -32 83 -11 117 -9 101 6 -6 6 -173 35 -205 35 -13 0 -23 -4 -23 -9zM80 3180c0 -12 17 -12 45 0 17 7 15 9 -12 9 -18 1 -33 -3 -33 -9zM281 3052c-22 -24 -26 -25 -117 -18 -76 5 -94 4 -94 -7 0 -10 23 -16 86 -21 94 -7 121 2 144 45 16 29 9 29 -19 1zM280 2855c7 -9 15 -13 17 -11 7 7 -7 26 -19 26 -6 0 -6 -6 2 -15zM177 2823c-4 -3 -7 -13 -7 -22 1 -13 3 -13 11 2 11 19 8 33 -4 20zM60 2750c0 -6 33 -10 78 -10 42 0 94 -3 115 -6 30 -5 37 -4 37 10 0 14 -15 16 -115 16 -70 0 -115 -4 -115 -10zM163 2493c-77 -3 -93 -6 -93 -20 0 -14 10 -15 77 -9 42 3 93 6 115 6 27 0 38 4 38 15 0 10 -8 14 -22 13 -13 -1 -65 -4 -115 -5zM221 2291c-57 -36 -99 -67 -92 -69 6 -2 48 19 94 47 45 28 90 51 100 51 18 0 21 8 9 25 -4 7 -46 -13 -111 -54zM345 2218c-10 -24 -40 -29 -80 -14 -11 5 -5 -2 13 -14 42 -28 82 -16 82 25 0 31 -3 31 -15 3zM223 2008c-71 -14 -103 -24 -103 -34 0 -9 8 -12 28 -8 158 31 196 41 200 52 5 15 2 15 -125 -10zM242 1878c-74 -15 -101 -23 -93 -31 14 -14 213 23 219 41 5 15 2 15 -126 -10zM210 1685c-6 -8 -10 -21 -8 -29 2 -11 8 -7 20 14 18 31 10 41 -12 15zM422 1652c-5 -69 -116 -132 -172 -97 -8 5 -11 4 -6 -3 3 -6 22 -16 41 -22 67 -22 151 43 142 111 -2 19 -4 24 -5 11z"/></g></svg>';
+const ageOf=c=>{const i=COL().findIndex(x=>x.name===c); if(i<0) return 0; return (new Date(DATE+"T00:00:00").getDay()-i+7)%7;};
+const sfOf=(pid,c)=>{const a=ageOf(c), l=+(prod(pid).shelfDays)||3; return a>=l?"bad":(a===l-1?"warn":"");};
+const wasteN=()=>ORDER.reduce((a,k)=>a+(+ROWS[k].w||0),0);
+function safetyBanner(){const bad=[],last=[]; for(const k of ORDER){const r=ROWS[k]; if(!EXP.has(k)) continue; const s=sfOf(r.productId,r.colour); if(s==="bad") bad.push(r); else if(s==="warn") last.push(r);}
+  const nm=r=>`${esc(prod(r.productId).name)} ${esc(r.colour.charAt(0)+r.colour.slice(1).toLowerCase())}`;
+  return `${bad.length?`<div class="banner warn"><b>Safety check: take these off display now</b>, throw them away and enter them as <b>Waste</b> (past shelf life): ${bad.map(nm).join(", ")}.</div>`:""}${last.length?`<div class="banner info"><b>Last day today:</b> put these at the front and sell first: ${last.map(nm).join(", ")}.</div>`:""}`;}
 function status(msg,err){$("#status").innerHTML=err?`<span class="err">${esc(msg)}</span>`:esc(msg);}
 
 async function load(){
@@ -131,8 +139,17 @@ async function load(){
   const add=(p,c)=>{const k=K(p,c); if(!SHOWN.includes(p)) SHOWN.push(p); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} };
   INFO.stock.forEach(s=>add(s.productId,s.colour));
   if(ex){ ex.lines.forEach(l=>{add(l.productId,l.colour); const r=ROWS[K(l.productId,l.colour)]; r.w=l.w?String(l.w):""; r.b=l.b?String(l.b):"";}); if(!NOTE) NOTE=ex.note||""; }
+  DRAFTED=loadDraft(ex);
   render();
 }
+const DK=()=>"chaleur.draft."+KEY+"."+DATE;
+function saveDraft(){ if(!INFO||!INFO.outlet) return; try{localStorage.setItem(DK(),JSON.stringify({at:new Date().toISOString(),who:($("#who")||{value:WHO}).value,note:($("#note")||{value:NOTE}).value,rows:ORDER.map(k=>[k,ROWS[k].w,ROWS[k].b]),shown:SHOWN}));}catch(e){} try{sessionStorage.setItem(DK()+".ph",JSON.stringify(PH));}catch(e){} }
+function loadDraft(ex){ let d=null; try{d=JSON.parse(localStorage.getItem(DK())||"null");}catch(e){} if(!d||(ex&&ex.at&&d.at<ex.at)) return false;
+  let changed=false; for(const [k,w,b] of d.rows||[]){ const [p,c]=k.split("|"); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} if((w||"")!==ROWS[k].w||(b||"")!==ROWS[k].b) changed=true; ROWS[k].w=w||""; ROWS[k].b=b||""; if(!SHOWN.includes(p)) SHOWN.push(p); }
+  for(const p of d.shown||[]) if(!SHOWN.includes(p)) SHOWN.push(p); if(d.who) WHO=d.who; if(d.note) NOTE=d.note;
+  try{const ph=JSON.parse(sessionStorage.getItem(DK()+".ph")||"null"); if(ph&&((ph.sales||[]).length||ph.display)){PH=ph; changed=true;}}catch(e){}
+  return changed; }
+function clearDraft(){ try{localStorage.removeItem(DK()); sessionStorage.removeItem(DK()+".ph");}catch(e){} }
 function renderNeedLink(){
   $("#bar").hidden=true;
   const wa=CONFIG.chaleurWhatsApp?`https:\/\/wa.me/${esc(CONFIG.chaleurWhatsApp)}?text=${encodeURIComponent("Hi Chaleur, please send us our outlet's closing report link.")}`:"";
@@ -140,7 +157,7 @@ function renderNeedLink(){
     <p class="hint">Each outlet has its own closing form. Scan the QR code Chaleur gave your outlet, or open the link we sent you on WhatsApp.</p>
     ${wa?`<a class="btn go" href="${wa}" target="_blank" rel="noopener">Ask Chaleur on WhatsApp</a>`:""}</div>`;
 }
-const head=()=>`<header><div class="ca" aria-hidden="true">CA</div><div><div class="brand">Chaleur Atelier · Outlet</div><h1>Closing count</h1></div></header>`;
+const head=()=>`<header><div class="ca" aria-hidden="true">${MARK}</div><div><div class="brand">Chaleur Atelier · Outlet</div><h1>Closing count</h1></div></header>`;
 function grouped(){
   const by={}; SHOWN.forEach(p=>by[p]=[]); ORDER.forEach(k=>{const r=ROWS[k]; (by[r.productId]=by[r.productId]||[]).push(k);});
   const cats={}; Object.keys(by).forEach(pid=>{const p=prod(pid); (cats[p.category]=cats[p.category]||[]).push(pid);});
@@ -156,13 +173,15 @@ function render(){
     <label class="f">Date<input id="date" type="date" value="${esc(DATE)}"></label></div>
     <label class="f">Your name<input id="who" value="${esc(WHO)}" placeholder="e.g. Aina" autocomplete="name"></label>
   </div>
-  ${ex?`<div class="banner ${ex.locked?"warn":"info"}" style="margin-top:12px">${ex.locked?"This week is already billed. Your changes will be sent to the office to review.":`Today's report was already sent${ex.by?` by <b>${esc(ex.by)}</b>`:""}${ex.at?` at ${esc(new Date(ex.at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}))}`:""}. Fix anything below and send again — the new report replaces the old one.`}</div>`:""}
+  ${ex?`<div class="banner ${ex.locked?"warn":"info"}" style="margin-top:12px">${ex.locked?"This week is already billed. Your changes will be sent to the office to review.":`A report for this day was already sent${ex.by?` by <b>${esc(ex.by)}</b>`:""}${ex.at?` at ${esc(new Date(ex.at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}))}`:""}. Fix anything below and send again — the new report replaces the old one.`}</div>`:""}
+  ${DRAFTED?`<div class="banner info" style="margin-top:12px">We kept the counts and photos you hadn't sent yet.</div>`:""}
   <section class="sec">
     <h2>Count the cakes</h2>
     <p class="hint">Colours we delivered are already open. Found another colour? Tap its dot to add it. For each colour: <b>Waste</b> = thrown away or damaged, <b>Left</b> = still in the chiller now. Leave a box empty if it's 0.</p>
+    ${safetyBanner()}
     ${g.length?g.map(c=>`<div class="cat">${esc(c.cat)}</div>${c.items.map(({p,keys})=>`<div class="cake" id="cake-${esc(p.id)}"><div class="hd">${pic(p)}<div class="tt"><div class="nm">${esc(p.name)}</div><div class="sub">${keys.length?`${keys.length} colour${keys.length>1?"s":""}`:"Tap the colour dot on the cake"}</div></div>
       <div class="dots" role="group" aria-label="Colour dots for ${esc(p.name)}">${COL().map(c=>{const k=K(p.id,c.name), on=!!ROWS[k]; return `<button type="button" class="cd${on?" on":""}" data-cd="${esc(k)}" aria-pressed="${on}" aria-label="${esc(c.name)}, made ${esc(colDay(c.name))}"><i style="background:${esc(c.hex)}"></i><span>${esc(colDay(c.name))}</span></button>`;}).join("")}</div></div>
-      ${keys.map(k=>{const r=ROWS[k];return `<div class="ln"><div class="dot"><i style="background:${esc(colHex(r.colour))}"></i><span>${esc(r.colour)}<small>made ${esc(colDay(r.colour))}</small></span></div>${stepper(k,"w","Waste")}${stepper(k,"b","Left")}</div>`}).join("")}</div>`).join("")}`).join("")
+      ${keys.map(k=>{const r=ROWS[k];return `<div class="ln"><div class="dot"><i style="background:${esc(colHex(r.colour))}"></i><span>${esc(r.colour)}<small>made ${esc(colDay(r.colour))}</small>${(()=>{const q=sfOf(r.productId,r.colour);return q==="bad"?`<small class="sf bad">Past shelf life: throw away</small>`:q==="warn"?`<small class="sf warn">Last day: sell first</small>`:"";})()}</span></div>${stepper(k,"w","Waste")}${stepper(k,"b","Left")}</div>`}).join("")}</div>`).join("")}`).join("")
       :`<div class="empty">No cakes on record for this outlet today. Use the button below to add what you have.</div>`}
     <button class="link" type="button" data-act="add">+ Add a cake that's not listed</button>
   </section>
@@ -170,17 +189,17 @@ function render(){
     <h2>Photos</h2>
     ${shotBox("sales","Today's sales report","From your POS: the list of items sold today. Take more than one photo if it's long.",true)}
     ${shotBox("display","Chiller display","All the cakes left in the chiller now.")}
-    ${hasWaste()?shotBox("waste","Waste","The cakes you are throwing away."):""}
+    ${hasWaste()?shotBox("waste",`Waste photo (you entered ${wasteN()} wasted)`,"Needed only because you entered waste. Take a photo of the cakes you are throwing away."):""}
   </section>
   <section class="sec"><label class="f">Anything else? (optional)<textarea id="note" rows="2" placeholder="Short delivery, damaged cake, chiller issue…">${esc(NOTE)}</textarea></label></section>`;
-  $("#bar").hidden=false; $("#next").textContent="Review report"; $("#next").disabled=false; status(missing().length?"Still needed: "+missing().join(", ")+".":"Ready — tap Review report.");
+  saveDraft(); $("#bar").hidden=false; $("#next").textContent="Review report"; $("#next").disabled=false; status(missing().length?"Still needed: "+missing().join(", ")+".":"Ready — tap Review report.");
 }
 function shotBox(key,title,hint,multi){
   const v=PH[key], has=multi?v.length>0:!!v;
   const imgs=multi?v.map((u,i)=>`<span class="tw"><img src="${u}" alt="Sales photo ${i+1}"><button type="button" data-rm="${key}|${i}" aria-label="Remove photo">×</button></span>`).join(""):(v?`<span class="tw"><img src="${v}" alt=""><button type="button" data-rm="${key}|0" aria-label="Remove photo">×</button></span>`:"");
   const canAdd=multi?v.length<3:!v;
   return `<div class="shot ${has?"done":""}" id="shot-${key}"><div class="t"><b>Required:</b> ${esc(title)}<br><span class="hint">${esc(hint)}</span></div>
-    <div class="thumbs">${imgs}${canAdd?`<label class="btn sm">${has?"+ Add another":"📷 Take / choose photo"}<input type="file" accept="image/*" data-shot="${key}" hidden></label>`:""}</div></div>`;
+    <div class="thumbs">${imgs}${canAdd?`<label class="btn sm">📷 ${has?"Take another":"Take photo"}<input type="file" accept="image/*" capture="environment" data-shot="${key}" hidden></label><label class="btn sm">🖼 Choose from phone<input type="file" accept="image/*" data-shot="${key}" hidden></label>`:""}</div></div>`;
 }
 const hasWaste=()=>ORDER.some(k=>+ROWS[k].w>0);
 function missing(){const m=[]; if(((($("#who")||{}).value)||WHO).trim().length<2) m.push("your name"); if(!PH.sales.length) m.push("sales report photo"); if(!PH.display) m.push("chiller photo"); if(hasWaste()&&!PH.waste) m.push("waste photo"); return m;}
@@ -217,6 +236,7 @@ function renderPreview(d){
     <p class="hint">${esc(INFO.outlet.name)} · ${esc(niceDate(DATE))} · counted by <b>${esc(d.who)}</b></p>
     ${r.ok?(probs.length?`<div class="banner warn"><b>${probs.length} cake${probs.length>1?"s don't":" doesn't"} add up.</b> Please recount these, or tap <b>Edit</b>. If your count is right, send anyway and add a note.</div>`:`<div class="banner info">✓ Everything adds up with your sales report.</div>`)
       :`<div class="banner info">${esc(r.note||"The sales photo will be checked by the office.")}</div>`}
+    ${(()=>{const bad=d.lines.filter(l=>l.b>0&&sfOf(l.productId,l.colour)==="bad");return bad.length?`<div class="banner warn">${bad.map(l=>`${esc(prod(l.productId).name)} ${esc(l.colour)}`).join(", ")}: counted as <b>Left</b> but past shelf life. Please throw them away and move them to <b>Waste</b> (tap Edit).</div>`:"";})()}
     <div style="overflow-x:auto"><table><thead><tr><th>Cake</th>${r.ok?"<th>Sold</th>":""}<th>Waste</th><th>Left</th>${r.ok?"<th>Check</th>":""}</tr></thead><tbody>
     ${(ch.length?ch:aggregate(d.lines)).map(c=>`<tr><td>${esc(c.name||prod(c.productId).name)}</td>${r.ok?`<td>${c.sold??0}</td>`:""}<td>${c.waste||""}</td><td>${c.balance||""}</td>${r.ok?`<td>${c.diff?`<span class="tag warn">${c.diff>0?c.diff+" missing":(-c.diff)+" extra"}</span>`:`<span class="tag ok">OK</span>`}</td>`:""}</tr>`).join("")||`<tr><td colspan="5" class="hint">No cakes counted.</td></tr>`}
     </tbody></table></div>
@@ -236,7 +256,7 @@ function restoreBar(){$("#bar .in").innerHTML=`<button class="btn go" id="next" 
 async function send(d){
   if(SENDING) return; SENDING=true; $("#send").disabled=true; $("#edit").disabled=true; status("Sending report and photos… keep this page open.");
   try{
-    const r=await run("submitClosing",{...d,read:PREV&&PREV.read});
+    const r=await run("submitClosing",{...d,token:PREV&&PREV.token}); clearDraft();
     $("#bar").hidden=true; window.scrollTo(0,0);
     const wa=r.wa?`https:\/\/wa.me/${esc(r.wa)}?text=${encodeURIComponent(r.summary)}`:"";
     $("#app").innerHTML=`${head()}<div class="done"><div class="ok">✓</div><h2>${r.mode==="replaced"?"Report updated":"Report sent"}</h2><p style="margin:0">Thank you, ${esc(d.who)}.<br>Reference <b style="font-family:var(--mono)">${esc(r.id)}</b></p>
@@ -251,7 +271,7 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-close]"); if(!t) return; const d=t.dataset;
   if(d.close&&(e.target===t||t.tagName==="BUTTON")){$("#sheet").innerHTML="";return;}
   if(d.act==="retry"){load();return;}
-  if(d.step){const k=d.step,f=d.sf,n=d.sn; const r=ROWS[k]; const v=Math.max(0,(+r[f]||0)+(+n)); r[f]=v?String(v):""; const inp=document.querySelector(`input[data-k="${CSS.escape(k)}"][data-f="${f}"]`); if(inp) inp.value=r[f]; if(f==="w") softRefresh(); return;}
+  if(d.step){const k=d.step,f=d.sf,n=d.sn; const r=ROWS[k]; const v=Math.max(0,(+r[f]||0)+(+n)); r[f]=v?String(v):""; const inp=document.querySelector(`input[data-k="${CSS.escape(k)}"][data-f="${f}"]`); if(inp) inp.value=r[f]; if(f==="w") softRefresh(); saveDraft(); return;}
   if(d.rm){const [key,i]=d.rm.split("|"); if(key==="sales") PH.sales.splice(+i,1); else PH[key]=null; keep(); render(); return;}
   if(d.act==="add"){keep();openAdd();return;}
   if(d.addp){const p=d.addp; if(!SHOWN.includes(p)) SHOWN.push(p); $("#sheet").innerHTML=""; render(); setTimeout(()=>{const el=document.getElementById("cake-"+p); if(el) el.scrollIntoView({block:"center",behavior:"smooth"});},60); return;}
@@ -265,9 +285,10 @@ function keep(){ if($("#who")) WHO=$("#who").value; if($("#note")) NOTE=$("#note
 let wasW=false;
 function softRefresh(){ const hw=hasWaste(); if(hw!==wasW){wasW=hw; keep(); const y=window.scrollY; render(); window.scrollTo(0,y);} else status(missing().length?"Still needed: "+missing().join(", ")+".":"Ready — tap Review report."); }
 document.addEventListener("input",e=>{const t=e.target;
-  if(t.dataset.k){const v=t.value.replace(/[^0-9]/g,""); ROWS[t.dataset.k][t.dataset.f]=v===""?"":String(+v); if(t.dataset.f==="w") softRefresh(); return;}
+  if(t.dataset.k){const v=t.value.replace(/[^0-9]/g,""); ROWS[t.dataset.k][t.dataset.f]=v===""?"":String(+v); if(t.dataset.f==="w") softRefresh(); saveDraft(); return;}
   if(t.id==="who"){WHO=t.value; status(missing().length?"Still needed: "+missing().join(", ")+".":"Ready — tap Review report.");}
   if(t.id==="note") NOTE=t.value;
+  if(t.id==="who"||t.id==="note") saveDraft();
 });
 document.addEventListener("change",async e=>{const t=e.target;
   if(t.id==="date"&&t.value){keep();DATE=t.value;return load();}
