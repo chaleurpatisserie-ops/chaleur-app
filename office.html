@@ -38,10 +38,14 @@ body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size
 .logo b{display:block;font:600 19px var(--display);letter-spacing:.01em}
 .logo small{display:block;font-family:var(--body);font-weight:500;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .testbar{background:var(--accent);color:var(--accent-ink);text-align:center;font-size:12.5px;padding:5px 16px;letter-spacing:.02em}
-nav{display:flex;gap:2px;overflow-x:auto;flex:1;scrollbar-width:none}
-nav button{border:0;background:transparent;color:var(--muted);font:600 13.5px var(--body);padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
-nav button[aria-current="page"]{background:var(--paper);color:var(--accent);box-shadow:0 0 0 1px var(--line)}
-nav button .n{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;margin-left:5px;text-align:center}
+nav{position:relative;margin-left:auto}
+.mbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:600 14.5px var(--body);padding:9px 14px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.mbtn .bars{font-size:16px;line-height:1;color:var(--muted);position:relative;margin-right:8px}.mbtn .bars .n{position:absolute;top:-9px;right:-11px;margin:0;font-size:10px;min-width:16px;line-height:16px}.mbtn .car{color:var(--muted);font-size:11px}
+.menu{position:absolute;right:0;top:calc(100% + 6px);min-width:230px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(20,10,12,.18);padding:6px;display:flex;flex-direction:column;z-index:30}
+.menu button{border:0;background:transparent;color:var(--ink);font:500 15px var(--body);padding:11px 12px;border-radius:8px;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.menu button:hover{background:var(--soft)}
+.menu button[aria-current="page"]{background:var(--soft);color:var(--accent);font-weight:600}
+nav .n{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;margin-left:5px;text-align:center}
 main{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 80px;display:flex;flex-direction:column;gap:18px}
 h1{font-family:var(--display);font-weight:600;font-size:36px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
 h2{font-family:var(--display);font-weight:600;font-size:22px;margin:0}
@@ -306,23 +310,35 @@ const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const clone=o=>JSON.parse(JSON.stringify(o));
 /* ---------- WhatsApp ---------- */
 const SITE_BASE=/script\.google|googleusercontent/.test(location.host)?null:new URL(".",location.href).href;
-const formLink=code=>{const u=SITE_BASE?SITE_BASE+"closing.html":(cfg().fieldFormUrl||"");return u+(u.includes("?")?"&":"?")+"o="+encodeURIComponent(code);};
+const formLink=p=>{const k=p&&p.formKey; if(!k) return ""; const u=SITE_BASE?SITE_BASE+"closing.html":(cfg().fieldFormUrl||""); return u+(u.includes("?")?"&":"?")+"o="+encodeURIComponent(k);};
+const newFormKey=code=>{const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789",r=new Uint32Array(6);crypto.getRandomValues(r);return (String(code||"OUT").toUpperCase().replace(/[^A-Z0-9]/g,"")||"OUT")+"-"+Array.from(r,x=>A[x%A.length]).join("");};
+let QRLIB=null;
+function loadQR(){return QRLIB||(QRLIB=new Promise((res,rej)=>{if(window.qrcode)return res(window.qrcode);const sc=document.createElement("script");sc.src="https:\/\/cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";sc.onload=()=>res(window.qrcode);sc.onerror=()=>{QRLIB=null;rej(new Error("The QR maker didn't load. Check the internet and try again."));};document.head.appendChild(sc);}));}
+async function makeQR(p){S.ui.qrImg=null;try{const q=(await loadQR())(0,"M");q.addData(formLink(p));q.make();S.ui.qrImg={id:p.id,url:q.createDataURL(8,4)};}catch(e){S.ui.qrImg={id:p.id,err:e.message};}render();}
+function qrPanel(p){const link=formLink(p), q=S.ui.qrImg&&S.ui.qrImg.id===p.id?S.ui.qrImg:null;
+  const msg=`Hi ${p.contact||p.name} team, this is Chaleur Atelier. Here is your outlet's own closing report link. Please use it every night at closing:\n${link}\nTip: add it to your phone's home screen. Thank you!`;
+  return `<div class="panel" style="align-items:center;text-align:center"><div class="spread" style="width:100%"><h2>${esc(p.name)}: closing link</h2><button class="btn sm" data-act="qrClose">Close</button></div>
+  <div style="background:#fff;padding:10px;border-radius:12px;min-width:120px;min-height:120px;display:grid;place-items:center">${q?(q.url?`<img src="${q.url}" alt="QR code for ${esc(p.name)}'s closing form" style="width:240px;height:240px;image-rendering:pixelated">`:`<span class="small" style="color:#a3262a">${esc(q.err)}</span>`):`<span class="small muted">Making QR…</span>`}</div>
+  <p class="mono small" style="word-break:break-all;margin:0">${esc(link)}</p>
+  <div class="row" style="justify-content:center"><button class="btn sm" data-lcopy="${p.id}">Copy link</button>${p.phone?`<a class="btn sm" href="${esc(wa(p.phone,msg))}" target="_blank" rel="noopener">Send on WhatsApp</a>`:""}${q&&q.url?`<a class="btn sm" href="${q.url}" download="${esc(p.code)}-closing-qr.gif">Download QR</a><button class="btn sm" data-act="qrPrint">Print</button>`:""}${MGR()?`<button class="btn sm" data-lnew="${p.id}">${S.ui.lnewAsk===p.id?"Tap again: old link stops working":"Make a new link"}</button>`:""}</div>
+  <p class="small muted" style="margin:0">Only ${esc(p.name)} should have this link. It opens their form only. If it gets shared, make a new link and the old one stops working.</p></div>`;}
 const wa=(phone,text)=>`https:\/\/wa.me/${String(phone||"").replace(/\D/g,"")}?text=${encodeURIComponent(text)}`;
 function chaseText(p,dates){
-  const link=formLink(p.code);
+  const link=formLink(p)||"(ask Chaleur for your outlet's link)";
   return `Hi ${p.contact||p.name} team, this is Chaleur Atelier. We haven't received the closing report for ${dates.map(nice).join(", ")}. Please count the balance and wastage for each colour dot and send it here:\n${link}\nThank you!`;
 }
 /* ---------- rendering ---------- */
 const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role);
 const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Daily reports"],["billing","Weekly billing"],["audits","Audits"],["setup","Setup"],["staff","Staff"]];
 const NCOL=8;
-let rq=false;
+let rq=false, MENU=false;
 function render(){ if(rq) return; rq=true; requestAnimationFrame(()=>{rq=false; doRender();}); }
 function doRender(){
   memo=new Map();
   const a=document.activeElement, aid=a&&a.id, sel=a&&("selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const att=attention();
-  $("#nav").innerHTML=TABS.filter(([k])=>k!=="staff"||MGR()).map(([k,l])=>`<button data-tab="${k}" ${S.tab===k?'aria-current="page"':""}>${l}${k==="today"&&att.filter(x=>x.sev==="bad").length?`<span class="n">${att.filter(x=>x.sev==="bad").length}</span>`:""}</button>`).join("");
+  { const bad=att.filter(x=>x.sev==="bad").length, tabs=TABS.filter(([k])=>k!=="staff"||MGR()), cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
+    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}</div>`:""}`; }
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
   else if(S.loaded.size<NCOL) html=`<div class="empty">Loading consignment data…</div>`;
@@ -408,7 +424,7 @@ function vToday(att){
       </div>
       <div style="display:flex;flex-direction:column;gap:18px">
         <div class="panel"><div class="spread"><h2>Closing reports</h2><span class="small muted">last 7 days</span></div>${ps.length?matrix:`<div class="empty">Add outlets in Setup.</div>`}
-          <p class="small muted" style="margin:0">Outlet form link: <span class="mono">${esc(formLink("CODE"))}</span></p></div>
+          <p class="small muted" style="margin:0">Each outlet has its own closing link and QR code: Setup › Outlets &amp; terms.</p></div>
         <div class="panel"><h2>This week so far</h2><div class="stats">
           <div class="stat"><h3>Sold</h3><span class="v">${wkSold}</span><span class="small muted">units</span></div>
           <div class="stat"><h3>Earned</h3><span class="v">${fm(wkVal)}</span><span class="small muted">RM at partner rates</span></div>
@@ -691,9 +707,9 @@ function vSetup(){
         <div class="f"><span>We deliver on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-dd-${i}" data-pearr="deliveryDays" data-v="${i}" ${(e.deliveryDays||[1,3,5]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
         <label class="f">Active<select id="pe-act" data-pe="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label>
       </div><div class="row"><button class="btn pri" data-act="savePartner">Save outlet</button><button class="btn" data-act="cancelPartner">Cancel</button></div>`:""}
-      <div class="tw"><table><thead><tr><th>Code</th><th>Outlet</th><th class="r">Chaleur %</th><th>Terms</th><th>Wastage</th><th>Hours</th><th>Delivery days</th><th>WhatsApp</th><th>Field form link</th><th></th></tr></thead><tbody>
-      ${partners(true).map(p=>`<tr><td class="mono">${esc(p.code)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}</td><td class="r mono">${esc(p.pct)}%</td><td><span class="pill ${p.termsStatus==="Accepted"?"ok":"warn"}">${esc(p.termsStatus||"Proposed")}</span></td><td class="small">${esc(({credit:"Full credit",half:"50% retail",none:"No credit"})[p.wasteRule||"credit"])}</td><td class="small mono">${esc((p.hours||{}).wkOpen||"10:00")}–${esc((p.hours||{}).wkClose||"22:00")}${((p.hours||{}).closed||[]).length?`<br><span class="muted">closed ${(p.hours.closed).map(i=>WD[i]).join(", ")}</span>`:""}</td><td class="small">${(p.deliveryDays||[1,3,5]).map(i=>WD[i]).join(" ")}</td><td class="mono small">${esc(p.phone||"—")}</td><td class="mono small">${esc(formLink(p.code))}</td><td class="r"><button class="btn sm" data-pedit="${p.id}">Edit</button></td></tr>`).join("")}
-      </tbody></table></div></div>`;
+      <div class="tw"><table><thead><tr><th>Code</th><th>Outlet</th><th>Closing link</th><th class="r">Chaleur %</th><th>Terms</th><th>Wastage</th><th>Hours</th><th>Delivery days</th><th>WhatsApp</th><th></th></tr></thead><tbody>
+      ${partners(true).map(p=>`<tr><td class="mono">${esc(p.code)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}</td><td class="small">${p.formKey?`<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-lcopy="${p.id}">Copy</button><button class="btn sm" data-lqr="${p.id}">QR</button></div>`:(MGR()?`<button class="btn sm" data-lnew="${p.id}">Make link</button>`:`<span class="muted">not set</span>`)}</td><td class="r mono">${esc(p.pct)}%</td><td><span class="pill ${p.termsStatus==="Accepted"?"ok":"warn"}">${esc(p.termsStatus||"Proposed")}</span></td><td class="small">${esc(({credit:"Full credit",half:"50% retail",none:"No credit"})[p.wasteRule||"credit"])}</td><td class="small mono">${esc((p.hours||{}).wkOpen||"10:00")}–${esc((p.hours||{}).wkClose||"22:00")}${((p.hours||{}).closed||[]).length?`<br><span class="muted">closed ${(p.hours.closed).map(i=>WD[i]).join(", ")}</span>`:""}</td><td class="small">${(p.deliveryDays||[1,3,5]).map(i=>WD[i]).join(" ")}</td><td class="mono small">${esc(p.phone||"—")}</td><td class="r"><button class="btn sm" data-pedit="${p.id}">Edit</button></td></tr>`).join("")}
+      </tbody></table></div></div>${S.ui.qrFor&&S.partners[S.ui.qrFor]&&S.partners[S.ui.qrFor].formKey?qrPanel(S.partners[S.ui.qrFor]):""}`;
   }
   if(sec==="products"){
     const e=S.ui.prEdit;
@@ -962,12 +978,14 @@ document.addEventListener("change",async e=>{
   if(t.dataset.ui==="date"&&t.value){S.ui.date=t.value;S.ui.editDay=false;render();}
 });
 document.addEventListener("click",async e=>{
+  if(MENU&&!e.target.closest("#nav")){MENU=false;render();}
   const b=e.target.closest("button,[data-close]"); if(!b) return;
   const d=b.dataset;
+  if(d.menu){MENU=!MENU;render();return;}
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
-  if(RO()&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo)){toast("View only — ask a manager to make changes");return;}
-  if(d.tab){S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;render();window.scrollTo(0,0);return;}
+  if(RO()&&b.id!=="lg-go"&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint")){toast("View only — ask a manager to make changes");return;}
+  if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;render();window.scrollTo(0,0);return;}
   if(d.stnew){S.ui.stEdit={row:0,name:"",code:"",role:"auditor",notes:""};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
   if(d.stedit){const x=(S.team||[]).find(r=>String(r.row)===d.stedit); if(x){S.ui.stEdit={...x};render();window.scrollTo(0,0);} return;}
@@ -986,6 +1004,11 @@ document.addEventListener("click",async e=>{
   if(d.auc){S.ui.auditDraft.checks[d.auc]=d.v;render();return;}
   if(d.rmc){S.ui.auditDraft.counts.splice(+d.rmc,1);render();return;}
   if(d.pedit){S.ui.pEdit=clone(S.partners[d.pedit]);render();return;}
+  if(d.lcopy){const l=formLink(S.partners[d.lcopy]); try{await navigator.clipboard.writeText(l); toast("Link copied");}catch(err){S.ui.qrFor=d.lcopy; render(); toast("Copy the link shown under the QR code");} return;}
+  if(d.lqr){S.ui.qrFor=d.lqr; S.ui.lnewAsk=null; render(); makeQR(S.partners[d.lqr]); return;}
+  if(d.lnew){if(!MGR()){toast("Only Alfred or Joscelyn can change outlet links");return;} const p=S.partners[d.lnew]; if(!p) return;
+    if(p.formKey&&S.ui.lnewAsk!==p.id){S.ui.lnewAsk=p.id; render(); return;}
+    b.disabled=true; await put(`partners/${p.id}`,{...p,formKey:newFormKey(p.code)}); S.ui.lnewAsk=null; S.ui.qrFor=p.id; toast(p.formKey?"New link made. The old link no longer works.":"Link made"); render(); makeQR(S.partners[p.id]); return;}
   if(d.predit){S.ui.prEdit=clone(S.products[d.predit]);render();return;}
   if(d.pact){const [id,stt]=d.pact.split("|");const x={...S.prices[id],status:stt};
     if(stt==="Active"){x.approvedAt=today();x.approvedBy=x.approvedBy||"Owner";
@@ -996,7 +1019,7 @@ document.addEventListener("click",async e=>{
   if(d.oprm!==undefined){S.ui.opDraft.lines.splice(+d.oprm,1);render();return;}
   if(d.act) await act(d.act,b);
 });
-document.addEventListener("keydown",e=>{const t=e.target; if(t&&t.dataset&&t.dataset.doline&&/^[.,eE+\-]$/.test(e.key)) e.preventDefault();});
+document.addEventListener("keydown",e=>{const t=e.target; if(e.key==="Escape"&&MENU){MENU=false;render();} if(t&&t.dataset&&t.dataset.doline&&/^[.,eE+\-]$/.test(e.key)) e.preventDefault();});
 async function act(a,b){
   const t=today();
   switch(a){
@@ -1093,10 +1116,15 @@ async function act(a,b){
   case "addCount":{const n=$("#au-cn").value; if(n===""){toast("Enter the counted quantity");return;} S.ui.auditDraft.counts.push({productId:$("#au-cp").value,colour:$("#au-cc").value,n:+n}); render(); return;}
   case "saveAudit":{const d=S.ui.auditDraft; const id=newId(); const prices={}; for(const [k,v] of Object.entries(d.prices)) if(v!==""&&v!=null) prices[k]=+v;
     await put(`audits/${id}`,{id,partnerId:d.partnerId,date:d.date,time:d.time,by:d.by,temp:d.temp,checks:d.checks,prices,counts:d.counts,note:d.note,source:"desk"}); S.ui.auditDraft=null; S.ui.suggest=null; toast("Audit saved"); return;}
+  case "qrClose": S.ui.qrFor=null; S.ui.lnewAsk=null; render(); return;
+  case "qrPrint":{const p=S.partners[S.ui.qrFor], q=S.ui.qrImg; if(!p||!q||!q.url) return; const w=window.open("","_blank"); if(!w){toast("Allow pop-ups to print, or use Download QR");return;}
+    w.document.write(`<!DOCTYPE html><html><head><title>${esc(p.name)} closing QR</title></head><body style="font-family:sans-serif;text-align:center;padding:48px 24px;color:#2b1b1e"><div style="font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#6f5f62">Chaleur Atelier</div><h1 style="margin:8px 0 6px;font-size:34px">${esc(p.name)}</h1><p style="margin:0 0 22px;font-size:18px">Nightly closing report: scan at closing time</p><img src="${q.url}" alt="" style="width:340px;height:340px;image-rendering:pixelated"><p style="font-size:12px;color:#6f5f62;word-break:break-all;max-width:420px;margin:18px auto 0">${esc(formLink(p))}</p></body></html>`);
+    w.document.close(); w.focus(); setTimeout(()=>w.print(),500); return;}
   case "newPartner": S.ui.pEdit={id:"",code:"",name:"",pct:75,termsStatus:"Proposed",wasteRule:"credit",terms:14,active:true}; render(); return;
   case "cancelPartner": S.ui.pEdit=null; render(); return;
   case "savePartner":{const e=S.ui.pEdit; e.parDay=+e.parDay||3; e.deliveryDays=(e.deliveryDays||[1,3,5]).map(Number); e.code=(e.code||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.code||!e.name){toast("Code and name are required");return;}
     if(partners(true).some(p=>p.code===e.code&&p.id!==e.id)){toast("That code is already used");return;}
+    if(!e.formKey) e.formKey=newFormKey(e.code);
     const id=e.id||e.code.toLowerCase(); await put(`partners/${id}`,{...e,id,pct:+e.pct||0,terms:+e.terms||14,active:String(e.active)!=="false"}); S.ui.pEdit=null; toast("Outlet saved"); return;}
   case "newProduct": S.ui.prEdit={id:"",sku:"",name:"",retail:"",shelfDays:3,active:true}; render(); return;
   case "cancelProduct": S.ui.prEdit=null; render(); return;
