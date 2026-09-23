@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Chaleur Atelier</title><meta name="theme-color" content="#7b1c2b"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Jost:wght@400;500;600&display=swap">
+<style>
+:root{--ground:#f7f2ec;--paper:#fff;--ink:#2b1b1e;--muted:#6f5f62;--line:#e8dcd6;--accent:#7b1c2b;--accent-ink:#fff;--soft:#f3e4e5}
+@media (prefers-color-scheme:dark){:root{--ground:#161012;--paper:#201719;--ink:#f2e9e6;--muted:#b9a8aa;--line:#3a2c2f;--accent:#e4a1ac;--accent-ink:#1b1113;--soft:#3a2227}}
+*{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.45 Jost,system-ui,sans-serif}
+.w{max-width:460px;margin:0 auto;padding:28px 16px 40px}
+.hd{display:flex;gap:12px;align-items:center;margin-bottom:22px}.m{width:48px;height:48px;border-radius:12px;background:#7b1c2b;color:#f7f2ec;display:grid;place-items:center;font:600 22px 'Cormorant Garamond',serif}
+h1{font:600 30px/1.1 'Cormorant Garamond',serif;margin:0}.sub{color:var(--muted);font-size:13px}
+.c{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+.c h2{margin:0 0 4px;font-size:17px}.c p{margin:0 0 12px;color:var(--muted);font-size:13.5px}
+a.b,button.b{display:block;width:100%;text-align:center;text-decoration:none;background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:13px;font:600 15px Jost,system-ui,sans-serif;cursor:pointer}
+select{width:100%;font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:10px}
+.tip{font-size:12.5px;color:var(--muted);margin-top:18px;line-height:1.5}
+</style></head><body><div class="w">
+<div class="hd"><div class="m" aria-hidden="true">CA</div><div><h1>Chaleur Atelier</h1><div class="sub">Consignment system</div></div></div>
+<div class="c"><h2>Office desk</h2><p>Deliveries, daily reports, prep plan and weekly billing. Sign in with your staff code.</p><a class="b" href="office.html">Open office desk</a></div>
+<div class="c"><h2>Spot audit</h2><p>For Chaleur team members visiting an outlet. Sign in with your staff code.</p><a class="b" href="audit.html">Start a spot audit</a></div>
+<div class="c"><h2>Outlet closing report</h2><p>For partner outlets: count waste and balance at closing, with photos.</p>
+<select id="o" aria-label="Outlet"><option value="KNK">Knocknock (KNK)</option><option value="OTB">Outlet B (sample) (OTB)</option></select><button class="b" id="go" type="button">Open closing form</button></div>
+<p class="tip">Tip: add this page to your home screen. iPhone: Safari › Share › Add to Home Screen. Android: Chrome › ⋮ › Add to Home screen.</p>
+</div><script>document.getElementById("go").onclick=function(){location.href="closing.html?o="+encodeURIComponent(document.getElementById("o").value)};</script></body></html>

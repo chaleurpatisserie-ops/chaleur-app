@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Chaleur · Outlet closing</title><meta name="theme-color" content="#7b1c2b"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
+/* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
+(function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
+function call(fn,args,ok,fail){fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})})
+ .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.json();})
+ .then(function(j){if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
+ .catch(function(e){fail&&fail(new Error(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again."));});}
+function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
+window.google={script:{run:mk(null,null)}};})();
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Jost:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{
+  --ground:#f7f2ec; --paper:#ffffff; --ink:#2b1b1e; --muted:#6f5f62; --line:#e8dcd6;
+  --accent:#7b1c2b; --accent-ink:#ffffff; --soft:#f3e4e5; --ok:#2f6b45; --warn:#9a5a12;
+  --display:"Cormorant Garamond","Times New Roman",Georgia,serif;
+  --body:"Jost",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#161012; --paper:#201719; --ink:#f2e9e6; --muted:#b9a8aa; --line:#3a2c2f;
+  --accent:#e4a1ac; --accent-ink:#1b1113; --soft:#3a2227; --ok:#7fd1a0; --warn:#f0b46a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ground:#161012; --paper:#201719; --ink:#f2e9e6; --muted:#b9a8aa; --line:#3a2c2f;
+  --accent:#e4a1ac; --accent-ink:#1b1113; --soft:#3a2227; --ok:#7fd1a0; --warn:#f0b46a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:18px 120px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:600;font-size:34px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.brand{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.tabs{display:flex;gap:6px;margin:16px 0;background:var(--soft);padding:4px;border-radius:10px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--ink);font:600 14px var(--body);padding:10px;border-radius:8px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sec{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+.sec h2{font-family:var(--display);font-weight:600;font-size:22px;margin:0}
+.hint{color:var(--muted);font-size:13px;margin:0}
+.prod{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.prod .top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.prod .name{font-weight:600}
+.id{display:flex;align-items:center;gap:10px}
+.pic{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none;background:var(--soft)}
+.pic.ph{display:grid;place-items:center;font:600 18px var(--display);color:var(--muted)}
+.sku{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{width:30px;height:30px;border-radius:50%;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);cursor:pointer;position:relative}
+.chip[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.chip[aria-pressed="true"]::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px;text-shadow:0 0 2px rgba(0,0,0,.6)}
+.row{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:end;border-top:1px dashed var(--line);padding-top:10px}
+.dot{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding-bottom:10px}
+.dot i{width:14px;height:14px;border-radius:50%;display:inline-block}
+.num{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.num input{text-align:center;font-family:var(--mono);font-variant-numeric:tabular-nums;padding:9px 4px}
+.check{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--paper);color:var(--ink);padding:7px 10px;font:600 12px var(--body);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--ok);color:#fff}
+.seg button[aria-pressed="true"].x{background:#b3261e;color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--muted);color:var(--paper)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.bar .in{max-width:640px;margin:0 auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:12px 16px;font:600 15px var(--body);text-decoration:none;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn.primary{background:#1f8f55;border-color:#1f8f55;color:#fff;flex:1}
+.btn.primary[aria-disabled="true"]{background:var(--line);border-color:var(--line);color:var(--muted);pointer-events:none}
+.mono-ca{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--accent);display:grid;place-items:center;font:italic 600 17px var(--display);color:var(--accent)}
+header>div{display:flex;align-items:center;gap:10px}
+.chip[data-day]::before{content:attr(data-day);position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);margin-top:2px}
+.chips{padding-bottom:12px}
+.photo{display:flex;gap:10px;align-items:flex-start;background:var(--soft);border-radius:12px;padding:12px;font-size:14px}
+.photo input{width:22px;height:22px;flex:none;margin-top:1px}
+.status{font-size:13px;color:var(--muted);flex-basis:100%}
+pre{white-space:pre-wrap;font-family:var(--mono);font-size:12px;background:var(--soft);padding:12px;border-radius:10px;margin:0;max-height:260px;overflow:auto}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+.req{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.03em}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.pr{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;padding:6px 0}
+
+.shot{display:flex;flex-direction:column;gap:8px;background:var(--soft);border-radius:12px;padding:12px}
+.shot .t{font-size:14px}
+.shot .t b{color:var(--accent)}
+.shot .pv{display:flex;gap:10px;align-items:center}
+.shot img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.shot .btn{padding:10px 14px;font-size:14px}
+.shot.done{background:color-mix(in srgb,var(--ok) 14%,var(--paper))}
+.shot.need{outline:2px solid var(--warn);outline-offset:-2px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.req{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.03em}
+.done-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:30px}
+.done-card .ok{width:54px;height:54px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:28px}
+.err{color:#b3261e;font-weight:600}
+.pinrow{display:flex;gap:8px;align-items:end}
+.pinrow input{font-family:var(--mono);letter-spacing:.3em}
+</style>
+</head><body>
+<div class="wrap" id="app">
+  <header><div><span class="mono-ca" aria-hidden="true">CA</span><div><div class="brand">Chaleur Atelier · Outlet</div><h1>Closing count</h1></div></div></header>
+  <div class="card grid" style="margin-top:14px">
+    <label class="f">Outlet<select id="outlet"></select></label>
+    <label class="f">Date<input id="date" type="date"></label>
+    <label class="f">Your name (required)<input id="who" placeholder="e.g. Aina" autocomplete="name"></label>
+  </div>
+  <section class="sec">
+    <h2>Count every cake by colour dot</h2>
+    <p class="hint">For each cake, tap every colour dot you had today (the dot = the day it was made). Enter <b>Waste</b> (thrown away or damaged) and <b>Balance</b> (left in the chiller now). If a colour sold out, still tap it and enter Balance 0.</p>
+    <div id="prods" class="sec" style="margin-top:0"></div>
+    <label class="f">Anything else? (short delivery, damage, chiller issue)<textarea id="rnote" rows="2"></textarea></label>
+    <h2>Photos</h2>
+    <div id="shots" class="sec" style="margin-top:0"></div>
+  </section>
+</div>
+<div class="bar" id="bar"><div class="in">
+  <button id="send" class="btn primary" type="button" disabled>Submit closing report</button>
+  <div class="status" id="status"></div>
+</div></div>
+<script>const CONFIG={"chaleurWhatsApp": "", "outlets": [{"code": "KNK", "name": "Knocknock", "menu": "", "legalName": "Knocknock"}, {"code": "OTB", "name": "Outlet B (sample)", "menu": "", "legalName": "Sample Outlet Sdn Bhd"}], "colours": [{"name": "BLACK", "hex": "#1e1e1e"}, {"name": "ORANGE", "hex": "#f08a24"}, {"name": "YELLOW", "hex": "#f2c53d"}, {"name": "GREEN", "hex": "#3c9a52"}, {"name": "BLUE", "hex": "#2f6fd0"}, {"name": "RED", "hex": "#d63333"}, {"name": "PURPLE", "hex": "#8b4fc6"}], "products": [{"sku": "NOIR", "name": "Noir"}, {"sku": "KUNAFA", "name": "Kunafa"}, {"sku": "ONDEH", "name": "Ondeh"}, {"sku": "PANDAN", "name": "Pandan"}, {"sku": "POIRE", "name": "Poire"}, {"sku": "ISPAHAN", "name": "Ispahan"}], "checks": [{"k": "display", "l": "Display clean and tidy", "photo": true}, {"k": "fifo", "l": "Oldest colour at the front (FIFO)"}, {"k": "labels", "l": "Every cake has its colour dot / label"}, {"k": "expired", "l": "No overdue colour on display"}, {"k": "tags", "l": "Price tags present on every cake"}, {"k": "setup", "l": "Signage & setup as agreed", "photo": true}, {"k": "menu_physical", "l": "Physical menu: correct items, prices and current photos", "photo": true, "menu": "physical"}, {"k": "menu_qr", "l": "QR ordering system: correct items, prices and current photos (screenshot)", "photo": true, "menu": "qr"}, {"k": "packaging", "l": "Boxes, sporks, bags stocked"}, {"k": "chiller", "l": "Chiller closed, running, light on"}]}; const PRESET=(new URLSearchParams(location.search).get('o')||'').toUpperCase();</script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const ORD=()=>[1,2,3,4,5,6,0].map(i=>CONFIG.colours[i]);
+const dayOf=c=>WD[CONFIG.colours.indexOf(c)];
+const pic=p=>p.img?`<img class="pic" src="${p.img}" alt="${esc(p.name)}">`:`<span class="pic ph" aria-hidden="true">${esc(p.name.slice(0,2))}</span>`;
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function todayISO(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+const PH={};
+async function shrink(file,max=1400){
+  const url=URL.createObjectURL(file);
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url;});
+  const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+  return c.toDataURL("image/jpeg",0.82);
+}
+function shotHTML(key,title,hint){
+  const has=!!PH[key];
+  return `<div class="shot ${has?"done":""}" id="shot-${key}"><div class="t"><b>Photo required:</b> ${esc(title)}${hint?`<br><span class="hint">${esc(hint)}</span>`:""}</div>
+    <div class="pv">${has?`<img src="${PH[key]}" alt="">`:""}<label class="btn">${has?"Retake":"Take / choose photo"}<input type="file" accept="image/&#42;" data-shot="${key}" hidden></label>${has?`<button type="button" class="btn" data-clearshot="${key}">Remove</button>`:""}</div></div>`;
+}
+document.addEventListener("change",async e=>{const t=e.target; if(!t.dataset.shot||!t.files||!t.files[0]) return;
+  const k=t.dataset.shot; const box=$("#shot-"+k); if(box) box.querySelector(".t").insertAdjacentHTML("beforeend",' <span class="hint">· processing…</span>');
+  try{PH[k]=await shrink(t.files[0]);}catch(err){alert0("That photo couldn't be read. Please try again.");}
+  window.onShot&&window.onShot();});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-clearshot]"); if(b){delete PH[b.dataset.clearshot]; window.onShot&&window.onShot();}});
+function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}</span>`;}
+</script>
+
+<script>
+const rep={};
+$("#outlet").innerHTML=CONFIG.outlets.map(o=>`<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join("");
+$("#date").value=todayISO(); $("#who").value=store.get("chaleur.who")||"";
+const saved=store.get("chaleur.outlet");
+if(CONFIG.outlets.some(o=>o.code===PRESET)) $("#outlet").value=PRESET; else if(saved&&CONFIG.outlets.some(o=>o.code===saved)) $("#outlet").value=saved;
+function lines(){const L=[];for(const p of CONFIG.products){const sel=rep[p.sku]||{};for(const c of CONFIG.colours){const v=sel[c.name];if(v)L.push({sku:p.sku,colour:c.name,day:dayOf(c),w:v.w,b:v.b});}}return L;}
+function hasWaste(){return lines().some(l=>+l.w>0);}
+function render(){
+  $("#prods").innerHTML=CONFIG.products.map(p=>{const sel=rep[p.sku]||{};
+    const rows=CONFIG.colours.filter(c=>sel[c.name]).map(c=>{const v=sel[c.name];
+      const inp=(k,l)=>`<label class="num">${l}<input type="number" min="0" inputmode="numeric" id="r-${p.sku}-${c.name}-${k}" value="${v[k]??""}" data-sku="${p.sku}" data-col="${c.name}" data-k="${k}"></label>`;
+      return `<div class="row"><span class="dot"><i style="background:${c.hex}"></i>${c.name} · ${dayOf(c)}</span>${inp("w","Waste")}${inp("b","Balance")}</div>`;}).join("");
+    return `<div class="prod"><div class="top"><div class="id">${pic(p)}<div><div class="name">${esc(p.name)}</div><div class="sku">${esc(p.sku)}</div></div></div><div class="chips">${ORD().map(c=>`<button type="button" class="chip" style="background:${c.hex}" data-day="${dayOf(c)}" title="${c.name} · ${dayOf(c)}" aria-label="${c.name} ${dayOf(c)}" aria-pressed="${sel[c.name]?"true":"false"}" data-sku="${p.sku}" data-col="${c.name}"></button>`).join("")}</div></div>${rows}</div>`;}).join("");
+}
+function renderShots(){
+  $("#shots").innerHTML=shotHTML("display","Full chiller display at closing","Stand back so every shelf is in the picture.")+(hasWaste()?shotHTML("waste","All waste / damaged cakes","Lay them out together before throwing away."):"");
+}
+function missing(){const m=[];
+  if($("#who").value.trim().length<2) m.push("your name");
+  const L=lines(); if(L.some(l=>l.b===""||l.b==null)) m.push("balance for every colour you tapped");
+  if(!PH.display) m.push("chiller display photo");
+  if(hasWaste()&&!PH.waste) m.push("waste photo");
+  return m;}
+function refresh(){const m=missing();$("#send").disabled=!!m.length;$("#status").textContent=m.length?"Still needed: "+m.join(", ")+".":"Ready. Tap Submit to send the report and photos to Chaleur.";}
+window.onShot=()=>{renderShots();refresh();};
+document.addEventListener("click",e=>{const ch=e.target.closest(".chip"); if(!ch) return; const {sku,col}=ch.dataset; rep[sku]=rep[sku]||{}; if(rep[sku][col]) delete rep[sku][col]; else rep[sku][col]={w:"",b:""}; render(); renderShots(); refresh();});
+document.addEventListener("input",e=>{const t=e.target; if(t.dataset.k){rep[t.dataset.sku][t.dataset.col][t.dataset.k]=t.value; if(t.dataset.k==="w"){const had=!!$("#shot-waste"); if(had!==hasWaste()) renderShots();}} if(t.id==="who") store.set("chaleur.who",t.value); refresh();});
+$("#outlet").addEventListener("change",e=>{store.set("chaleur.outlet",e.target.value);refresh()});
+$("#send").onclick=()=>{ if(missing().length){refresh();return;}
+  $("#send").disabled=true; $("#status").textContent="Uploading report and photos… keep this page open.";
+  const d={outlet:$("#outlet").value,date:$("#date").value,who:$("#who").value.trim(),lines:lines(),note:$("#rnote").value.trim(),photos:{display:PH.display,waste:hasWaste()?PH.waste:null}};
+  google.script.run.withSuccessHandler(r=>{
+    $("#bar").hidden=true;
+    $("#app").innerHTML=`<div class="done-card"><div class="ok">✓</div><h1 style="font-size:28px">Report received</h1><p>Thank you, ${esc(d.who)}. Reference <b style="font-family:var(--mono)">${esc(r.id)}</b>.</p><p class="hint">Saved with ${d.photos.waste?2:1} photo(s). You can close this page.</p><a class="btn primary" style="flex:none" target="_blank" rel="noopener" href="https:\/\/wa.me/${String(r.wa||"").replace(/\D/g,"")}?text=${encodeURIComponent(r.summary)}">Send PDF report to WhatsApp</a><a class="btn" target="_blank" rel="noopener" href="${esc(r.pdf)}">Open PDF</a><button class="btn" onclick="location.reload()">Start a new report</button></div>`;
+  }).withFailureHandler(err=>{$("#send").disabled=false; alert0((err&&err.message)||"Upload failed. Check your internet and try again.");}).submitClosing(d);
+};
+render(); renderShots(); refresh();
+</script>
+</body></html>

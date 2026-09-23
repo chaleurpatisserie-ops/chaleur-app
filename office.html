@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Chaleur Office</title><meta name="theme-color" content="#7b1c2b"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
+/* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
+(function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
+function call(fn,args,ok,fail){fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})})
+ .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.json();})
+ .then(function(j){if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
+ .catch(function(e){fail&&fail(new Error(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again."));});}
+function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
+window.google={script:{run:mk(null,null)}};})();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Jost:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#f7f2ec; --paper:#ffffff; --raise:#fbf7f3; --ink:#2b1b1e; --muted:#6f5f62; --faint:#a09194; --line:#e8dcd6;
+  --accent:#7b1c2b; --accent-soft:#f3e4e5; --accent-ink:#ffffff;
+  --ok:#2f6b45; --ok-soft:#e6f0e8; --warn:#9a5a12; --warn-soft:#f8ecd9; --bad:#a3262a; --bad-soft:#f8e1e0;
+  --display:"Cormorant Garamond","Times New Roman",Georgia,serif;
+  --body:"Jost",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#161012; --paper:#201719; --raise:#281e21; --ink:#f2e9e6; --muted:#b9a8aa; --faint:#7e6e71; --line:#3a2c2f;
+  --accent:#e4a1ac; --accent-soft:#3a2227; --accent-ink:#1b1113;
+  --ok:#7fd1a0; --ok-soft:#1b3326; --warn:#f0b46a; --warn-soft:#3a2a17; --bad:#ff9a92; --bad-soft:#401d1c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ground:#161012; --paper:#201719; --raise:#281e21; --ink:#f2e9e6; --muted:#b9a8aa; --faint:#7e6e71; --line:#3a2c2f;
+  --accent:#e4a1ac; --accent-soft:#3a2227; --accent-ink:#1b1113;
+  --ok:#7fd1a0; --ok-soft:#1b3326; --warn:#f0b46a; --warn-soft:#3a2a17; --bad:#ff9a92; --bad-soft:#401d1c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:14.5px;line-height:1.5}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ground);border-bottom:1px solid var(--line)}
+.top .in{max-width:1180px;margin:0 auto;padding-inline:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-block:10px}
+.logo{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.mono-ca{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--accent);display:grid;place-items:center;font:italic 600 19px var(--display);color:var(--accent);letter-spacing:-.04em}
+.logo b{display:block;font:600 19px var(--display);letter-spacing:.01em}
+.logo small{display:block;font-family:var(--body);font-weight:500;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.testbar{background:var(--accent);color:var(--accent-ink);text-align:center;font-size:12.5px;padding:5px 16px;letter-spacing:.02em}
+nav{display:flex;gap:2px;overflow-x:auto;flex:1;scrollbar-width:none}
+nav button{border:0;background:transparent;color:var(--muted);font:600 13.5px var(--body);padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+nav button[aria-current="page"]{background:var(--paper);color:var(--accent);box-shadow:0 0 0 1px var(--line)}
+nav button .n{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;margin-left:5px;text-align:center}
+main{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 80px;display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--display);font-weight:600;font-size:36px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:22px;margin:0}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0;font-weight:600}
+.lede{color:var(--muted);margin:4px 0 0;max-width:70ch}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.cols{display:grid;gap:18px;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:600 13px var(--body);padding:8px 12px;border-radius:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--faint)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.wa{background:#1f8f55;border-color:#1f8f55;color:#fff}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:5px 9px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,a:focus-visible,input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:7px 9px;min-width:0}
+input[type=number],.numin{width:70px;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+label.f input,label.f select,label.f textarea{text-transform:none;letter-spacing:0;font-weight:400;font-size:14px;color:var(--ink)}
+.fgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;text-align:left;background:var(--raise);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.dot{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.dot i{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.03em;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.info{background:var(--accent-soft);color:var(--accent)} .pill.mute{background:var(--raise);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.pos{color:var(--ok)} .neg{color:var(--bad)}
+.items{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:6px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item .sev{align-self:stretch;border-radius:3px;background:var(--line)}
+.item .sev.bad{background:var(--bad)} .item .sev.warn{background:var(--warn)} .item .sev.info{background:var(--accent)}
+.item b{font-weight:600}
+.matrix{display:grid;gap:4px;align-items:center}
+.cell{height:28px;font-size:10px;border-radius:6px;display:grid;place-items:center;font-size:11px;font-weight:600;cursor:pointer;border:0;font-family:var(--body)}
+.cell.got{background:var(--ok-soft);color:var(--ok)} .cell.miss{background:var(--bad-soft);color:var(--bad)} .cell.wait{background:var(--raise);color:var(--faint);box-shadow:inset 0 0 0 1px var(--line)}
+.claude{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.claude h2{color:var(--accent)}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat .v{font-family:var(--display);font-size:32px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.stats{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.docs{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.doccard{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;background:var(--raise)}
+.doccard .code{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.doccard .amt{font-family:var(--display);font-size:28px;font-weight:600;font-variant-numeric:lining-nums tabular-nums}
+.warns{display:flex;flex-direction:column;gap:6px}
+.warns div{padding:8px 10px;border-radius:8px;font-size:13px}
+.warns .bad{background:var(--bad-soft);color:var(--bad)} .warns .warn{background:var(--warn-soft);color:var(--warn)} .warns .info{background:var(--accent-soft);color:var(--accent)}
+textarea.paste{width:100%;min-height:110px;font-family:var(--mono);font-size:12px}
+.sub{display:flex;gap:6px;flex-wrap:wrap}
+.sub button{border:1px solid var(--line);background:var(--paper);color:var(--muted);border-radius:999px;padding:6px 12px;font:600 12.5px var(--body);cursor:pointer}
+.sub button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;font-weight:500;z-index:30;max-width:calc(100% - 32px)}
+.modal{position:fixed;inset:0;background:rgba(10,12,20,.55);z-index:20;display:flex;justify-content:center;align-items:flex-start;overflow:auto;padding:24px 16px}
+.modal .box{background:var(--paper);border-radius:12px;max-width:820px;width:100%;display:flex;flex-direction:column}
+.modal .bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding:12px;border-bottom:1px solid var(--line)}
+/* printed document — always light, like paper */
+.paper{background:#fff;color:#1a1a1a;padding:34px 34px 28px;font-family:var(--body);font-size:13px;border-radius:0 0 12px 12px}
+.paper .dh{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;border-bottom:2px solid #7b1c2b;padding-bottom:14px}
+.paper .co{font-family:var(--display);font-size:26px;font-weight:600;color:#7b1c2b}
+.paper .dt{text-align:right}
+.paper .dt .t{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:.06em;color:#7b1c2b}
+.paper .dt .no{font-family:var(--mono);font-size:14px}
+.paper .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:16px 0}
+.paper .meta h4{margin:0 0 4px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#666}
+.paper table th{background:#f1f1f1;color:#444;border-bottom:1px solid #ccc}
+.paper table td{border-bottom:1px solid #e3e3e3;color:#1a1a1a}
+.paper .tot{display:flex;justify-content:flex-end;margin-top:12px}
+.paper .tot table{width:auto;min-width:260px}
+.paper .tot td{border:0;padding:4px 10px}
+.paper .tot tr.g td{border-top:2px solid #1a1a1a;font-weight:700;font-size:15px}
+.paper .note{margin-top:18px;font-size:12px;color:#444;border-top:1px solid #ddd;padding-top:10px}
+.paper .stamp{display:inline-block;border:2px solid currentColor;padding:2px 8px;font-weight:700;letter-spacing:.1em;font-size:11px;margin-top:6px}
+.paper .dot i{box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.photos{display:flex;gap:8px;flex-wrap:wrap}
+.photos a img{width:88px;height:88px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.chk{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;margin-right:10px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink)}
+.chk input{width:auto}
+.empty{color:var(--muted);padding:18px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--warn-soft);color:var(--warn);padding:8px 10px;border-radius:8px}
+details.help summary{cursor:pointer;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .18s ease-out}@keyframes up{from{transform:translate(-50%,8px);opacity:0}}}
+</style>
+</head><body>
+
+<div id="testbar"></div><div class="top"><div class="in">
+  <div class="logo"><span class="mono-ca" aria-hidden="true">CA</span><span><b>Chaleur Atelier</b><small>Consignment desk</small></span></div>
+  <nav id="nav"></nav>
+</div></div>
+<main id="main"><div class="empty">Loading consignment data…</div></main>
+<div id="modal"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* =========================================================
+   Chaleur Consignment Desk
+   Data lives in this artifact's shared database:
+   config/settings, config/counters, partners/*, products/*,
+   prices/*, weeks/<partner>_<weekStart>, audits/*, alerts/latest
+   ========================================================= */
+const DEF = {
+  company:{name:"Chaleur Atelier Patisserie", address:"Larkin, Johor Bahru, Johor", reg:"", phone:"", email:"chaleurpatisserie@gmail.com"},
+  colours:[{name:"BLACK",hex:"#1e1e1e"},{name:"ORANGE",hex:"#f08a24"},{name:"YELLOW",hex:"#f2c53d"},{name:"GREEN",hex:"#3c9a52"},{name:"BLUE",hex:"#2f6fd0"},{name:"RED",hex:"#d63333"},{name:"PURPLE",hex:"#8b4fc6"}],
+  mode:"testing", cutoffDate:"", prepLeadDays:0, graceMin:60, eveUplift:10, driveRootId:"1qA-hCdc19wlZNEyfNR3Nled45zHLwbK7",
+  weekEndDay:0, prefixes:{DO:"DO",INV:"INV",CF:"CF",CN:"CN"}, cfRate:"original",
+  fieldFormUrl:"https:\/\/script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec?p=closing", auditFormUrl:"https:\/\/script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec?p=audit", chaleurWhatsApp:"", reportDeadline:"23:30",
+  checks:[{k:"display",l:"Display clean and tidy"},{k:"fifo",l:"Oldest colour at the front (FIFO)"},{k:"labels",l:"Every cake has its colour dot / label"},{k:"expired",l:"No overdue colour on display"},{k:"tags",l:"Price tags present on every cake"},{k:"setup",l:"Signage & setup as agreed"},{k:"menu_physical",l:"Physical menu correct (items, prices, photos)"},{k:"menu_qr",l:"QR ordering correct (items, prices, photos)"},{k:"packaging",l:"Boxes, sporks, bags stocked"},{k:"chiller",l:"Chiller closed, running, light on"}]
+};
+const WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const S={db:null,dl:null,mcp:null,assets:null,calendar:{},drive:{folders:{}},cfg:{},counters:{},partners:{},products:{},prices:{},weeks:{},audits:{},alerts:null,loaded:new Set(),
+  tab:"today",f:{},ui:{partner:"",date:"",week:"",setup:"partners",modal:null,confirm:null,paste:"",parsed:null,editDay:false,doEdit:null,auditDraft:null}};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const r2=n=>Math.round((+n||0)*100+Number.EPSILON*100)/100;
+const fm=n=>r2(n).toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2});
+const cfg=()=>({...DEF,...S.cfg,company:{...DEF.company,...(S.cfg.company||{})},prefixes:{...DEF.prefixes,...(S.cfg.prefixes||{})}});
+/* ---------- dates (ISO yyyy-mm-dd, calendar arithmetic in UTC) ---------- */
+const P=iso=>new Date(iso+"T00:00:00Z");
+const ISO=d=>d.toISOString().slice(0,10);
+const add=(iso,n)=>{const d=P(iso);d.setUTCDate(d.getUTCDate()+n);return ISO(d)};
+const dow=iso=>P(iso).getUTCDay();
+const diffDays=(a,b)=>Math.round((P(a)-P(b))/864e5);
+function today(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+function weekStartOf(iso){const st=(cfg().weekEndDay+1)%7;return add(iso,-((dow(iso)-st+7)%7))}
+const nice=iso=>{const d=P(iso);return `${WD[d.getUTCDay()]} ${d.getUTCDate()} ${d.toLocaleString("en-GB",{month:"short",timeZone:"UTC"})}`};
+const colourOf=iso=>cfg().colours[dow(iso)];
+const hexOf=name=>(cfg().colours.find(c=>c.name===name)||{}).hex||"#999";
+const thumb=(id,sz=32)=>{const p=prod(id);return p.photo?`<img src="${esc(photoSrc(p.photo))}" alt="" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px;object-fit:cover;border-radius:8px;vertical-align:middle">`:`<span aria-hidden="true" style="display:inline-grid;place-items:center;width:${sz}px;height:${sz}px;border-radius:8px;background:var(--raise);box-shadow:inset 0 0 0 1px var(--line);font:600 ${Math.round(sz/2.6)}px var(--display);color:var(--faint);vertical-align:middle">${esc((p.name||"?").slice(0,2))}</span>`};
+const cake=id=>`<span style="display:inline-flex;align-items:center;gap:8px">${thumb(id,30)}<span>${esc(prod(id).name)}</span></span>`;
+const dayOfColour=name=>{const i=cfg().colours.findIndex(c=>c.name===name);return i<0?"":WD[i]};
+const dot=name=>`<span class="dot"><i style="background:${hexOf(name)}"></i>${esc(name)}${dayOfColour(name)?`<span style="font-weight:500;color:var(--muted)">· ${dayOfColour(name)}</span>`:""}</span>`;
+/* ---------- lookups ---------- */
+const partners=(all)=>Object.values(S.partners).filter(p=>all||p.active!==false).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+const products=(all)=>Object.values(S.products).filter(p=>all||p.active!==false).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+const prod=id=>S.products[id]||{name:id,sku:id,retail:0,shelfDays:3};
+const partner=id=>S.partners[id]||{name:id,code:id,pct:70};
+const wid=(pid,ws)=>`${pid}_${ws}`;
+/* outlet operating hours: {wkOpen,wkClose,weOpen,weClose,closed:[dow]} — weekend = Sat/Sun */
+const hoursOf=(pid,iso)=>{const h=partner(pid).hours||{};const we=[0,6].includes(dow(iso));return {open:(we?h.weOpen:h.wkOpen)||"10:00",close:(we?h.weClose:h.wkClose)||"22:00"}};
+const isClosed=(pid,iso)=>((partner(pid).hours||{}).closed||[]).map(Number).includes(dow(iso));
+function reportDueAt(pid,iso){const {close}=hoursOf(pid,iso);const [h,m]=close.split(":").map(Number);const d=new Date(iso+"T00:00:00");d.setHours(h,m+(+cfg().graceMin||60),0,0);if(h<6)d.setDate(d.getDate()+1);return d}
+const weekDoc=(pid,ws)=>S.weeks[wid(pid,ws)]||{partnerId:pid,weekStart:ws,dos:{},days:{},settlement:null};
+function priceFor(pid,prodId,date){
+  const c=Object.values(S.prices).filter(x=>x.partnerId===pid&&x.productId===prodId&&x.status==="Active"&&x.from<=date&&(!x.to||x.to>=date)).sort((a,b)=>b.from.localeCompare(a.from))[0];
+  if(c) return {retail:+c.retail,pct:+c.pct,net:r2(c.net??c.retail*c.pct/100),approved:true,id:c.id};
+  const p=prod(prodId),pa=partner(pid);
+  return {retail:+p.retail||0,pct:+pa.pct||0,net:r2((+p.retail||0)*(+pa.pct||0)/100),approved:false};
+}
+/* ---------- core stock + settlement engine ---------- */
+let memo=new Map();
+function weekOpening(pid,ws,depth=0){
+  const co=cfg().cutoffDate;
+  const prev=(co&&ws<=weekStartOf(co))?null:S.weeks[wid(pid,add(ws,-7))];
+  if(prev&&prev.settlement&&prev.settlement.cf){
+    return {src:`${prev.settlement.cfNo} (carried forward)`,srcNo:prev.settlement.cfNo,lines:prev.settlement.cf.map(l=>({...l}))};
+  }
+  if(prev&&depth<10&&(Object.keys(prev.dos||{}).length||Object.keys(prev.days||{}).length)){
+    const c=calcWeek(pid,add(ws,-7),depth+1);
+    return {src:"previous week closing (not yet billed)",srcNo:"",unbilled:true,lines:Object.values(c.keys).filter(k=>k.close>0).map(k=>({productId:k.productId,colour:k.colour,qty:k.close,rate:k.rate,batchDate:k.batchDate}))};
+  }
+  const op=(partner(pid).opening||[]).filter(l=>+l.qty>0);
+  return {src:op.length?"opening stock (set up)":"none",srcNo:"",lines:op.map(l=>({productId:l.productId,colour:l.colour,qty:+l.qty,rate:l.rate!=null&&l.rate!==""?+l.rate:priceFor(pid,l.productId,ws).net,batchDate:l.batchDate||""}))};
+}
+function calcWeek(pid,ws,depth=0){
+  const mk=`${pid}|${ws}`; if(memo.has(mk)) return memo.get(mk);
+  const w=weekDoc(pid,ws), t=today(), opening=weekOpening(pid,ws,depth);
+  const keys={}, cur={}, K=(p,c)=>p+"|"+c;
+  const ensure=(p,c)=>{const k=K(p,c); if(!keys[k]) keys[k]={key:k,productId:p,colour:c,open:0,recv:0,sold:0,waste:0,variance:0,close:0,openRate:null,recvRate:null,recvGroups:{},batchDate:""}; if(cur[k]==null) cur[k]=0; return keys[k]};
+  for(const l of opening.lines){const k=ensure(l.productId,l.colour);k.open+=+l.qty;k.openRate=+l.rate;cur[k.key]+=+l.qty;if(l.batchDate)k.batchDate=l.batchDate;}
+  const days=[], dos=Object.values(w.dos||{});
+  for(let i=0;i<7;i++){
+    const date=add(ws,i), co=cfg().cutoffDate;
+    if(co&&date<co){days.push({date,rep:null,status:"pre",lines:[],stock:{...cur}});continue;}
+    const rep=(w.days||{})[date], lines={};
+    for(const d of dos.filter(d=>d.date===date&&d.status==="delivered")){
+      for(const l of d.lines||[]){const q=+(l.accepted??l.qty)||0; if(!q) continue;
+        const k=ensure(l.productId,d.colour), pr=priceFor(pid,l.productId,date);
+        const L=lines[k.key]||(lines[k.key]={productId:l.productId,colour:d.colour,open:cur[k.key],recv:0,sold:0,waste:0,close:null,exp:0,var:0});
+        L.recv+=q; k.recv+=q; cur[k.key]+=q; k.recvRate=pr.net; k.batchDate=d.batchDate||date;
+        const g=k.recvGroups[pr.net]||(k.recvGroups[pr.net]={qty:0,rate:pr.net,dos:[],approved:pr.approved}); g.qty+=q; if(!g.dos.includes(d.no)) g.dos.push(d.no);
+      }
+    }
+    let status=date>t?"future":(rep?"got":(isClosed(pid,date)?"closed":(date===t?"today":"missing")));
+    if(rep){
+      const seen=new Set();
+      for(const r of rep.lines||[]){
+        const k=ensure(r.productId,r.colour); seen.add(k.key);
+        const L=lines[k.key]||(lines[k.key]={productId:r.productId,colour:r.colour,open:cur[k.key],recv:0,sold:0,waste:0,close:null,exp:0,var:0});
+        // Outlets report waste + balance only. Sold = available − waste − balance,
+        // unless the office keyed the POS sold figure (r.s), which then exposes any variance.
+        const wv=+r.w||0,b=+r.b||0,avail=cur[k.key],pos=(r.s===""||r.s==null)?null:+r.s;
+        const s=pos!=null?pos:Math.max(0,avail-wv-b);
+        L.sold+=s;L.pos=pos;L.waste+=wv;L.exp=avail-s-wv;L.close=b;L.var=b-L.exp;
+        k.sold+=s;k.waste+=wv;k.variance+=L.var;cur[k.key]=b;
+      }
+      for(const k in cur){ if(!seen.has(k)&&cur[k]>0){const kk=keys[k];const L=lines[k]||(lines[k]={productId:kk.productId,colour:kk.colour,open:cur[k],recv:0,sold:0,waste:0,close:null,exp:cur[k],var:0});L.unreported=true;L.exp=cur[k];}}
+    } else { for(const k in lines){lines[k].exp=cur[k];} }
+    for(const k in cur){ if(!lines[k]&&cur[k]>0){const kk=keys[k];lines[k]={productId:kk.productId,colour:kk.colour,open:cur[k],recv:0,sold:0,waste:0,close:rep?null:null,exp:cur[k],var:0,unreported:!!rep};}}
+    days.push({date,rep,status,lines:Object.values(lines).sort(sortLine),stock:{...cur}});
+  }
+  for(const k in keys){keys[k].close=cur[k]; keys[k].rate=keys[k].recvRate??keys[k].openRate??priceFor(pid,keys[k].productId,ws).net;}
+  const res={pid,ws,we:add(ws,6),opening,keys,days,week:w}; memo.set(mk,res); return res;
+}
+function sortLine(a,b){return prod(a.productId).name.localeCompare(prod(b.productId).name)||a.colour.localeCompare(b.colour)}
+function buildSettlement(c,opts={}){
+  const pa=partner(c.pid), warns=[], inv=[], cf=[], cn=[];
+  for(const l of c.opening.lines.filter(l=>+l.qty>0)) inv.push({type:"B/F",productId:l.productId,colour:l.colour,qty:+l.qty,rate:+l.rate,ref:c.opening.srcNo||""});
+  for(const k of Object.values(c.keys).sort(sortLine)) for(const g of Object.values(k.recvGroups)) inv.push({type:"NEW",productId:k.productId,colour:k.colour,qty:g.qty,rate:g.rate,ref:g.dos.join(", "),approved:g.approved});
+  let shortQty=0,shortVal=0,soldVal=0,wasteCharged=0;
+  for(const k of Object.values(c.keys).sort(sortLine)){
+    if(k.close>0) cf.push({productId:k.productId,colour:k.colour,qty:k.close,rate:cfg().cfRate==="current"?priceFor(c.pid,k.productId,c.we).net:k.rate,batchDate:k.batchDate});
+    soldVal+=k.sold*k.rate;
+    if(k.waste>0){
+      const rule=pa.wasteRule||"credit", retail=priceFor(c.pid,k.productId,c.we).retail;
+      let cr=rule==="credit"?k.rate:rule==="half"?Math.max(0,r2(k.rate-0.5*retail)):0;
+      if(cr>0) cn.push({reason:"Wastage",productId:k.productId,colour:k.colour,qty:k.waste,rate:cr});
+      wasteCharged+=k.waste*(k.rate-cr);
+    }
+    if(k.variance<0){shortQty+=-k.variance;shortVal+=-k.variance*k.rate;
+      if(opts.creditShort) cn.push({reason:"Shortage (agreed)",productId:k.productId,colour:k.colour,qty:-k.variance,rate:k.rate});}
+    if(k.variance>0) warns.push(["warn",`${prod(k.productId).name} ${k.colour}: outlet counted ${k.variance} more than expected — check deliveries/reports.`]);
+  }
+  const sum=a=>r2(a.reduce((s,l)=>s+r2(l.qty*l.rate),0));
+  const totals={inv:sum(inv),cf:sum(cf),cn:sum(cn)}; totals.net=r2(totals.inv-totals.cf-totals.cn);
+  const miss=c.days.filter(d=>d.status==="missing"), pend=c.days.filter(d=>d.status==="today"||d.status==="future");
+  if(pend.length) warns.unshift(["info",`Week still running — reports still to come: ${pend.map(d=>nice(d.date)).join(", ")}. Bill after the week closes.`]);
+  if(miss.length) warns.unshift(["bad",`Missing closing reports: ${miss.map(d=>nice(d.date)).join(", ")}. Stock for those days is assumed unchanged — chase the outlet before billing.`]);
+  if(c.opening.unbilled) warns.push(["warn","The previous week was never billed; its closing stock is used as opening. Bill weeks in order."]);
+  if(shortQty>0) warns.push(["warn",`${shortQty} unit(s) missing without a sale or wastage record (RM ${fm(shortVal)}). ${opts.creditShort?"Credited on the CN as agreed.":"Currently charged to the outlet — tick 'Credit shortage' if agreed otherwise."}`]);
+  const unap=inv.filter(l=>l.type==="NEW"&&!l.approved);
+  if(unap.length) warns.push(["warn",`${unap.length} line(s) use the default ${pa.pct}% of retail because no Active price is approved in the price register.`]);
+  if(!inv.length) warns.push(["info","No stock movement for this outlet in this week."]);
+  return {inv,cf,cn,totals,warns,soldVal:r2(soldVal),shortQty,shortVal:r2(shortVal),wasteCharged:r2(wasteCharged)};
+}
+/* ---------- db ---------- */
+async function put(path,data){
+  if(!S.db){toast("Database not available in this view");throw new Error("no db")}
+  try{await S.db.doc(path).set(JSON.parse(JSON.stringify(data)));}
+  catch(e){toast(e.code==="invalid_argument"?"You don't have permission to save here.":(e.code==="quota_exceeded"?"Storage full — archive old weeks.":"Couldn't save — try again."));throw e;}
+}
+async function del(path){try{await S.db.doc(path).delete()}catch(e){toast("Couldn't delete — try again.");throw e}}
+const saveWeek=w=>put(`weeks/${wid(w.partnerId,w.weekStart)}`,w);
+async function nextNo(kind,date){
+  const pre=cfg().prefixes[kind]||kind, ym=date.slice(2,4)+date.slice(5,7);
+  const snap=await S.db.doc("config/counters").get(); const c=snap.exists?{...snap.data()}:{};
+  const key=`${kind}_${ym}`; const n=(+c[key]||0)+1; c[key]=n; await put("config/counters",c);
+  return `${pre}-${ym}${String(n).padStart(3,"0")}`;
+}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3200)}
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const clone=o=>JSON.parse(JSON.stringify(o));
+/* ---------- WhatsApp ---------- */
+const SITE_BASE=/script\.google|googleusercontent/.test(location.host)?null:new URL(".",location.href).href;
+const formLink=code=>{const u=SITE_BASE?SITE_BASE+"closing.html":(cfg().fieldFormUrl||"");return u+(u.includes("?")?"&":"?")+"o="+encodeURIComponent(code);};
+const wa=(phone,text)=>`https:\/\/wa.me/${String(phone||"").replace(/\D/g,"")}?text=${encodeURIComponent(text)}`;
+function chaseText(p,dates){
+  const link=formLink(p.code);
+  return `Hi ${p.contact||p.name} team, this is Chaleur Atelier. We haven't received the closing report for ${dates.map(nice).join(", ")}. Please count the balance and wastage for each colour dot and send it here:\n${link}\nThank you!`;
+}
+/* ---------- rendering ---------- */
+const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role);
+const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Daily reports"],["billing","Weekly billing"],["audits","Audits"],["setup","Setup"],["staff","Staff"]];
+const NCOL=8;
+let rq=false;
+function render(){ if(rq) return; rq=true; requestAnimationFrame(()=>{rq=false; doRender();}); }
+function doRender(){
+  memo=new Map();
+  const a=document.activeElement, aid=a&&a.id, sel=a&&("selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
+  const att=attention();
+  $("#nav").innerHTML=TABS.filter(([k])=>k!=="staff"||MGR()).map(([k,l])=>`<button data-tab="${k}" ${S.tab===k?'aria-current="page"':""}>${l}${k==="today"&&att.filter(x=>x.sev==="bad").length?`<span class="n">${att.filter(x=>x.sev==="bad").length}</span>`:""}</button>`).join("");
+  let html;
+  if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
+  else if(S.loaded.size<NCOL) html=`<div class="empty">Loading consignment data…</div>`;
+  else html=({today:vToday,plan:vPlan,deliveries:vDeliveries,daily:vDaily,billing:vBilling,audits:vAudits,setup:vSetup,staff:vStaff})[S.tab](att);
+  $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
+  $("#main").innerHTML=html;
+  $("#modal").innerHTML=S.ui.modal?vModal():"";
+  if(RO()){ $("#testbar").innerHTML=`<div class="testbar">View only — signed in as ${esc(AUTH.name)}. Ask Alfred or Joscelyn to make changes.</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui) el.disabled=true; }); }
+  if(aid){const e=document.getElementById(aid); if(e){e.focus({preventScroll:true}); if(sel&&"setSelectionRange" in e){try{e.setSelectionRange(sel[0],sel[1])}catch(_){}}}}
+}
+const F=(k,d="")=>S.f[k]??d;
+const opt=(v,l,cur)=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`;
+const partnerSelect=(id,cur,withAll)=>`<select id="${id}" data-ui="partner">${withAll?opt("","All outlets",cur):""}${partners().map(p=>opt(p.id,`${p.name} (${p.code})`,cur)).join("")}</select>`;
+function curPartner(){ if(!S.ui.partner||!S.partners[S.ui.partner]) S.ui.partner=(partners()[0]||{}).id||""; return S.ui.partner; }
+
+/* ---- attention items (shared by Today tab and Claude's check) ---- */
+function attention(){
+  if(S.loaded.size<NCOL) return [];
+  const t=today(), items=[];
+  for(const p of partners()){
+    // missing reports in the last 7 days (before today)
+    const miss=[], noPhoto=[], now=new Date();
+    for(let i=7;i>=0;i--){const d=add(t,-i); if(isClosed(p.id,d)) continue; if(i===0&&now<reportDueAt(p.id,d)) continue;
+      const w=S.weeks[wid(p.id,weekStartOf(d))]; const r=w&&w.days&&w.days[d]; if(!r) miss.push(d); else if(!(r.photos||[]).length) noPhoto.push(d);}
+    // only chase dates after the outlet started (first data) and after the go-live cutoff
+    const first=Object.values(S.weeks).filter(w=>w.partnerId===p.id).map(w=>w.weekStart).sort()[0];
+    const co=cfg().cutoffDate||"";
+    const realMiss=first?miss.filter(d=>d>=first&&d>=co):[];
+    if(noPhoto.length) items.push({sev:"warn",kind:"photo",pid:p.id,text:`<b>${esc(p.name)}</b> — closing report without photos: ${noPhoto.map(nice).join(", ")}`,action:`<a class="btn sm wa" href="${esc(wa(p.phone,`Hi ${p.contact||p.name} team, please send the closing photos (chiller + waste) for ${noPhoto.map(nice).join(", ")}. Thank you!`))}" target="_blank" rel="noopener">Ask for photos</a>`,go:{tab:"daily",date:noPhoto[noPhoto.length-1]}});
+    if(realMiss.length) items.push({sev:"bad",kind:"report",pid:p.id,text:`<b>${esc(p.name)}</b> — no closing report for ${realMiss.map(nice).join(", ")} <span class="muted small">(closes ${hoursOf(p.id,realMiss[realMiss.length-1]).close})</span>`,action:`<a class="btn sm wa" href="${esc(wa(p.phone,chaseText(p,realMiss)))}" target="_blank" rel="noopener">Chase on WhatsApp</a>`});
+    // current stock age
+    const c=calcWeek(p.id,weekStartOf(t)); const lastDay=[...c.days].reverse().find(d=>d.date<=t);
+    if(lastDay){ for(const k of Object.values(c.keys)){ const q=lastDay.stock[k.key]; if(!(q>0)||!k.batchDate) continue;
+      const age=diffDays(t,k.batchDate), life=+prod(k.productId).shelfDays||3;
+      if(age>=life) items.push({sev:"bad",kind:"expiry",pid:p.id,text:`<b>${esc(p.name)}</b> — ${q} × ${esc(prod(k.productId).name)} ${dot(k.colour)} is day ${age+1} (shelf life ${life} days): remove from display and record as wastage`});
+      else if(age===life-1) items.push({sev:"warn",kind:"expiry",pid:p.id,text:`<b>${esc(p.name)}</b> — ${q} × ${esc(prod(k.productId).name)} ${dot(k.colour)} on its last day: sell first`});
+    }}
+    // variances last 7 days
+    for(const ws of [weekStartOf(add(t,-7)),weekStartOf(t)].filter((v,i,a)=>a.indexOf(v)===i)){
+      for(const d of calcWeek(p.id,ws).days){ if(d.date<add(t,-7)||d.date>t) continue;
+        for(const l of d.lines) if(l.close!=null&&l.var!==0) items.push({sev:l.var<0?"warn":"info",kind:"variance",pid:p.id,text:`<b>${esc(p.name)}</b> ${nice(d.date)} — ${esc(prod(l.productId).name)} ${dot(l.colour)} count ${l.var>0?"+":""}${l.var} vs expected`,go:{tab:"daily",date:d.date}});
+      }
+    }
+    // unbilled finished weeks & unpaid
+    const cur=weekStartOf(t);
+    for(const w of Object.values(S.weeks).filter(w=>w.partnerId===p.id)){
+      if(w.weekStart<cur&&!w.settlement&&(Object.keys(w.dos||{}).length||Object.keys(w.days||{}).length))
+        items.push({sev:"warn",kind:"bill",pid:p.id,text:`<b>${esc(p.name)}</b> — week ${nice(w.weekStart)}–${nice(add(w.weekStart,6))} ended and is not billed yet`,go:{tab:"billing",week:w.weekStart}});
+      if(w.settlement&&!w.settlement.paid){const age=diffDays(t,w.settlement.issuedAt.slice(0,10)); if(age>=(+p.terms||14)) items.push({sev:"warn",kind:"ar",pid:p.id,text:`<b>${esc(p.name)}</b> — ${esc(w.settlement.invNo)} net RM ${fm(w.settlement.totals.net)} unpaid for ${age} days`,go:{tab:"billing",week:w.weekStart}});}
+    }
+  }
+  for(const a of Object.values(S.audits)){ if(a.date<add(t,-14)) continue; const ev=evalAudit(a);
+    if(ev.priceBad.length) items.push({sev:"warn",kind:"audit",pid:a.partnerId,text:`<b>${esc(partner(a.partnerId).name)}</b> audit ${nice(a.date)} — wrong sell price: ${ev.priceBad.map(x=>`${esc(x.name)} RM${fm(x.shown)} (should be RM${fm(x.approved)})`).join(", ")}`,go:{tab:"audits"}});
+    if(ev.fails.length) items.push({sev:"warn",kind:"audit",pid:a.partnerId,text:`<b>${esc(partner(a.partnerId).name)}</b> audit ${nice(a.date)} — failed: ${ev.fails.map(esc).join(", ")}`,go:{tab:"audits"}});
+  }
+  const order={bad:0,warn:1,info:2}; return items.sort((a,b)=>order[a.sev]-order[b.sev]);
+}
+
+/* ---- TODAY ---- */
+function vToday(att){
+  const t=today(), al=S.alerts;
+  const days=[...Array(7)].map((_,i)=>add(t,i-6));
+  const ps=partners();
+  const matrix=`<div class="tw" style="border:0"><div class="matrix" style="grid-template-columns:minmax(76px,1.2fr) repeat(7,minmax(30px,1fr));min-width:340px">
+    <div></div>${days.map(d=>`<div class="small muted" style="text-align:center">${WD[dow(d)]}<br><span class="mono">${P(d).getUTCDate()}</span></div>`).join("")}
+    ${ps.map(p=>`<div class="small" style="font-weight:600">${esc(p.name)}</div>${days.map(d=>{const w=S.weeks[wid(p.id,weekStartOf(d))];const got=w&&w.days&&w.days[d];const closed=!got&&isClosed(p.id,d);const pre=cfg().cutoffDate&&d<cfg().cutoffDate;const cls=got?"got":(closed||pre||d>=t?"wait":"miss");return `<button class="cell ${cls}" data-go-daily="${p.id}|${d}" title="${esc(p.name)} ${nice(d)}${closed?" (closed)":""}">${got?((w.days[d].photos||[]).length?"✓":"✓·"):(closed?"closed":(d>=t?"·":"!"))}</button>`}).join("")}`).join("")}
+  </div></div>`;
+  const claude=al?`<div class="claude"><div class="spread"><h2>Claude's morning check</h2><span class="small muted">${esc(new Date(al.generatedAt).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}))}${al.sample?" · sample":""}</span></div><p style="margin:0">${esc(al.summary||"")}</p>${(al.items||[]).length?`<ul style="margin:0;padding-left:18px">${al.items.map(i=>`<li>${esc(i.text)}</li>`).join("")}</ul>`:""}</div>`
+    :`<div class="claude"><h2>Claude's morning check</h2><p style="margin:0">No check has run yet. Claude checks reports, stock age and billing every morning and posts the summary here.</p></div>`;
+  const wk=weekStartOf(t);
+  let wkSold=0,wkWaste=0,wkVal=0;
+  for(const p of ps){const c=calcWeek(p.id,wk);for(const k of Object.values(c.keys)){wkSold+=k.sold;wkWaste+=k.waste;wkVal+=k.sold*k.rate}}
+  const bad=att.filter(a=>a.sev==="bad").length;
+  return `<div class="head"><div><h1>${nice(t)}</h1><p class="lede">${bad?`${bad} thing${bad>1?"s need":" needs"} action today.`:"Nothing urgent. Reports and stock look in order."}</p></div>
+    <div class="row"><button class="btn" data-act="goNewDO">New delivery order</button><button class="btn" data-act="goPaste">Paste WhatsApp report</button><button class="btn pri" data-act="goAudit">Start spot audit</button></div></div>
+    ${claude}
+    <div class="cols">
+      <div class="panel"><div class="spread"><h2>Needs attention</h2><span class="small muted">${att.length} item${att.length===1?"":"s"}</span></div>
+        ${att.length?`<div class="items">${att.map((a,i)=>`<div class="item"><span class="sev ${a.sev}"></span><div>${a.text}</div><div class="row">${a.action||""}${a.go?`<button class="btn sm" data-att="${i}">Open</button>`:""}</div></div>`).join("")}</div>`:`<div class="empty">All clear.</div>`}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel"><div class="spread"><h2>Closing reports</h2><span class="small muted">last 7 days</span></div>${ps.length?matrix:`<div class="empty">Add outlets in Setup.</div>`}
+          <p class="small muted" style="margin:0">Outlet form link: <span class="mono">${esc(formLink("CODE"))}</span></p></div>
+        <div class="panel"><h2>This week so far</h2><div class="stats">
+          <div class="stat"><h3>Sold</h3><span class="v">${wkSold}</span><span class="small muted">units</span></div>
+          <div class="stat"><h3>Earned</h3><span class="v">${fm(wkVal)}</span><span class="small muted">RM at partner rates</span></div>
+          <div class="stat"><h3>Wastage</h3><span class="v">${wkWaste}</span><span class="small muted">units</span></div></div></div>
+      </div>
+    </div>`;
+}
+
+/* ---- DELIVERIES ---- */
+function allDOs(){const out=[];for(const w of Object.values(S.weeks))for(const d of Object.values(w.dos||{}))out.push({...d,partnerId:w.partnerId,weekStart:w.weekStart});return out.sort((a,b)=>b.date.localeCompare(a.date)||String(b.no).localeCompare(String(a.no)))}
+function vDeliveries(){
+  const e=S.ui.doEdit;
+  let form="";
+  if(e){
+    const col=e.colour, pid=e.partnerId;
+    form=`<div class="panel"><div class="spread"><h2>${e.mode==="receive"?`Confirm receipt · ${esc(e.no)}`:(e.no?`Edit ${esc(e.no)}`:"New delivery order")}</h2><button class="btn sm" data-act="cancelDO">Cancel</button></div>
+      <div class="fgrid">
+        <label class="f">Outlet<select id="do-p" data-do="partnerId" ${e.mode==="receive"?"disabled":""}>${partners().map(p=>opt(p.id,p.name,pid)).join("")}</select></label>
+        <label class="f">Delivery date<input id="do-d" type="date" data-do="date" value="${esc(e.date)}" ${e.mode==="receive"?"disabled":""}></label>
+        <label class="f">Made on (batch date)<input id="do-b" type="date" data-do="batchDate" value="${esc(e.batchDate)}" ${e.mode==="receive"?"disabled":""}></label>
+        <label class="f">Colour dot<select id="do-c" data-do="colour" ${e.mode==="receive"?"disabled":""}>${cfg().colours.map((c,i)=>opt(c.name,`${c.name} (${WD[i]})`,col)).join("")}</select></label>
+        ${e.mode==="receive"?`<label class="f">Received by<input id="do-rb" data-do="receivedBy" value="${esc(e.receivedBy||"")}" placeholder="Outlet staff name"></label><label class="f">Received at<input id="do-ra" type="time" data-do="receivedAt" value="${esc(e.receivedAt||"")}"></label>`:""}
+      </div>
+      <div class="tw"><table><thead><tr><th>Cake</th><th>SKU</th><th class="r">Unit price</th><th class="r">Qty sent</th>${e.mode==="receive"?`<th class="r">Accepted</th>`:""}</tr></thead><tbody>
+      ${products().map(p=>{const l=e.lines[p.id]||{};const pr=priceFor(pid,p.id,e.date);return `<tr><td>${cake(p.id)}</td><td class="mono small">${esc(p.sku)}</td><td class="r mono">${fm(pr.net)}${pr.approved?"":` <span class="pill warn" title="Default % of retail, no approved price">default</span>`}</td>
+        <td class="r">${e.mode==="receive"?`<span class="mono">${l.qty||0}</span>`:`<input type="number" min="0" id="dq-${p.id}" data-doline="${p.id}" data-k="qty" value="${esc(l.qty??"")}">`}</td>
+        ${e.mode==="receive"?`<td class="r"><input type="number" min="0" id="da-${p.id}" data-doline="${p.id}" data-k="accepted" value="${esc(l.accepted??l.qty??"")}" ${l.qty?"":"disabled"}></td>`:""}</tr>`}).join("")}
+      </tbody></table></div>
+      <label class="f">Note (short delivery, damage, reason for rejected units)<input id="do-n" data-do="note" value="${esc(e.note||"")}"></label>
+      <div class="row">${e.mode==="receive"?`<button class="btn pri" data-act="receiveDO">Confirm delivered</button>`:`<button class="btn pri" data-act="saveDO">${e.no?"Save changes":"Create DO"}</button>`}</div>
+    </div>`;
+  }
+  const list=allDOs().slice(0,60);
+  return `<div class="head"><div><h1>Deliveries</h1><p class="lede">Each delivery order carries one colour dot (the day the cakes were made). Stock only counts at the outlet once the DO is confirmed delivered, with accepted quantities.</p></div><button class="btn pri" data-act="newDO">New delivery order</button></div>
+    ${form}
+    <div class="panel"><h2>Delivery orders</h2>${list.length?`<div class="tw"><table><thead><tr><th>DO</th><th>Date</th><th>Outlet</th><th>Batch</th><th class="r">Units</th><th class="r">Value</th><th>Status</th><th></th></tr></thead><tbody>
+      ${list.map(d=>{const u=(d.lines||[]).reduce((s,l)=>s+(+(d.status==="delivered"?(l.accepted??l.qty):l.qty)||0),0);const v=(d.lines||[]).reduce((s,l)=>s+(+(l.accepted??l.qty)||0)*priceFor(d.partnerId,l.productId,d.date).net,0);
+        const billed=(S.weeks[wid(d.partnerId,d.weekStart)]||{}).settlement;
+        return `<tr><td class="mono">${esc(d.no)}${d.sample?` <span class="pill mute">sample</span>`:""}</td><td>${nice(d.date)}</td><td>${esc(partner(d.partnerId).name)}</td><td>${dot(d.colour)}</td><td class="r mono">${u}</td><td class="r mono">${fm(v)}</td>
+        <td>${d.status==="delivered"?`<span class="pill ok">Delivered</span>`:`<span class="pill warn">Planned</span>`}${billed?` <span class="pill info">Billed</span>`:""}</td>
+        <td><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${d.status!=="delivered"&&!billed?`<button class="btn sm pri" data-rcv="${d.partnerId}|${d.weekStart}|${d.id}">Mark delivered</button><button class="btn sm" data-edo="${d.partnerId}|${d.weekStart}|${d.id}">Edit</button>`:""}<button class="btn sm" data-vdo="${d.partnerId}|${d.weekStart}|${d.id}">View</button><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(partner(d.partnerId).phone,doText(d)))}">WhatsApp</a></div></td></tr>`}).join("")}
+      </tbody></table></div>`:`<div class="empty">No delivery orders yet.</div>`}</div>`;
+}
+function doText(d){return `*${cfg().company.name}* — ${d.no}\nDelivery ${nice(d.date)} to ${partner(d.partnerId).name}\nColour dot: ${d.colour}\n`+(d.lines||[]).filter(l=>+l.qty).map(l=>`• ${prod(l.productId).name} × ${d.status==="delivered"?(l.accepted??l.qty):l.qty}`).join("\n")+`\nPlease count on arrival and reply with any shortfall or damage.`}
+
+/* ---- DAILY ---- */
+function vDaily(){
+  const pid=curPartner(); if(!pid) return `<div class="empty">Add an outlet in Setup first.</div>`;
+  const date=S.ui.date||today(), ws=weekStartOf(date), c=calcWeek(pid,ws), day=c.days.find(d=>d.date===date), rep=day.rep, p=partner(pid);
+  const editing=S.ui.editDay;
+  const parsed=S.ui.parsed;
+  const pasteBox=`<div class="panel"><div class="spread"><h2>Paste from WhatsApp</h2><span class="small muted">closing reports and spot audits</span></div>
+    <textarea class="paste" id="paste" data-ui="paste" placeholder="Paste the outlet's closing report (*CHALEUR CLOSING REPORT*) or a staff spot audit (*CHALEUR SPOT AUDIT*)">${esc(S.ui.paste)}</textarea>
+    <div class="row"><button class="btn" data-act="parse">Read message</button>${parsed?`<span class="small muted">${esc(parsed.summary)}</span>`:""}</div>
+    ${parsed&&parsed.errors.length?`<div class="warns">${parsed.errors.map(e=>`<div class="bad">${esc(e)}</div>`).join("")}</div>`:""}
+    ${parsed&&parsed.ok?`<div class="tw">${parsed.type==="report"?`<table><thead><tr><th>Cake</th><th>Batch</th><th class="r">Waste</th><th class="r">Balance</th></tr></thead><tbody>${parsed.lines.map(l=>`<tr><td>${cake(l.productId)}</td><td>${dot(l.colour)}</td><td class="r mono">${l.w}</td><td class="r mono">${l.b}</td></tr>`).join("")}</tbody></table>`:`<table><tbody><tr><td>Audit by ${esc(parsed.audit.by)} · ${parsed.audit.prices?Object.keys(parsed.audit.prices).length:0} prices · ${parsed.audit.counts.length} counts</td></tr></tbody></table>`}</div>
+      <div class="row">${parsed.exists?`<span class="pill warn">A report for this outlet/date already exists — saving replaces it</span>`:""}<button class="btn pri" data-act="savePaste">Save ${parsed.type==="report"?`report for ${esc(partner(parsed.partnerId).name)}, ${nice(parsed.date)}`:"audit"}</button></div>`:""}
+  </div>`;
+  const lines=editing?editLines(day):day.lines;
+  const tbl=lines.length?`<div class="tw"><table><thead><tr><th>Cake</th><th>Batch</th><th class="r">Age</th><th class="r">Opening</th><th class="r">Delivered</th><th class="r">Waste</th><th class="r">Balance</th><th class="r">Sold</th><th class="r">POS sold</th><th class="r">Variance</th></tr></thead><tbody>
+    ${lines.map(l=>{const k=c.keys[l.productId+"|"+l.colour]||{};const age=k.batchDate?diffDays(date,k.batchDate)+1:"";const life=+prod(l.productId).shelfDays||3;
+      const agePill=age===""?"":(age>life?`<span class="pill bad">day ${age}</span>`:age===life?`<span class="pill warn">day ${age}</span>`:`<span class="mono">day ${age}</span>`);
+      const avail=(l.open??0)+(l.recv||0);
+      if(editing){const key=`${l.productId}|${l.colour}`;const v=S.ui.dayDraft[key]||{};
+        const has=v.b!==""&&v.b!=null; const sold=v.s!==""&&v.s!=null?+v.s:Math.max(0,avail-(+v.w||0)-(+v.b||0));
+        const vr=has?(+v.b)-(avail-sold-(+v.w||0)):"";
+        return `<tr><td>${cake(l.productId)}</td><td>${dot(l.colour)}</td><td class="r">${agePill}</td><td class="r mono">${l.open??0}</td><td class="r mono">${l.recv||0}</td>
+        <td class="r"><input type="number" min="0" id="e-${key}-w" data-dd="${key}" data-k="w" value="${esc(v.w??"")}"></td><td class="r"><input type="number" min="0" id="e-${key}-b" data-dd="${key}" data-k="b" value="${esc(v.b??"")}"></td>
+        <td class="r mono muted">${has?sold:""}</td><td class="r"><input type="number" min="0" id="e-${key}-s" data-dd="${key}" data-k="s" value="${esc(v.s??"")}" placeholder="opt."></td><td class="r mono ${vr<0?"neg":vr>0?"pos":""}">${vr===""||vr===0?"":(vr>0?"+":"")+vr}</td></tr>`;}
+      return `<tr><td>${cake(l.productId)}</td><td>${dot(l.colour)}</td><td class="r">${agePill}</td><td class="r mono">${l.open??0}</td><td class="r mono">${l.recv||""}</td><td class="r mono">${rep&&l.close!=null?l.waste:""}</td>
+        <td class="r mono">${l.close??(l.unreported?`<span class="pill warn">not counted</span>`:"—")}</td><td class="r mono">${rep&&l.close!=null?l.sold:""}</td><td class="r mono muted">${l.pos??""}</td>
+        <td class="r mono ${l.var<0?"neg":l.var>0?"pos":""}">${l.close!=null&&l.var?(l.var>0?"+":"")+l.var:""}</td></tr>`}).join("")}
+    </tbody></table></div>`:`<div class="empty">No stock recorded at ${esc(p.name)} on this day.</div>`;
+  return `<div class="head"><div><h1>Daily reports</h1><p class="lede">Outlets send <b>waste and balance</b> for each colour dot. Sold is worked out: opening + delivered − waste − balance. Key in the <b>POS sold</b> figure from their own closing report to cross-check. Any difference shows as a variance (missing or unrecorded cakes).</p></div></div>
+    ${pasteBox}
+    <div class="panel">
+      <div class="spread"><div class="row">${partnerSelect("d-p",pid)}<button class="btn sm" data-day="-1" aria-label="Previous day">‹</button><input type="date" id="d-d" data-ui="date" value="${date}"><button class="btn sm" data-day="1" aria-label="Next day">›</button></div>
+        <div class="row">${rep?`<span class="pill ok">Reported${rep.by?` by ${esc(rep.by)}`:""} · ${esc(rep.source||"")}</span>`:day.status==="missing"?`<span class="pill bad">Missing</span><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(p.phone,chaseText(p,[date])))}">Chase on WhatsApp</a>`:`<span class="pill mute">${day.status==="today"?"Due at closing":"Upcoming"}</span>`}
+        ${editing?`<button class="btn sm" data-act="cancelDay">Cancel</button><button class="btn sm pri" data-act="saveDay">Save report</button>`:(c.week.settlement?`<span class="pill info">Week billed — locked</span>`:`<button class="btn sm" data-act="editDay">${rep?"Correct report":"Enter report"}</button>`)}</div></div>
+      ${editing?`<div class="row"><label class="f">Reported by<input id="dd-by" data-ui="dayBy" value="${esc(S.ui.dayBy||"")}"></label><label class="f">Add a cake/colour<span class="row"><select id="dd-ap">${products().map(x=>opt(x.id,x.name,"")).join("")}</select><select id="dd-ac">${cfg().colours.map(x=>opt(x.name,x.name,"")).join("")}</select><button class="btn sm" data-act="addDayLine">Add</button></span></label></div>`:""}
+      ${tbl}
+      ${rep&&rep.note?`<p class="small" style="margin:0"><b>Outlet note:</b> ${esc(rep.note)}</p>`:""}
+      ${rep?`<div class="spread" style="border-top:1px solid var(--line);padding-top:12px"><h3>Closing photos ${(rep.photos||[]).length?`<span class="pill ok">${rep.photos.length}</span>`:`<span class="pill bad">required — none yet</span>`}</h3>
+        <div class="row">${S.assets?`<label class="btn sm">Add photos from WhatsApp<input type="file" accept="image/&#42;" multiple data-repphoto="${pid}|${date}" hidden></label>`:""}${rep.drive?driveLink(rep.drive):(S.mcp?`<button class="btn sm" data-act="fileDaily">File report + photos to Drive</button>`:"")}</div></div>
+        ${(rep.photos||[]).length?`<div class="photos">${rep.photos.map(id=>`<a href="${esc(photoLink(id))}" target="_blank" rel="noopener"><img src="${esc(photoSrc(id))}" alt="Closing photo"></a>`).join("")}</div>`:`<p class="small muted" style="margin:0">Save the outlet's WhatsApp photos to your phone/computer, then add them here so they're kept with this report.</p>`}`:""}
+    </div>`;
+}
+function editLines(day){
+  const base=day.lines.map(l=>({...l}));
+  for(const key of Object.keys(S.ui.dayDraft)) if(!base.find(l=>l.productId+"|"+l.colour===key)){const [pId,col]=key.split("|");base.push({productId:pId,colour:col,open:0,recv:0,exp:0,var:0});}
+  return base.sort(sortLine);
+}
+/* parse WhatsApp text */
+function parseMsg(txt){
+  const out={errors:[],lines:[],ok:false}; const T=txt.replace(/\r/g,"");
+  const get=re=>{const m=T.match(re);return m?m[1].trim():""};
+  const code=get(/Outlet:\s*([A-Za-z0-9-]+)/i).toUpperCase(), date=get(/Date:\s*(\d{4}-\d{2}-\d{2})/i), by=get(/By:\s*(.+)/i);
+  const p=partners(true).find(x=>(x.code||"").toUpperCase()===code);
+  if(!p) out.errors.push(code?`Outlet code "${code}" is not set up.`:"Couldn't find 'Outlet:' in the message.");
+  if(!date) out.errors.push("Couldn't find 'Date: yyyy-mm-dd' in the message.");
+  const bySku=sku=>products(true).find(x=>(x.sku||"").toUpperCase()===sku.toUpperCase());
+  const colOk=c=>cfg().colours.some(x=>x.name===c.toUpperCase());
+  out.partnerId=p&&p.id; out.date=date; out.by=by;
+  out.note=get(/Note:\s*(.+)/i).replace(/^-$/,"");
+  if(/#AU1|SPOT AUDIT/i.test(T)){
+    out.type="audit"; const a={partnerId:out.partnerId,date,by,time:get(/Time:\s*(\S+)/i),checks:{},prices:{},counts:[],temp:get(/TEMP:\s*([\d.]+)/i),note:out.note,source:"whatsapp"};
+    for(const m of T.matchAll(/CHECK\s+(\w+):\s*(PASS|FAIL|NA)/gi)) a.checks[m[1]]=m[2].toUpperCase();
+    for(const m of T.matchAll(/PRICE\s+([A-Za-z0-9-]+):\s*([\d.]+)/gi)){const pr=bySku(m[1]); if(pr) a.prices[pr.id]=+m[2]; else out.errors.push(`Unknown cake code ${m[1]}`);}
+    for(const m of T.matchAll(/COUNT\s+([A-Za-z0-9-]+)\s+([A-Za-z]+):\s*(\d+)/gi)){const pr=bySku(m[1]); if(pr&&colOk(m[2])) a.counts.push({productId:pr.id,colour:m[2].toUpperCase(),n:+m[3]}); else out.errors.push(`Couldn't read count line: ${m[0]}`);}
+    out.audit=a; out.summary=`Spot audit · ${p?p.name:"?"} · ${date||"?"}`;
+  } else {
+    out.type="report";
+    for(const m of T.matchAll(/^\s*([A-Za-z0-9-]+)\s*\|\s*([A-Za-z]+)\s*\|\s*(?:S\s*(\d+)\s*)?W\s*(\d+)\s*B\s*(\d+)/gim)){
+      const pr=bySku(m[1]); if(!pr){out.errors.push(`Unknown cake code "${m[1]}" — add it in Setup › Products or fix the message.`);continue;}
+      if(!colOk(m[2])){out.errors.push(`Unknown colour "${m[2]}".`);continue;}
+      out.lines.push({productId:pr.id,colour:m[2].toUpperCase(),w:+m[4],b:+m[5],...(m[3]!=null?{s:+m[3]}:{})});
+    }
+    if(!out.lines.length&&!/no stock counted/i.test(T)) out.errors.push("No cake lines found (format: SKU | COLOUR | W0 B0).");
+    out.summary=`Closing report · ${p?p.name:"?"} · ${date?nice(date):"?"} · ${out.lines.length} line(s)`;
+    if(p&&date){const w=S.weeks[wid(p.id,weekStartOf(date))]; out.exists=!!(w&&w.days&&w.days[date]); out.locked=!!(w&&w.settlement); if(out.locked) out.errors.push("That week is already billed. Void the bill first to change its reports.");}
+  }
+  out.ok=!out.errors.length||(out.type==="report"&&out.lines.length&&p&&date&&!out.locked);
+  return out;
+}
+
+/* ---- BILLING ---- */
+function vBilling(){
+  const pid=curPartner(); if(!pid) return `<div class="empty">Add an outlet in Setup first.</div>`;
+  const t=today(); const ws=S.ui.week||weekStartOf(add(t,-7)); const p=partner(pid);
+  const c=calcWeek(pid,ws), w=c.week, st=w.settlement;
+  const live=buildSettlement(c,{creditShort:!!S.f["creditShort_"+wid(pid,ws)]});
+  const s=st||live;
+  const ended=add(ws,6)<t;
+  const recon=`<div class="tw"><table><thead><tr><th>Cake</th><th>Batch</th><th class="r">B/F</th><th class="r">Delivered</th><th class="r">Sold</th><th class="r">Waste</th><th class="r">Variance</th><th class="r">C/F</th><th class="r">Rate</th><th class="r">Sold value</th></tr></thead><tbody>
+    ${Object.values(c.keys).sort(sortLine).map(k=>`<tr><td>${cake(k.productId)}</td><td>${dot(k.colour)}</td><td class="r mono">${k.open||""}</td><td class="r mono">${k.recv||""}</td><td class="r mono">${k.sold||""}</td><td class="r mono">${k.waste||""}</td><td class="r mono ${k.variance<0?"neg":k.variance>0?"pos":""}">${k.variance?(k.variance>0?"+":"")+k.variance:""}</td><td class="r mono">${k.close||""}</td><td class="r mono">${fm(k.rate)}</td><td class="r mono">${fm(k.sold*k.rate)}</td></tr>`).join("")||`<tr><td colspan="10" class="muted">No stock this week.</td></tr>`}
+    </tbody></table></div>`;
+  const cards=`<div class="docs">
+    <div class="doccard"><h3>Invoice</h3><span class="code">${st?esc(st.invNo):"issued as "+esc(cfg().prefixes.INV)+"-…"}</span><span class="amt">RM ${fm(s.totals.inv)}</span><span class="small muted">B/F stock rebilled + this week's deliveries</span>${st?`<button class="btn sm" data-doc="inv">View</button>`:""}</div>
+    <div class="doccard"><h3>Carry forward (credit)</h3><span class="code">${st?esc(st.cfNo):esc(cfg().prefixes.CF)+"-…"}</span><span class="amt">− RM ${fm(s.totals.cf)}</span><span class="small muted">Unsold stock, rebilled next week at the same rate</span>${st?`<button class="btn sm" data-doc="cf">View</button>`:""}</div>
+    <div class="doccard"><h3>Credit note</h3><span class="code">${st?(st.cnNo?esc(st.cnNo):"not needed"):esc(cfg().prefixes.CN)+"-…"}</span><span class="amt">− RM ${fm(s.totals.cn)}</span><span class="small muted">Wastage per ${esc(p.name)}'s terms${s.cn.some(l=>l.reason!=="Wastage")?" + agreed shortage":""}</span>${st&&st.cnNo?`<button class="btn sm" data-doc="cn">View</button>`:""}</div>
+    <div class="doccard" style="background:var(--accent-soft)"><h3>Net payable by outlet</h3><span class="code">${p.pct}% terms</span><span class="amt">RM ${fm(s.totals.net)}</span><span class="small muted">= sold RM ${fm(s.soldVal)}${s.wasteCharged?` + waste charged RM ${fm(s.wasteCharged)}`:""}${s.shortVal&&!(st?st.shortageCredited:S.f["creditShort_"+wid(pid,ws)])?` + shortage RM ${fm(s.shortVal)}`:""}</span></div>
+  </div>`;
+  const conf=S.ui.confirm;
+  let actions="";
+  if(!st){
+    actions=`<div class="row"><label class="row small"><input type="checkbox" id="cs" data-f="creditShort_${wid(pid,ws)}" ${S.f["creditShort_"+wid(pid,ws)]?"checked":""} style="width:auto"> Credit shortage (outlet not charged for missing units)</label></div>
+      ${conf==="issue"?`<div class="confirm">Issue ${esc(cfg().prefixes.INV)}, ${esc(cfg().prefixes.CF)}${live.cn.length?` and ${esc(cfg().prefixes.CN)}`:""} for ${esc(p.name)}? Numbers are assigned and the week's reports lock.<button class="btn sm pri" data-act="issue">Issue documents</button><button class="btn sm" data-act="noconfirm">Cancel</button></div>`
+      :`<div class="row"><button class="btn pri" data-act="askIssue" ${live.inv.length?"":"disabled"}>Issue invoice, CF${live.cn.length?" and CN":""}</button>${!ended?`<span class="pill warn">Week still running</span>`:""}</div>`}`;
+  } else {
+    const nextBilled=(S.weeks[wid(pid,add(ws,7))]||{}).settlement;
+    actions=`<div class="fgrid">
+      <label class="f">Bukku invoice no.<input id="bk-inv" data-bk="inv" value="${esc(st.bukku?.inv||"")}" placeholder="e.g. INV-2609012"></label>
+      <label class="f">Bukku CF / CN no.<input id="bk-cf" data-bk="cf" value="${esc(st.bukku?.cf||"")}"></label>
+      <label class="f">Paid on<input id="pd-d" type="date" data-bk="paidDate" value="${esc(st.paid?.date||"")}"></label>
+      <label class="f">Amount received (RM)<input id="pd-a" data-bk="paidAmt" inputmode="decimal" value="${esc(st.paid?.amount??"")}"></label></div>
+      <div class="row"><button class="btn pri" data-act="saveBk">Save Bukku refs & payment</button>${st.drive&&st.drive.inv?`${driveLink(st.drive.inv)}`:(S.mcp?`<button class="btn" data-act="fileWeek">File INV, CF${st.cnNo?", CN":""} + DOs to Drive</button>`:"")}
+      ${conf==="void"?`<span class="confirm">Void these documents? They are kept in history and the week reopens.<button class="btn sm danger" data-act="void">Void</button><button class="btn sm" data-act="noconfirm">Keep</button></span>`:(nextBilled?`<span class="small muted">Next week is billed, so this week can't be voided.</span>`:`<button class="btn danger" data-act="askVoid">Void & reopen week</button>`)}
+      ${st.paid&&st.paid.amount!=null&&st.paid.amount!==""?(Math.abs(+st.paid.amount-st.totals.net)<0.005?`<span class="pill ok">Paid in full</span>`:`<span class="pill warn">Paid RM ${fm(st.paid.amount)} — difference RM ${fm(st.totals.net-(+st.paid.amount))}</span>`):""}</div>
+      ${Math.abs(live.totals.net-st.totals.net)>0.004?`<div class="warns"><div class="bad">Reports or deliveries changed after issue: live figures now give net RM ${fm(live.totals.net)} vs issued RM ${fm(st.totals.net)}. Void and reissue, or raise a separate adjustment.</div></div>`:""}`;
+  }
+  return `<div class="head"><div><h1>Weekly billing</h1><p class="lede">Invoice all stock held (carried-forward + new deliveries) → credit the unsold balance on a CF note → credit wastage on a CN per the outlet's terms. The net equals what was actually sold at the agreed rate.</p></div></div>
+    <div class="panel">
+      <div class="spread"><div class="row">${partnerSelect("b-p",pid)}<button class="btn sm" data-wk="-7" aria-label="Previous week">‹</button><span class="mono" style="font-weight:600">${nice(ws)} – ${nice(add(ws,6))}</span><button class="btn sm" data-wk="7" aria-label="Next week">›</button></div>
+        <div class="row">${st?`<span class="pill ok">Issued ${esc(st.issuedAt.slice(0,10))}</span>${st.bukku&&st.bukku.inv?`<span class="pill info">In Bukku</span>`:`<span class="pill warn">Not in Bukku yet</span>`}${st.paid&&st.paid.date?`<span class="pill ok">Paid</span>`:""}`:`<span class="pill mute">Draft</span>`}</div></div>
+      <p class="small muted" style="margin:0">Opening stock from: ${esc(c.opening.src)} · Terms: ${p.pct}% to Chaleur · Wastage: ${({credit:"Chaleur bears (full credit)",half:"Outlet pays 50% of retail",none:"Outlet bears (no credit)"})[p.wasteRule||"credit"]}</p>
+      ${(st?[]:live.warns).length?`<div class="warns">${live.warns.map(([k,m])=>`<div class="${k}">${esc(m)}</div>`).join("")}</div>`:""}
+      ${cards}
+      ${actions}
+    </div>
+    <div class="panel"><h2>Stock reconciliation</h2>${recon}
+      <p class="small muted" style="margin:0">Check: B/F + Delivered − Sold − Waste + Variance = C/F for every row. The C/F quantity is credited on the CF note and rebilled on next week's invoice at the same rate and colour.</p></div>`;
+}
+
+/* ---- DOCUMENT RENDER ---- */
+function docHTML(kind,pid,ws,st){
+  const c=cfg(), co=c.company, p=partner(pid), we=add(ws,6);
+  const T={inv:"INVOICE",cf:"CARRY FORWARD NOTE",cn:"CREDIT NOTE",do:"DELIVERY ORDER"}[kind];
+  let no,lines,rows,date=st?st.issuedAt.slice(0,10):today(),notes="";
+  if(kind==="do"){ no=st.no; date=st.date;
+    rows=(st.lines||[]).filter(l=>+l.qty).map((l,i)=>`<tr><td>${i+1}</td><td>${esc(prod(l.productId).name)} <span style="color:#777">${esc(prod(l.productId).sku)}</span></td><td>${dot(st.colour)}</td><td class="r">${l.qty}</td><td class="r">${st.status==="delivered"?(l.accepted??l.qty):""}</td></tr>`).join("");
+    return paper(T,no,date,p,`<table><thead><tr><th>#</th><th>Item</th><th>Batch</th><th class="r">Qty sent</th><th class="r">Accepted</th></tr></thead><tbody>${rows}</tbody></table>`,"",`Made on ${nice(st.batchDate||st.date)} · colour dot ${esc(st.colour)}. ${st.status==="delivered"?`Received by ${esc(st.receivedBy||"—")} ${esc(st.receivedAt||"")}.`:"Receiver: count with driver and sign below."}${st.note?" Note: "+esc(st.note):""}<br><br>Received by (name / signature / time): ____________________________`);
+  }
+  no=st[kind+"No"]; lines=st[kind];
+  rows=lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(prod(l.productId).name)}${l.type==="B/F"?` <span style="color:#777">B/F ${esc(l.ref||"")}</span>`:l.type==="NEW"?` <span style="color:#777">${esc(l.ref||"")}</span>`:l.reason?` <span style="color:#777">${esc(l.reason)}</span>`:""}</td><td>${dot(l.colour)}</td><td class="r">${l.qty}</td><td class="r">${fm(l.rate)}</td><td class="r">${fm(l.qty*l.rate)}</td></tr>`).join("");
+  const total=st.totals[kind];
+  const tot=`<div class="tot"><table>${kind==="inv"?`<tr><td>Subtotal</td><td class="r">${fm(total)}</td></tr><tr><td>Less CF ${esc(st.cfNo)}</td><td class="r">− ${fm(st.totals.cf)}</td></tr>${st.cnNo?`<tr><td>Less CN ${esc(st.cnNo)}</td><td class="r">− ${fm(st.totals.cn)}</td></tr>`:""}<tr class="g"><td>Net payable (RM)</td><td class="r">${fm(st.totals.net)}</td></tr>`:`<tr class="g"><td>Total credit (RM)</td><td class="r">${fm(total)}</td></tr>`}</table></div>`;
+  if(kind==="inv") notes=`Consignment period ${nice(ws)} – ${nice(we)}. Charged at ${p.pct}% of retail per agreed terms. Lines marked B/F were carried forward and are rebilled at their original rate; unsold stock is credited on ${esc(st.cfNo)} and carried to next week.`;
+  if(kind==="cf") notes=`<span class="stamp">CF · CARRIED FORWARD</span><br>Unsold stock at close of ${nice(we)} (counted balance by colour dot). This credit offsets ${esc(st.invNo)}. The same quantities, colours and rates are rebilled on the next weekly invoice. Stock stays at the outlet; original make dates and shelf life still apply.`;
+  if(kind==="cn") notes=`Credit against ${esc(st.invNo)} for the period ${nice(ws)} – ${nice(we)}, per agreed wastage terms.`;
+  return paper(T,no,date,p,`<table><thead><tr><th>#</th><th>Item</th><th>Batch</th><th class="r">Qty</th><th class="r">Unit (RM)</th><th class="r">Amount (RM)</th></tr></thead><tbody>${rows}</tbody></table>`,tot,notes,kind!=="inv"?`Ref. ${esc(st.invNo)}`:"");
+  function paper(title,no,date,p,body,tot,notes,ref=""){
+    return `<div class="paper"><div class="dh"><div><div class="co">${esc(co.name)}</div><div style="color:#555">${esc(co.address)}${co.reg?`<br>Reg. ${esc(co.reg)}`:""}${co.phone?`<br>${esc(co.phone)}`:""}${co.email?`<br>${esc(co.email)}`:""}</div></div>
+      <div class="dt"><div class="t">${title}</div><div class="no">${esc(no)}</div><div style="color:#555">${nice(date)} ${date.slice(0,4)}</div>${ref?`<div style="color:#555">${ref}</div>`:""}</div></div>
+      <div class="meta"><div><h4>${kind==="do"?"Deliver to":"Bill to"}</h4><b>${esc(p.legalName||p.name)}</b><br>${esc(p.address||"")}</div><div><h4>Outlet</h4>${esc(p.name)} (${esc(p.code)})<br>${esc(p.contact||"")} ${esc(p.phone||"")}</div></div>
+      <div style="overflow-x:auto">${body}</div>${tot}<div class="note">${notes}</div></div>`;
+  }
+}
+function vModal(){
+  const m=S.ui.modal;
+  return `<div class="modal" data-close="1"><div class="box" role="dialog" aria-label="Document"><div class="bar"><button class="btn" data-act="copyLines">Copy lines for Bukku</button><button class="btn" data-act="saveFile">Save PDF to Drive</button>${m.drive?driveLink(m.drive):(S.mcp?`<button class="btn" data-act="fileModal">File to Drive</button>`:"")}<button class="btn pri" data-act="closeModal">Close</button></div>${m.html}</div></div>`;
+}
+
+/* ---- AUDITS ---- */
+function evalAudit(a){
+  const priceBad=[],fails=[],counts=[];
+  for(const [pid,shown] of Object.entries(a.prices||{})){const ap=priceFor(a.partnerId,pid,a.date).retail; if(ap&&Math.abs(+shown-ap)>0.004) priceBad.push({name:prod(pid).name,shown:+shown,approved:ap});}
+  const labels=Object.fromEntries(cfg().checks.map(c=>[c.k,c.l]));
+  for(const [k,v] of Object.entries(a.checks||{})) if(v==="FAIL") fails.push(labels[k]||k);
+  if(a.temp!==""&&a.temp!=null&&(+a.temp>5||+a.temp<0)) fails.push(`chiller at ${a.temp}°C`);
+  const c=calcWeek(a.partnerId,weekStartOf(a.date)); const d=c.days.find(x=>x.date===a.date); const prevStock=d?(()=>{const i=c.days.indexOf(d);return i>0?c.days[i-1].stock:Object.fromEntries(c.opening.lines.map(l=>[l.productId+"|"+l.colour,l.qty]))})():{};
+  for(const x of a.counts||[]){const recv=d?(d.lines.find(l=>l.productId===x.productId&&l.colour===x.colour)||{}).recv||0:0; const sys=(prevStock[x.productId+"|"+x.colour]||0)+recv; counts.push({...x,sys});}
+  const n=Object.values(a.checks||{}).filter(v=>v!=="NA").length, pass=Object.values(a.checks||{}).filter(v=>v==="PASS").length;
+  return {priceBad,fails,counts,score:n?Math.round(pass/n*100):null};
+}
+function suggestAudit(){
+  const ps=partners(); if(!ps.length) return null;
+  const last=pid=>Object.values(S.audits).filter(a=>a.partnerId===pid).map(a=>a.date).sort().pop()||"2000-01-01";
+  const weights=ps.map(p=>Math.max(1,diffDays(today(),last(p.id))));
+  let r=Math.random()*weights.reduce((a,b)=>a+b,0), pick=ps[0];
+  for(let i=0;i<ps.length;i++){r-=weights[i]; if(r<=0){pick=ps[i];break;}}
+  const pr=[...products()].sort(()=>Math.random()-.5).slice(0,3);
+  return {partnerId:pick.id,products:pr.map(p=>p.id),lastDate:last(pick.id)};
+}
+function vAudits(){
+  const d=S.ui.auditDraft;
+  let form="";
+  if(d){
+    form=`<div class="panel"><div class="spread"><h2>Spot audit</h2><button class="btn sm" data-act="cancelAudit">Cancel</button></div>
+      <div class="fgrid"><label class="f">Outlet<select id="au-p" data-au="partnerId">${partners().map(p=>opt(p.id,p.name,d.partnerId)).join("")}</select></label>
+        <label class="f">Date<input type="date" id="au-d" data-au="date" value="${esc(d.date)}"></label>
+        <label class="f">Auditor<input id="au-b" data-au="by" value="${esc(d.by||"")}"></label>
+        <label class="f">Chiller temp (°C)<input id="au-t" data-au="temp" inputmode="decimal" value="${esc(d.temp||"")}"></label></div>
+      <h3>Setup checklist</h3><div class="tw"><table><tbody>${cfg().checks.map(({k,l})=>`<tr><td>${esc(l)}</td><td class="r"><div class="sub" style="justify-content:flex-end">${["PASS","FAIL","NA"].map(v=>`<button aria-pressed="${d.checks[k]===v}" data-auc="${k}" data-v="${v}">${v==="NA"?"N/A":v[0]+v.slice(1).toLowerCase()}</button>`).join("")}</div></td></tr>`).join("")}</tbody></table></div>
+      <h3>Sell price check — suggested: ${d.focus.map(id=>esc(prod(id).name)).join(", ")}</h3>
+      <div class="tw"><table><thead><tr><th>Cake</th><th class="r">Approved retail</th><th class="r">Price on display</th><th></th></tr></thead><tbody>${products().map(p=>{const ap=priceFor(d.partnerId,p.id,d.date);const v=d.prices[p.id];const bad=v!==undefined&&v!==""&&Math.abs(+v-ap.retail)>0.004;return `<tr ${d.focus.includes(p.id)?'style="background:var(--accent-soft)"':""}><td>${cake(p.id)}</td><td class="r mono">${fm(ap.retail)}</td><td class="r"><input class="numin" id="aup-${p.id}" data-aup="${p.id}" inputmode="decimal" value="${esc(v??"")}"></td><td>${bad?`<span class="pill bad">Mismatch</span>`:v?`<span class="pill ok">OK</span>`:""}</td></tr>`}).join("")}</tbody></table></div>
+      <h3>Spot count (by colour)</h3>
+      <div class="row"><select id="au-cp">${products().map(p=>opt(p.id,p.name,d.focus[0])).join("")}</select><select id="au-cc">${cfg().colours.map(c=>opt(c.name,c.name,"")).join("")}</select><input type="number" min="0" id="au-cn" placeholder="qty"><button class="btn sm" data-act="addCount">Add count</button></div>
+      ${d.counts.length?`<div class="tw"><table><thead><tr><th>Cake</th><th>Batch</th><th class="r">Counted</th><th></th></tr></thead><tbody>${d.counts.map((x,i)=>`<tr><td>${cake(x.productId)}</td><td>${dot(x.colour)}</td><td class="r mono">${x.n}</td><td class="r"><button class="btn sm" data-rmc="${i}">Remove</button></td></tr>`).join("")}</tbody></table></div>`:""}
+      <label class="f">Notes / follow-up<textarea id="au-n" data-au="note" rows="2">${esc(d.note||"")}</textarea></label>
+      <div class="row"><button class="btn pri" data-act="saveAudit">Save audit</button></div></div>`;
+  }
+  const list=Object.values(S.audits).sort((a,b)=>b.date.localeCompare(a.date)||(b.time||"").localeCompare(a.time||""));
+  const sug=S.ui.suggest;
+  return `<div class="head"><div><h1>Spot audits</h1><p class="lede">Unannounced checks of display setup, sell prices and stock by colour. Outlets that haven't been audited recently are more likely to be picked. Your team can also audit on their phone with the staff spot-audit form (separate from the outlet link) and send it by WhatsApp — paste it in Daily reports.</p></div>
+    <div class="row"><button class="btn" data-act="pickAudit">Pick random audit</button><button class="btn pri" data-act="newAudit">Start audit</button></div></div>
+    ${sug?`<div class="claude"><h2>Next audit: ${esc(partner(sug.partnerId).name)}</h2><p style="margin:0">Last audited ${sug.lastDate==="2000-01-01"?"never":nice(sug.lastDate)}. Check sell prices and count: ${sug.products.map(id=>esc(prod(id).name)).join(", ")}.</p><div class="row"><button class="btn pri" data-act="startSuggested">Start this audit</button><a class="btn wa" target="_blank" rel="noopener" href="${esc(wa("",`Spot audit today: ${partner(sug.partnerId).name}. Check prices + count ${sug.products.map(id=>prod(id).name).join(", ")}. Form: ${(SITE_BASE?SITE_BASE+"audit.html":(cfg().auditFormUrl||"(set the staff audit form link in Setup)"))}`))}">Send to staff</a></div></div>`:""}
+    ${form}
+    <div class="panel"><h2>Audit history</h2>${list.length?`<div class="tw"><table><thead><tr><th>Date</th><th>Outlet</th><th>By</th><th class="r">Setup score</th><th>Temp</th><th>Price issues</th><th>Counts vs system</th><th>Notes</th></tr></thead><tbody>
+      ${list.map(a=>{const e=evalAudit(a);return `<tr><td>${nice(a.date)} <span class="muted small">${esc(a.time||"")}</span></td><td>${esc(partner(a.partnerId).name)}</td><td>${esc(a.by||"")}</td>
+        <td class="r">${e.score==null?"—":`<span class="pill ${e.score>=90?"ok":e.score>=70?"warn":"bad"}">${e.score}%</span>`}</td><td class="mono">${a.temp?esc(a.temp)+"°C":"—"}</td>
+        <td>${e.priceBad.length?e.priceBad.map(x=>`<span class="pill bad">${esc(x.name)} ${fm(x.shown)}≠${fm(x.approved)}</span>`).join(" "):Object.keys(a.prices||{}).length?`<span class="pill ok">OK</span>`:"—"}</td>
+        <td>${e.counts.map(x=>`${esc(prod(x.productId).name)} ${dot(x.colour)} ${x.n}/${x.sys}`).join("<br>")||"—"}</td><td class="small">${esc(a.note||"")}${e.fails.length?`<br><span class="neg">Failed: ${e.fails.map(esc).join(", ")}</span>`:""}</td></tr>`}).join("")}
+      </tbody></table></div><p class="small muted" style="margin:0">Counts show counted / system stock at the start of that day plus deliveries — sales during the day will lower the counted figure.</p>`:`<div class="empty">No audits yet.</div>`}</div>`;
+}
+
+/* ---- SETUP ---- */
+function vSetup(){
+  const sec=S.ui.setup;
+  const subs=[["partners","Outlets & terms"],["products","Products"],["prices","Price register"],["opening","Opening stock"],["general","Go-live & rules"]];
+  let body="";
+  if(sec==="partners"){
+    const e=S.ui.pEdit;
+    body=`<div class="panel"><div class="spread"><h2>Outlets & terms</h2><button class="btn pri" data-act="newPartner">Add outlet</button></div>
+      ${e?`<div class="fgrid">
+        ${[["code","Code (used in reports)"],["name","Outlet name"],["legalName","Legal / billing name"],["address","Billing address"],["contact","Contact person"],["phone","WhatsApp no. (60…)"]].map(([k,l])=>`<label class="f">${l}<input id="pe-${k}" data-pe="${k}" value="${esc(e[k]??"")}"></label>`).join("")}
+        <label class="f">Chaleur share %<input id="pe-pct" data-pe="pct" inputmode="decimal" value="${esc(e.pct??"")}"></label>
+        <label class="f">Terms status<select id="pe-ts" data-pe="termsStatus">${["Proposed","Accepted"].map(v=>opt(v,v,e.termsStatus||"Proposed")).join("")}</select></label>
+        <label class="f">Wastage rule<select id="pe-wr" data-pe="wasteRule">${[["credit","Chaleur bears (full credit)"],["half","Outlet pays 50% of retail"],["none","Outlet bears (no credit)"]].map(([v,l])=>opt(v,l,e.wasteRule||"credit")).join("")}</select></label>
+        <label class="f">Payment due (days)<input id="pe-terms" data-pe="terms" inputmode="numeric" value="${esc(e.terms??14)}"></label>
+        <label class="f">Mon–Fri hours<span class="row"><input type="time" id="pe-wo" data-peh="wkOpen" value="${esc(e.hours?.wkOpen||"10:00")}"><input type="time" id="pe-wc" data-peh="wkClose" value="${esc(e.hours?.wkClose||"22:00")}"></span></label>
+        <label class="f">Sat–Sun hours<span class="row"><input type="time" id="pe-eo" data-peh="weOpen" value="${esc(e.hours?.weOpen||"10:00")}"><input type="time" id="pe-ec" data-peh="weClose" value="${esc(e.hours?.weClose||"22:00")}"></span></label>
+        <label class="f">Starting par (cakes/day per flavour, before data)<input id="pe-par" data-pe="parDay" inputmode="numeric" value="${esc(e.parDay??3)}"></label>
+      </div>
+      <div class="fgrid"><div class="f"><span>Closed on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-cl-${i}" data-pearr="closed" data-v="${i}" ${((e.hours||{}).closed||[]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
+        <div class="f"><span>We deliver on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-dd-${i}" data-pearr="deliveryDays" data-v="${i}" ${(e.deliveryDays||[1,3,5]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
+        <label class="f">Active<select id="pe-act" data-pe="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label>
+      </div><div class="row"><button class="btn pri" data-act="savePartner">Save outlet</button><button class="btn" data-act="cancelPartner">Cancel</button></div>`:""}
+      <div class="tw"><table><thead><tr><th>Code</th><th>Outlet</th><th class="r">Chaleur %</th><th>Terms</th><th>Wastage</th><th>Hours</th><th>Delivery days</th><th>WhatsApp</th><th>Field form link</th><th></th></tr></thead><tbody>
+      ${partners(true).map(p=>`<tr><td class="mono">${esc(p.code)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}</td><td class="r mono">${esc(p.pct)}%</td><td><span class="pill ${p.termsStatus==="Accepted"?"ok":"warn"}">${esc(p.termsStatus||"Proposed")}</span></td><td class="small">${esc(({credit:"Full credit",half:"50% retail",none:"No credit"})[p.wasteRule||"credit"])}</td><td class="small mono">${esc((p.hours||{}).wkOpen||"10:00")}–${esc((p.hours||{}).wkClose||"22:00")}${((p.hours||{}).closed||[]).length?`<br><span class="muted">closed ${(p.hours.closed).map(i=>WD[i]).join(", ")}</span>`:""}</td><td class="small">${(p.deliveryDays||[1,3,5]).map(i=>WD[i]).join(" ")}</td><td class="mono small">${esc(p.phone||"—")}</td><td class="mono small">${esc(formLink(p.code))}</td><td class="r"><button class="btn sm" data-pedit="${p.id}">Edit</button></td></tr>`).join("")}
+      </tbody></table></div></div>`;
+  }
+  if(sec==="products"){
+    const e=S.ui.prEdit;
+    body=`<div class="panel"><div class="spread"><h2>Products</h2><button class="btn pri" data-act="newProduct">Add product</button></div>
+      ${e?`<div class="fgrid">${[["sku","Code / SKU (no spaces)"],["name","Name"],["retail","Retail price RM"],["shelfDays","Shelf life (days, chilled)"],["bukkuId","Bukku product ID"]].map(([k,l])=>`<label class="f">${l}<input id="pr-${k}" data-pr="${k}" value="${esc(e[k]??"")}"></label>`).join("")}
+        <label class="f">Active<select id="pr-act" data-pr="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label></div>
+        <div class="row"><button class="btn pri" data-act="saveProduct">Save product</button><button class="btn" data-act="cancelProduct">Cancel</button></div>`:""}
+      <div class="tw"><table><thead><tr><th>Photo</th><th>SKU</th><th>Name</th><th class="r">Retail RM</th><th class="r">Shelf life</th><th>Bukku ID</th><th></th></tr></thead><tbody>
+      ${products(true).map(p=>`<tr><td>${thumb(p.id,44)}${S.assets?`<label class="btn sm" style="margin-left:6px">${p.photo?"Change":"Add photo"}<input type="file" accept="image/&#42;" data-photo="${p.id}" hidden></label>`:""}</td><td class="mono">${esc(p.sku)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}${p.note?`<div class="small muted">${esc(p.note)}</div>`:""}</td><td class="r mono">${fm(p.retail)}</td><td class="r mono">${esc(p.shelfDays)} d</td><td class="mono small">${esc(p.bukkuId||"—")}</td><td class="r"><button class="btn sm" data-predit="${p.id}">Edit</button></td></tr>`).join("")}
+      </tbody></table></div><p class="small muted" style="margin:0">Use a clear top-down photo of each cake so outlet staff can recognise it. When you add products or change photos, ask Claude to refresh the outlet and audit forms.</p></div>`;
+  }
+  if(sec==="prices"){
+    const n=S.ui.priceNew||{};
+    const net=r2((+n.retail||0)*(+n.pct||0)/100);
+    const rows=Object.values(S.prices).sort((a,b)=>partner(a.partnerId).name.localeCompare(partner(b.partnerId).name)||prod(a.productId).name.localeCompare(prod(b.productId).name)||b.from.localeCompare(a.from));
+    body=`<div class="panel"><h2>Price register</h2><p class="small muted" style="margin:0">One approved price per outlet × product × date. Only <b>Active</b> rows are used on invoices; anything else falls back to the outlet's default % of the product's retail and is flagged. Issued invoices keep the price they were issued with.</p>
+      <div class="fgrid">
+        <label class="f">Outlet<select id="pn-p" data-pn="partnerId">${opt("","Choose…",n.partnerId)}${partners().map(p=>opt(p.id,p.name,n.partnerId)).join("")}</select></label>
+        <label class="f">Product<select id="pn-pr" data-pn="productId">${opt("","Choose…",n.productId)}${products().map(p=>opt(p.id,p.name,n.productId)).join("")}</select></label>
+        <label class="f">Retail RM<input id="pn-r" data-pn="retail" inputmode="decimal" value="${esc(n.retail??"")}"></label>
+        <label class="f">Chaleur %<input id="pn-pc" data-pn="pct" inputmode="decimal" value="${esc(n.pct??"")}"></label>
+        <label class="f">Net unit RM<input id="pn-net" disabled value="${fm(net)}"></label>
+        <label class="f">Effective from<input type="date" id="pn-f" data-pn="from" value="${esc(n.from||today())}"></label>
+        <label class="f">Approved by<input id="pn-a" data-pn="approvedBy" value="${esc(n.approvedBy||"")}"></label>
+        <label class="f">Evidence / note<input id="pn-n" data-pn="note" value="${esc(n.note||"")}" placeholder="agreement, email, date"></label>
+      </div><div class="row"><button class="btn" data-act="addPrice" data-status="Proposed">Save as proposed</button><button class="btn pri" data-act="addPrice" data-status="Active">Save & activate</button></div>
+      <div class="tw"><table><thead><tr><th>Outlet</th><th>Product</th><th class="r">Retail</th><th class="r">%</th><th class="r">Net</th><th>From</th><th>Status</th><th>Approved</th><th>Note</th><th></th></tr></thead><tbody>
+      ${rows.map(x=>`<tr><td>${esc(partner(x.partnerId).name)}</td><td>${esc(prod(x.productId).name)}</td><td class="r mono">${fm(x.retail)}</td><td class="r mono">${esc(x.pct)}</td><td class="r mono">${fm(x.net)}</td><td class="mono small">${esc(x.from)}${x.to?"→"+esc(x.to):""}</td>
+        <td><span class="pill ${x.status==="Active"?"ok":x.status==="Proposed"?"warn":"mute"}">${esc(x.status)}</span></td><td class="small">${esc(x.approvedBy||"")}${x.approvedAt?`<br><span class="muted">${esc(x.approvedAt)}</span>`:""}</td><td class="small">${esc(x.note||"")}</td>
+        <td class="r"><div class="row" style="flex-wrap:nowrap;justify-content:flex-end">${x.status==="Proposed"?`<button class="btn sm pri" data-pact="${x.id}|Active">Activate</button>`:""}${x.status==="Active"?`<button class="btn sm" data-pact="${x.id}|Superseded">Supersede</button>`:""}</div></td></tr>`).join("")||`<tr><td colspan="10" class="muted">No prices yet.</td></tr>`}
+      </tbody></table></div></div>`;
+  }
+  if(sec==="opening"){
+    const pid=curPartner(); const p=partner(pid); const op=S.ui.opDraft||(S.ui.opDraft={pid,lines:clone(p.opening||[])});
+    if(op.pid!==pid){S.ui.opDraft={pid,lines:clone(p.opening||[])};}
+    const L=S.ui.opDraft.lines;
+    body=`<div class="panel"><h2>Opening stock</h2><p class="small muted" style="margin:0">Stock already at the outlet on your go-live date (from a signed count). It is used as the first week's B/F only when there is no earlier week.</p>
+      <div class="row">${partnerSelect("op-p",pid)}</div>
+      <div class="tw"><table><thead><tr><th>Cake</th><th>Colour</th><th>Made on</th><th class="r">Qty</th><th class="r">Rate RM</th><th></th></tr></thead><tbody>
+      ${L.map((l,i)=>`<tr><td><select id="op-${i}-p" data-op="${i}" data-k="productId">${products().map(x=>opt(x.id,x.name,l.productId)).join("")}</select></td><td><select id="op-${i}-c" data-op="${i}" data-k="colour">${cfg().colours.map(x=>opt(x.name,x.name,l.colour)).join("")}</select></td><td><input type="date" id="op-${i}-b" data-op="${i}" data-k="batchDate" value="${esc(l.batchDate||"")}"></td><td class="r"><input type="number" min="0" id="op-${i}-q" data-op="${i}" data-k="qty" value="${esc(l.qty??"")}"></td><td class="r"><input class="numin" id="op-${i}-r" data-op="${i}" data-k="rate" value="${esc(l.rate??"")}" placeholder="auto"></td><td class="r"><button class="btn sm" data-oprm="${i}">Remove</button></td></tr>`).join("")||`<tr><td colspan="6" class="muted">No opening stock.</td></tr>`}
+      </tbody></table></div><div class="row"><button class="btn" data-act="opAdd">Add line</button><button class="btn pri" data-act="opSave">Save opening stock</button></div></div>`;
+  }
+  if(sec==="general"){
+    const g=S.ui.gen||(S.ui.gen=clone(cfg()));
+    body=`<div class="panel"><h2>Go-live</h2>
+      <p class="small muted" style="margin:0">Run in <b>testing</b> alongside your current process. On cutoff day: do a signed opening count at every outlet, enter it in Setup › Opening stock, then switch to live. Nothing before the cutoff date is billed or chased.</p>
+      <div class="fgrid"><label class="f">Mode<select id="g-mode" data-g="mode">${opt("testing","Testing",g.mode)}${opt("live","Live",g.mode)}</select></label>
+        <label class="f">Cutoff / go-live date<input type="date" id="g-co" data-g="cutoffDate" value="${esc(g.cutoffDate||"")}"></label>
+        <label class="f">Prep / thaw lead time (days before delivery)<input id="g-lead" data-g="prepLeadDays" inputmode="numeric" value="${esc(g.prepLeadDays??0)}"></label>
+        <label class="f">Report grace after closing (min)<input id="g-grace" data-g="graceMin" inputmode="numeric" value="${esc(g.graceMin??60)}"></label>
+        <label class="f">Eve-of-holiday demand +%<input id="g-eve" data-g="eveUplift" inputmode="numeric" value="${esc(g.eveUplift??10)}"></label></div>
+      <h2>FIFO colour dots</h2><p class="small muted" style="margin:0">Fixed to the CA FIFO sheet: the dot is the day the cake was prepared or thawed.</p>
+      <div class="row">${g.colours.map((c,i)=>`<span class="pill mute" style="display:inline-flex;align-items:center;gap:6px"><i style="width:12px;height:12px;border-radius:50%;background:${esc(c.hex)};display:inline-block;box-shadow:0 0 0 1px var(--line)"></i>${esc(c.name)} · ${WD[i]}</span>`).join("")}</div>
+      <h2>Billing week & documents</h2>
+      <div class="fgrid"><label class="f">Week closes on<select id="g-we" data-g="weekEndDay">${WD.map((d,i)=>opt(i,d,g.weekEndDay)).join("")}</select></label>
+        <label class="f">CF rebill rate<select id="g-cfr" data-g="cfRate">${opt("original","Original rate (recommended)",g.cfRate)}${opt("current","Current approved rate",g.cfRate)}</select></label>
+        ${["DO","INV","CF","CN"].map(k=>`<label class="f">${k} prefix<input id="g-pre-${k}" data-gp="${k}" value="${esc(g.prefixes[k])}"></label>`).join("")}</div>
+      <h2>Company & links</h2>
+      <div class="fgrid">${[["name","Company name"],["address","Address"],["reg","SSM / registration no."],["phone","Phone"],["email","Email"]].map(([k,l])=>`<label class="f">${l}<input id="gco-${k}" data-gco="${k}" value="${esc(g.company[k]||"")}"></label>`).join("")}
+        <label class="f">Chaleur WhatsApp (reports go here)<input id="g-wa" data-g="chaleurWhatsApp" value="${esc(g.chaleurWhatsApp||"")}"></label>
+        <label class="f">Outlet closing form link<input id="g-ff" data-g="fieldFormUrl" value="${esc(g.fieldFormUrl||"")}"></label>
+        <label class="f">Staff audit form link<input id="g-af" data-g="auditFormUrl" value="${esc(g.auditFormUrl||"")}"></label>
+        <label class="f">Report deadline<input type="time" id="g-dl" data-g="reportDeadline" value="${esc(g.reportDeadline||"")}"></label></div>
+      <div class="row"><button class="btn pri" data-act="saveGeneral">Save settings</button></div></div>
+      <div class="panel"><h2>Sample data</h2><p class="small muted" style="margin:0">The sample outlet, its weeks, audits and the Claude check marked "sample" were added so you can see the system working. Remove them before go-live.</p>
+      ${S.ui.confirm==="clear"?`<div class="confirm">Delete all sample weeks, audits and alerts?<button class="btn sm danger" data-act="clearSample">Delete sample data</button><button class="btn sm" data-act="noconfirm">Cancel</button></div>`:`<div class="row"><button class="btn danger" data-act="askClear">Clear sample data</button></div>`}</div>`;
+  }
+  return `<div class="head"><div><h1>Setup</h1><p class="lede">Outlets, terms, products, approved prices and document settings.</p></div></div>
+    <div class="sub">${subs.map(([k,l])=>`<button aria-pressed="${sec===k}" data-setup="${k}">${l}</button>`).join("")}</div>${body}`;
+}
+
+/* ---------- planning engine: history → forecast → next delivery → kitchen prep ---------- */
+const evList=()=>Object.values(S.calendar).sort((a,b)=>a.date.localeCompare(b.date));
+const dayEvents=iso=>evList().filter(e=>iso>=e.date&&iso<=(e.end||e.date));
+function dayFactor(iso){
+  let f=1; const ev=dayEvents(iso); for(const e of ev) f*=1+(+e.uplift||0)/100;
+  if(!ev.some(e=>e.type==="public")&&dayEvents(add(iso,1)).some(e=>e.type==="public")) f*=1+(+cfg().eveUplift||0)/100;
+  return f;
+}
+const tradesLikeWeekend=iso=>[5,6,0].includes(dow(iso)); // Fri–Sun
+function salesHistory(pid,days=28){
+  const t=today(), from=add(t,-days), out={}, seen=new Set();
+  for(let d=from; d<t; d=add(d,1)){ const ws=weekStartOf(d); if(seen.has(ws)) continue; seen.add(ws);
+    for(const day of calcWeek(pid,ws).days){ if(day.date<from||day.date>=t||!day.rep) continue;
+      const per={}; for(const l of day.lines){ if(l.close==null) continue; const x=per[l.productId]||(per[l.productId]={sold:0,waste:0,recv:0,close:0}); x.sold+=l.sold; x.waste+=l.waste; x.recv+=l.recv||0; x.close+=l.close; }
+      for(const [pr,v] of Object.entries(per)) (out[pr]||(out[pr]=[])).push({date:day.date,...v,stockout:v.close===0&&v.sold>0});
+    }}
+  return out;
+}
+function forecastFor(pid,prodId,hist){
+  const h=hist[prodId]||[], base=h.map(x=>({...x,b:x.sold/dayFactor(x.date)}));
+  const avg=a=>a.length?a.reduce((s,x)=>s+x.b,0)/a.length:null;
+  const all=avg(base); let aw=avg(base.filter(x=>!tradesLikeWeekend(x.date))), ae=avg(base.filter(x=>tradesLikeWeekend(x.date)));
+  const par=+partner(pid).parDay||3, source=h.length>=5?"history":(h.length?"thin history":"starting par");
+  if(aw==null) aw=all!=null?all/1.15:par; if(ae==null) ae=all!=null?all*1.25:par*1.3;
+  if(h.length<5&&h.length){aw=(aw+par)/2; ae=(ae+par*1.3)/2;}
+  const so=h.length?h.filter(x=>x.stockout).length/h.length:0;
+  const sold=h.reduce((s,x)=>s+x.sold,0), waste=h.reduce((s,x)=>s+x.waste,0), wr=(sold+waste)?waste/(sold+waste):0;
+  const boost=so>.3?1.15:1;
+  return {aw,ae,so,wr,n:h.length,sold,waste,source,per:iso=>(tradesLikeWeekend(iso)?ae:aw)*dayFactor(iso)*boost};
+}
+function nextDeliveries(pid,from){const dd=(partner(pid).deliveryDays||[1,3,5]).map(Number);const r=[];for(let i=0;i<28&&r.length<2;i++){const d=add(from,i);if(dd.includes(dow(d))&&!isClosed(pid,d))r.push(d);}return r;}
+function planOutlet(pid){
+  const t=today(), p=partner(pid), hist=salesHistory(pid,28), [d1,d2]=nextDeliveries(pid,add(t,1));
+  if(!d1) return {pid,lines:[],note:"No delivery days set for this outlet (Setup › Outlets)."};
+  const c=calcWeek(pid,weekStartOf(t)); const ref=[...c.days].reverse().find(d=>d.date<=t&&d.rep)||[...c.days].reverse().find(d=>d.date<t)||c.days[0];
+  const stock={}; for(const k of Object.values(c.keys)){const q=ref?ref.stock[k.key]:0; if(q>0)(stock[k.productId]||(stock[k.productId]=[])).push({colour:k.colour,qty:q,batch:k.batchDate||ref.date});}
+  const planned=Object.values(weekDoc(pid,weekStartOf(d1)).dos||{}).filter(d=>d.date===d1);
+  const ids=new Set([...Object.keys(hist),...Object.keys(stock),...Object.values(S.prices).filter(x=>x.partnerId===pid&&x.status==="Active").map(x=>x.productId),...(p.carries||[])]);
+  const lines=[];
+  for(const id of [...ids].filter(id=>S.products[id]&&S.products[id].active!==false).sort((a,b)=>prod(a).name.localeCompare(prod(b).name))){
+    const f=forecastFor(pid,id,hist), life=+prod(id).shelfDays||3;
+    let lots=(stock[id]||[]).map(x=>({...x})).sort((a,b)=>a.batch.localeCompare(b.batch));
+    const stockNow=lots.reduce((s,x)=>s+x.qty,0);
+    for(let d=add(ref?ref.date:t,1); d<d1; d=add(d,1)){ lots=lots.filter(x=>diffDays(d,x.batch)<life); let need=f.per(d); for(const x of lots){const u=Math.min(x.qty,need);x.qty-=u;need-=u;} }
+    const span=Math.max(1,Math.min(d2?diffDays(d2,d1):life,life));
+    const usable=Math.floor(lots.filter(x=>diffDays(d1,x.batch)<life-1).reduce((s,x)=>s+x.qty,0));
+    let demand=0; for(let i=0;i<span;i++) demand+=f.per(add(d1,i));
+    const buffer=f.wr>.15?0:(f.so>.3?.2:.1);
+    const suggest=Math.max(0,Math.ceil(demand*(1+buffer)-usable));
+    const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
+    if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`); if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — +15%`);
+    if(d2&&diffDays(d2,d1)>life) notes.push(`gap to next delivery (${diffDays(d2,d1)}d) is longer than shelf life`);
+    lines.push({productId:id,aw:f.aw,ae:f.ae,stockNow,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n});
+  }
+  const hol=[]; for(let i=0;i<(d2?diffDays(d2,d1):3);i++){for(const e of dayEvents(add(d1,i))) if(!hol.includes(e)) hol.push(e);}
+  return {pid,d1,d2,lines,planned,hol,prepDate:add(d1,-(+cfg().prepLeadDays||0))};
+}
+function wasteStats(pid,days=28){
+  const h=salesHistory(pid,days); let sold=0,waste=0,recv=0,wasteRM=0,soldRM=0; const byProd=[];
+  for(const [id,arr] of Object.entries(h)){const s=arr.reduce((a,x)=>a+x.sold,0),w=arr.reduce((a,x)=>a+x.waste,0),r=arr.reduce((a,x)=>a+x.recv,0),rate=priceFor(pid,id,today()).net;
+    sold+=s;waste+=w;recv+=r;wasteRM+=w*rate;soldRM+=s*rate; byProd.push({id,s,w,rate});}
+  return {sold,waste,recv,wasteRM,soldRM,rate:(sold+waste)?waste/(sold+waste):0,byProd:byProd.sort((a,b)=>b.w-a.w)};
+}
+function vPlan(){
+  const t=today(), ps=partners(), plans=ps.map(p=>planOutlet(p.id));
+  const prep={}; // prepDate -> productId -> qty
+  for(const pl of plans) for(const l of pl.lines) if(l.suggest>0){const d=pl.prepDate;(prep[d]||(prep[d]={}));prep[d][l.productId]=(prep[d][l.productId]||0)+l.suggest;}
+  const prepDays=Object.keys(prep).sort();
+  const f1=n=>n==null?"—":(Math.round(n*10)/10).toFixed(1);
+  const up=evList().filter(e=>(e.end||e.date)>=t&&e.date<=add(t,75));
+  const regionPill=r=>`<span class="pill ${r==="SG"?"info":"mute"}">${r==="SG"?"Singapore":r==="MY-JHR"?"Johor":esc(r||"")}</span>`;
+  return `<div class="head"><div><h1>Plan & prep</h1><p class="lede">Suggested next delivery for each outlet, based on the last 28 days of closing reports. Sold is worked out from balance and waste. Weekdays and Fri–Sun are averaged separately, adjusted for Johor and Singapore holidays, and nothing is planned past a cake's shelf life. Stock that will still be sellable is subtracted.</p></div>
+    <div class="row"><button class="btn pri" data-act="makeDOs">Create draft DOs from suggestions</button></div></div>
+    <div class="cols">
+      <div class="panel"><div class="spread"><h2>Kitchen prep list</h2><span class="small muted">all outlets combined</span></div>
+        ${prepDays.length?prepDays.map(d=>`<div><div class="spread"><h3>Prep on ${nice(d)}</h3>${dot(colourOf(d).name)}</div>
+          <div class="tw" style="margin-top:6px"><table><thead><tr><th>Cake</th><th class="r">Units</th><th>Outlets</th></tr></thead><tbody>
+          ${Object.entries(prep[d]).sort((a,b)=>b[1]-a[1]).map(([id,q])=>`<tr><td>${cake(id)}</td><td class="r mono"><b>${q}</b></td><td class="small">${plans.filter(pl=>pl.prepDate===d).map(pl=>{const l=pl.lines.find(x=>x.productId===id);return l&&l.suggest?`${esc(partner(pl.pid).code)} ${l.suggest}`:""}).filter(Boolean).join(" · ")}</td></tr>`).join("")}
+          <tr><td><b>Total</b></td><td class="r mono"><b>${Object.values(prep[d]).reduce((a,b)=>a+b,0)}</b></td><td></td></tr></tbody></table></div></div>`).join(""):`<div class="empty">Nothing to prep — no suggestions yet.</div>`}
+        <p class="small muted" style="margin:0">Mark every prepared/thawed cake with the dot of the prep day. Lead time: ${+cfg().prepLeadDays||0} day(s) before delivery (change in Setup › Go-live & rules).</p>
+      </div>
+      <div class="panel"><div class="spread"><h2>Holidays & events</h2><span class="small muted">next 75 days</span></div>
+        ${up.length?`<div class="items">${up.map(e=>`<div class="item"><span class="sev ${e.type==="public"?"warn":e.type==="event"?"bad":"info"}"></span><div><b>${esc(e.name)}</b> ${regionPill(e.region)}<div class="small muted">${nice(e.date)}${e.end&&e.end!==e.date?` – ${nice(e.end)}`:""} · ${esc(e.type)} · demand ${+e.uplift>=0?"+":""}${+e.uplift||0}%${e.source?` · ${esc(e.source)}`:""}</div></div><button class="btn sm" data-evdel="${esc(e.id)}" aria-label="Remove">✕</button></div>`).join("")}</div>`:`<div class="empty">No holidays in the next 75 days.</div>`}
+        <details class="help"><summary>Add holiday, event or incident</summary>
+          <div class="fgrid" style="margin-top:8px"><label class="f">Name<input id="ev-n" data-ev="name" value="${esc(S.ui.ev?.name||"")}" placeholder="e.g. Causeway jam, mall event"></label>
+          <label class="f">From<input type="date" id="ev-d" data-ev="date" value="${esc(S.ui.ev?.date||t)}"></label><label class="f">To<input type="date" id="ev-e" data-ev="end" value="${esc(S.ui.ev?.end||"")}"></label>
+          <label class="f">Region<select id="ev-r" data-ev="region">${[["MY-JHR","Johor"],["SG","Singapore"],["LOCAL","Outlet area"]].map(([v,l])=>opt(v,l,S.ui.ev?.region||"MY-JHR")).join("")}</select></label>
+          <label class="f">Type<select id="ev-t" data-ev="type">${["public","school","event"].map(v=>opt(v,v,S.ui.ev?.type||"event")).join("")}</select></label>
+          <label class="f">Demand change %<input id="ev-u" data-ev="uplift" inputmode="numeric" value="${esc(S.ui.ev?.uplift??"")}" placeholder="e.g. 20 or -30"></label></div>
+          <div class="row" style="margin-top:8px"><button class="btn" data-act="addEvent">Add to calendar</button></div></details>
+      </div>
+    </div>
+    ${plans.map(pl=>{const p=partner(pl.pid); if(!pl.d1) return `<div class="panel"><h2>${esc(p.name)}</h2><div class="empty">${esc(pl.note)}</div></div>`;
+      const tot=pl.lines.reduce((a,l)=>a+l.suggest,0);
+      return `<div class="panel"><div class="spread"><div><h2>${esc(p.name)} — next delivery ${nice(pl.d1)}</h2><p class="small muted" style="margin:2px 0 0">Covers ${nice(pl.d1)} until ${pl.d2?nice(pl.d2):"—"} · open ${esc(hoursOf(pl.pid,pl.d1).open)}–${esc(hoursOf(pl.pid,pl.d1).close)} · prep ${nice(pl.prepDate)} ${dot(colourOf(pl.prepDate).name)}</p></div>
+        <div class="row">${pl.hol.map(e=>`<span class="pill warn">${esc(e.name)} ${+e.uplift>0?"+":""}${+e.uplift||0}%</span>`).join("")}${pl.planned.length?`<span class="pill info">DO ${pl.planned.map(d=>esc(d.no)).join(", ")} already planned</span>`:""}<span class="pill ok">${tot} units</span></div></div>
+        <div class="tw"><table><thead><tr><th>Cake</th><th class="r">Avg/day Mon–Thu</th><th class="r">Avg/day Fri–Sun</th><th class="r">Stock now</th><th class="r">Sellable at delivery</th><th class="r">Forecast</th><th class="r">Buffer</th><th class="r">Send</th><th>Why</th></tr></thead><tbody>
+        ${pl.lines.map(l=>`<tr><td>${cake(l.productId)}</td><td class="r mono">${f1(l.aw)}</td><td class="r mono">${f1(l.ae)}</td><td class="r mono">${l.stockNow||""}</td><td class="r mono">${l.usable||""}</td><td class="r mono">${f1(l.demand)}</td><td class="r mono">${Math.round(l.buffer*100)}%</td><td class="r mono"><b>${l.suggest}</b></td><td class="small muted">${l.notes.map(esc).join("; ")}</td></tr>`).join("")||`<tr><td colspan="9" class="muted">Add Active prices or deliveries for this outlet to start planning.</td></tr>`}
+        </tbody></table></div></div>`}).join("")}
+    <div class="panel"><div class="spread"><h2>Wastage by outlet</h2><span class="small muted">last 28 days</span></div>
+      <div class="tw"><table><thead><tr><th>Outlet</th><th class="r">Sold</th><th class="r">Wasted</th><th class="r">Waste %</th><th class="r">Waste value (RM)</th><th class="r">Sales value (RM)</th><th>Most wasted</th></tr></thead><tbody>
+      ${ps.map(p=>{const w=wasteStats(p.id);return `<tr><td>${esc(p.name)}</td><td class="r mono">${w.sold}</td><td class="r mono">${w.waste}</td><td class="r"><span class="pill ${w.rate>.15?"bad":w.rate>.08?"warn":"ok"}">${Math.round(w.rate*100)}%</span></td><td class="r mono">${fm(w.wasteRM)}</td><td class="r mono">${fm(w.soldRM)}</td><td class="small">${w.byProd.filter(x=>x.w).slice(0,3).map(x=>`${esc(prod(x.id).name)} ${x.w}`).join(" · ")||"—"}</td></tr>`}).join("")}
+      </tbody></table></div>
+      <p class="small muted" style="margin:0">Waste value = wasted units × partner rate (what Chaleur loses when wastage is credited). Target under 8%. Over 15% means the planner drops the buffer for that outlet.</p></div>`;
+}
+/* ---------- Google Drive filing (viewer's Google Drive connector) ---------- */
+const DRIVE="Google Drive";
+const TYPE_FOLDER={inv:"Invoices",cf:"Carry Forward",cn:"Credit Notes",do:"Delivery Orders",daily:"Daily Reports",audit:"Audits",photo:"Photos"};
+function driveErr(e){const c=e&&e.code;return c==="server_not_connected"?"Connect Google Drive in claude.ai Settings → Connectors, then try again.":c==="needs_reauth"?"Reconnect Google Drive in claude.ai Settings → Connectors.":c==="not_in_manifest"?"Google Drive access is turned off for this page — allow it and try again.":c==="selection_required"?"Choose which Google Drive account to use in the prompt, then try again.":c==="not_granted"||c==="capability_disabled"?"Drive filing isn't available in this view.":`Drive said: ${(e&&e.message)||"unknown error"}`}
+async function driveFolder(parts){
+  if(!S.mcp) throw {code:"capability_disabled"};
+  let parent=cfg().driveRootId, path=""; const cache={...(S.drive.folders||{})}; let changed=false;
+  for(const name of parts){ path+=(path?"/":"")+name; if(cache[path]){parent=cache[path];continue;}
+    const q=`title = '${name.replace(/\\/g,"\\\\").replace(/'/g,"\\'")}' and parentId = '${parent}' and mimeType = 'application/vnd.google-apps.folder'`;
+    const r=await S.mcp.callTool(DRIVE,"search_files",{query:q,excludeContentSnippets:true,pageSize:5},{cache:false});
+    let id=((r.payload&&r.payload.files)||[])[0]?.id;
+    if(!id){const c=await S.mcp.callTool(DRIVE,"create_file",{title:name,parentId:parent,contentMimeType:"application/vnd.google-apps.folder"}); id=c.payload&&c.payload.id;}
+    if(!id) throw {code:"tool_error",message:"Drive did not return a folder id"};
+    cache[path]=id; parent=id; changed=true;
+  }
+  if(changed){S.drive.folders=cache; await put("config/drive",{...S.drive,folders:cache});}
+  return parent;
+}
+function drivePath(pid,iso,kind){const p=partner(pid);return [p.legalName||p.name,`${p.name} (${p.code})`,iso.slice(0,7),TYPE_FOLDER[kind]]}
+async function driveUploadHtml(pid,iso,kind,title,html){
+  const parent=await driveFolder(drivePath(pid,iso,kind));
+  const r=await S.mcp.callTool(DRIVE,"create_file",{title,parentId:parent,textContent:`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title></head><body>${html}</body></html>`,contentMimeType:"text/html"});
+  return r.payload&&(r.payload.viewUrl||r.payload.id)||"";
+}
+async function driveUploadPhoto(pid,iso,title,assetId){
+  const parent=await driveFolder(drivePath(pid,iso,"photo"));
+  const blob=await (await fetch("/_blob/"+assetId)).blob();
+  const b64=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(",")[1]);fr.onerror=rej;fr.readAsDataURL(blob);});
+  const r=await S.mcp.callTool(DRIVE,"create_file",{title,parentId:parent,base64Content:b64,contentMimeType:blob.type||"image/jpeg",disableConversionToGoogleType:true});
+  return r.payload&&(r.payload.viewUrl||r.payload.id)||"";
+}
+const driveLink=url=>url?`<a class="pill ok" href="${esc(url)}" target="_blank" rel="noopener">In Drive ↗</a>`:"";
+function dailyHtml(pid,date){
+  const c=calcWeek(pid,weekStartOf(date)), day=c.days.find(d=>d.date===date), p=partner(pid), rep=day.rep||{};
+  return `<h2>${esc(p.name)} (${esc(p.code)}) — closing report ${date}</h2><p>Reported by ${esc(rep.by||"-")} · source ${esc(rep.source||"-")} · photos ${(rep.photos||[]).length}</p>
+  <table border="1" cellpadding="4" cellspacing="0"><tr><th>Cake</th><th>Dot</th><th>Opening</th><th>Delivered</th><th>Waste</th><th>Balance</th><th>Sold (calc)</th><th>POS sold</th><th>Variance</th></tr>
+  ${day.lines.map(l=>`<tr><td>${esc(prod(l.productId).name)}</td><td>${esc(l.colour)} (${dayOfColour(l.colour)})</td><td>${l.open??0}</td><td>${l.recv||0}</td><td>${l.close!=null?l.waste:""}</td><td>${l.close??""}</td><td>${l.close!=null?l.sold:""}</td><td>${l.pos??""}</td><td>${l.close!=null?l.var:""}</td></tr>`).join("")}</table>
+  ${rep.note?`<p>Outlet note: ${esc(rep.note)}</p>`:""}`;
+}
+/* ---------- events ---------- */
+document.addEventListener("input",e=>{
+  const t=e.target, d=t.dataset;
+  if(d.f!==undefined){S.f[d.f]=t.type==="checkbox"?t.checked:t.value; if(t.type==="checkbox") render(); return;}
+  if(d.ui==="paste"){S.ui.paste=t.value;return;}
+  if(d.ui==="dayBy"){S.ui.dayBy=t.value;return;}
+  if(d.do){const E=S.ui.doEdit; E[d.do]=t.value;
+    if(d.do==="date"&&!E.batchTouched) E.batchDate=add(t.value,-(+cfg().prepLeadDays||0));
+    if(d.do==="batchDate") E.batchTouched=true;
+    if(d.do==="colour") E.colourTouched=true;
+    if((d.do==="date"||d.do==="batchDate")&&!E.colourTouched&&(E.batchDate||E.date)) E.colour=colourOf(E.batchDate||E.date).name;
+    if(d.do!=="note") render(); return;}
+  if(d.doline){const L=S.ui.doEdit.lines[d.doline]||(S.ui.doEdit.lines[d.doline]={}); L[d.k]=t.value; return;}
+  if(d.dd){const v=S.ui.dayDraft[d.dd]||(S.ui.dayDraft[d.dd]={}); v[d.k]=t.value; render(); return;}
+  if(d.au){S.ui.auditDraft[d.au]=t.value; if(d.au==="partnerId"||d.au==="date") render(); return;}
+  if(d.aup){S.ui.auditDraft.prices[d.aup]=t.value; render(); return;}
+  if(d.pe){S.ui.pEdit[d.pe]=t.value;return;}
+  if(d.peh){const e=S.ui.pEdit;e.hours={...(e.hours||{}),[d.peh]:t.value};return;}
+  if(d.pearr){const e=S.ui.pEdit,k=d.pearr,v=+d.v;let arr=k==="closed"?((e.hours||{}).closed||[]):(e.deliveryDays||[1,3,5]);arr=arr.map(Number).filter(x=>x!==v);if(t.checked)arr.push(v);arr.sort();if(k==="closed")e.hours={...(e.hours||{}),closed:arr};else e.deliveryDays=arr;return;}
+  if(d.ev){S.ui.ev=S.ui.ev||{};S.ui.ev[d.ev]=t.value;return;}
+  if(d.pr){S.ui.prEdit[d.pr]=t.value;return;}
+  if(d.pn){S.ui.priceNew=S.ui.priceNew||{}; S.ui.priceNew[d.pn]=t.value;
+    if(d.pn==="partnerId"||d.pn==="productId"){const n=S.ui.priceNew; if(n.productId&&!n.retail) n.retail=prod(n.productId).retail; if(n.partnerId&&!n.pct) n.pct=partner(n.partnerId).pct;}
+    render(); return;}
+  if(d.op!==undefined){S.ui.opDraft.lines[+d.op][d.k]=t.value;return;}
+  if(d.gc!==undefined){S.ui.gen.colours[+d.gc][d.k]=d.k==="name"?t.value.toUpperCase().replace(/\s/g,""):t.value; return;}
+  if(d.g){S.ui.gen[d.g]=d.g==="weekEndDay"?+t.value:t.value; if(d.g==="mode") render(); return;}
+  if(d.gp){S.ui.gen.prefixes[d.gp]=t.value.trim(); return;}
+  if(d.gco){S.ui.gen.company[d.gco]=t.value; return;}
+});
+async function shrink(file,max=900){
+  const img=await createImageBitmap(file); const k=Math.min(1,max/Math.max(img.width,img.height));
+  const c=document.createElement("canvas"); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height); return await new Promise(r=>c.toBlob(r,"image/jpeg",.85));
+}
+document.addEventListener("change",async e=>{
+  const t=e.target;
+  if(RO()&&!t.dataset.ui){toast("View only — ask a manager to make changes");render();return;}
+  if(t.dataset.repphoto&&t.files&&t.files.length){const [pid,date]=t.dataset.repphoto.split("|"); toast(`Uploading ${t.files.length} photo(s)…`);
+    try{const ids=[];for(const f of t.files){const r=await S.assets.upload(await shrink(f,1400));ids.push(r.id);}
+      const w=clone(weekDoc(pid,weekStartOf(date)));w.days[date]={...w.days[date],photos:[...((w.days[date]||{}).photos||[]),...ids]};await saveWeek(w);toast("Photos saved to the report");}
+    catch(err){toast(err&&err.code==="too_large"?"A photo is too large":"Couldn't upload the photos");} return;}
+  if(t.dataset.photo&&t.files&&t.files[0]){const id=t.dataset.photo; toast("Uploading photo…");
+    try{const blob=await shrink(t.files[0]); const r=await S.assets.upload(blob); await put(`products/${id}`,{...S.products[id],photo:r.id}); toast("Photo saved");}
+    catch(err){toast(err&&err.code==="too_large"?"Photo is too large":"Couldn't upload the photo");} return;}
+  if(t.dataset.ui==="partner"){S.ui.partner=t.value;S.ui.editDay=false;S.ui.confirm=null;render();}
+  if(t.dataset.ui==="date"&&t.value){S.ui.date=t.value;S.ui.editDay=false;render();}
+});
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button,[data-close]"); if(!b) return;
+  const d=b.dataset;
+  if(d.close&&e.target!==b) return;
+  if(d.close){S.ui.modal=null;render();return;}
+  if(RO()&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo)){toast("View only — ask a manager to make changes");return;}
+  if(d.tab){S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;render();window.scrollTo(0,0);return;}
+  if(d.stnew){S.ui.stEdit={row:0,name:"",code:"",role:"auditor",notes:""};render();return;}
+  if(d.stcancel){S.ui.stEdit=null;render();return;}
+  if(d.stedit){const x=(S.team||[]).find(r=>String(r.row)===d.stedit); if(x){S.ui.stEdit={...x};render();window.scrollTo(0,0);} return;}
+  if(d.stsave){const x=S.ui.stEdit; if(x){b.disabled=true; await stSave({...x,active:x.row?x.active:true}); b.disabled=false;} return;}
+  if(d.sttog){const x=(S.team||[]).find(r=>String(r.row)===d.sttog); if(x){b.disabled=true; await stSave({...x,active:!x.active});} return;}
+  if(d.goDaily){const [p,dt]=d.goDaily.split("|");S.ui.partner=p;S.ui.date=dt;S.tab="daily";S.ui.editDay=false;render();return;}
+  if(d.att){const a=attention()[+d.att]; if(a&&a.go){S.ui.partner=a.pid;S.tab=a.go.tab;if(a.go.date)S.ui.date=a.go.date;if(a.go.week)S.ui.week=a.go.week;render();}return;}
+  if(d.day){S.ui.date=add(S.ui.date||today(),+d.day);S.ui.editDay=false;render();return;}
+  if(d.wk){S.ui.week=add(S.ui.week||weekStartOf(add(today(),-7)),+d.wk);S.ui.confirm=null;render();return;}
+  if(d.setup){S.ui.setup=d.setup;S.ui.confirm=null;render();return;}
+  if(d.rcv||d.edo||d.vdo){const [pid,ws,id]=(d.rcv||d.edo||d.vdo).split("|");const w=weekDoc(pid,ws);const x=clone(w.dos[id]);
+    if(d.vdo){S.ui.modal={kind:"do",html:docHTML("do",pid,ws,x),doc:x,pid};render();return;}
+    const lines={};(x.lines||[]).forEach(l=>lines[l.productId]={qty:l.qty,accepted:l.accepted});
+    S.ui.doEdit={...x,partnerId:pid,weekStart:ws,lines,mode:d.rcv?"receive":"edit",batchTouched:true,receivedAt:x.receivedAt||new Date().toTimeString().slice(0,5)};render();window.scrollTo(0,0);return;}
+  if(d.doc){const pid=curPartner(),ws=S.ui.week||weekStartOf(add(today(),-7));const st=weekDoc(pid,ws).settlement;S.ui.modal={kind:d.doc,html:docHTML(d.doc,pid,ws,st),st,pid};render();return;}
+  if(d.auc){S.ui.auditDraft.checks[d.auc]=d.v;render();return;}
+  if(d.rmc){S.ui.auditDraft.counts.splice(+d.rmc,1);render();return;}
+  if(d.pedit){S.ui.pEdit=clone(S.partners[d.pedit]);render();return;}
+  if(d.predit){S.ui.prEdit=clone(S.products[d.predit]);render();return;}
+  if(d.pact){const [id,stt]=d.pact.split("|");const x={...S.prices[id],status:stt};
+    if(stt==="Active"){x.approvedAt=today();x.approvedBy=x.approvedBy||"Owner";
+      for(const o of Object.values(S.prices)) if(o.id!==id&&o.partnerId===x.partnerId&&o.productId===x.productId&&o.status==="Active"&&o.from<=x.from){await put(`prices/${o.id}`,{...o,to:add(x.from,-1)});}}
+    if(stt==="Superseded") x.to=x.to||today();
+    await put(`prices/${id}`,x);toast(`Price ${stt.toLowerCase()}`);return;}
+  if(d.evdel){await del(`calendar/${d.evdel}`);toast("Removed from calendar");return;}
+  if(d.oprm!==undefined){S.ui.opDraft.lines.splice(+d.oprm,1);render();return;}
+  if(d.act) await act(d.act,b);
+});
+async function act(a,b){
+  const t=today();
+  switch(a){
+  case "goNewDO": S.tab="deliveries"; return act("newDO");
+  case "goPaste": S.tab="daily"; render(); setTimeout(()=>{const x=$("#paste"); x&&x.focus()},50); return;
+  case "goAudit": S.tab="audits"; return act("newAudit");
+  case "noconfirm": S.ui.confirm=null; render(); return;
+  case "newDO":{const pid=curPartner(), bd=add(t,-(+cfg().prepLeadDays||0)); S.ui.doEdit={partnerId:pid,date:t,batchDate:bd,colour:colourOf(bd).name,lines:{},note:"",mode:"new"}; render(); return;}
+  case "cancelDO": S.ui.doEdit=null; render(); return;
+  case "saveDO":{const e=S.ui.doEdit; const lines=Object.entries(e.lines).filter(([k,v])=>+v.qty>0).map(([k,v])=>({productId:k,qty:+v.qty}));
+    if(!e.partnerId||!e.date){toast("Choose outlet and date");return;} if(!lines.length){toast("Enter at least one quantity");return;}
+    const ws=weekStartOf(e.date);
+    const w=clone(weekDoc(e.partnerId,ws)); if(w.settlement){toast("That week is already billed — choose another date or void the bill.");return;}
+    if(e.id&&e.weekStart!==ws){const ow=clone(weekDoc(e.partnerId,e.weekStart)); delete ow.dos[e.id]; await saveWeek(ow);}
+    const id=e.id||newId(), no=e.no||await nextNo("DO",e.date);
+    w.dos=w.dos||{}; w.days=w.days||{}; w.dos[id]={id,no,date:e.date,batchDate:e.batchDate||e.date,colour:e.colour,lines,status:"planned",note:e.note||"",createdAt:new Date().toISOString()};
+    await saveWeek(w); S.ui.doEdit=null; toast(`${no} saved`); return;}
+  case "receiveDO":{const e=S.ui.doEdit; const w=clone(weekDoc(e.partnerId,e.weekStart)); const x=w.dos[e.id];
+    x.lines=x.lines.map(l=>({...l,accepted:+(e.lines[l.productId]?.accepted??l.qty)}));
+    x.status="delivered"; x.receivedBy=e.receivedBy||""; x.receivedAt=e.receivedAt||""; x.note=e.note||"";
+    await saveWeek(w); S.ui.doEdit=null; toast(`${x.no} delivered`); return;}
+  case "parse":{S.ui.parsed=parseMsg(S.ui.paste||""); render(); return;}
+  case "savePaste":{const p=S.ui.parsed; if(!p||!p.ok) return;
+    if(p.type==="report"){const w=clone(weekDoc(p.partnerId,weekStartOf(p.date))); w.dos=w.dos||{}; w.days=w.days||{};
+      w.days[p.date]={lines:p.lines,by:p.by,note:p.note,source:"WhatsApp",photos:(w.days[p.date]||{}).photos||[],at:new Date().toISOString()}; await saveWeek(w);
+      S.ui.partner=p.partnerId; S.ui.date=p.date; toast("Closing report saved");}
+    else {const id=newId(); await put(`audits/${id}`,{id,...p.audit}); toast("Audit saved"); S.tab="audits";}
+    S.ui.paste=""; S.ui.parsed=null; render(); return;}
+  case "editDay":{const pid=curPartner(),date=S.ui.date||t; const c=calcWeek(pid,weekStartOf(date)); const day=c.days.find(x=>x.date===date);
+    S.ui.dayDraft={}; for(const l of day.lines){const k=l.productId+"|"+l.colour; S.ui.dayDraft[k]=day.rep?{s:l.pos??"",w:l.waste,b:l.close??""}:{s:"",w:"",b:""};}
+    S.ui.dayBy=day.rep?.by||""; S.ui.editDay=true; render(); return;}
+  case "cancelDay": S.ui.editDay=false; render(); return;
+  case "addDayLine":{const k=$("#dd-ap").value+"|"+$("#dd-ac").value; if(!S.ui.dayDraft[k]) S.ui.dayDraft[k]={s:"",w:"",b:""}; render(); return;}
+  case "saveDay":{const pid=curPartner(),date=S.ui.date||t; const lines=[];
+    for(const [k,v] of Object.entries(S.ui.dayDraft)){ if(v.b===""||v.b==null) continue; const [p,c]=k.split("|"); lines.push({productId:p,colour:c,w:+v.w||0,b:+v.b||0,...(v.s!==""&&v.s!=null?{s:+v.s}:{})});}
+    const w=clone(weekDoc(pid,weekStartOf(date))); w.dos=w.dos||{}; w.days=w.days||{};
+    w.days[date]={lines,by:S.ui.dayBy||"",note:(w.days[date]||{}).note||"",photos:(w.days[date]||{}).photos||[],source:"entered by office",at:new Date().toISOString()};
+    await saveWeek(w); S.ui.editDay=false; toast("Report saved"); return;}
+  case "askIssue": S.ui.confirm="issue"; render(); return;
+  case "askVoid": S.ui.confirm="void"; render(); return;
+  case "askClear": S.ui.confirm="clear"; render(); return;
+  case "issue":{const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); memo=new Map(); const c=calcWeek(pid,ws);
+    const cs=!!S.f["creditShort_"+wid(pid,ws)]; const s=buildSettlement(c,{creditShort:cs}); b.disabled=true;
+    const invNo=await nextNo("INV",t), cfNo=await nextNo("CF",t), cnNo=s.cn.length?await nextNo("CN",t):"";
+    const w=clone(c.week); w.dos=w.dos||{}; w.days=w.days||{};
+    w.settlement={status:"issued",issuedAt:new Date().toISOString(),invNo,cfNo,cnNo,inv:s.inv,cf:s.cf,cn:s.cn,totals:s.totals,soldVal:s.soldVal,shortVal:s.shortVal,shortQty:s.shortQty,wasteCharged:s.wasteCharged,shortageCredited:cs,openingSrc:c.opening.src,pct:partner(pid).pct,bukku:{},paid:null};
+    await saveWeek(w); S.ui.confirm=null; toast(`${invNo}, ${cfNo}${cnNo?", "+cnNo:""} issued`); return;}
+  case "void":{const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws));
+    w.voided=[...(w.voided||[]),{...w.settlement,voidedAt:new Date().toISOString()}]; w.settlement=null; await saveWeek(w); S.ui.confirm=null; toast("Documents voided — week reopened"); return;}
+  case "saveBk":{const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws)); const g=id=>$(id).value.trim();
+    w.settlement.bukku={inv:g("#bk-inv"),cf:g("#bk-cf")}; const pd=g("#pd-d"),pa=g("#pd-a"); w.settlement.paid=pd||pa?{date:pd,amount:pa===""?null:+pa}:null;
+    await saveWeek(w); toast("Saved"); return;}
+  case "closeModal": S.ui.modal=null; render(); return;
+  case "addEvent":{const e=S.ui.ev||{}; if(!e.name||!e.date){toast("Name and date are required");return;} const id=newId();
+    await put(`calendar/${id}`,{id,name:e.name,date:e.date,end:e.end||"",region:e.region||"MY-JHR",type:e.type||"event",uplift:+e.uplift||0,source:"added by office"}); S.ui.ev=null; toast("Added to calendar"); return;}
+  case "makeDOs":{b.disabled=true; let n=0;
+    for(const p of partners()){const pl=planOutlet(p.id); if(!pl.d1||pl.planned.length) continue; const lines=pl.lines.filter(l=>l.suggest>0).map(l=>({productId:l.productId,qty:l.suggest})); if(!lines.length) continue;
+      const ws=weekStartOf(pl.d1), w=clone(weekDoc(p.id,ws)); if(w.settlement) continue; w.dos=w.dos||{}; w.days=w.days||{};
+      const id=newId(), no=await nextNo("DO",pl.d1); w.dos[id]={id,no,date:pl.d1,batchDate:pl.prepDate,colour:colourOf(pl.prepDate).name,lines,status:"planned",note:"Drafted from Plan & prep suggestion — check before sending",createdAt:new Date().toISOString()};
+      await saveWeek(w); n++;}
+    toast(n?`${n} draft DO(s) created — review them in Deliveries`:"Nothing new to draft (DOs already planned or no suggestions)"); if(n){S.tab="deliveries";render();} return;}
+  case "fileModal":{const m=S.ui.modal; b.disabled=true; toast("Filing to Google Drive…");
+    try{const kind=m.kind, pid=m.pid, iso=kind==="do"?m.doc.date:m.st.issuedAt.slice(0,10), no=kind==="do"?m.doc.no:m.st[kind+"No"];
+      const url=await driveUploadHtml(pid,iso,kind,`${no} — ${partner(pid).name}`,m.html); toast("Filed in Drive"); m.drive=url; render();}
+    catch(e){b.disabled=false; toast(driveErr(e));} return;}
+  case "fileWeek":{const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws)), st=w.settlement; b.disabled=true; toast("Filing to Google Drive…");
+    try{const iso=st.issuedAt.slice(0,10), drive={};
+      for(const k of ["inv","cf","cn"]) if(st[k+"No"]) drive[k]=await driveUploadHtml(pid,iso,k,`${st[k+"No"]} — ${partner(pid).name}`,docHTML(k,pid,ws,st));
+      for(const d of Object.values(w.dos||{})) await driveUploadHtml(pid,d.date,"do",`${d.no} — ${partner(pid).name}`,docHTML("do",pid,ws,d));
+      w.settlement.drive=drive; await saveWeek(w); toast("Invoice, CF, CN and DOs filed in Drive");}
+    catch(e){b.disabled=false; toast(driveErr(e));} return;}
+  case "fileDaily":{const pid=curPartner(), date=S.ui.date||t; const w=clone(weekDoc(pid,weekStartOf(date))), rep=w.days[date]; b.disabled=true; toast("Filing to Google Drive…");
+    try{const p=partner(pid); const url=await driveUploadHtml(pid,date,"daily",`${date} Closing report — ${p.name}`,dailyHtml(pid,date));
+      let i=0; for(const id of rep.photos||[]) await driveUploadPhoto(pid,date,`${date} ${p.code} closing photo ${++i}.jpg`,id);
+      w.days[date]={...rep,drive:url}; await saveWeek(w); toast("Report and photos filed in Drive");}
+    catch(e){b.disabled=false; toast(driveErr(e));} return;}
+  case "copyLines":{const m=S.ui.modal; let rows;
+    if(m.kind==="do") rows=m.doc.lines.map(l=>[prod(l.productId).sku,prod(l.productId).name+" ("+m.doc.colour+")",l.accepted??l.qty]);
+    else rows=m.st[m.kind].map(l=>[prod(l.productId).sku,prod(l.productId).name+" ("+l.colour+")"+(l.type==="B/F"?" B/F "+(l.ref||""):"")+(l.reason?" "+l.reason:""),l.qty,fm(l.rate),fm(l.qty*l.rate)]);
+    const txt=rows.map(r=>r.join("\t")).join("\n");
+    try{await navigator.clipboard.writeText(txt);toast("Lines copied — paste into Bukku");}catch(_){toast("Copy blocked — select the table and copy manually");} return;}
+  case "saveFile":{const m=S.ui.modal; b.disabled=true; toast("Saving PDF to Google Drive…");
+    const no=m.kind==="do"?m.doc.no:m.st[m.kind+"No"], iso=m.kind==="do"?m.doc.date:m.st.issuedAt.slice(0,10);
+    const css=[...document.querySelectorAll("style")].map(s=>s.textContent).join("\n");
+    const html=`<html><head><meta charset="utf-8"><style>${css} body{background:#fff} .paper{max-width:800px;margin:0 auto}</style></head><body>${m.html}</body></html>`;
+    try{const r=await GS("saveDocPdf",m.pid,m.kind,iso,`${no} — ${partner(m.pid).name}`,html); m.drive=r.url; toast(`${no} saved as PDF in the partner's Drive folder`); render();}
+    catch(e){b.disabled=false; toast("Couldn't save the PDF — "+(e.message||"try again"));} return;}
+  case "newAudit":{const s=S.ui.suggest||suggestAudit(); S.ui.auditDraft={partnerId:s?s.partnerId:curPartner(),date:t,time:new Date().toTimeString().slice(0,5),by:"",temp:"",checks:{},prices:{},counts:[],note:"",focus:s?s.products:[]}; render(); return;}
+  case "pickAudit": S.ui.suggest=suggestAudit(); render(); return;
+  case "startSuggested": return act("newAudit");
+  case "cancelAudit": S.ui.auditDraft=null; render(); return;
+  case "addCount":{const n=$("#au-cn").value; if(n===""){toast("Enter the counted quantity");return;} S.ui.auditDraft.counts.push({productId:$("#au-cp").value,colour:$("#au-cc").value,n:+n}); render(); return;}
+  case "saveAudit":{const d=S.ui.auditDraft; const id=newId(); const prices={}; for(const [k,v] of Object.entries(d.prices)) if(v!==""&&v!=null) prices[k]=+v;
+    await put(`audits/${id}`,{id,partnerId:d.partnerId,date:d.date,time:d.time,by:d.by,temp:d.temp,checks:d.checks,prices,counts:d.counts,note:d.note,source:"desk"}); S.ui.auditDraft=null; S.ui.suggest=null; toast("Audit saved"); return;}
+  case "newPartner": S.ui.pEdit={id:"",code:"",name:"",pct:75,termsStatus:"Proposed",wasteRule:"credit",terms:14,active:true}; render(); return;
+  case "cancelPartner": S.ui.pEdit=null; render(); return;
+  case "savePartner":{const e=S.ui.pEdit; e.parDay=+e.parDay||3; e.deliveryDays=(e.deliveryDays||[1,3,5]).map(Number); e.code=(e.code||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.code||!e.name){toast("Code and name are required");return;}
+    if(partners(true).some(p=>p.code===e.code&&p.id!==e.id)){toast("That code is already used");return;}
+    const id=e.id||e.code.toLowerCase(); await put(`partners/${id}`,{...e,id,pct:+e.pct||0,terms:+e.terms||14,active:String(e.active)!=="false"}); S.ui.pEdit=null; toast("Outlet saved"); return;}
+  case "newProduct": S.ui.prEdit={id:"",sku:"",name:"",retail:"",shelfDays:3,active:true}; render(); return;
+  case "cancelProduct": S.ui.prEdit=null; render(); return;
+  case "saveProduct":{const e=S.ui.prEdit; e.sku=(e.sku||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.sku||!e.name){toast("SKU and name are required");return;}
+    if(products(true).some(p=>p.sku===e.sku&&p.id!==e.id)){toast("That SKU is already used");return;}
+    const id=e.id||e.sku.toLowerCase(); await put(`products/${id}`,{...e,id,retail:+e.retail||0,shelfDays:+e.shelfDays||3,active:String(e.active)!=="false"}); S.ui.prEdit=null; toast("Product saved"); return;}
+  case "addPrice":{const n=S.ui.priceNew||{}; if(!n.partnerId||!n.productId||!(+n.retail)||!(+n.pct)){toast("Fill outlet, product, retail and %");return;}
+    const id=newId(), st=b.dataset.status; const row={id,partnerId:n.partnerId,productId:n.productId,retail:+n.retail,pct:+n.pct,net:r2(+n.retail*+n.pct/100),from:n.from||t,status:"Proposed",approvedBy:n.approvedBy||"",note:n.note||"",createdAt:t};
+    await put(`prices/${id}`,row);
+    if(st==="Active"){ for(const o of Object.values(S.prices)) if(o.id!==id&&o.partnerId===row.partnerId&&o.productId===row.productId&&o.status==="Active"&&o.from<=row.from) await put(`prices/${o.id}`,{...o,to:add(row.from,-1)});
+      await put(`prices/${id}`,{...row,status:"Active",approvedBy:row.approvedBy||"Owner",approvedAt:t}); }
+    S.ui.priceNew={partnerId:n.partnerId}; toast(st==="Active"?"Price activated":"Price saved as proposed"); return;}
+  case "opAdd": S.ui.opDraft.lines.push({productId:(products()[0]||{}).id,colour:colourOf(t).name,qty:"",rate:"",batchDate:t}); render(); return;
+  case "opSave":{const pid=S.ui.opDraft.pid; const lines=S.ui.opDraft.lines.filter(l=>+l.qty>0).map(l=>({productId:l.productId,colour:l.colour,qty:+l.qty,rate:l.rate===""||l.rate==null?null:+l.rate,batchDate:l.batchDate||""}));
+    await put(`partners/${pid}`,{...S.partners[pid],opening:lines}); toast("Opening stock saved"); return;}
+  case "saveGeneral":{const g=S.ui.gen; const num=(v,d)=>v===""||v==null||isNaN(+v)?d:+v;
+    if(g.mode==="live"&&!g.cutoffDate){toast("Set the cutoff date before going live");return;}
+    await put("config/settings",{mode:g.mode||"testing",cutoffDate:g.cutoffDate||"",prepLeadDays:num(g.prepLeadDays,0),graceMin:num(g.graceMin,60),eveUplift:num(g.eveUplift,10),driveRootId:g.driveRootId||DEF.driveRootId,company:g.company,colours:g.colours,weekEndDay:+g.weekEndDay,prefixes:g.prefixes,cfRate:g.cfRate,fieldFormUrl:g.fieldFormUrl,auditFormUrl:g.auditFormUrl,chaleurWhatsApp:g.chaleurWhatsApp,reportDeadline:g.reportDeadline,checks:g.checks}); S.ui.gen=null; toast("Settings saved"); return;}
+  case "clearSample":{for(const w of Object.values(S.weeks)) if(w.sample) await del(`weeks/${wid(w.partnerId,w.weekStart)}`);
+    for(const p of Object.values(S.partners)) if(p.sample) await del(`partners/${p.id}`);
+    for(const x of Object.values(S.prices)) if(x.sample) await del(`prices/${x.id}`);
+    for(const a of Object.values(S.audits)) if(a.sample) await del(`audits/${a.id}`);
+    if(S.alerts&&S.alerts.sample) await del("alerts/latest"); S.ui.confirm=null; toast("Sample data removed"); return;}
+  }
+}
+/* ---------- boot (Google Apps Script backend) ---------- */
+const AUTH={pin:null,name:"",role:""};
+const GS=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej({code:"unavailable",message:(e&&e.message)||String(e)}))[fn](AUTH.pin,...a));
+const photoSrc=id=>!id?"":(/^https?:/.test(id)?id:"https:\/\/drive.google.com/thumbnail?id="+encodeURIComponent(id)+"&sz=w400");
+const photoLink=id=>!id?"":(/^https?:/.test(id)?id:"https:\/\/drive.google.com/file/d/"+encodeURIComponent(id)+"/view");
+const DBX={cache:{},subs:[]};
+function snapFor(col){const docs=Object.entries(DBX.cache[col]||{}).map(([id,d])=>({id,exists:true,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}}));return {docs,size:docs.length,empty:!docs.length,metadata:{fromCache:false,hasPendingWrites:false},docChanges:()=>[]};}
+function fire(col){for(const s of DBX.subs) if(!col||s.col===col) s.fn(snapFor(s.col));}
+const shimDB={
+  collection(col){return {onSnapshot(fn){DBX.subs.push({col,fn});setTimeout(()=>fn(snapFor(col)),0);return ()=>{};}};},
+  doc(path){const [col,id]=path.split("/");return {
+    get:async()=>{const d=(DBX.cache[col]||{})[id];return {id,exists:!!d,data:()=>d};},
+    set:async(data)=>{const c=JSON.parse(JSON.stringify(data));(DBX.cache[col]=DBX.cache[col]||{})[id]=c;fire(col);await GS("dbPut",col,id,c);},
+    update:async(data)=>{const c={...((DBX.cache[col]||{})[id]||{}),...JSON.parse(JSON.stringify(data))};(DBX.cache[col]=DBX.cache[col]||{})[id]=c;fire(col);await GS("dbPut",col,id,c);},
+    delete:async()=>{if(DBX.cache[col])delete DBX.cache[col][id];fire(col);await GS("dbDel",col,id);}
+  };}
+};
+const shimAssets={upload:async(blob)=>{const du=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob);});const r=await GS("uploadPhoto",du,"photo");return {id:r.id,url:r.url};}};
+function vStaff(){
+  if(!MGR()) return `<div class="empty">Only managers can manage staff.</div>`;
+  if(!S.team){ if(!S.teamLoading){S.teamLoading=true; GS("teamList").then(r=>{S.team=r;S.teamLoading=false;render();}).catch(e=>{S.teamLoading=false;S.team=[];toast(e.message);});} return `<div class="empty">Loading staff…</div>`; }
+  const ed=S.ui.stEdit, roleTxt={owner:"Owner — full access",manager:"Manager — full access + staff",office:"Office — edit desk + audits",auditor:"Team — view desk + audits"};
+  const form=ed?`<div class="panel"><div class="spread"><h2>${ed.row?"Edit staff":"Add staff"}</h2><button class="btn sm" data-stcancel="1">Cancel</button></div>
+    <div class="fgrid"><label class="f">Name<input id="st-name" data-st="name" value="${esc(ed.name||"")}" autocomplete="off"></label>
+      <label class="f">Login code (FeedMe staff code)<input id="st-code" data-st="code" inputmode="numeric" maxlength="6" value="${esc(ed.code||"")}" autocomplete="off"></label>
+      <label class="f">Access<select id="st-role" data-st="role">${["auditor","office","manager"].map(r=>`<option value="${r}" ${ed.role===r?"selected":""}>${roleTxt[r]}</option>`).join("")}</select></label>
+      <label class="f">Notes<input id="st-notes" data-st="notes" value="${esc(ed.notes||"")}"></label></div>
+    <div class="row"><button class="btn pri" data-stsave="1">Save</button><span class="small">They can sign in as soon as you save.</span></div></div>`:"";
+  const rows=S.team.map(x=>`<tr><td><b>${esc(x.name)}</b>${x.notes?`<div class="small">${esc(x.notes)}</div>`:""}</td><td>${esc(x.code)}</td><td>${esc(roleTxt[x.role]||x.role)}</td>
+    <td>${x.active?`<span class="pill ok">Active</span>`:`<span class="pill mute">Inactive</span>`}</td>
+    <td class="r">${x.role==="owner"?`<span class="small">Owner</span>`:`<button class="btn sm" data-stedit="${x.row}">Edit</button> <button class="btn sm" data-sttog="${x.row}">${x.active?"Deactivate":"Activate"}</button>`}</td></tr>`).join("");
+  return `<h1>Staff</h1><p class="lede">Who can sign in. Team members can view the desk (prep, deliveries, reports) and do spot audits; office staff can also edit; managers can also manage staff. Deactivate someone to stop their login — their past records stay.</p>
+    ${form}<div class="panel"><div class="spread"><h2>Team</h2>${ed?"":`<button class="btn pri sm" data-stnew="1">+ Add staff</button>`}</div>
+    <div class="tw"><table><thead><tr><th>Name</th><th>Code</th><th>Access</th><th>Status</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="5" class="small">No staff yet.</td></tr>`}</tbody></table></div></div>`;
+}
+async function stSave(rec){ try{ S.team=await GS("teamSave",rec); S.ui.stEdit=null; toast("Staff saved"); render(); }catch(e){ toast(e.message); } }
+document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.st; if(k&&S.ui.stEdit) S.ui.stEdit[k]=e.target.value;});
+async function reload(){try{DBX.cache=await GS("dbLoadAll");fire();}catch(e){toast("Couldn't refresh — "+e.message);}}
+function showLogin(msg){
+  $("#main").innerHTML=`<div class="panel" style="max-width:380px;margin:40px auto"><h1 style="font-size:30px">Office login</h1><p class="lede">Enter your office PIN. Outlet and audit staff use their own links.</p>
+    <label class="f">PIN<input id="lg-pin" type="password" inputmode="numeric" autocomplete="off"></label>
+    <div class="row"><button class="btn pri" id="lg-go">Sign in</button><span class="small neg">${esc(msg||"")}</span></div></div>`;
+  const go=async()=>{AUTH.pin=$("#lg-pin").value.trim(); if(!AUTH.pin) return; $("#lg-go").disabled=true;
+    try{const u=await GS("login"); AUTH.name=u.name; AUTH.role=u.role; try{sessionStorage.setItem("chaleur.pin",AUTH.pin)}catch(_){} start();}
+    catch(e){AUTH.pin=null; showLogin(e.message);}};
+  $("#lg-go").onclick=go; $("#lg-pin").addEventListener("keydown",e=>{if(e.key==="Enter")go();}); setTimeout(()=>{const x=$("#lg-pin");x&&x.focus()},50);
+}
+async function start(){
+  $("#main").innerHTML=`<div class="empty">Loading consignment data…</div>`;
+  try{DBX.cache=await GS("dbLoadAll");}catch(e){AUTH.pin=null;try{sessionStorage.removeItem("chaleur.pin")}catch(_){} return showLogin(e.message);}
+  S.db=shimDB; S.assets=shimAssets; S.dl=null; S.mcp=null;
+  const sub=(col,fn)=>shimDB.collection(col).onSnapshot(snap=>{fn(snap);S.loaded.add(col);render();});
+  const into=(key)=>s=>{const o={};for(const d of s.docs)o[d.id]={...d.data(),id:d.data().id||d.id};S[key]=o;};
+  sub("config",s=>{S.cfg={};S.counters={};S.drive={folders:{}};for(const d of s.docs){if(d.id==="settings")S.cfg=d.data()||{};if(d.id==="counters")S.counters=d.data()||{};}});
+  sub("calendar",into("calendar"));
+  sub("partners",into("partners")); sub("products",into("products")); sub("prices",into("prices"));
+  sub("weeks",into("weeks")); sub("audits",into("audits"));
+  sub("alerts",s=>{const d=s.docs.find(x=>x.id==="latest");S.alerts=d?d.data():null;});
+  setInterval(()=>{const a=document.activeElement; if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; reload();},90000);
+  render();
+}
+(function boot(){
+  let saved=null; try{saved=sessionStorage.getItem("chaleur.pin")}catch(_){}
+  if(saved){AUTH.pin=saved; GS("login").then(u=>{AUTH.name=u.name;AUTH.role=u.role;start();}).catch(()=>{AUTH.pin=null;showLogin();});}
+  else showLogin();
+})();
+</script>
+
+
+</body></html>
