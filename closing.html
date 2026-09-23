@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Chaleur · Outlet closing</title><meta name="theme-color" content="#7b1c2b"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
+<html lang="en"><head><meta charset="utf-8"><title>Chaleur · Outlet closing</title><meta name="theme-color" content="#7b1c2b"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
 function call(fn,args,ok,fail){fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})})
@@ -31,12 +31,20 @@ label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--mu
 input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fixed{display:flex;align-items:center;min-height:47px;font-size:16px;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:0;background:var(--soft);border-radius:10px;padding:10px 12px}
 .banner{border-radius:12px;padding:12px 14px;font-size:14px}
 .banner.info{background:var(--soft);color:var(--ink)}
 .banner.warn{background:var(--warn-soft);color:var(--ink);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent)}
 .cat{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600;margin:8px 2px 0}
 .cake{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px}
-.cake .hd{display:flex;align-items:center;gap:12px}
+.cake .hd{display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap}
+.cake .hd .tt{flex:1;min-width:110px}
+.dots{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap}
+.cd{display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:4px 2px;border-radius:10px;cursor:pointer;font:600 10.5px var(--body);color:var(--muted);min-width:38px;touch-action:manipulation}
+.cd i{width:26px;height:26px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.18);opacity:.3}
+.cd.on i{opacity:1;box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}
+.cd.on span{color:var(--ink)}
+@media (max-width:560px){.dots{width:100%;justify-content:space-between;margin-left:0}}
 .pic{width:52px;height:52px;border-radius:10px;object-fit:cover;flex:none;background:var(--soft)}
 .pic.ph{display:grid;place-items:center;font:600 18px var(--display);color:var(--muted)}
 .cake .nm{font-weight:600;font-size:16px;line-height:1.2}
@@ -100,8 +108,8 @@ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},se
 const run=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(e))[fn](...a));
 function todayISO(){const d=new Date();if(d.getHours()<5)d.setDate(d.getDate()-1);return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
 const niceDate=iso=>{const d=new Date(iso+"T00:00:00");return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})};
-let INFO=null, CODE=(PRESET||store.get("chaleur.outlet")||"").toUpperCase(), DATE=todayISO();
-let ROWS={}, ORDER=[], PH={sales:[],display:null,waste:null}, NOTE="", WHO=store.get("chaleur.who")||"", PREV=null, SENDING=false;
+let INFO=null, KEY=(PRESET||store.get("chaleur.key")||"").trim().toUpperCase(), DATE=todayISO();
+let ROWS={}, ORDER=[], SHOWN=[], EXP=new Set(), PH={sales:[],display:null,waste:null}, NOTE="", WHO=store.get("chaleur.who")||"", PREV=null, SENDING=false;
 const COL=()=>INFO.colours||CONFIG.colours;
 const colHex=n=>(COL().find(c=>c.name===n)||{}).hex||"#999";
 const colDay=n=>WD[COL().findIndex(c=>c.name===n)]||"";
@@ -113,24 +121,28 @@ function status(msg,err){$("#status").innerHTML=err?`<span class="err">${esc(msg
 async function load(){
   $("#bar").hidden=true;
   $("#app").innerHTML=`<div class="empty"><span class="spin"></span> Loading today's cakes…</div>`;
-  try{ INFO=await run("closingInfo",CODE,DATE); }
-  catch(e){ if(CODE){CODE="";return load();} $("#app").innerHTML=`<div class="empty err">${esc(e.message||"Could not load. Check your internet and try again.")}</div>`; return; }
-  if(!INFO.outlet){ return renderPickOutlet(); }
-  store.set("chaleur.outlet",CODE);
-  ROWS={}; ORDER=[];
+  if(!KEY) return renderNeedLink();
+  try{ INFO=await run("closingInfo",KEY,DATE); }
+  catch(e){ $("#app").innerHTML=`<div class="empty err stack">${esc(e.message||"Could not load. Check your internet and try again.")}<button class="btn" type="button" data-act="retry">Try again</button></div>`; return; }
+  if(!INFO.outlet){ if(!PRESET){try{localStorage.removeItem("chaleur.key")}catch(e){}} return renderNeedLink(); }
+  store.set("chaleur.key",KEY);
+  ROWS={}; ORDER=[]; SHOWN=[]; EXP=new Set(INFO.stock.map(s=>K(s.productId,s.colour)));
   const ex=INFO.existing;
-  const add=(p,c)=>{const k=K(p,c); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} };
+  const add=(p,c)=>{const k=K(p,c); if(!SHOWN.includes(p)) SHOWN.push(p); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} };
   INFO.stock.forEach(s=>add(s.productId,s.colour));
   if(ex){ ex.lines.forEach(l=>{add(l.productId,l.colour); const r=ROWS[K(l.productId,l.colour)]; r.w=l.w?String(l.w):""; r.b=l.b?String(l.b):"";}); if(!NOTE) NOTE=ex.note||""; }
   render();
 }
-function renderPickOutlet(){
-  $("#app").innerHTML=`${head()}<div class="card stack"><h2>Which outlet are you?</h2>
-    ${INFO.outlets.map(o=>`<button class="btn" data-outlet="${esc(o.code)}" type="button">${esc(o.name)}</button>`).join("")||`<p class="hint">No outlets set up yet.</p>`}</div>`;
+function renderNeedLink(){
+  $("#bar").hidden=true;
+  const wa=CONFIG.chaleurWhatsApp?`https:\/\/wa.me/${esc(CONFIG.chaleurWhatsApp)}?text=${encodeURIComponent("Hi Chaleur, please send us our outlet's closing report link.")}`:"";
+  $("#app").innerHTML=`${head()}<div class="card stack"><h2>Please open your outlet's own link</h2>
+    <p class="hint">Each outlet has its own closing form. Scan the QR code Chaleur gave your outlet, or open the link we sent you on WhatsApp.</p>
+    ${wa?`<a class="btn go" href="${wa}" target="_blank" rel="noopener">Ask Chaleur on WhatsApp</a>`:""}</div>`;
 }
 const head=()=>`<header><div class="ca" aria-hidden="true">CA</div><div><div class="brand">Chaleur Atelier · Outlet</div><h1>Closing count</h1></div></header>`;
 function grouped(){
-  const by={}; ORDER.forEach(k=>{const r=ROWS[k]; (by[r.productId]=by[r.productId]||[]).push(k);});
+  const by={}; SHOWN.forEach(p=>by[p]=[]); ORDER.forEach(k=>{const r=ROWS[k]; (by[r.productId]=by[r.productId]||[]).push(k);});
   const cats={}; Object.keys(by).forEach(pid=>{const p=prod(pid); (cats[p.category]=cats[p.category]||[]).push(pid);});
   const catOrder=["Petit gâteau","Cheesecake","Whole cake"]; const names=Object.keys(cats).sort((a,b)=>(catOrder.indexOf(a)+99)%99-(catOrder.indexOf(b)+99)%99);
   return names.map(c=>({cat:c,items:cats[c].sort((a,b)=>INFO.products.findIndex(p=>p.id===a)-INFO.products.findIndex(p=>p.id===b)).map(pid=>({p:prod(pid),keys:by[pid].sort((x,y)=>COL().findIndex(c=>c.name===ROWS[x].colour)-COL().findIndex(c=>c.name===ROWS[y].colour))}))}));
@@ -140,15 +152,16 @@ function render(){
   const ex=INFO.existing, g=grouped();
   $("#app").innerHTML=`${head()}
   <div class="card stack">
-    <div class="g2"><label class="f">Outlet<select id="outlet">${INFO.outlets.map(o=>`<option value="${esc(o.code)}" ${o.code===CODE?"selected":""}>${esc(o.name)}</option>`).join("")}</select></label>
+    <div class="g2"><label class="f">Outlet<span class="fixed">${esc(INFO.outlet.name)}</span></label>
     <label class="f">Date<input id="date" type="date" value="${esc(DATE)}"></label></div>
     <label class="f">Your name<input id="who" value="${esc(WHO)}" placeholder="e.g. Aina" autocomplete="name"></label>
   </div>
   ${ex?`<div class="banner ${ex.locked?"warn":"info"}" style="margin-top:12px">${ex.locked?"This week is already billed. Your changes will be sent to the office to review.":`Today's report was already sent${ex.by?` by <b>${esc(ex.by)}</b>`:""}${ex.at?` at ${esc(new Date(ex.at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}))}`:""}. Fix anything below and send again — the new report replaces the old one.`}</div>`:""}
   <section class="sec">
     <h2>Count the cakes</h2>
-    <p class="hint">For each colour dot: <b>Waste</b> = thrown away or damaged, <b>Left</b> = still in the chiller now. Leave a box empty if it's 0.</p>
-    ${g.length?g.map(c=>`<div class="cat">${esc(c.cat)}</div>${c.items.map(({p,keys})=>`<div class="cake"><div class="hd">${pic(p)}<div><div class="nm">${esc(p.name)}</div><div class="sub">${keys.length} colour${keys.length>1?"s":""}</div></div></div>
+    <p class="hint">Colours we delivered are already open. Found another colour? Tap its dot to add it. For each colour: <b>Waste</b> = thrown away or damaged, <b>Left</b> = still in the chiller now. Leave a box empty if it's 0.</p>
+    ${g.length?g.map(c=>`<div class="cat">${esc(c.cat)}</div>${c.items.map(({p,keys})=>`<div class="cake" id="cake-${esc(p.id)}"><div class="hd">${pic(p)}<div class="tt"><div class="nm">${esc(p.name)}</div><div class="sub">${keys.length?`${keys.length} colour${keys.length>1?"s":""}`:"Tap the colour dot on the cake"}</div></div>
+      <div class="dots" role="group" aria-label="Colour dots for ${esc(p.name)}">${COL().map(c=>{const k=K(p.id,c.name), on=!!ROWS[k]; return `<button type="button" class="cd${on?" on":""}" data-cd="${esc(k)}" aria-pressed="${on}" aria-label="${esc(c.name)}, made ${esc(colDay(c.name))}"><i style="background:${esc(c.hex)}"></i><span>${esc(colDay(c.name))}</span></button>`;}).join("")}</div></div>
       ${keys.map(k=>{const r=ROWS[k];return `<div class="ln"><div class="dot"><i style="background:${esc(colHex(r.colour))}"></i><span>${esc(r.colour)}<small>made ${esc(colDay(r.colour))}</small></span></div>${stepper(k,"w","Waste")}${stepper(k,"b","Left")}</div>`}).join("")}</div>`).join("")}`).join("")
       :`<div class="empty">No cakes on record for this outlet today. Use the button below to add what you have.</div>`}
     <button class="link" type="button" data-act="add">+ Add a cake that's not listed</button>
@@ -180,14 +193,14 @@ async function shrink(file,max){
   return c.toDataURL("image/jpeg",0.85);
 }
 function openAdd(step,pid){
-  const shown=new Set(ORDER.map(k=>ROWS[k].productId));
+  const shown=new Set(SHOWN);
   let body;
-  if(step==="colour"){const p=prod(pid); body=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${pic(p)}<h2>${esc(p.name)}</h2></div><p class="hint" style="margin-bottom:10px">Which colour dot is on the cake?</p><div class="cols">${COL().map(c=>`<button type="button" data-addcol="${esc(pid)}|${esc(c.name)}"><i style="background:${esc(c.hex)}"></i>${esc(c.name.slice(0,1)+c.name.slice(1).toLowerCase())}<br>${esc(colDay(c.name))}</button>`).join("")}</div>`;}
+  if(false){const p=prod(pid); body=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">${pic(p)}<h2>${esc(p.name)}</h2></div><p class="hint" style="margin-bottom:10px">Which colour dot is on the cake?</p><div class="cols">${COL().map(c=>`<button type="button" data-addcol="${esc(pid)}|${esc(c.name)}"><i style="background:${esc(c.hex)}"></i>${esc(c.name.slice(0,1)+c.name.slice(1).toLowerCase())}<br>${esc(colDay(c.name))}</button>`).join("")}</div>`;}
   else{const cats={}; INFO.products.forEach(p=>(cats[p.category]=cats[p.category]||[]).push(p)); body=`<h2 style="margin-bottom:6px">Add a cake</h2>${Object.keys(cats).map(c=>`<div class="cat">${esc(c)}</div>${cats[c].map(p=>`<button class="pick" type="button" data-addp="${esc(p.id)}">${pic(p)}<span>${esc(p.name)}${shown.has(p.id)?` <span class="tag mute">listed</span>`:""}</span></button>`).join("")}`).join("")}`;}
   $("#sheet").innerHTML=`<div class="sheet" data-close="1"><div class="box" role="dialog" aria-label="Add a cake">${body}<div style="margin-top:14px"><button class="btn" type="button" data-close="1" style="width:100%">Cancel</button></div></div></div>`;
 }
 function collect(){ WHO=($("#who")||{value:WHO}).value.trim(); NOTE=($("#note")||{value:NOTE}).value; store.set("chaleur.who",WHO);
-  return {outlet:CODE,date:DATE,who:WHO,note:NOTE,lines:ORDER.map(k=>ROWS[k]).filter(r=>r.w!==""||r.b!==""||true).map(r=>({productId:r.productId,colour:r.colour,w:+r.w||0,b:+r.b||0})),photos:{sales:PH.sales,display:PH.display,waste:hasWaste()?PH.waste:null}}; }
+  return {key:KEY,date:DATE,who:WHO,note:NOTE,lines:ORDER.map(k=>ROWS[k]).filter(r=>r.w!==""||r.b!==""||true).map(r=>({productId:r.productId,colour:r.colour,w:+r.w||0,b:+r.b||0})),photos:{sales:PH.sales,display:PH.display,waste:hasWaste()?PH.waste:null}}; }
 async function review(){
   const m=missing(); if(m.length){ status("Still needed: "+m.join(", ")+".",true); const first=!PH.sales.length?"#shot-sales":!PH.display?"#shot-display":hasWaste()&&!PH.waste?"#shot-waste":"#who"; const el=$(first); if(el){el.classList&&el.classList.add("need"); el.scrollIntoView({behavior:"smooth",block:"center"});} return; }
   const d=collect(); window.scrollTo(0,0);
@@ -237,12 +250,15 @@ async function send(d){
 document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-close]"); if(!t) return; const d=t.dataset;
   if(d.close&&(e.target===t||t.tagName==="BUTTON")){$("#sheet").innerHTML="";return;}
-  if(d.outlet){CODE=d.outlet;load();return;}
+  if(d.act==="retry"){load();return;}
   if(d.step){const k=d.step,f=d.sf,n=d.sn; const r=ROWS[k]; const v=Math.max(0,(+r[f]||0)+(+n)); r[f]=v?String(v):""; const inp=document.querySelector(`input[data-k="${CSS.escape(k)}"][data-f="${f}"]`); if(inp) inp.value=r[f]; if(f==="w") softRefresh(); return;}
   if(d.rm){const [key,i]=d.rm.split("|"); if(key==="sales") PH.sales.splice(+i,1); else PH[key]=null; keep(); render(); return;}
   if(d.act==="add"){keep();openAdd();return;}
-  if(d.addp){openAdd("colour",d.addp);return;}
-  if(d.addcol){const [p,c]=d.addcol.split("|"); const k=K(p,c); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} $("#sheet").innerHTML=""; render(); setTimeout(()=>{const el=document.querySelector(`input[data-k="${CSS.escape(k)}"][data-f="b"]`); if(el){el.scrollIntoView({block:"center"});el.focus();}},60); return;}
+  if(d.addp){const p=d.addp; if(!SHOWN.includes(p)) SHOWN.push(p); $("#sheet").innerHTML=""; render(); setTimeout(()=>{const el=document.getElementById("cake-"+p); if(el) el.scrollIntoView({block:"center",behavior:"smooth"});},60); return;}
+  if(d.cd){const k=d.cd, r=ROWS[k], y=window.scrollY; keep();
+    if(!r){const [p,c]=k.split("|"); ROWS[k]={productId:p,colour:c,w:"",b:""}; ORDER.push(k);}
+    else if(!EXP.has(k)&&r.w===""&&r.b===""){delete ROWS[k]; ORDER=ORDER.filter(x=>x!==k); render(); window.scrollTo(0,y); return;}
+    render(); window.scrollTo(0,y); return;}
   if(d.act==="again"){restoreBar();load();return;}
 });
 function keep(){ if($("#who")) WHO=$("#who").value; if($("#note")) NOTE=$("#note").value; }
@@ -254,7 +270,6 @@ document.addEventListener("input",e=>{const t=e.target;
   if(t.id==="note") NOTE=t.value;
 });
 document.addEventListener("change",async e=>{const t=e.target;
-  if(t.id==="outlet"){keep();CODE=t.value;PH={sales:[],display:null,waste:null};return load();}
   if(t.id==="date"&&t.value){keep();DATE=t.value;return load();}
   if(t.dataset.shot&&t.files&&t.files[0]){const key=t.dataset.shot; keep(); status("Processing photo…");
     try{const u=await shrink(t.files[0],key==="sales"?2000:1400); if(key==="sales") PH.sales.push(u); else PH[key]=u;}catch(err){status("That photo couldn't be read. Please try again.",true);}
