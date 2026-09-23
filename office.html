@@ -2,10 +2,11 @@
 <html><head><meta charset="utf-8"><title>Chaleur Office</title><meta name="theme-color" content="#780a13"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
-function call(fn,args,ok,fail){fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})})
- .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.json();})
- .then(function(j){if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
- .catch(function(e){fail&&fail(new Error(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again."));});}
+function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new AbortController():null,tm=ac?setTimeout(function(){ac.abort();},150000):null,done=function(){if(tm)clearTimeout(tm);};
+ fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args}),signal:ac?ac.signal:undefined})
+ .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.text();})
+ .then(function(t){done();var j;try{j=JSON.parse(t);}catch(x){throw new Error("The server sent an unexpected reply. Please try again.");}if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
+ .catch(function(e){done();fail&&fail(new Error(e&&e.name==="AbortError"?"This is taking too long. Check your internet and try again.":(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again.")));});}
 function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
 window.google={script:{run:mk(null,null)}};})();
 </script>
@@ -198,6 +199,12 @@ const dot=name=>`<span class="dot"><i style="background:${hexOf(name)}"></i>${es
 const partners=(all)=>Object.values(S.partners).filter(p=>all||p.active!==false).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
 const products=(all)=>Object.values(S.products).filter(p=>all||p.active!==false).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
 const prod=id=>S.products[id]||{name:id,sku:id,retail:0,shelfDays:3};
+const CATS=["Petit gâteau","Cheesecake","Whole cake","Whole cheesecake"], CATL={"Petit gâteau":"Petit gâteau","Cheesecake":"Cheesecake (slice)","Whole cake":"Whole cake (entremet)","Whole cheesecake":"Whole cheesecake"};
+const catOf=p=>{p=p||{};const c=p.category||"Petit gâteau";return c==="Whole cake"&&/cheesecake/i.test(p.name||"")?"Whole cheesecake":c;};
+const isWhole=id=>/^Whole/.test(catOf(prod(id)));
+const batchFor=(colour,iso)=>{const i=cfg().colours.findIndex(c=>c.name===colour); if(i<0) return iso; return add(iso,-((dow(iso)-i+7)%7));};
+const okColours=iso=>{const n=Math.max(0,+(cfg().maxDeliveryAge??1)); const out=[]; for(let i=n;i>=0;i--) out.push(colourOf(add(iso,-i)).name); return out;};
+const doColours=d=>[...new Set((d.lines||[]).filter(l=>+l.qty).map(l=>l.colour||d.colour))];
 const partner=id=>S.partners[id]||{name:id,code:id,pct:70};
 const wid=(pid,ws)=>`${pid}_${ws}`;
 /* outlet operating hours: {wkOpen,wkClose,weOpen,weClose,closed:[dow]} — weekend = Sat/Sun */
@@ -239,9 +246,9 @@ function calcWeek(pid,ws,depth=0){
     const rep=(w.days||{})[date], lines={};
     for(const d of dos.filter(d=>d.date===date&&d.status==="delivered")){
       for(const l of d.lines||[]){const q=+(l.accepted??l.qty)||0; if(!q) continue;
-        const k=ensure(l.productId,d.colour), pr=priceFor(pid,l.productId,date);
-        const L=lines[k.key]||(lines[k.key]={productId:l.productId,colour:d.colour,open:cur[k.key],recv:0,sold:0,waste:0,close:null,exp:0,var:0});
-        L.recv+=q; k.recv+=q; cur[k.key]+=q; k.recvRate=pr.net; k.batchDate=d.batchDate||date;
+        const lc=l.colour||d.colour, k=ensure(l.productId,lc), pr=priceFor(pid,l.productId,date);
+        const L=lines[k.key]||(lines[k.key]={productId:l.productId,colour:lc,open:cur[k.key],recv:0,sold:0,waste:0,close:null,exp:0,var:0});
+        L.recv+=q; k.recv+=q; cur[k.key]+=q; k.recvRate=pr.net; {const nb=l.batchDate||(l.colour?batchFor(l.colour,date):(d.batchDate||date)); if(!k.batchDate||cur[k.key]-q<=0||nb<k.batchDate) k.batchDate=nb;}
         const g=k.recvGroups[pr.net]||(k.recvGroups[pr.net]={qty:0,rate:pr.net,dos:[],approved:pr.approved}); g.qty+=q; if(!g.dos.includes(d.no)) g.dos.push(d.no);
       }
     }
@@ -301,14 +308,13 @@ function buildSettlement(c,opts={}){
 async function put(path,data){
   if(!S.db){toast("Database not available in this view");throw new Error("no db")}
   try{await S.db.doc(path).set(JSON.parse(JSON.stringify(data)));}
-  catch(e){toast(e.code==="invalid_argument"?"You don't have permission to save here.":(e.code==="quota_exceeded"?"Storage full — archive old weeks.":"Couldn't save — try again."));throw e;}
+  catch(e){toast(e&&e.message&&!/Failed to fetch|No connection/i.test(e.message)?e.message:(e.code==="quota_exceeded"?"Storage full — archive old weeks.":"Couldn't save — try again."));throw e;}
 }
 async function del(path){try{await S.db.doc(path).delete()}catch(e){toast("Couldn't delete — try again.");throw e}}
 const saveWeek=w=>put(`weeks/${wid(w.partnerId,w.weekStart)}`,w);
 async function nextNo(kind,date){
-  const pre=cfg().prefixes[kind]||kind, ym=date.slice(2,4)+date.slice(5,7);
-  const snap=await S.db.doc("config/counters").get(); const c=snap.exists?{...snap.data()}:{};
-  const key=`${kind}_${ym}`; const n=(+c[key]||0)+1; c[key]=n; await put("config/counters",c);
+  const pre=cfg().prefixes[kind]||kind, ym=date.slice(2,4)+date.slice(5,7), key=`${kind}_${ym}`; let n;
+  try{ const r=await GS("nextNumber",key); n=r.n; (DBX.cache.config=DBX.cache.config||{}).counters=r.counters; }catch(e){ toast((e&&e.message)||"Couldn't get a number, try again"); throw e; }
   return `${pre}-${ym}${String(n).padStart(3,"0")}`;
 }
 function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3200)}
@@ -334,16 +340,17 @@ function chaseText(p,dates){
   return `Hi ${p.contact||p.name} team, this is Chaleur Atelier. We haven't received the closing report for ${dates.map(nice).join(", ")}. Please count the balance and wastage for each colour dot and send it here:\n${link}\nThank you!`;
 }
 /* ---------- rendering ---------- */
-const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role);
+const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role), KIT=()=>AUTH.role==="kitchen";
 const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Daily reports"],["log","Change log"],["billing","Weekly billing"],["audits","Audits"],["setup","Setup"],["staff","Staff"]];
 const NCOL=8;
 let rq=false, MENU=false;
+const kitOK=el=>{const d=el.dataset||{}; return d.made!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
 function render(){ if(rq) return; rq=true; requestAnimationFrame(()=>{rq=false; doRender();}); }
 function doRender(){
   memo=new Map();
   const a=document.activeElement, aid=a&&a.id, sel=a&&("selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
-  const att=attention();
-  { const bad=att.filter(x=>x.sev==="bad").length, tabs=TABS.filter(([k])=>k!=="staff"||MGR()), cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
+  const att=KIT()?[]:attention();
+  { const tabs=KIT()?TABS.filter(([k])=>k==="plan"||k==="deliveries"):TABS.filter(([k])=>k!=="staff"||MGR()); if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=KIT()?0:att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
     $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}</div>`:""}`; }
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
@@ -352,7 +359,7 @@ function doRender(){
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
-  if(RO()){ $("#testbar").innerHTML=`<div class="testbar">View only — signed in as ${esc(AUTH.name)}. Ask Alfred or Joscelyn to make changes.</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui) el.disabled=true; }); }
+  if(RO()){ $("#testbar").innerHTML=`<div class="testbar">${KIT()?`Kitchen login — ${esc(AUTH.name)}. Prep, colour checks and deliveries.`:`View only — signed in as ${esc(AUTH.name)}. Ask Alfred or Joscelyn to make changes.`}</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!(KIT()&&kitOK(el))) el.disabled=true; }); }
   if(aid){const e=document.getElementById(aid); if(e){e.focus({preventScroll:true}); if(sel&&"setSelectionRange" in e){try{e.setSelectionRange(sel[0],sel[1])}catch(_){}}}}
 }
 const F=(k,d="")=>S.f[k]??d;
@@ -372,6 +379,8 @@ const TIPS={
   bill:"Open Weekly billing, check the draft and tap Approve & issue (Alfred or Joscelyn).",
   ar:"Send a payment reminder, then record the payment in Weekly billing.",
   audit:"Share the audit photos with the outlet and ask them to fix it. It is checked again at the next audit.",
+  photocheck:"Open the report and look at the photos. If a photo is wrong or reused, ask the outlet to send the report again with the right photos, then Ignore.",
+  afterbill:"Open the week in Weekly billing. If the net amount changed, Alfred or Joscelyn voids the bill and issues it again; if not, Ignore.",
   late:"This report arrived after the week was billed, so it did not change the bill. Open the week and compare. If the bill is wrong, a manager can void and reissue it; otherwise Ignore."};
 const plain=h=>String(h||"").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
 function missingCause(pid,date,productId,qty,rep){
@@ -399,7 +408,8 @@ function attention(){
     const realMiss=first?miss.filter(d=>d>=first&&d>=co):[];
     if(noPhoto.length) push({sev:"warn",kind:"photo",key:`photo|${p.id}|${noPhoto.join(",")}`,pid:p.id,text:`<b>${esc(p.name)}</b> — closing report without photos: ${noPhoto.map(nice).join(", ")}`,action:`<a class="btn sm wa" href="${esc(wa(p.phone,`Hi ${p.contact||p.name} team, please send the closing photos (chiller + waste) for ${noPhoto.map(nice).join(", ")}. Thank you!`))}" target="_blank" rel="noopener">Ask for photos</a>`,go:{tab:"daily",date:noPhoto[noPhoto.length-1]}});
     if(realMiss.length) push({sev:"bad",kind:"report",key:`report|${p.id}|${realMiss.join(",")}`,pid:p.id,text:`<b>${esc(p.name)}</b> — no closing report for ${realMiss.map(nice).join(", ")} <span class="muted small">(closes ${hoursOf(p.id,realMiss[realMiss.length-1]).close})</span>`,action:`<a class="btn sm wa" href="${esc(wa(p.phone,chaseText(p,realMiss)))}" target="_blank" rel="noopener">Chase on WhatsApp</a>`});
-    for(let i=7;i>=0;i--){const dd=add(t,-i); const ww=S.weeks[wid(p.id,weekStartOf(dd))]; const rr=ww&&ww.days&&ww.days[dd]; if(!rr||!rr.check) continue;
+    for(let i=7;i>=0;i--){const dd=add(t,-i); const ww=S.weeks[wid(p.id,weekStartOf(dd))]; const rr=ww&&ww.days&&ww.days[dd]; if(rr&&(rr.photoCheck||[]).some(x=>!x.ok)) push({sev:"warn",kind:"photocheck",key:`pchk|${p.id}|${dd}`,pid:p.id,text:`<b>${esc(p.name)}</b> ${nice(dd)} — photo doesn't look right: ${rr.photoCheck.filter(x=>!x.ok).map(x=>`${esc(x.label)} (${esc(x.why)})`).join(", ")}`,go:{tab:"daily",date:dd}});
+      if(!rr||!rr.check) continue;
       if(rr.readOk){ for(const c of rr.check.filter(c=>c.diff)){ const nm=esc(prod(c.productId).name);
           if(c.diff>0){ const cause=missingCause(p.id,dd,c.productId,c.diff,rr);
             push({sev:"warn",kind:"missing",key:`miss|${p.id}|${dd}|${c.productId}`,pid:p.id,text:`<b>${esc(p.name)}</b> ${nice(dd)} — ${c.diff} × ${nm} not accounted for (sales photo vs count)`,tip:`<b>Likely cause:</b> ${cause.text} Choose where the ${c.diff>1?"cakes":"cake"} went: <b>Sold</b> (billed, the default), <b>Wasted</b> (thrown away but not entered) or <b>Remaining</b> (still in the chiller, miscounted).`,fix:{pid:p.id,date:dd,productId:c.productId,qty:c.diff,kind:"missing",opts:["sold","wasted","remaining"]},go:{tab:"daily",date:dd}}); }
@@ -421,6 +431,7 @@ function attention(){
     for(const w of Object.values(S.weeks).filter(w=>w.partnerId===p.id)){
       if(w.weekStart<cur&&!w.settlement&&(Object.keys(w.dos||{}).length||Object.keys(w.days||{}).length))
         push({sev:"warn",kind:"bill",key:`bill|${p.id}|${w.weekStart}`,pid:p.id,text:`<b>${esc(p.name)}</b> — week ${nice(w.weekStart)}–${nice(add(w.weekStart,6))} ended: the bill is drafted and waiting for approval`,go:{tab:"billing",week:w.weekStart}});
+      if(w.settlement&&(w.afterBill||[]).length){const ab=w.afterBill; push({sev:"warn",kind:"afterbill",key:`afterbill|${p.id}|${w.weekStart}|${ab.length}`,pid:p.id,text:`<b>${esc(p.name)}</b> — week ${nice(w.weekStart)}–${nice(add(w.weekStart,6))} was changed after the bill was issued (${ab.length} change${ab.length>1?"s":""}, last by ${esc(ab[ab.length-1].by||"")})`,go:{tab:"billing",week:w.weekStart}});}
       for(const lr of (w.lateReports||[]).filter(x=>x.date>=add(t,-30))) push({sev:"warn",kind:"late",key:`late|${p.id}|${lr.recId||lr.date}`,pid:p.id,text:`<b>${esc(p.name)}</b> — report for ${nice(lr.date)} arrived after the week was billed${lr.by?` (by ${esc(lr.by)})`:""}`,go:{tab:"billing",week:w.weekStart}});
       if(w.settlement&&!w.settlement.paid){const age=diffDays(t,w.settlement.issuedAt.slice(0,10)); if(age>=(+p.terms||14)) push({sev:"warn",kind:"ar",key:`ar|${p.id}|${w.weekStart}`,pid:p.id,text:`<b>${esc(p.name)}</b> — ${esc(w.settlement.invNo)} net RM ${fm(w.settlement.totals.net)} unpaid for ${age} days`,go:{tab:"billing",week:w.weekStart}});}
     }
@@ -441,7 +452,6 @@ async function resolveAtt(a,as){
   const f=a.fix; if(!f) return false; if(as==="sold"&&f.kind==="missing") return true; if(as==="remaining"&&f.kind==="expiry") return true;
   const hit=f.kind==="expiry"?findRepLine(f.pid,f.productId,f.colour,f.date,true):findRepLine(f.pid,f.productId,null,f.date,false);
   if(!hit){toast("Couldn't find the report line to change — fix it in Daily reports");return false;}
-  if(hit.w.settlement){toast("That week is already billed — note it on the next report instead");return false;}
   const w=clone(hit.w), r=w.days[hit.date], life=+prod(f.productId).shelfDays||3;
   const ages=hit.ls.map(x=>({ix:x.ix,age:(dow(hit.date)-cfg().colours.findIndex(c=>c.name===x.l.colour)+7)%7})).sort((a,b)=>b.age-a.age);
   const L=r.lines[ages[0].ix]; const q=+f.qty||0;
@@ -462,8 +472,8 @@ function vToday(att){
     <div></div>${days.map(d=>`<div class="small muted" style="text-align:center">${WD[dow(d)]}<br><span class="mono">${P(d).getUTCDate()}</span></div>`).join("")}
     ${ps.map(p=>`<div class="small" style="font-weight:600">${esc(p.name)}</div>${days.map(d=>{const w=S.weeks[wid(p.id,weekStartOf(d))];const got=w&&w.days&&w.days[d];const closed=!got&&isClosed(p.id,d);const pre=cfg().cutoffDate&&d<cfg().cutoffDate;const cls=got?"got":(closed||pre||d>=t?"wait":"miss");return `<button class="cell ${cls}" data-go-daily="${p.id}|${d}" title="${esc(p.name)} ${nice(d)}${closed?" (closed)":""}">${got?((w.days[d].photos||[]).length?"✓":"✓·"):(closed?"closed":(d>=t?"·":"!"))}</button>`}).join("")}`).join("")}
   </div></div>`;
-  const claude=al?`<div class="claude"><div class="spread"><h2>Night check</h2><span class="small muted">${esc(new Date(al.generatedAt).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}))}${al.sample?" · sample":""}</span></div><p style="margin:0">${esc(al.summary||"")}</p>${(al.items||[]).length?`<ul style="margin:0;padding-left:18px">${al.items.map(i=>`<li>${esc(i.text)}</li>`).join("")}</ul>`:""}</div>`
-    :`<div class="claude"><h2>Night check</h2><p style="margin:0">No check has run yet. Every night at 10pm the system checks closing reports, cakes past shelf life and tomorrow's prep, and posts the summary here.</p></div>`;
+  const claude=al?`<div class="claude"><div class="spread"><h2>Daily check</h2><span class="small muted">${esc(al.by||"")} · ${esc(new Date(al.generatedAt).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}))}${al.sample?" · sample":""}</span></div><p style="margin:0">${esc(al.summary||"")}</p>${(al.items||[]).length?`<ul style="margin:0;padding-left:18px">${al.items.map(i=>`<li>${esc(i.text)}</li>`).join("")}</ul>`:""}</div>`
+    :`<div class="claude"><h2>Daily check</h2><p style="margin:0">No check has run yet. It runs after every closing report and a final time at 10pm: missing reports, cakes past shelf life and tomorrow's prep.</p></div>`;
   const wk=weekStartOf(t);
   let wkSold=0,wkWaste=0,wkVal=0;
   for(const p of ps){const c=calcWeek(p.id,wk);for(const k of Object.values(c.keys)){wkSold+=k.sold;wkWaste+=k.waste;wkVal+=k.sold*k.rate}}
@@ -487,6 +497,7 @@ function vToday(att){
 }
 
 /* ---- DELIVERIES ---- */
+function rcvRows(e,pid){return (e.rl||[]).map((l,i)=>`<tr><td>${cake(l.productId)} ${dot(l.colour)}</td><td class="mono small">${esc(prod(l.productId).sku||"")}</td>${KIT()?"":`<td class="r mono">${fm(priceFor(pid,l.productId,e.date).net)}</td>`}<td class="r"><span class="mono">${l.qty||0}</span></td><td class="r"><input type="number" min="0" step="1" inputmode="numeric" id="dra-${i}" data-rcl="${i}" value="${esc(l.accepted??l.qty??"")}" aria-label="Accepted"></td></tr>`).join("");}
 function allDOs(){const out=[];for(const w of Object.values(S.weeks))for(const d of Object.values(w.dos||{}))out.push({...d,partnerId:w.partnerId,weekStart:w.weekStart});return out.sort((a,b)=>b.date.localeCompare(a.date)||String(b.no).localeCompare(String(a.no)))}
 function vDeliveries(){
   const e=S.ui.doEdit;
@@ -501,8 +512,8 @@ function vDeliveries(){
         <label class="f">Colour dot<select id="do-c" data-do="colour" ${e.mode==="receive"?"disabled":""}>${cfg().colours.map((c,i)=>opt(c.name,`${c.name} (${WD[i]})`,col)).join("")}</select></label>
         ${e.mode==="receive"?`<label class="f">Received by<input id="do-rb" data-do="receivedBy" value="${esc(e.receivedBy||"")}" placeholder="Outlet staff name"></label><label class="f">Received at<input id="do-ra" type="time" data-do="receivedAt" value="${esc(e.receivedAt||"")}"></label>`:""}
       </div>
-      <div class="tw"><table><thead><tr><th>Cake</th><th>SKU</th><th class="r">Unit price</th><th class="r">Qty sent</th>${e.mode==="receive"?`<th class="r">Accepted</th>`:""}</tr></thead><tbody>
-      ${products().map(p=>{const l=e.lines[p.id]||{};const pr=priceFor(pid,p.id,e.date);return `<tr><td>${cake(p.id)}</td><td class="mono small">${esc(p.sku)}</td><td class="r mono">${fm(pr.net)}${pr.approved?"":` <span class="pill warn" title="Default % of retail, no approved price">default</span>`}</td>
+      <div class="tw"><table><thead><tr><th>Cake</th><th>SKU</th>${KIT()?"":`<th class="r">Unit price</th>`}<th class="r">Qty sent</th>${e.mode==="receive"?`<th class="r">Accepted</th>`:""}</tr></thead><tbody>
+      ${e.mode==="receive"?rcvRows(e,pid):""}${(e.mode==="receive"?[]:products()).map(p=>{const l=e.lines[p.id]||{};const pr=priceFor(pid,p.id,e.date);return `<tr><td>${cake(p.id)}</td><td class="mono small">${esc(p.sku)}</td>${KIT()?"":`<td class="r mono">${fm(pr.net)}${pr.approved?"":` <span class="pill warn" title="Default % of retail, no approved price">default</span>`}</td>`}
         <td class="r">${e.mode==="receive"?`<span class="mono">${l.qty||0}</span>`:`<input type="number" min="0" step="1" inputmode="numeric" id="dq-${p.id}" data-doline="${p.id}" data-k="qty" value="${esc(l.qty??"")}">`}</td>
         ${e.mode==="receive"?`<td class="r"><input type="number" min="0" step="1" inputmode="numeric" id="da-${p.id}" data-doline="${p.id}" data-k="accepted" value="${esc(l.accepted??l.qty??"")}" ${l.qty?"":"disabled"}></td>`:""}</tr>`}).join("")}
       </tbody></table></div>
@@ -510,21 +521,29 @@ function vDeliveries(){
       <div class="row">${e.mode==="receive"?`<button class="btn pri" data-act="receiveDO">Confirm delivered</button>`:`<button class="btn pri" data-act="saveDO">${e.no?"Save changes":"Create DO"}</button>`}</div>
     </div>`;
   }
+  const ck=S.ui.colChk;
+  if(ck){ const oks=okColours(ck.date);
+    form+=`<div class="panel"><div class="spread"><h2>Check colours · ${esc(ck.no)} · ${esc(partner(ck.pid).name)} · ${nice(ck.date)}</h2><button class="btn sm" data-act="cancelChk">Cancel</button></div>
+      <p class="small muted" style="margin:0">Look at the colour dot on every cake before it goes out. On ${nice(ck.date)} only cakes made ${oks.map(c=>`<b>${esc(dayOfColour(c)||"")}</b> ${dot(c)}`).join(" or ")} can be sent. Anything older must stay back. If one flavour has two colours, tap <b>Split</b>.</p>
+      <div class="tw"><table><thead><tr><th>Cake</th><th class="r">Qty</th><th>Colour dot on the cakes</th><th></th></tr></thead><tbody>${ck.rows.map((r,i)=>{const bad=!oks.includes(r.colour); return `<tr><td>${cake(r.productId)}</td><td class="r"><input class="made mono" type="number" min="0" step="1" inputmode="numeric" id="ck-q-${i}" data-ckq="${i}" value="${esc(r.qty)}" aria-label="Quantity"></td><td><select id="ck-c-${i}" data-ckc="${i}" aria-label="Colour dot">${bad?`<option value="${esc(r.colour)}" selected>${esc(r.colour)} (too old, can't send)</option>`:""}${oks.map(c=>opt(c,`${c} · made ${dayOfColour(c)||""}`,r.colour)).join("")}</select>${bad?` <span class="pill bad">too old</span>`:""}</td><td class="r">${oks.length>1?`<button class="btn sm" data-cksplit="${i}">Split</button>`:""}</td></tr>`;}).join("")}</tbody></table></div>
+      <label class="chk"><input type="checkbox" id="ck-ok" data-ckok="1" ${ck.ok?"checked":""}> I checked the colour dot on every cake in this delivery</label>
+      <div class="row"><button class="btn pri" data-act="saveChk">Save · checked by ${esc(AUTH.name||"")}</button></div></div>`;
+  }
   const F=S.ui.dF||{}, fl=!!(F.p||F.from||F.to||F.st);
   const allF=allDOs().filter(d=>(!F.p||d.partnerId===F.p)&&(!F.from||d.date>=F.from)&&(!F.to||d.date<=F.to)&&(!F.st||(F.st==="delivered"?d.status==="delivered":d.status!=="delivered")));
   const list=allF.slice(0,150);
   const fbar=`<div class="fbar"><label class="f">Outlet<select data-flt="dF.p">${opt("","All outlets",F.p||"")}${partners(true).map(p=>opt(p.id,p.name,F.p||"")).join("")}</select></label><label class="f">From<input type="date" data-flt="dF.from" value="${esc(F.from||"")}"></label><label class="f">To<input type="date" data-flt="dF.to" value="${esc(F.to||"")}"></label><label class="f">Status<select data-flt="dF.st">${[["","All"],["planned","Planned"],["delivered","Delivered"]].map(([v,l])=>opt(v,l,F.st||"")).join("")}</select></label>${fl?`<button class="btn sm" data-act="clearDF">Clear filters</button>`:""}<span class="small muted">${allF.length} DO${allF.length===1?"":"s"}</span></div>`;
-  return `<div class="head"><div><h1>Deliveries</h1><p class="lede">Each delivery order carries one colour dot (the day the cakes were made). Stock only counts at the outlet once the DO is confirmed delivered, with accepted quantities.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button><button class="btn pri" data-act="newDO">New delivery order</button></div></div>
+  return `<div class="head"><div><h1>Deliveries</h1><p class="lede">Before a delivery goes out, the team checks the colour dot on every cake (<b>Check colours</b>). Only cakes made on the delivery day or the day before can be sent. Stock only counts at the outlet once the DO is confirmed delivered, with accepted quantities.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button>${KIT()?"":`<button class="btn pri" data-act="newDO">New delivery order</button>`}</div></div>
     ${form}
-    <div class="panel"><h2>Delivery orders</h2>${fbar}${list.length?`<div class="tw"><table><thead><tr><th>DO</th><th>Date</th><th>Outlet</th><th>Batch</th><th class="r">Units</th><th class="r">Value</th><th>Status</th><th></th></tr></thead><tbody>
+    <div class="panel"><h2>Delivery orders</h2>${fbar}${list.length?`<div class="tw"><table><thead><tr><th>DO</th><th>Date</th><th>Outlet</th><th>Batch</th><th class="r">Units</th>${KIT()?"":`<th class="r">Value</th>`}<th>Status</th><th></th></tr></thead><tbody>
       ${list.map(d=>{const u=(d.lines||[]).reduce((s,l)=>s+(+(d.status==="delivered"?(l.accepted??l.qty):l.qty)||0),0);const v=(d.lines||[]).reduce((s,l)=>s+(+(l.accepted??l.qty)||0)*priceFor(d.partnerId,l.productId,d.date).net,0);
         const billed=(S.weeks[wid(d.partnerId,d.weekStart)]||{}).settlement;
-        return `<tr><td class="mono">${esc(d.no)}${d.sample?` <span class="pill mute">sample</span>`:""}</td><td>${nice(d.date)}</td><td>${esc(partner(d.partnerId).name)}</td><td>${dot(d.colour)}</td><td class="r mono">${u}</td><td class="r mono">${fm(v)}</td>
-        <td>${d.status==="delivered"?`<span class="pill ok">Delivered</span>`:`<span class="pill warn">Planned</span>`}${billed?` <span class="pill info">Billed</span>`:""}</td>
-        <td><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${d.status!=="delivered"&&!billed?`<button class="btn sm pri" data-rcv="${d.partnerId}|${d.weekStart}|${d.id}">Mark delivered</button><button class="btn sm" data-edo="${d.partnerId}|${d.weekStart}|${d.id}">Edit</button>`:""}<button class="btn sm" data-vdo="${d.partnerId}|${d.weekStart}|${d.id}">View</button><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(partner(d.partnerId).phone,doText(d)))}">WhatsApp</a></div></td></tr>`}).join("")}
+        return `<tr><td class="mono">${esc(d.no)}${d.sample?` <span class="pill mute">sample</span>`:""}</td><td>${nice(d.date)}</td><td>${esc(partner(d.partnerId).name)}</td><td>${doColours(d).map(dot).join(" ")||dot(d.colour)}</td><td class="r mono">${u}</td>${KIT()?"":`<td class="r mono">${fm(v)}</td>`}
+        <td>${d.status==="delivered"?`<span class="pill ok">Delivered</span>`:(d.checkedAt?`<span class="pill info" title="Checked by ${esc(d.checkedBy||"")}">Colours checked</span>`:`<span class="pill warn">Planned</span>`)}${billed?` <span class="pill info">Billed</span>`:""}</td>
+        <td><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${d.status!=="delivered"?`${d.checkedAt?`<button class="btn sm pri" data-rcv="${d.partnerId}|${d.weekStart}|${d.id}">Mark delivered</button>`:""}<button class="btn sm ${d.checkedAt?"":"pri"}" data-chk="${d.partnerId}|${d.weekStart}|${d.id}">${d.checkedAt?"Recheck colours":"Check colours"}</button>${KIT()?"":`<button class="btn sm" data-edo="${d.partnerId}|${d.weekStart}|${d.id}">Edit</button>`}`:""}<button class="btn sm" data-vdo="${d.partnerId}|${d.weekStart}|${d.id}">View</button><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(partner(d.partnerId).phone,doText(d)))}">WhatsApp</a></div></td></tr>`}).join("")}
       </tbody></table></div>`:`<div class="empty">${fl?"No delivery orders match these filters.":"No delivery orders yet."}</div>`}</div>`;
 }
-function doText(d){return `*${cfg().company.name}* — ${d.no}\nDelivery ${nice(d.date)} to ${partner(d.partnerId).name}\nColour dot: ${d.colour}\n`+(d.lines||[]).filter(l=>+l.qty).map(l=>`• ${prod(l.productId).name} × ${d.status==="delivered"?(l.accepted??l.qty):l.qty}`).join("\n")+`\nPlease count on arrival and reply with any shortfall or damage.`}
+function doText(d){return `*${cfg().company.name}* — ${d.no}\nDelivery ${nice(d.date)} to ${partner(d.partnerId).name}\nColour dot: ${doColours(d).join(" + ")||d.colour}\n`+(d.lines||[]).filter(l=>+l.qty).map(l=>`• ${prod(l.productId).name} (${l.colour||d.colour}) × ${d.status==="delivered"?(l.accepted??l.qty):l.qty}`).join("\n")+`\nPlease count on arrival and reply with any shortfall or damage.`}
 
 /* ---- DAILY ---- */
 function vDaily(){
@@ -537,7 +556,7 @@ function vDaily(){
     <div class="row"><button class="btn" data-act="parse">Read message</button>${parsed?`<span class="small muted">${esc(parsed.summary)}</span>`:""}</div>
     ${parsed&&parsed.errors.length?`<div class="warns">${parsed.errors.map(e=>`<div class="bad">${esc(e)}</div>`).join("")}</div>`:""}
     ${parsed&&parsed.ok?`<div class="tw">${parsed.type==="report"?`<table><thead><tr><th>Cake</th><th>Batch</th><th class="r">Waste</th><th class="r">Balance</th></tr></thead><tbody>${parsed.lines.map(l=>`<tr><td>${cake(l.productId)}</td><td>${dot(l.colour)}</td><td class="r mono">${l.w}</td><td class="r mono">${l.b}</td></tr>`).join("")}</tbody></table>`:`<table><tbody><tr><td>Audit by ${esc(parsed.audit.by)} · ${parsed.audit.prices?Object.keys(parsed.audit.prices).length:0} prices · ${parsed.audit.counts.length} counts</td></tr></tbody></table>`}</div>
-      <div class="row">${parsed.exists?`<span class="pill warn">A report for this outlet/date already exists — saving replaces it</span>`:""}<button class="btn pri" data-act="savePaste">Save ${parsed.type==="report"?`report for ${esc(partner(parsed.partnerId).name)}, ${nice(parsed.date)}`:"audit"}</button></div>`:""}
+      <div class="row">${parsed.exists?`<span class="pill warn">A report for this outlet/date already exists — saving replaces it</span>`:""}${parsed.billed?`<span class="pill warn">That week is billed: the change will be flagged on the bill</span>`:""}<button class="btn pri" data-act="savePaste">Save ${parsed.type==="report"?`report for ${esc(partner(parsed.partnerId).name)}, ${nice(parsed.date)}`:"audit"}</button></div>`:""}
   </div>`;
   const lines=editing?editLines(day):day.lines;
   const tbl=lines.length?`<div class="tw"><table><thead><tr><th>Cake</th><th>Batch</th><th class="r">Age</th><th class="r">Opening</th><th class="r">Delivered</th><th class="r">Waste</th><th class="r">Balance</th><th class="r">Sold</th><th class="r">POS sold</th><th class="r">Variance</th></tr></thead><tbody>
@@ -559,13 +578,13 @@ function vDaily(){
     <div class="panel">
       <div class="spread"><div class="row">${partnerSelect("d-p",pid)}<button class="btn sm" data-day="-1" aria-label="Previous day">‹</button><input type="date" id="d-d" data-ui="date" value="${date}"><button class="btn sm" data-day="1" aria-label="Next day">›</button></div>
         <div class="row">${rep&&(rep.edits||[]).length?`<span class="pill warn" title="See the change log below">Changed ${rep.edits.length}× · last by ${esc(rep.edits[rep.edits.length-1].by||"")}</span>`:""}${rep?`<span class="pill ok">Reported${rep.by?` by ${esc(rep.by)}`:""} · ${esc(rep.source||"")}</span>`:day.status==="missing"?`<span class="pill bad">Missing</span><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(p.phone,chaseText(p,[date])))}">Chase on WhatsApp</a>`:`<span class="pill mute">${day.status==="today"?"Due at closing":"Upcoming"}</span>`}
-        ${editing?`<button class="btn sm" data-act="cancelDay">Cancel</button><button class="btn sm pri" data-act="saveDay">Save report</button>`:(c.week.settlement?`<span class="pill info" title="To change a billed week, Alfred or Joscelyn voids the bill in Weekly billing first">Week billed — locked</span>`:(RO()?"":`<button class="btn sm" data-act="editDay">${rep?"Correct report":"Enter report"}</button>`))}</div></div>
+        ${editing?`<button class="btn sm" data-act="cancelDay">Cancel</button><button class="btn sm pri" data-act="saveDay">Save report</button>`:`${c.week.settlement?`<span class="pill info" title="Changes are logged and flagged on the bill">Week billed</span>`:""}${RO()?"":`<button class="btn sm" data-act="editDay">${rep?"Correct report":"Enter report"}</button>`}`}</div></div>
       ${editing?`<div class="row"><label class="f">Reported by<input id="dd-by" data-ui="dayBy" value="${esc(S.ui.dayBy||"")}"></label><label class="f">Add a cake/colour<span class="row"><select id="dd-ap">${products().map(x=>opt(x.id,x.name,"")).join("")}</select><select id="dd-ac">${cfg().colours.map(x=>opt(x.name,x.name,"")).join("")}</select><button class="btn sm" data-act="addDayLine">Add</button></span></label></div>
       <div class="fbar"><label class="f">Why are you changing this? (required)<select id="dd-why" data-ui="dayWhy">${opt("","Choose a reason…",S.ui.dayWhy||"")}${WHY.map(x=>opt(x,x,S.ui.dayWhy||"")).join("")}</select></label><label class="f" style="flex:2">Details<input id="dd-whyn" data-ui="dayWhyNote" value="${esc(S.ui.dayWhyNote||"")}" placeholder="e.g. 2 Pear found at the back of the chiller"></label></div>
-      <p class="small muted" style="margin:0">Saved under <b>${esc(AUTH.name||"your name")}</b> with the time and reason. The change log keeps the old numbers and what the outlet first sent.</p>`:""}
+      <p class="small muted" style="margin:0">Saved under <b>${esc(AUTH.name||"your name")}</b> with the time and reason. The change log keeps the old numbers and what the outlet first sent.${c.week.settlement?" This week is already billed: the change will be flagged on the bill for Alfred or Joscelyn to review.":""}</p>`:""}
       ${tbl}
       ${editing?soldEditor(day,rep):salesCheck(rep,pid,date)}
-      ${dayLog(rep)}
+      ${photoFlags(rep)}${dayLog(rep)}
       ${rep&&rep.note?`<p class="small" style="margin:0"><b>Outlet note:</b> ${esc(rep.note)}</p>`:""}
       ${rep?`<div class="spread" style="border-top:1px solid var(--line);padding-top:12px"><h3>Closing photos ${(rep.photos||[]).length?`<span class="pill ok">${rep.photos.length}</span>`:`<span class="pill bad">required — none yet</span>`}</h3>
         <div class="row">${S.assets?`<label class="btn sm">Add photos from WhatsApp<input type="file" accept="image/&#42;" multiple data-repphoto="${pid}|${date}" hidden></label>`:""}${rep.drive?driveLink(rep.drive):(S.mcp?`<button class="btn sm" data-act="fileDaily">File report + photos to Drive</button>`:"")}</div></div>
@@ -587,10 +606,14 @@ function soldEditor(day,rep){
     <p class="small muted" style="margin:0">Fill this in if the photo wasn't read or was read wrongly. It's used to check that the numbers add up.${(rep&&(rep.salesPhotos||[]).length)?` Sales photo: ${rep.salesPhotos.map((id,i)=>`<a href="${esc(photoLink(id))}" target="_blank" rel="noopener">${i+1}</a>`).join(" ")}`:""}</p>
     <div class="tw"><table><thead><tr><th>Cake</th><th class="r">Sold (photo)</th></tr></thead><tbody>${ids.map(id=>`<tr><td>${thumb(id,24)} ${esc(prod(id).name)}</td><td class="r"><input class="made mono" type="number" min="0" step="1" inputmode="numeric" data-sd="${esc(id)}" id="sd-${esc(id)}" value="${esc(sd[id]??"")}" placeholder="–" aria-label="Sold from photo"></td></tr>`).join("")}</tbody></table></div></div>`;
 }
+function photoFlags(rep){const pc=(rep&&rep.photoCheck)||[]; if(!pc.length) return ""; const bad=pc.filter(x=>!x.ok);
+  return bad.length?`<div class="warns"><div class="bad"><b>Photo check:</b> ${bad.map(x=>`${esc(x.label)}: ${esc(x.why)}`).join(" · ")}</div></div>`:`<p class="small muted" style="margin:0">✓ Photo check: the photos look right.</p>`;}
+function afterBillBanner(w,st,live){ if(!st) return ""; const ab=w.afterBill||[], dn=Math.round(((live.totals.net||0)-(st.totals.net||0))*100)/100; if(!ab.length&&Math.abs(dn)<0.005) return "";
+  return `<div class="warns"><div class="bad"><b>Changed after this bill was issued.</b> ${ab.length?`${ab.length} change${ab.length>1?"s":""}; last: ${esc(ab[ab.length-1].what||"")} by ${esc(ab[ab.length-1].by||"")} (${esc(fmtTs(ab[ab.length-1].at))}). `:""}${Math.abs(dn)>=0.005?`With today's numbers the net would be <b>RM ${fm(live.totals.net)}</b> instead of RM ${fm(st.totals.net)} (difference RM ${fm(dn)}). To bill the new amount, Alfred or Joscelyn voids this bill and issues it again.`:"The net amount has not changed, so the issued bill is still right."}</div></div>`;}
 function dayLog(rep){ const E=(rep&&rep.edits)||[]; if(!E.length&&!(rep&&rep.orig)) return "";
   const o=rep.orig;
   return `<div style="border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px"><div class="spread"><h3>Change log <span class="pill warn">${E.length}</span></h3><button class="btn sm" data-tab="log">All changes</button></div>
-    <div class="tw"><table><thead><tr><th>When</th><th>By</th><th>What changed</th><th>Why</th></tr></thead><tbody>${E.slice().reverse().map(e=>`<tr><td class="small">${esc(fmtTs(e.at))}</td><td><b>${esc(e.by||"")}</b><div class="small muted">${esc(roleName(e.role))}</div></td><td class="small">${(e.changes||[]).map(chgTxt).join("<br>")||"—"}</td><td class="small">${esc(e.reason||"")}</td></tr>`).join("")}</tbody></table></div>
+    <div class="tw"><table><thead><tr><th>When</th><th>By</th><th>What changed</th><th>Why</th></tr></thead><tbody>${E.slice().reverse().map(e=>`<tr><td class="small">${esc(fmtTs(e.at))}</td><td><b>${esc(e.by||"")}</b><div class="small muted">${esc(roleName(e.role))}</div></td><td class="small">${(e.changes||[]).map(chgTxt).join("<br>")||"—"}</td><td class="small">${esc(e.reason||"")}${e.afterBill?` <span class="pill info">after billing</span>`:""}</td></tr>`).join("")}</tbody></table></div>
     ${o?`<details class="help"><summary>What was there before the first change${o.by?` (counted by ${esc(o.by)}`:" ("}${o.at?`${o.by?", ":""}${esc(fmtTs(o.at))}`:""}${o.source?` · ${esc(o.source)}`:""})</summary><div class="tw" style="margin-top:8px"><table><thead><tr><th>Cake</th><th>Batch</th><th class="r">Waste</th><th class="r">Left</th></tr></thead><tbody>${(o.lines||[]).map(l=>`<tr><td>${esc(prod(l.productId).name)}</td><td>${dot(l.colour)}</td><td class="r mono">${l.w??0}</td><td class="r mono">${l.b??0}</td></tr>`).join("")||`<tr><td colspan="4" class="small">No cakes counted.</td></tr>`}</tbody></table></div>${o.sold?`<p class="small muted" style="margin:6px 0 0">Sold (sales photo): ${Object.entries(o.sold).map(([k,v])=>`${esc(prod(k).name)} ${esc(v)}`).join(", ")||"none"}</p>`:""}</details>`:""}</div>`;}
 function editRows(){const out=[]; for(const w of Object.values(S.weeks)) for(const [d,r] of Object.entries(w.days||{})) for(const e of (r.edits||[])) out.push({pid:w.partnerId,date:d,...e}); return out.sort((a,b)=>String(b.at).localeCompare(String(a.at)));}
 function vLog(){ const F=S.ui.lF||{}, fl=!!(F.p||F.from||F.to||F.by), all=editRows(), people=[...new Set(all.map(x=>x.by).filter(Boolean))].sort();
@@ -598,7 +621,7 @@ function vLog(){ const F=S.ui.lF||{}, fl=!!(F.p||F.from||F.to||F.by), all=editRo
   const fbar=`<div class="fbar"><label class="f">Outlet<select data-flt="lF.p">${opt("","All outlets",F.p||"")}${partners(true).map(p=>opt(p.id,p.name,F.p||"")).join("")}</select></label><label class="f">Changed from<input type="date" data-flt="lF.from" value="${esc(F.from||"")}"></label><label class="f">To<input type="date" data-flt="lF.to" value="${esc(F.to||"")}"></label><label class="f">By<select data-flt="lF.by">${opt("","Everyone",F.by||"")}${people.map(n=>opt(n,n,F.by||"")).join("")}</select></label>${fl?`<button class="btn sm" data-act="clearLF">Clear filters</button>`:""}<span class="small muted">${rows.length} change${rows.length===1?"":"s"}</span></div>`;
   return `<div class="head"><div><h1>Change log</h1><p class="lede">Every change the office makes to an outlet's stock count (waste, left, sold) is recorded here automatically, with the name of the person signed in, the time and the reason. Only office staff and managers can make changes, and nobody can edit or delete this log. A copy of each line also goes to the <b>Edit log</b> tab in the Google Sheet.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button></div></div>
     <div class="panel">${fbar}
-    ${rows.length?`<div class="tw"><table><thead><tr><th>When</th><th>By</th><th>Outlet · report day</th><th>What changed</th><th>Why</th><th></th></tr></thead><tbody>${rows.slice(0,300).map(x=>`<tr><td class="small">${esc(fmtTs(x.at))}</td><td><b>${esc(x.by||"")}</b><div class="small muted">${esc(roleName(x.role))}</div></td><td>${esc(partner(x.pid).name)}<div class="small muted">${nice(x.date)}</div></td><td class="small">${(x.changes||[]).map(chgTxt).join("<br>")||"—"}</td><td class="small">${esc(x.reason||"")}</td><td class="r"><button class="btn sm" data-go-daily="${esc(x.pid)}|${esc(x.date)}">Open</button></td></tr>`).join("")}</tbody></table></div>${rows.length>300?`<p class="small muted" style="margin:0">Showing the latest 300. Use the filters to narrow it down.</p>`:""}`:`<div class="empty">${fl?"No changes match these filters.":"No changes yet. When the office corrects a closing report, it shows here."}</div>`}</div>`;
+    ${rows.length?`<div class="tw"><table><thead><tr><th>When</th><th>By</th><th>Outlet · report day</th><th>What changed</th><th>Why</th><th></th></tr></thead><tbody>${rows.slice(0,300).map(x=>`<tr><td class="small">${esc(fmtTs(x.at))}</td><td><b>${esc(x.by||"")}</b><div class="small muted">${esc(roleName(x.role))}</div></td><td>${esc(partner(x.pid).name)}<div class="small muted">${nice(x.date)}</div></td><td class="small">${(x.changes||[]).map(chgTxt).join("<br>")||"—"}</td><td class="small">${esc(x.reason||"")}${x.afterBill?` <span class="pill info">after billing</span>`:""}</td><td class="r"><button class="btn sm" data-go-daily="${esc(x.pid)}|${esc(x.date)}">Open</button></td></tr>`).join("")}</tbody></table></div>${rows.length>300?`<p class="small muted" style="margin:0">Showing the latest 300. Use the filters to narrow it down.</p>`:""}`:`<div class="empty">${fl?"No changes match these filters.":"No changes yet. When the office corrects a closing report, it shows here."}</div>`}</div>`;
 }
 function salesCheck(rep,pid,date){ if(!rep||!rep.check) return "";
   const probs=rep.check.filter(c=>c.diff);
@@ -636,7 +659,7 @@ function parseMsg(txt){
     }
     if(!out.lines.length&&!/no stock counted/i.test(T)) out.errors.push("No cake lines found (format: SKU | COLOUR | W0 B0).");
     out.summary=`Closing report · ${p?p.name:"?"} · ${date?nice(date):"?"} · ${out.lines.length} line(s)`;
-    if(p&&date){const w=S.weeks[wid(p.id,weekStartOf(date))]; out.exists=!!(w&&w.days&&w.days[date]); out.locked=!!(w&&w.settlement); if(out.locked) out.errors.push("That week is already billed. Void the bill first to change its reports.");}
+    if(p&&date){const w=S.weeks[wid(p.id,weekStartOf(date))]; out.exists=!!(w&&w.days&&w.days[date]); out.locked=false; out.billed=!!(w&&w.settlement);}
   }
   out.ok=!out.errors.length||(out.type==="report"&&out.lines.length&&p&&date&&!out.locked);
   return out;
@@ -656,7 +679,7 @@ function vBilling(){
   const pid=curPartner(); if(!pid) return `<div class="empty">Add an outlet in Setup first.</div>`;
   const t=today(); const ws=S.ui.week||weekStartOf(add(t,-7)); const p=partner(pid);
   const c=calcWeek(pid,ws), w=c.week, st=w.settlement;
-  const live=buildSettlement(c,{creditShort:!!S.f["creditShort_"+wid(pid,ws)]});
+  const live=buildSettlement(c,{creditShort:st?!!st.shortageCredited:!!S.f["creditShort_"+wid(pid,ws)]});
   const s=st||live;
   const ended=add(ws,6)<t;
   const recon=`<div class="tw"><table><thead><tr><th>Cake</th><th>Batch</th><th class="r">B/F</th><th class="r">Delivered</th><th class="r">Sold</th><th class="r">Waste</th><th class="r">Variance</th><th class="r">C/F</th><th class="r">Rate</th><th class="r">Sold value</th></tr></thead><tbody>
@@ -672,7 +695,7 @@ function vBilling(){
   let actions="";
   if(!st){
     actions=`<div class="row"><label class="row small"><input type="checkbox" id="cs" data-f="creditShort_${wid(pid,ws)}" ${S.f["creditShort_"+wid(pid,ws)]?"checked":""} style="width:auto"> Credit shortage (outlet not charged for missing units)</label></div>
-      ${conf==="issue"?`<div class="confirm">Issue ${esc(cfg().prefixes.INV)}, ${esc(cfg().prefixes.CF)}${live.cn.length?` and ${esc(cfg().prefixes.CN)}`:""} for ${esc(p.name)}? Numbers are assigned and the week's reports lock.<button class="btn sm pri" data-act="issue">Issue documents</button><button class="btn sm" data-act="noconfirm">Cancel</button></div>`
+      ${conf==="issue"?`<div class="confirm">Issue ${esc(cfg().prefixes.INV)}, ${esc(cfg().prefixes.CF)}${live.cn.length?` and ${esc(cfg().prefixes.CN)}`:""} for ${esc(p.name)}? Numbers are assigned. Later changes to this week are logged and flagged here.<button class="btn sm pri" data-act="issue">Issue documents</button><button class="btn sm" data-act="noconfirm">Cancel</button></div>`
       :`<div class="row">${MGR()?`<button class="btn pri" data-act="askIssue" ${live.inv.length?"":"disabled"}>Approve & issue invoice, CF${live.cn.length?" and CN":""}</button>`:`<span class="pill info">Draft ready: waiting for Alfred or Joscelyn to approve</span>`}${!ended?`<span class="pill warn">Week still running</span>`:""}</div>`}`;
   } else {
     const nextBilled=(S.weeks[wid(pid,add(ws,7))]||{}).settlement;
@@ -684,7 +707,7 @@ function vBilling(){
       <div class="row"><button class="btn pri" data-act="saveBk">Save Bukku refs & payment</button>${st.drive&&st.drive.inv?`${driveLink(st.drive.inv)}`:(S.mcp?`<button class="btn" data-act="fileWeek">File INV, CF${st.cnNo?", CN":""} + DOs to Drive</button>`:"")}
       ${conf==="void"?`<span class="confirm">Void these documents? They are kept in history and the week reopens.<button class="btn sm danger" data-act="void">Void</button><button class="btn sm" data-act="noconfirm">Keep</button></span>`:(nextBilled?`<span class="small muted">Next week is billed, so this week can't be voided.</span>`:`<button class="btn danger" data-act="askVoid">Void & reopen week</button>`)}
       ${st.paid&&st.paid.amount!=null&&st.paid.amount!==""?(Math.abs(+st.paid.amount-st.totals.net)<0.005?`<span class="pill ok">Paid in full</span>`:`<span class="pill warn">Paid RM ${fm(st.paid.amount)} — difference RM ${fm(st.totals.net-(+st.paid.amount))}</span>`):""}</div>
-      ${Math.abs(live.totals.net-st.totals.net)>0.004?`<div class="warns"><div class="bad">Reports or deliveries changed after issue: live figures now give net RM ${fm(live.totals.net)} vs issued RM ${fm(st.totals.net)}. Void and reissue, or raise a separate adjustment.</div></div>`:""}`;
+      `;
   }
   return `<div class="head"><div><h1>Weekly billing</h1><p class="lede">Each Monday last week's bill is drafted automatically from the reports. A manager checks it and taps <b>Approve & issue</b>; edit only if something is wrong. Invoice all stock held (carried-forward + new deliveries) → credit the unsold balance on a CF note → credit wastage on a CN per the outlet's terms. The net equals what was actually sold at the agreed rate.</p></div></div>
     <div class="panel">
@@ -692,7 +715,7 @@ function vBilling(){
         <div class="row">${st?`<span class="pill ok">Issued ${esc(st.issuedAt.slice(0,10))}</span>${st.bukku&&st.bukku.inv?`<span class="pill info">In Bukku</span>`:`<span class="pill warn">Not in Bukku yet</span>`}${st.paid&&st.paid.date?`<span class="pill ok">Paid</span>`:""}`:`<span class="pill mute">Draft</span>`}</div></div>
       <p class="small muted" style="margin:0">Opening stock from: ${esc(c.opening.src)} · Terms: ${p.pct}% to Chaleur · Wastage: ${({credit:"Chaleur bears (full credit)",half:"Outlet pays 50% of retail",none:"Outlet bears (no credit)"})[p.wasteRule||"credit"]}</p>
       ${(st?[]:live.warns).length?`<div class="warns">${live.warns.map(([k,m])=>`<div class="${k}">${esc(m)}</div>`).join("")}</div>`:""}
-      ${cards}
+      ${afterBillBanner(w,st,live)}${cards}
       ${actions}
     </div>
     <div class="panel"><h2>Stock reconciliation</h2>${recon}
@@ -706,8 +729,8 @@ function docHTML(kind,pid,ws,st){
   const T={inv:"INVOICE",cf:"CARRY FORWARD NOTE",cn:"CREDIT NOTE",do:"DELIVERY ORDER"}[kind];
   let no,lines,rows,date=st?st.issuedAt.slice(0,10):today(),notes="";
   if(kind==="do"){ no=st.no; date=st.date;
-    rows=(st.lines||[]).filter(l=>+l.qty).map((l,i)=>`<tr><td>${i+1}</td><td>${esc(prod(l.productId).name)} <span style="color:#777">${esc(prod(l.productId).sku)}</span></td><td>${dot(st.colour)}</td><td class="r">${l.qty}</td><td class="r">${st.status==="delivered"?(l.accepted??l.qty):""}</td></tr>`).join("");
-    return paper(T,no,date,p,`<table><thead><tr><th>#</th><th>Item</th><th>Batch</th><th class="r">Qty sent</th><th class="r">Accepted</th></tr></thead><tbody>${rows}</tbody></table>`,"",`Made on ${nice(st.batchDate||st.date)} · colour dot ${esc(st.colour)}. ${st.status==="delivered"?`Received by ${esc(st.receivedBy||"—")} ${esc(st.receivedAt||"")}.`:"Receiver: count with driver and sign below."}${st.note?" Note: "+esc(st.note):""}<br><br>Received by (name / signature / time): ____________________________`);
+    rows=(st.lines||[]).filter(l=>+l.qty).map((l,i)=>`<tr><td>${i+1}</td><td>${esc(prod(l.productId).name)} <span style="color:#777">${esc(prod(l.productId).sku)}</span></td><td>${dot(l.colour||st.colour)}</td><td class="r">${l.qty}</td><td class="r">${st.status==="delivered"?(l.accepted??l.qty):""}</td></tr>`).join("");
+    return paper(T,no,date,p,`<table><thead><tr><th>#</th><th>Item</th><th>Batch</th><th class="r">Qty sent</th><th class="r">Accepted</th></tr></thead><tbody>${rows}</tbody></table>`,"",`Made on ${nice(st.batchDate||st.date)} · colour dot ${doColours(st).map(esc).join(" + ")||esc(st.colour)}${st.checkedBy?` · colours checked by ${esc(st.checkedBy)}`:""}. ${st.status==="delivered"?`Received by ${esc(st.receivedBy||"—")} ${esc(st.receivedAt||"")}.`:"Receiver: count with driver and sign below."}${st.note?" Note: "+esc(st.note):""}<br><br>Received by (name / signature / time): ____________________________`);
   }
   no=st[kind+"No"]; lines=st[kind];
   rows=lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(prod(l.productId).name)}${l.type==="B/F"?` <span style="color:#777">B/F ${esc(l.ref||"")}</span>`:l.type==="NEW"?` <span style="color:#777">${esc(l.ref||"")}</span>`:l.reason?` <span style="color:#777">${esc(l.reason)}</span>`:""}</td><td>${dot(l.colour)}</td><td class="r">${l.qty}</td><td class="r">${fm(l.rate)}</td><td class="r">${fm(l.qty*l.rate)}</td></tr>`).join("");
@@ -726,7 +749,7 @@ function docHTML(kind,pid,ws,st){
 }
 function vModal(){
   const m=S.ui.modal;
-  return `<div class="modal" data-close="1"><div class="box" role="dialog" aria-label="Document"><div class="bar"><button class="btn" data-act="printModal">Print</button><button class="btn" data-act="copyLines">Copy lines for Bukku</button><button class="btn" data-act="saveFile">Save PDF to Drive</button>${m.drive?driveLink(m.drive):(S.mcp?`<button class="btn" data-act="fileModal">File to Drive</button>`:"")}<button class="btn pri" data-act="closeModal">Close</button></div>${m.html}</div></div>`;
+  return `<div class="modal" data-close="1"><div class="box" role="dialog" aria-label="Document"><div class="bar"><button class="btn" data-act="printModal">Print</button>${KIT()?"":`<button class="btn" data-act="copyLines">Copy lines for Bukku</button><button class="btn" data-act="saveFile">Save PDF to Drive</button>`}${m.drive?driveLink(m.drive):(S.mcp?`<button class="btn" data-act="fileModal">File to Drive</button>`:"")}<button class="btn pri" data-act="closeModal">Close</button></div>${m.html}</div></div>`;
 }
 
 /* ---- AUDITS ---- */
@@ -778,14 +801,17 @@ function vAudits(){
       ${list.map(a=>{const e=evalAudit(a);return `<tr><td>${nice(a.date)} <span class="muted small">${esc(a.time||"")}</span></td><td>${esc(partner(a.partnerId).name)}</td><td>${esc(a.by||"")}</td>
         <td class="r">${e.score==null?"—":`<span class="pill ${e.score>=90?"ok":e.score>=70?"warn":"bad"}">${e.score}%</span>`}</td><td class="mono">${a.temp?esc(a.temp)+"°C":"—"}</td>
         <td>${e.priceBad.length?e.priceBad.map(x=>`<span class="pill bad">${esc(x.name)} ${fm(x.shown)}≠${fm(x.approved)}</span>`).join(" "):Object.keys(a.prices||{}).length?`<span class="pill ok">OK</span>`:"—"}</td>
-        <td>${e.counts.map(x=>`${esc(prod(x.productId).name)} ${dot(x.colour)} ${x.n}/${x.sys}`).join("<br>")||"—"}</td><td class="small">${esc(a.note||"")}${e.fails.length?`<br><span class="neg">Failed: ${e.fails.map(esc).join(", ")}</span>`:""}${(a.ai||[]).length?`<br><b>Suggestions:</b> ${a.ai.map(esc).join("; ")}`:""}${a.pdf?`<br><a href="${esc(a.pdf)}" target="_blank" rel="noopener">PDF</a>`:""}</td></tr>`}).join("")}
+        <td>${e.counts.map(x=>`${esc(prod(x.productId).name)} ${dot(x.colour)} ${x.n}/${x.sys}`).join("<br>")||"—"}</td><td class="small">${esc(a.note||"")}${e.fails.length?`<br><span class="neg">Failed: ${e.fails.map(esc).join(", ")}</span>`:""}${(a.photoCheck||[]).filter(x=>!x.ok).length?`<br><span class="neg"><b>Photo check:</b> ${a.photoCheck.filter(x=>!x.ok).map(x=>esc(x.label)+": "+esc(x.why)).join("; ")}</span>`:""}${(a.ai||[]).length?`<br><b>Suggestions:</b> ${a.ai.map(esc).join("; ")}`:""}${a.pdf?`<br><a href="${esc(a.pdf)}" target="_blank" rel="noopener">PDF</a>`:""}</td></tr>`}).join("")}
       </tbody></table></div><p class="small muted" style="margin:0">Counts show counted / system stock at the start of that day plus deliveries — sales during the day will lower the counted figure.</p>`:`<div class="empty">No audits yet.</div>`}</div>`;
 }
 
 /* ---- SETUP ---- */
+const sampleSecs=r=>[["Outlets",r.partners.map(x=>x.name)],["Whole weeks of the sample outlet",r.weeks.map(x=>x.id)],["Closing reports",r.days.map(x=>`${partner(x.week.split("_")[0]).name||x.week} ${x.date}${x.by?` (by ${x.by})`:""}`)],["Delivery orders",r.dos.map(x=>x.no||x.id)],["Prices",r.prices.map(x=>x.id)],["Audits",r.audits.map(x=>`${x.date} ${x.by}`)],["Daily check",r.alerts.map(()=>"sample check")],["Staff logins",r.team.map(x=>x.name)]].filter(([,a])=>a.length);
+const sampleCount=r=>sampleSecs(r).reduce((s,[,a])=>s+a.length,0);
+function sampleList(r){const sec=sampleSecs(r); return sec.length?`<div class="tw"><table><tbody>${sec.map(([k,a])=>`<tr><td><b>${esc(k)}</b> <span class="small muted">${a.length}</span></td><td class="small">${a.slice(0,60).map(esc).join(" · ")}${a.length>60?" …":""}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">Nothing to remove: no sample or test data found.</div>`;}
 function vSetup(){
   const sec=S.ui.setup;
-  const subs=[["partners","Outlets & terms"],["products","Products"],["prices","Price register"],["opening","Opening stock"],["general","Go-live & rules"]];
+  const subs=[["partners","Outlets & terms"],["products","Products"],["shelf","Shelf life"],["prices","Price register"],["opening","Opening stock"],["general","Go-live & rules"]];
   let body="";
   if(sec==="partners"){
     const e=S.ui.pEdit;
@@ -802,7 +828,7 @@ function vSetup(){
       </div>
       <div class="fgrid"><div class="f"><span>Closed on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-cl-${i}" data-pearr="closed" data-v="${i}" ${((e.hours||{}).closed||[]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
         <div class="f"><span>We deliver on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-dd-${i}" data-pearr="deliveryDays" data-v="${i}" ${(e.deliveryDays||[1,3,5]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
-        <details class="help" style="grid-column:1/-1"><summary>Cakes this outlet carries (${(e.carries||[]).length||"not set"}), used by Plan & prep</summary><div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px">${["Petit gâteau","Cheesecake","Whole cake"].map(cat=>`<div style="flex-basis:100%;font-weight:600;margin-top:6px">${cat}</div>${products().filter(pp=>(pp.category||"Petit gâteau")===cat).map(pp=>`<label class="chk"><input type="checkbox" data-pecarry="${pp.id}" ${(e.carries||[]).includes(pp.id)?"checked":""}>${esc(pp.name)}</label>`).join("")}`).join("")}</div></details>
+        <details class="help" style="grid-column:1/-1"><summary>Cakes this outlet carries (${(e.carries||[]).length||"not set"}), used by Plan & prep</summary><div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px">${CATS.map(cat=>`<div style="flex-basis:100%;font-weight:600;margin-top:6px">${CATL[cat]}</div>${products().filter(pp=>catOf(pp)===cat).map(pp=>`<label class="chk"><input type="checkbox" data-pecarry="${pp.id}" ${(e.carries||[]).includes(pp.id)?"checked":""}>${esc(pp.name)}</label>`).join("")}`).join("")}</div></details>
         <label class="f">Active<select id="pe-act" data-pe="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label>
       </div><div class="row"><button class="btn pri" data-act="savePartner">Save outlet</button><button class="btn" data-act="cancelPartner">Cancel</button></div>`:""}
       <div class="tw"><table><thead><tr><th>Code</th><th>Outlet</th><th>Closing link</th><th class="r">Chaleur %</th><th>Terms</th><th>Wastage</th><th>Hours</th><th>Delivery days</th><th>WhatsApp</th><th></th></tr></thead><tbody>
@@ -812,12 +838,23 @@ function vSetup(){
   if(sec==="products"){
     const e=S.ui.prEdit;
     body=`<div class="panel"><div class="spread"><h2>Products</h2><button class="btn pri" data-act="newProduct">Add product</button></div>
-      ${e?`<div class="fgrid">${[["sku","Code / SKU (no spaces)"],["name","Name"],["retail","Retail price RM"],["shelfDays","Shelf life (days, chilled)"],["bukkuId","Bukku product ID"]].map(([k,l])=>`<label class="f">${l}<input id="pr-${k}" data-pr="${k}" value="${esc(e[k]??"")}"></label>`).join("")}
+      ${e?`<div class="fgrid">${[["sku","Code / SKU (no spaces)"],["name","Name"],["retail","Retail price RM"],["shelfDays","Shelf life (days, chilled)"],["bukkuId","Bukku product ID"]].map(([k,l])=>`<label class="f">${l}<input id="pr-${k}" data-pr="${k}" value="${esc(e[k]??"")}" ${k==="shelfDays"&&!MGR()?`readonly title="Change shelf life in Setup › Shelf life (Alfred or Joscelyn)"`:""}></label>`).join("")}
         <label class="f">Active<select id="pr-act" data-pr="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label></div>
         <div class="row"><button class="btn pri" data-act="saveProduct">Save product</button><button class="btn" data-act="cancelProduct">Cancel</button></div>`:""}
       <div class="tw"><table><thead><tr><th>Photo</th><th>SKU</th><th>Name</th><th class="r">Retail RM</th><th class="r">Shelf life</th><th>Bukku ID</th><th></th></tr></thead><tbody>
       ${products(true).map(p=>`<tr><td>${thumb(p.id,44)}${S.assets?`<label class="btn sm" style="margin-left:6px">${p.photo?"Change":"Add photo"}<input type="file" accept="image/&#42;" data-photo="${p.id}" hidden></label>`:""}</td><td class="mono">${esc(p.sku)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}${p.note?`<div class="small muted">${esc(p.note)}</div>`:""}</td><td class="r mono">${fm(p.retail)}</td><td class="r mono">${esc(p.shelfDays)} d</td><td class="mono small">${esc(p.bukkuId||"—")}</td><td class="r"><button class="btn sm" data-predit="${p.id}">Edit</button></td></tr>`).join("")}
       </tbody></table></div><p class="small muted" style="margin:0">Use a clear top-down photo of each cake so outlet staff can recognise it. When you add products or change photos, ask Claude to refresh the outlet and audit forms.</p></div>`;
+  }
+  if(sec==="shelf"){
+    const D=S.ui.shelfDraft||(S.ui.shelfDraft={}), can=MGR(), W3=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const val=p=>D[p.id]??String(+p.shelfDays||3), was=p=>+p.shelfDays||3;
+    const expl=n=>{n=Math.round(+n); if(!(n>=1&&n<=6)) return `<span class="neg">Use 1 to 6 days</span>`; return `Made Mon: sell ${n>1?"Mon–"+W3[n-1]:"Mon only"}, throw away ${W3[n%7]} morning`;};
+    const changed=products().filter(p=>D[p.id]!=null&&String(+D[p.id])!==String(was(p)));
+    body=`<div class="panel"><div class="spread"><h2>Shelf life</h2>${can?`<button class="btn pri" data-act="saveShelf" ${changed.length?"":"disabled"}>Save ${changed.length?changed.length+" ":""}change${changed.length===1?"":"s"}</button>`:`<span class="pill info">Only Alfred or Joscelyn can change this</span>`}</div>
+      <p class="small muted" style="margin:0">How many days each cake can be sold, counting the day it is made as day 1. Everything follows this number: the outlet closing form ("throw away" and "sell first" tags), Needs attention, the daily check, the "take off display" list on delivery notes, Plan & prep and the AI audit suggestions. Maximum 6 days, because the colour dots repeat every week. Each change is saved with your name in the Edit log.</p>
+      ${CATS.map(cat=>{const ps=products().filter(p=>catOf(p)===cat); if(!ps.length) return ""; return `<div class="spread" style="margin-top:6px"><h3>${esc(CATL[cat])} <span class="small muted">${ps.length}</span></h3>${can?`<span class="row" style="gap:6px"><input class="made mono" type="number" min="1" max="6" step="1" inputmode="numeric" id="sla-${esc(cat)}" data-slall="${esc(cat)}" value="${esc((S.ui.slAll||{})[cat]||"")}" placeholder="days" aria-label="Days for all ${esc(CATL[cat])}"><button class="btn sm" data-slapply="${esc(cat)}">Set all</button></span>`:""}</div>
+        <div class="tw"><table><thead><tr><th>Cake</th><th class="r">Days</th><th>What it means</th><th>Last changed</th></tr></thead><tbody>${ps.map(p=>{const h=(p.shelfHist||[]).slice(-1)[0], v=val(p), ch=D[p.id]!=null&&String(+D[p.id])!==String(was(p));
+          return `<tr><td>${cake(p.id)}</td><td class="r"><input class="made mono" type="number" min="1" max="6" step="1" inputmode="numeric" id="sl-${esc(p.id)}" data-sl="${esc(p.id)}" value="${esc(v)}" ${can?"":"disabled"} aria-label="Shelf life in days for ${esc(p.name)}">${ch?` <span class="pill warn">was ${was(p)}</span>`:""}</td><td class="small">${expl(v)}</td><td class="small muted">${h?`${esc(h.by)} · ${esc(fmtTs(h.at))} (${h.from}→${h.to})`:"—"}</td></tr>`;}).join("")}</tbody></table></div>`;}).join("")}</div>`;
   }
   if(sec==="prices"){
     const n=S.ui.priceNew||{};
@@ -856,7 +893,7 @@ function vSetup(){
       <p class="small muted" style="margin:0">Run in <b>testing</b> alongside your current process. On cutoff day: do a signed opening count at every outlet, enter it in Setup › Opening stock, then switch to live. Nothing before the cutoff date is billed or chased.</p>
       <div class="fgrid"><label class="f">Mode<select id="g-mode" data-g="mode">${opt("testing","Testing",g.mode)}${opt("live","Live",g.mode)}</select></label>
         <label class="f">Cutoff / go-live date<input type="date" id="g-co" data-g="cutoffDate" value="${esc(g.cutoffDate||"")}"></label>
-        <label class="f">Prep / thaw lead time (days before delivery)<input id="g-lead" data-g="prepLeadDays" inputmode="numeric" value="${esc(g.prepLeadDays??0)}"></label>
+        <label class="f">Prep / thaw lead time (0 or 1 day before delivery)<input id="g-lead" data-g="prepLeadDays" inputmode="numeric" value="${esc(g.prepLeadDays??0)}"></label>
         <label class="f">Report grace after closing (min)<input id="g-grace" data-g="graceMin" inputmode="numeric" value="${esc(g.graceMin??60)}"></label>
         <label class="f">Eve-of-holiday demand +%<input id="g-eve" data-g="eveUplift" inputmode="numeric" value="${esc(g.eveUplift??10)}"></label></div>
       <h2>FIFO colour dots</h2><p class="small muted" style="margin:0">Fixed to the CA FIFO sheet: the dot is the day the cake was prepared or thawed.</p>
@@ -876,8 +913,9 @@ function vSetup(){
         <div class="row">${S.ui.readerOn==null?(S.ui.readerAsk||(S.ui.readerAsk=GS("readerStatus").then(r=>{S.ui.readerOn=r.on;S.ui.readerProv=r.provider;render();}).catch(()=>{S.ui.readerOn=false;render();})),`<span class="pill mute">Checking…</span>`):(S.ui.readerOn?`<span class="pill ok">On${S.ui.readerProv?` (${S.ui.readerProv==="openai"?"OpenAI":"Anthropic"})`:""}</span>`:`<span class="pill warn">Off: outlets' sales photos are checked by hand</span>`)}</div>
         <div class="fgrid"><label class="f">OpenAI or Anthropic API key<input id="rd-key" type="password" autocomplete="off" placeholder="sk-…"></label></div>
         <div class="row"><button class="btn pri" data-act="saveReader">${S.ui.readerOn?"Replace key":"Switch on"}</button>${S.ui.readerOn?`<button class="btn sm" data-act="readerOff">Switch off</button>`:""}</div></div>`:""}
-      <div class="panel"><h2>Sample data</h2><p class="small muted" style="margin:0">The sample outlet, its weeks, audits and the Claude check marked "sample" were added so you can see the system working. Remove them before go-live.</p>
-      ${S.ui.confirm==="clear"?`<div class="confirm">Delete all sample weeks, audits and alerts?<button class="btn sm danger" data-act="clearSample">Delete sample data</button><button class="btn sm" data-act="noconfirm">Cancel</button></div>`:`<div class="row"><button class="btn danger" data-act="askClear">Clear sample data</button></div>`}</div>`;
+      <div class="panel"><h2>Sample & test data</h2><p class="small muted" style="margin:0">Removes the sample outlet and anything marked sample, reports and audits entered as "Testing" or "Test", and the "Example Staff" login. You see the full list first. A backup of everything removed is saved to Drive (Backups folder).</p>
+      ${S.ui.sampleDone?`<p class="small" style="margin:0">Done. Backup: <a href="${esc(S.ui.sampleDone)}" target="_blank" rel="noopener">open in Drive</a></p>`:""}${S.ui.sampleScan?sampleList(S.ui.sampleScan):""}
+      <div class="row">${MGR()?(S.ui.sampleScan?(sampleCount(S.ui.sampleScan)?`<button class="btn danger" data-act="clearSample2">Remove these (backup first)</button>`:"")+`<button class="btn" data-act="noSample">Close</button>`:`<button class="btn" data-act="scanSample">Show sample & test data</button>`):`<span class="pill info">Only Alfred or Joscelyn can do this</span>`}</div></div>`;
   }
   return `<div class="head"><div><h1>Setup</h1><p class="lede">Outlets, terms, products, approved prices and document settings.</p></div></div>
     <div class="sub">${subs.map(([k,l])=>`<button aria-pressed="${sec===k}" data-setup="${k}">${l}</button>`).join("")}</div>${body}`;
@@ -886,10 +924,11 @@ function vSetup(){
 /* ---------- planning engine: history → forecast → next delivery → kitchen prep ---------- */
 const evList=()=>Object.values(S.calendar).sort((a,b)=>a.date.localeCompare(b.date));
 const dayEvents=iso=>evList().filter(e=>iso>=e.date&&iso<=(e.end||e.date));
+const effUp=e=>{const u=+e.uplift||0; if(u<=0) return u; return Math.min(u,e.type==="school"?+(cfg().schoolUplift??5):+(cfg().holUplift??10));};
 function dayFactor(iso){
-  let f=1; const ev=dayEvents(iso); for(const e of ev) f*=1+(+e.uplift||0)/100;
+  let f=1; const ev=dayEvents(iso); for(const e of ev) f*=1+effUp(e)/100;
   if(!ev.some(e=>e.type==="public")&&dayEvents(add(iso,1)).some(e=>e.type==="public")) f*=1+(+cfg().eveUplift||0)/100;
-  return f;
+  return Math.max(0.1,Math.min(f,1+(+(cfg().holUplift??10))/100));
 }
 const tradesLikeWeekend=iso=>[5,6,0].includes(dow(iso)); // Fri–Sun
 function salesHistory(pid,days=28){
@@ -915,7 +954,7 @@ function forecastFor(pid,prodId,hist){
 }
 function nextDeliveries(pid,from){const dd=(partner(pid).deliveryDays||[1,3,5]).map(Number);const r=[];for(let i=0;i<28&&r.length<2;i++){const d=add(from,i);if(dd.includes(dow(d))&&!isClosed(pid,d))r.push(d);}return r;}
 function planOutlet(pid){
-  const t=today(), p=partner(pid), hist=salesHistory(pid,28), [d1,d2]=nextDeliveries(pid,add(t,1));
+  const t=today(), p=partner(pid), hist=salesHistory(pid,28), [d1,d2]=nextDeliveries(pid,add(t,((+cfg().prepLeadDays||0)>0||new Date().getHours()>=+(cfg().planSwitchHour??14))?1:0));
   if(!d1) return {pid,lines:[],note:"No delivery days set for this outlet (Setup › Outlets)."};
   const c=calcWeek(pid,weekStartOf(t)); const ref=[...c.days].reverse().find(d=>d.date<=t&&d.rep)||[...c.days].reverse().find(d=>d.date<t)||c.days[0];
   const stock={}; for(const k of Object.values(c.keys)){const q=ref?ref.stock[k.key]:0; if(q>0)(stock[k.productId]||(stock[k.productId]=[])).push({colour:k.colour,qty:q,batch:k.batchDate||ref.date});}
@@ -937,9 +976,10 @@ function planOutlet(pid){
     const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
     if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`); if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — +15%`);
     if(d2&&diffDays(d2,d1)>life) notes.push(`gap to next delivery (${diffDays(d2,d1)}d) is longer than shelf life`);
-    if(prod(id).category==="Whole cake"){const wd=(cfg().wholeDays||[5,6,0]).map(Number), mx=+(cfg().wholeMax??2); if(!wd.includes(dow(d1))){ if(suggest) notes.push("whole cakes only go out Fri–Sun"); suggest=0; } else if(suggest>mx){ suggest=mx; notes.push(`whole cakes: max ${mx} each`); } }
+    if(isWhole(id)){const wd=(cfg().wholeDays||[5,6,0]).map(Number), mx=+(cfg().wholeMax??1); if(!wd.includes(dow(d1))){ if(suggest) notes.push("whole cakes only go out Fri–Sun"); suggest=0; } else if(suggest>mx){ suggest=mx; notes.push(`whole cakes: max ${mx} each`); } }
     lines.push({productId:id,aw:f.aw,ae:f.ae,stockNow,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n});
   }
+  { const wt=+(cfg().wholeTypes??2); lines.filter(l=>isWhole(l.productId)&&l.suggest>0).sort((a,b)=>(b.demand-a.demand)||(b.n-a.n)).slice(wt).forEach(l=>{l.suggest=0; l.notes.push(`max ${wt} whole-cake kinds per delivery`);}); }
   const hol=[]; for(let i=0;i<(d2?diffDays(d2,d1):3);i++){for(const e of dayEvents(add(d1,i))) if(!hol.includes(e)) hol.push(e);}
   return {pid,d1,d2,lines,planned,hol,carryNote,prepDate:add(d1,-(+cfg().prepLeadDays||0))};
 }
@@ -979,7 +1019,7 @@ function printDoc(title,body){printRaw(title,`<style>@page{size:A4;margin:12mm}*
 table{width:100%;border-collapse:collapse}th{background:#f1f1f1;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:6px;border-bottom:1px solid #bbb}td{padding:7px 6px;border-bottom:1px solid #ddd;vertical-align:middle}
 .r{text-align:right}th.r{text-align:right}.b{font-weight:700}.sm{font-size:10.5px;color:#555}.box{border:1px solid #aaa;min-width:60px}tr.tot td{font-weight:700;border-top:2px solid #333}.mono{font-family:monospace}
 .sig{display:flex;justify-content:space-between;gap:12px;margin-top:28px;font-size:12px}</style>${body}`);}
-const catRank=id=>({"Petit gâteau":0,"Cheesecake":1,"Whole cake":2})[prod(id).category]??3;
+const catRank=id=>{const i=CATS.indexOf(catOf(prod(id)));return i<0?9:i;};
 function printPrep(d){const {plans,prep}=planAll(); const pm=prep[d]||{}; const mk=(S.prep||{})[d]||{}; const outs=plans.filter(pl=>pl.prepDate===d&&pl.d1); const col=colourOf(d);
   const sum=m=>Object.values(m).reduce((a,b)=>a+b,0); const rows=Object.entries(pm).sort((a,b)=>catRank(a[0])-catRank(b[0])||prod(a[0]).name.localeCompare(prod(b[0]).name));
   if(!rows.length){toast("Nothing to prep for this day");return;}
@@ -992,15 +1032,15 @@ function printPrep(d){const {plans,prep}=planAll(); const pm=prep[d]||{}; const 
 function expiredAt(pid,date){const t=today(), c=calcWeek(pid,weekStartOf(t)), ld=[...c.days].reverse().find(x=>x.date<=t), out=[]; if(ld) for(const k of Object.values(c.keys)){const q=ld.stock[k.key]; if(!(q>0)||!k.batchDate) continue; if(diffDays(date,k.batchDate)>=(+prod(k.productId).shelfDays||3)) out.push({productId:k.productId,colour:k.colour,qty:q});} return out;}
 function printDN(d){const {plans}=planAll(), co=cfg().company, pages=[];
   for(const pl of plans.filter(x=>x.prepDate===d&&x.d1)){const p=partner(pl.pid), DOs=pl.planned||[], DO=DOs.length?{no:DOs.map(o=>o.no).join(", ")}:null, colour=DOs.length?DOs[0].colour:colourOf(d).name;
-    const lines=pl.lines.filter(l=>l.send>0).map(l=>({productId:l.productId,qty:l.send}));
-    if(!lines.length) continue; lines.sort((a,b)=>catRank(a.productId)-catRank(b.productId)||prod(a.productId).name.localeCompare(prod(b.productId).name));
+    const chk=DOs.filter(o=>o.checkedAt), lines=chk.length?Object.values(DOs.reduce((m,o)=>{for(const l of o.lines||[]){if(!+l.qty) continue; const c=l.colour||o.colour, k=l.productId+"|"+c; (m[k]||(m[k]={productId:l.productId,colour:c,qty:0})).qty+=+l.qty;} return m;},{})):pl.lines.filter(l=>l.send>0).map(l=>({productId:l.productId,qty:l.send,colour}));
+    if(!lines.length) continue; const cols=[...new Set(lines.map(l=>l.colour))]; lines.sort((a,b)=>catRank(a.productId)-catRank(b.productId)||prod(a.productId).name.localeCompare(prod(b.productId).name));
     const rm=expiredAt(pl.pid,pl.d1);
     pages.push(`<section class="page"><div class="ph">${MARKH()}<div><div class="co">${esc(co.name)}</div><div class="sm">${esc(co.address||"")}${co.phone?" · "+esc(co.phone):""}</div></div><div class="r"><h1>Delivery note</h1><div class="mono">${DO?esc(DO.no):"Draft (no DO number yet)"}</div><div>${nice(pl.d1)} ${pl.d1.slice(0,4)}</div></div></div>
-    <div class="meta"><div><div class="lbl">Deliver to</div><b>${esc(p.legalName||p.name)}</b><br>${esc(p.name)} (${esc(p.code)})<br>${esc(p.address||"")}</div><div class="bigdot"><i style="background:${hexOf(colour)}"></i><div><b>${esc(colour)}</b><br><span class="sm">made ${esc(dayOfColour(colour)||"")} · every cake below has this dot</span></div></div></div>
-    <table><thead><tr><th>#</th><th>Cake</th><th>Colour dot</th><th class="r">Qty sent</th><th class="r">Qty received</th><th>Remarks</th></tr></thead><tbody>${lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(prod(l.productId).name)}</td><td><span class="dt"><i style="background:${hexOf(colour)}"></i>${esc(colour)}</span></td><td class="r b">${l.qty}</td><td class="box"></td><td class="box"></td></tr>`).join("")}
+    <div class="meta"><div><div class="lbl">Deliver to</div><b>${esc(p.legalName||p.name)}</b><br>${esc(p.name)} (${esc(p.code)})<br>${esc(p.address||"")}</div>${cols.length===1?`<div class="bigdot"><i style="background:${hexOf(cols[0])}"></i><div><b>${esc(cols[0])}</b><br><span class="sm">made ${esc(dayOfColour(cols[0])||"")} · every cake below has this dot</span></div></div>`:`<div class="bigdot"><div><b>${cols.map(esc).join(" + ")}</b><br><span class="sm">two batches: check the dot on each line</span></div></div>`}</div>
+    <table><thead><tr><th>#</th><th>Cake</th><th>Colour dot</th><th class="r">Qty sent</th><th class="r">Qty received</th><th>Remarks</th></tr></thead><tbody>${lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(prod(l.productId).name)}</td><td><span class="dt"><i style="background:${hexOf(l.colour||colour)}"></i>${esc(l.colour||colour)}</span></td><td class="r b">${l.qty}</td><td class="box"></td><td class="box"></td></tr>`).join("")}
     <tr class="tot"><td></td><td>Total</td><td></td><td class="r">${lines.reduce((a,l)=>a+l.qty,0)}</td><td class="box"></td><td></td></tr></tbody></table>
     ${rm.length?`<h3>Take off display today: past shelf life (enter as Waste on tonight's closing report)</h3><table><thead><tr><th>Cake</th><th>Colour dot</th><th class="r">Qty</th><th>Removed</th></tr></thead><tbody>${rm.map(x=>`<tr><td>${esc(prod(x.productId).name)}</td><td><span class="dt"><i style="background:${hexOf(x.colour)}"></i>${esc(x.colour)}</span></td><td class="r">${x.qty}</td><td class="box"></td></tr>`).join("")}</tbody></table>`:""}
-    <p class="sm">Please count with the driver. Write any shortfall or damage in Remarks and on tonight's closing report.</p>
+    ${chk.length?`<p class="sm">Colour dots checked by ${esc([...new Set(chk.map(o=>o.checkedBy).filter(Boolean))].join(", "))}.</p>`:`<p class="sm"><b>Before sending:</b> check the colour dot on every cake. On this day only cakes made ${esc(okColours(pl.d1).map(c=>dayOfColour(c)).join(" or "))} can go out. Colours checked by: ____________________</p>`}<p class="sm">Please count with the driver. Write any shortfall or damage in Remarks and on tonight's closing report.</p>
     <div class="sig"><div>Delivered by: ____________________</div><div>Received by: ____________________</div><div>Time: __________</div></div></section>`);}
   if(!pages.length){toast("No deliveries planned for this prep day");return;} printDoc(`Delivery notes ${d}`,pages.join(""));}
 function vPlan(){
@@ -1023,31 +1063,31 @@ function vPlan(){
             <td class="small">${plans.filter(pl=>pl.prepDate===d&&pm[pl.pid]).map(pl=>{const l=pl.lines.find(x=>x.productId===id);return `${esc(partner(pl.pid).code)} ${short?`${pm[pl.pid]}→<b>${l?l.send:0}</b>`:pm[pl.pid]}`}).join(" · ")}</td>
             <td>${short?`<select data-short="${d}|${id}" aria-label="Why short">${opt("","Why short?",(mk.reason||{})[id]||"")}${["Ingredient out","Short staff","Quality reject","Equipment","Other"].map(r=>opt(r,r,(mk.reason||{})[id]||"")).join("")}</select>`:""}</td></tr>`}).join("")}
           <tr><td><b>Total</b></td><td class="r mono"><b>${Object.values(prep[d]).reduce((a,b)=>a+b,0)}</b></td><td class="r mono"><b>${madeTot}</b></td><td></td><td></td></tr></tbody></table></div></div>`}).join(""):`<div class="empty">Nothing to prep — no suggestions yet.</div>`}
-        <p class="small muted" style="margin:0">If the kitchen makes fewer than planned, type the real number in <b>Made</b>: every outlet first gets at least one of each flavour it carries, and the rest goes to the outlet that sells it faster. Whole cakes only go out Fri–Sun, max 2 each. Mark every prepared/thawed cake with the dot of the prep day. Lead time: ${+cfg().prepLeadDays||0} day(s) before delivery (change in Setup › Go-live & rules).</p>
+        <p class="small muted" style="margin:0">If the kitchen makes fewer than planned, type the real number in <b>Made</b>: every outlet first gets at least one of each flavour it carries, and the rest goes to the outlet that sells it faster. Whole cakes only go out Fri–Sun: at most 2 kinds, 1 of each. Mark every prepared/thawed cake with the dot of the prep day. Lead time: ${+cfg().prepLeadDays||0} day(s) before delivery (change in Setup › Go-live & rules). ${(+cfg().prepLeadDays||0)>0?"":`Until ${+(cfg().planSwitchHour??14)}:00 this page shows today's delivery; after that, the next one.`}</p>
       </div>
       <div class="panel"><div class="spread"><h2>Holidays & events</h2><span class="small muted">next 75 days</span></div>
-        ${up.length?`<div class="items">${up.map(e=>`<div class="item"><span class="sev ${e.type==="public"?"warn":e.type==="event"?"bad":"info"}"></span><div><b>${esc(e.name)}</b> ${regionPill(e.region)}<div class="small muted">${nice(e.date)}${e.end&&e.end!==e.date?` – ${nice(e.end)}`:""} · ${esc(e.type)} · demand ${+e.uplift>=0?"+":""}${+e.uplift||0}%${e.source?` · ${esc(e.source)}`:""}</div></div><button class="btn sm" data-evdel="${esc(e.id)}" aria-label="Remove">✕</button></div>`).join("")}</div>`:`<div class="empty">No holidays in the next 75 days.</div>`}
+        ${up.length?`<div class="items">${up.map(e=>`<div class="item"><span class="sev ${e.type==="public"?"warn":e.type==="event"?"bad":"info"}"></span><div><b>${esc(e.name)}</b> ${regionPill(e.region)}<div class="small muted">${nice(e.date)}${e.end&&e.end!==e.date?` – ${nice(e.end)}`:""} · ${esc(e.type)} · demand ${effUp(e)>=0?"+":""}${effUp(e)}%${e.source?` · ${esc(e.source)}`:""}</div></div>${RO()?"":`<button class="btn sm" data-evdel="${esc(e.id)}" aria-label="Remove">✕</button>`}</div>`).join("")}</div>`:`<div class="empty">No holidays in the next 75 days.</div>`}
         <details class="help"><summary>Add holiday, event or incident</summary>
           <div class="fgrid" style="margin-top:8px"><label class="f">Name<input id="ev-n" data-ev="name" value="${esc(S.ui.ev?.name||"")}" placeholder="e.g. Causeway jam, mall event"></label>
           <label class="f">From<input type="date" id="ev-d" data-ev="date" value="${esc(S.ui.ev?.date||t)}"></label><label class="f">To<input type="date" id="ev-e" data-ev="end" value="${esc(S.ui.ev?.end||"")}"></label>
           <label class="f">Region<select id="ev-r" data-ev="region">${[["MY-JHR","Johor"],["SG","Singapore"],["LOCAL","Outlet area"]].map(([v,l])=>opt(v,l,S.ui.ev?.region||"MY-JHR")).join("")}</select></label>
           <label class="f">Type<select id="ev-t" data-ev="type">${["public","school","event"].map(v=>opt(v,v,S.ui.ev?.type||"event")).join("")}</select></label>
-          <label class="f">Demand change %<input id="ev-u" data-ev="uplift" inputmode="numeric" value="${esc(S.ui.ev?.uplift??"")}" placeholder="e.g. 20 or -30"></label></div>
+          <label class="f">Demand change %<input id="ev-u" data-ev="uplift" inputmode="numeric" value="${esc(S.ui.ev?.uplift??"")}" placeholder="e.g. 5, 10 or -30"></label></div>
           <div class="row" style="margin-top:8px"><button class="btn" data-act="addEvent">Add to calendar</button></div></details>
       </div>
     </div>
     ${plans.map(pl=>{const p=partner(pl.pid); if(!pl.d1) return `<div class="panel"><h2>${esc(p.name)}</h2><div class="empty">${esc(pl.note)}</div></div>`;
       const tot=pl.lines.reduce((a,l)=>a+(l.send??l.suggest),0);
       return `<div class="panel"><div class="spread"><div><h2>${esc(p.name)} — next delivery ${nice(pl.d1)}</h2><p class="small muted" style="margin:2px 0 0">Covers ${nice(pl.d1)} until ${pl.d2?nice(pl.d2):"—"} · open ${esc(hoursOf(pl.pid,pl.d1).open)}–${esc(hoursOf(pl.pid,pl.d1).close)} · prep ${nice(pl.prepDate)} ${dot(colourOf(pl.prepDate).name)}</p></div>
-        <div class="row">${pl.hol.map(e=>`<span class="pill warn">${esc(e.name)} ${+e.uplift>0?"+":""}${+e.uplift||0}%</span>`).join("")}${pl.planned.length?`<span class="pill info">DO ${pl.planned.map(d=>esc(d.no)).join(", ")} already planned</span>`:""}<span class="pill ok">${tot} units</span></div></div>${pl.carryNote?`<p class="small muted" style="margin:0">${esc(pl.carryNote)}</p>`:""}
+        <div class="row">${pl.hol.map(e=>`<span class="pill warn">${esc(e.name)} ${effUp(e)>0?"+":""}${effUp(e)}%</span>`).join("")}${pl.planned.length?`<span class="pill info">DO ${pl.planned.map(d=>esc(d.no)).join(", ")} already planned</span>`:""}<span class="pill ok">${tot} units</span></div></div>${pl.carryNote?`<p class="small muted" style="margin:0">${esc(pl.carryNote)}</p>`:""}
         <div class="tw"><table><thead><tr><th>Cake</th><th class="r">Avg/day Mon–Thu</th><th class="r">Avg/day Fri–Sun</th><th class="r">Stock now</th><th class="r">Sellable at delivery</th><th class="r">Forecast</th><th class="r">Buffer</th><th class="r">Send</th><th>Why</th></tr></thead><tbody>
         ${pl.lines.map(l=>`<tr><td>${cake(l.productId)}</td><td class="r mono">${f1(l.aw)}</td><td class="r mono">${f1(l.ae)}</td><td class="r mono">${l.stockNow||""}</td><td class="r mono">${l.usable||""}</td><td class="r mono">${f1(l.demand)}</td><td class="r mono">${Math.round(l.buffer*100)}%</td><td class="r mono"><b>${l.send!=null&&l.send!==l.suggest?`${l.suggest}→${l.send}`:l.suggest}</b></td><td class="small muted">${l.notes.map(esc).join("; ")}</td></tr>`).join("")||`<tr><td colspan="9" class="muted">Add Active prices or deliveries for this outlet to start planning.</td></tr>`}
         </tbody></table></div></div>`}).join("")}
-    <div class="panel"><div class="spread"><h2>Wastage by outlet</h2><span class="small muted">last 28 days</span></div>
+    ${KIT()?"":`<div class="panel"><div class="spread"><h2>Wastage by outlet</h2><span class="small muted">last 28 days</span></div>
       <div class="tw"><table><thead><tr><th>Outlet</th><th class="r">Sold</th><th class="r">Wasted</th><th class="r">Waste %</th><th class="r">Waste value (RM)</th><th class="r">Sales value (RM)</th><th>Most wasted</th></tr></thead><tbody>
       ${ps.map(p=>{const w=wasteStats(p.id);return `<tr><td>${esc(p.name)}</td><td class="r mono">${w.sold}</td><td class="r mono">${w.waste}</td><td class="r"><span class="pill ${w.rate>.15?"bad":w.rate>.08?"warn":"ok"}">${Math.round(w.rate*100)}%</span></td><td class="r mono">${fm(w.wasteRM)}</td><td class="r mono">${fm(w.soldRM)}</td><td class="small">${w.byProd.filter(x=>x.w).slice(0,3).map(x=>`${esc(prod(x.id).name)} ${x.w}`).join(" · ")||"—"}</td></tr>`}).join("")}
       </tbody></table></div>
-      <p class="small muted" style="margin:0">Waste value = wasted units × partner rate (what Chaleur loses when wastage is credited). Target under 8%. Over 15% means the planner drops the buffer for that outlet.</p></div>`;
+      <p class="small muted" style="margin:0">Waste value = wasted units × partner rate (what Chaleur loses when wastage is credited). Target under 8%. Over 15% means the planner drops the buffer for that outlet.</p></div>`}`;
 }
 /* ---------- Google Drive filing (viewer's Google Drive connector) ---------- */
 const DRIVE="Google Drive";
@@ -1097,6 +1137,10 @@ document.addEventListener("input",e=>{
   if(d.ui==="dayWhy"){S.ui.dayWhy=t.value;return;}
   if(d.ui==="dayWhyNote"){S.ui.dayWhyNote=t.value;return;}
   if(d.sd){S.ui.soldDraft=S.ui.soldDraft||{}; S.ui.soldDraft[d.sd]=t.value; return;}
+  if(d.ckq!=null&&S.ui.colChk){S.ui.colChk.rows[+d.ckq].qty=t.value;return;}
+  if(d.rcl!=null&&S.ui.doEdit&&S.ui.doEdit.rl){const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); if(v!==t.value) t.value=v; S.ui.doEdit.rl[+d.rcl].accepted=v; return;}
+  if(d.sl){(S.ui.shelfDraft=S.ui.shelfDraft||{})[d.sl]=t.value;return;}
+  if(d.slall){(S.ui.slAll=S.ui.slAll||{})[d.slall]=t.value;return;}
   if(d.do){const E=S.ui.doEdit; E[d.do]=t.value;
     if(d.do==="date"&&!E.batchTouched) E.batchDate=add(t.value,-(+cfg().prepLeadDays||0));
     if(d.do==="batchDate") E.batchTouched=true;
@@ -1130,7 +1174,10 @@ async function shrink(file,max=900){
 document.addEventListener("change",async e=>{
   const t=e.target;
   if(t.dataset.flt){const [g,k]=t.dataset.flt.split(".");S.ui[g]={...(S.ui[g]||{}),[k]:t.value};render();return;}
-  if(RO()&&!t.dataset.ui&&t.id!=="lg-pin"){toast("View only — ask a manager to make changes");render();return;}
+  if(RO()&&!t.dataset.ui&&t.id!=="lg-pin"&&!(KIT()&&kitOK(t))){toast("View only — ask a manager to make changes");render();return;}
+  if(t.dataset.ckc!=null&&S.ui.colChk){S.ui.colChk.rows[+t.dataset.ckc].colour=t.value;render();return;}
+  if(t.dataset.ckok&&S.ui.colChk){S.ui.colChk.ok=t.checked;return;}
+  if(t.dataset.sl!=null||t.dataset.slall!=null){render();return;}
   if(t.dataset.repphoto&&t.files&&t.files.length){const [pid,date]=t.dataset.repphoto.split("|"); toast(`Uploading ${t.files.length} photo(s)…`);
     try{const ids=[];for(const f of t.files){const r=await S.assets.upload(await shrink(f,1400));ids.push(r.id);}
       const w=clone(weekDoc(pid,weekStartOf(date)));w.days[date]={...w.days[date],photos:[...((w.days[date]||{}).photos||[]),...ids]};await saveWeek(w);toast("Photos saved to the report");}
@@ -1151,7 +1198,7 @@ document.addEventListener("click",async e=>{
   if(d.menu){MENU=!MENU;render();return;}
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
-  if(RO()&&b.id!=="lg-go"&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
+  if(RO()&&b.id!=="lg-go"&&!(KIT()&&(d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
   if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;render();window.scrollTo(0,0);return;}
   if(d.stnew){S.ui.stEdit={row:0,name:"",code:"",role:"auditor",notes:""};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
@@ -1172,10 +1219,14 @@ document.addEventListener("click",async e=>{
   if(d.day){S.ui.date=add(S.ui.date||today(),+d.day);S.ui.editDay=false;render();return;}
   if(d.wk){S.ui.week=add(S.ui.week||weekStartOf(add(today(),-7)),+d.wk);S.ui.confirm=null;render();return;}
   if(d.setup){S.ui.setup=d.setup;S.ui.confirm=null;render();return;}
+  if(d.chk){const [pid,ws,id]=d.chk.split("|"); const x=weekDoc(pid,ws).dos[id]; if(!x) return; S.ui.colChk={pid,ws,id,no:x.no,date:x.date,ok:false,rows:(x.lines||[]).filter(l=>+l.qty).map(l=>({productId:l.productId,qty:String(l.qty),colour:l.colour||x.colour}))}; S.ui.doEdit=null; render(); window.scrollTo(0,0); return;}
+  if(d.cksplit!=null&&S.ui.colChk){const i=+d.cksplit, r=S.ui.colChk.rows[i], oks=okColours(S.ui.colChk.date), other=oks.find(c=>c!==r.colour)||oks[0]; S.ui.colChk.rows.splice(i+1,0,{productId:r.productId,qty:"0",colour:other}); render(); return;}
+  if(d.slapply){const v=Math.round(+((S.ui.slAll||{})[d.slapply]||0)); if(!(v>=1&&v<=6)){toast("Type 1 to 6 days first");return;} const D=S.ui.shelfDraft||(S.ui.shelfDraft={}); products().filter(p=>catOf(p)===d.slapply).forEach(p=>D[p.id]=String(v)); render(); return;}
   if(d.rcv||d.edo||d.vdo){const [pid,ws,id]=(d.rcv||d.edo||d.vdo).split("|");const w=weekDoc(pid,ws);const x=clone(w.dos[id]);
+    if(d.rcv&&!x.checkedAt){toast("Check the colours first (Check colours)");return;}
     if(d.vdo){S.ui.modal={kind:"do",html:docHTML("do",pid,ws,x),doc:x,pid};render();return;}
-    const lines={};(x.lines||[]).forEach(l=>lines[l.productId]={qty:l.qty,accepted:l.accepted});
-    S.ui.doEdit={...x,partnerId:pid,weekStart:ws,lines,mode:d.rcv?"receive":"edit",batchTouched:true,receivedAt:x.receivedAt||new Date().toTimeString().slice(0,5)};render();window.scrollTo(0,0);return;}
+    const lines={};(x.lines||[]).forEach(l=>{const o=lines[l.productId]; lines[l.productId]={qty:(+(o&&o.qty)||0)+(+l.qty||0),accepted:l.accepted};});
+    S.ui.doEdit={...x,partnerId:pid,weekStart:ws,origPid:pid,origWs:ws,lines,mode:d.rcv?"receive":"edit",rl:(x.lines||[]).filter(l=>+l.qty).map(l=>({...l,colour:l.colour||x.colour,accepted:l.accepted??l.qty})),batchTouched:true,receivedAt:x.receivedAt||new Date().toTimeString().slice(0,5)};render();window.scrollTo(0,0);return;}
   if(d.doc){const pid=curPartner(),ws=S.ui.week||weekStartOf(add(today(),-7));const st=weekDoc(pid,ws).settlement;S.ui.modal={kind:d.doc,html:docHTML(d.doc,pid,ws,st),st,pid};render();return;}
   if(d.auc){S.ui.auditDraft.checks[d.auc]=d.v;render();return;}
   if(d.rmc){S.ui.auditDraft.counts.splice(+d.rmc,1);render();return;}
@@ -1207,16 +1258,37 @@ async function act(a,b){
   case "noconfirm": S.ui.confirm=null; render(); return;
   case "newDO":{const pid=curPartner(), bd=add(t,-(+cfg().prepLeadDays||0)); S.ui.doEdit={partnerId:pid,date:t,batchDate:bd,colour:colourOf(bd).name,lines:{},note:"",mode:"new"}; render(); return;}
   case "cancelDO": S.ui.doEdit=null; render(); return;
+  case "cancelChk": S.ui.colChk=null; render(); return;
+  case "saveChk":{const ck=S.ui.colChk; if(!ck) return; const oks=okColours(ck.date);
+    if(!ck.ok){toast("Tick the box to confirm you checked every cake");return;}
+    const bad=ck.rows.filter(r=>+r.qty>0&&!oks.includes(r.colour)); if(bad.length){toast(`Too old to send: ${bad.map(r=>prod(r.productId).name+" "+r.colour).join(", ")}. Keep them back or fix the colour.`);return;}
+    const x0=(weekDoc(ck.pid,ck.ws).dos||{})[ck.id]; if(!x0){toast("Delivery order not found");return;} const orig={}; (x0.lines||[]).forEach(l=>orig[l.productId]=(orig[l.productId]||0)+(+l.qty||0));
+    const m={}; for(const r of ck.rows){const q=Math.round(+String(r.qty).split(/[.,]/)[0].replace(/[^0-9]/g,"")||0); if(!q) continue; const k=r.productId+"|"+r.colour; (m[k]||(m[k]={productId:r.productId,colour:r.colour,qty:0,batchDate:batchFor(r.colour,ck.date)})).qty+=q;}
+    const lines=Object.values(m); if(!lines.length){toast("Enter at least one cake");return;}
+    {const tot={}; lines.forEach(l=>tot[l.productId]=(tot[l.productId]||0)+l.qty); const over=Object.keys(tot).filter(k=>tot[k]>(orig[k]||0)); if(over.length){toast(`More than the delivery order: ${over.map(k=>`${prod(k).name} ${tot[k]} (DO says ${orig[k]||0})`).join(", ")}. Ask the office to change the DO.`);return;}}
+    const w=clone(weekDoc(ck.pid,ck.ws)), x=w.dos&&w.dos[ck.id]; if(!x){toast("Delivery order not found");return;}
+    const tot={}; lines.forEach(l=>tot[l.colour]=(tot[l.colour]||0)+l.qty); const main=Object.entries(tot).sort((a,b)=>b[1]-a[1])[0][0];
+    Object.assign(x,{lines,colour:main,batchDate:batchFor(main,ck.date),checkedBy:AUTH.name||"",checkedAt:new Date().toISOString()});
+    try{await saveWeek(w);}catch(e){toast((e&&e.message)||"Couldn't save");return;} S.ui.colChk=null; toast(`${x.no}: colours checked`); render(); return;}
+  case "saveShelf":{const D=S.ui.shelfDraft||{}; const ch=products().filter(p=>D[p.id]!=null&&String(+D[p.id])!==String(+p.shelfDays||3));
+    const bad=ch.filter(p=>!(Math.round(+D[p.id])>=1&&Math.round(+D[p.id])<=6)); if(bad.length){toast(`Use 1 to 6 days: ${bad.map(p=>p.name).join(", ")}`);return;}
+    b.disabled=true; try{ for(const p of ch) await put(`products/${p.id}`,{...S.products[p.id],shelfDays:Math.round(+D[p.id])}); S.ui.shelfDraft={}; toast(`${ch.length} shelf life change${ch.length===1?"":"s"} saved`); }catch(e){ toast((e&&e.message)||"Couldn't save"); } b.disabled=false; render(); return;}
+  case "scanSample":{b.disabled=true; try{S.ui.sampleScan=await GS("sampleData"); S.ui.sampleDone=null;}catch(e){toast((e&&e.message)||"Couldn't check");} render(); return;}
+  case "noSample": S.ui.sampleScan=null; render(); return;
+  case "clearSample2":{b.disabled=true; try{const r=await GS("clearSampleData"); S.ui.sampleScan=null; S.ui.sampleDone=r.backup; toast("Removed. A backup is saved in Drive › Backups."); await reload();}catch(e){toast((e&&e.message)||"Couldn't remove");} render(); return;}
   case "saveDO":{const e=S.ui.doEdit; const lines=Object.entries(e.lines).filter(([k,v])=>Math.round(+v.qty)>0).map(([k,v])=>({productId:k,qty:Math.round(+v.qty)}));
     if(!e.partnerId||!e.date){toast("Choose outlet and date");return;} if(!lines.length){toast("Enter at least one quantity");return;}
+    {const age=diffDays(e.date,e.batchDate||e.date), mxA=+(cfg().maxDeliveryAge??1); if(age<0||age>mxA){toast(`Cakes made on ${nice(e.batchDate)} can't go out on ${nice(e.date)}. Only cakes made on the delivery day or the day before can be sent.`);return;}}
+    {const wl=lines.filter(l=>isWhole(l.productId)), wm=[], wt=+(cfg().wholeTypes??2), wx=+(cfg().wholeMax??1); if(wl.length){ if(!(cfg().wholeDays||[5,6,0]).map(Number).includes(dow(e.date))) wm.push("whole cakes only go out Fri–Sun"); if(wl.length>wt) wm.push(`max ${wt} whole-cake kinds`); if(wl.some(l=>l.qty>wx)) wm.push(`max ${wx} of each whole cake`);}
+      if(wm.length&&!e.wholeOk){e.wholeOk=true; toast(`Whole-cake rule: ${wm.join(", ")}. Tap the button again to save anyway.`); return;}}
     const ws=weekStartOf(e.date);
-    const w=clone(weekDoc(e.partnerId,ws)); if(w.settlement){toast("That week is already billed — choose another date or void the bill.");return;}
-    if(e.id&&e.weekStart!==ws){const ow=clone(weekDoc(e.partnerId,e.weekStart)); delete ow.dos[e.id]; await saveWeek(ow);}
+    const w=clone(weekDoc(e.partnerId,ws));
+    if(e.id&&((e.origWs||e.weekStart)!==ws||(e.origPid||e.partnerId)!==e.partnerId)){const ow=clone(weekDoc(e.origPid||e.partnerId,e.origWs||e.weekStart)); delete ow.dos[e.id]; ow._delDos=[e.id]; await saveWeek(ow);}
     const id=e.id||newId(), no=e.no||await nextNo("DO",e.date);
     w.dos=w.dos||{}; w.days=w.days||{}; w.dos[id]={id,no,date:e.date,batchDate:e.batchDate||e.date,colour:e.colour,lines,status:"planned",note:e.note||"",createdAt:new Date().toISOString()};
-    await saveWeek(w); S.ui.doEdit=null; toast(`${no} saved`); return;}
+    await saveWeek(w); S.ui.doEdit=null; toast(`${no} saved${w.settlement?" · the week is already billed, so the bill is flagged for review":""}. Check colours before it goes out.`); return;}
   case "receiveDO":{const e=S.ui.doEdit; const w=clone(weekDoc(e.partnerId,e.weekStart)); const x=w.dos[e.id];
-    x.lines=x.lines.map(l=>({...l,accepted:Math.max(0,Math.round(+(e.lines[l.productId]?.accepted??l.qty)))}));
+    x.lines=(e.rl||x.lines).map(l=>({...l,accepted:Math.max(0,Math.round(+(l.accepted===""||l.accepted==null?l.qty:l.accepted)||0))}));
     x.status="delivered"; x.receivedBy=e.receivedBy||""; x.receivedAt=e.receivedAt||""; x.note=e.note||"";
     await saveWeek(w); S.ui.doEdit=null; toast(`${x.no} delivered`); return;}
   case "parse":{S.ui.parsed=parseMsg(S.ui.paste||""); render(); return;}
@@ -1281,7 +1353,7 @@ async function act(a,b){
       w.days[date]={...rep,drive:url}; await saveWeek(w); toast("Report and photos filed in Drive");}
     catch(e){b.disabled=false; toast(driveErr(e));} return;}
   case "copyLines":{const m=S.ui.modal; let rows;
-    if(m.kind==="do") rows=m.doc.lines.map(l=>[prod(l.productId).sku,prod(l.productId).name+" ("+m.doc.colour+")",l.accepted??l.qty]);
+    if(m.kind==="do") rows=m.doc.lines.map(l=>[prod(l.productId).sku,prod(l.productId).name+" ("+(l.colour||m.doc.colour)+")",l.accepted??l.qty]);
     else rows=m.st[m.kind].map(l=>[prod(l.productId).sku,prod(l.productId).name+" ("+l.colour+")"+(l.type==="B/F"?" B/F "+(l.ref||""):"")+(l.reason?" "+l.reason:""),l.qty,fm(l.rate),fm(l.qty*l.rate)]);
     const txt=rows.map(r=>r.join("\t")).join("\n");
     try{await navigator.clipboard.writeText(txt);toast("Lines copied — paste into Bukku");}catch(_){toast("Copy blocked — select the table and copy manually");} return;}
@@ -1330,7 +1402,7 @@ async function act(a,b){
     await put(`partners/${pid}`,{...S.partners[pid],opening:lines}); toast("Opening stock saved"); return;}
   case "saveGeneral":{const g=S.ui.gen; const num=(v,d)=>v===""||v==null||isNaN(+v)?d:+v;
     if(g.mode==="live"&&!g.cutoffDate){toast("Set the cutoff date before going live");return;}
-    await put("config/settings",{mode:g.mode||"testing",cutoffDate:g.cutoffDate||"",prepLeadDays:num(g.prepLeadDays,0),graceMin:num(g.graceMin,60),eveUplift:num(g.eveUplift,10),driveRootId:g.driveRootId||DEF.driveRootId,company:g.company,colours:g.colours,weekEndDay:+g.weekEndDay,prefixes:g.prefixes,cfRate:g.cfRate,fieldFormUrl:g.fieldFormUrl,auditFormUrl:g.auditFormUrl,chaleurWhatsApp:g.chaleurWhatsApp,reportDeadline:g.reportDeadline,checks:g.checks}); S.ui.gen=null; toast("Settings saved"); return;}
+    await put("config/settings",{...S.cfg,mode:g.mode||"testing",cutoffDate:g.cutoffDate||"",prepLeadDays:Math.min(1,Math.max(0,Math.round(num(g.prepLeadDays,0)))),graceMin:num(g.graceMin,60),eveUplift:num(g.eveUplift,10),driveRootId:g.driveRootId||DEF.driveRootId,company:g.company,colours:g.colours,weekEndDay:+g.weekEndDay,prefixes:g.prefixes,cfRate:g.cfRate,fieldFormUrl:g.fieldFormUrl,auditFormUrl:g.auditFormUrl,chaleurWhatsApp:g.chaleurWhatsApp,reportDeadline:g.reportDeadline,checks:g.checks}); S.ui.gen=null; toast("Settings saved"); return;}
   case "clearSample":{for(const w0 of Object.values(S.weeks)){ if(!w0.sample) continue; const w=clone(w0);
       const delO=Object.keys(w.dos||{}).filter(k=>w.dos[k].sample), delD=Object.keys(w.days||{}).filter(d=>!w.days[d].at&&!w.days[d].recId);
       delO.forEach(k=>delete w.dos[k]); delD.forEach(d=>delete w.days[d]);
@@ -1354,7 +1426,7 @@ const shimDB={
   collection(col){return {onSnapshot(fn){DBX.subs.push({col,fn});setTimeout(()=>fn(snapFor(col)),0);return ()=>{};}};},
   doc(path){const [col,id]=path.split("/");return {
     get:async()=>{const d=(DBX.cache[col]||{})[id];return {id,exists:!!d,data:()=>d};},
-    set:async(data)=>{const c=JSON.parse(JSON.stringify(data));(DBX.cache[col]=DBX.cache[col]||{})[id]=c;fire(col);const r=await GS("dbPut",col,id,c);if(r&&typeof r==="object"&&r.rec){DBX.cache[col][id]=r.rec;fire(col);}},
+    set:async(data)=>{const c=JSON.parse(JSON.stringify(data)), prev=(DBX.cache[col]||{})[id];(DBX.cache[col]=DBX.cache[col]||{})[id]=c;fire(col);let r; try{ r=await GS("dbPut",col,id,c); }catch(err){ if(prev===undefined) delete DBX.cache[col][id]; else DBX.cache[col][id]=prev; fire(col); throw err; }if(r&&typeof r==="object"&&r.rec){DBX.cache[col][id]=r.rec;fire(col);}},
     update:async(data)=>{const c={...((DBX.cache[col]||{})[id]||{}),...JSON.parse(JSON.stringify(data))};(DBX.cache[col]=DBX.cache[col]||{})[id]=c;fire(col);const r=await GS("dbPut",col,id,c);if(r&&typeof r==="object"&&r.rec){DBX.cache[col][id]=r.rec;fire(col);}},
     delete:async()=>{if(DBX.cache[col])delete DBX.cache[col][id];fire(col);await GS("dbDel",col,id);}
   };}
@@ -1363,11 +1435,11 @@ const shimAssets={upload:async(blob)=>{const du=await new Promise((res,rej)=>{co
 function vStaff(){
   if(!MGR()) return `<div class="empty">Only managers can manage staff.</div>`;
   if(!S.team){ if(!S.teamLoading){S.teamLoading=true; GS("teamList").then(r=>{S.team=r;S.teamLoading=false;render();}).catch(e=>{S.teamLoading=false;S.team=[];toast(e.message);});} return `<div class="empty">Loading staff…</div>`; }
-  const ed=S.ui.stEdit, roleTxt={owner:"Owner — full access",manager:"Manager — full access + staff",office:"Office — edit desk + audits",auditor:"Team — view desk + audits"};
+  const ed=S.ui.stEdit, roleTxt={owner:"Owner — full access",manager:"Manager — full access + staff",office:"Office — edit desk + audits",kitchen:"Kitchen — prep, colour checks & deliveries (no prices)",auditor:"Team — view desk + audits"};
   const form=ed?`<div class="panel"><div class="spread"><h2>${ed.row?"Edit staff":"Add staff"}</h2><button class="btn sm" data-stcancel="1">Cancel</button></div>
     <div class="fgrid"><label class="f">Name<input id="st-name" data-st="name" value="${esc(ed.name||"")}" autocomplete="off"></label>
       <label class="f">Login code (FeedMe staff code)<input id="st-code" data-st="code" inputmode="numeric" maxlength="6" value="${esc(ed.code||"")}" autocomplete="off"></label>
-      <label class="f">Access<select id="st-role" data-st="role">${["auditor","office","manager"].map(r=>`<option value="${r}" ${ed.role===r?"selected":""}>${roleTxt[r]}</option>`).join("")}</select></label>
+      <label class="f">Access<select id="st-role" data-st="role">${["auditor","kitchen","office","manager"].map(r=>`<option value="${r}" ${ed.role===r?"selected":""}>${roleTxt[r]}</option>`).join("")}</select></label>
       <label class="f">Notes<input id="st-notes" data-st="notes" value="${esc(ed.notes||"")}"></label></div>
     <div class="row"><button class="btn pri" data-stsave="1">Save</button><span class="small">They can sign in as soon as you save.</span></div></div>`:"";
   const rows=S.team.map(x=>`<tr><td><b>${esc(x.name)}</b>${x.notes?`<div class="small">${esc(x.notes)}</div>`:""}</td><td>${esc(x.code)}</td><td>${esc(roleTxt[x.role]||x.role)}</td>
