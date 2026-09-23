@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Chaleur · Spot audit</title><meta name="theme-color" content="#7b1c2b"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
+<html><head><meta charset="utf-8"><title>Chaleur · Spot audit</title><meta name="theme-color" content="#780a13"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
 function call(fn,args,ok,fail){fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})})
@@ -69,7 +69,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{out
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:12px 16px;font:600 15px var(--body);text-decoration:none;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
 .btn.primary{background:#1f8f55;border-color:#1f8f55;color:#fff;flex:1}
 .btn.primary[aria-disabled="true"]{background:var(--line);border-color:var(--line);color:var(--muted);pointer-events:none}
-.mono-ca{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--accent);display:grid;place-items:center;font:italic 600 17px var(--display);color:var(--accent)}
+.mono-ca{width:46px;height:46px;border-radius:11px;background:#780a13;color:#e3c466;display:grid;place-items:center;flex:none}.mono-ca svg{width:36px;height:auto;display:block}
 header>div{display:flex;align-items:center;gap:10px}
 .chip[data-day]::before{content:attr(data-day);position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);margin-top:2px}
 .chips{padding-bottom:12px}
@@ -100,7 +100,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
 </style>
 </head><body>
 <div class="wrap" id="app">
-  <header><div><span class="mono-ca" aria-hidden="true">CA</span><div><div class="brand">Chaleur Atelier · Staff only</div><h1>Spot audit</h1></div></div></header>
+  <header><div><span class="mono-ca" aria-hidden="true"><svg viewBox="0 0 800 523" aria-hidden="true" focusable="false"><g transform="translate(0,523) scale(0.1,-0.1)" fill="currentColor"><path d="M2260 5159c-180 -12 -420 -57 -615 -114 -577 -169 -1068 -529 -1396 -1025 -52 -77 -179 -298 -179 -310 0 -3 62 -5 137 -5 117 0 147 -4 196 -22 42 -16 59 -19 62 -10 3 7 23 66 45 132 199 586 592 1002 1107 1174 606 202 1172 99 1673 -304 263 -212 512 -516 681 -831 23 -44 46 -83 50 -89 5 -5 9 153 9 358l0 368 -102 103c-336 337 -787 537 -1303 576 -142 11 -207 11 -365 -1zM5723 5053c-3 -10 -12 -34 -20 -53 -15 -37 -169 -444 -358 -945 -62 -165 -152 -403 -200 -530 -201 -531 -195 -513 -195 -577 0 -133 87 -178 227 -118 56 25 128 93 226 215 112 140 174 203 229 231 153 78 248 -54 159 -220 -61 -115 -219 -241 -606 -486 -596 -377 -867 -603 -1047 -875 -153 -231 -203 -396 -196 -656l3 -145 -64 -90c-440 -609 -1262 -830 -1968 -528 -445 190 -881 602 -1162 1097 -33 59 -49 68 -71 42 -19 -23 -109 -72 -186 -101 -59 -23 -85 -27 -181 -28 -70 -1 -113 -5 -113 -11 0 -18 108 -175 189 -274 623 -771 1595 -1100 2543 -860 371 93 716 259 989 475l83 64 40 -78c165 -315 447 -469 826 -449 456 25 819 236 1073 627 274 422 386 995 337 1724 -6 82 -9 151 -7 153 4 4 27 -53 233 -597 67 -179 157 -415 199 -525 135 -354 197 -528 221 -625 95 -378 -31 -572 -398 -610 -55 -5 -109 -10 -119 -10 -12 0 -19 -7 -19 -20 0 -20 7 -20 775 -20 688 0 775 2 775 15 0 18 -39 35 -78 35 -46 0 -150 57 -212 116 -79 76 -138 167 -225 347 -86 181 -106 231 -280 692 -48 127 -148 390 -222 585 -74 195 -179 472 -233 615 -54 143 -142 375 -195 515 -53 140 -102 271 -110 290 -8 19 -57 150 -110 290 -53 140 -109 289 -125 330 -16 41 -72 190 -125 330 -53 140 -102 271 -110 290 -8 19 -39 102 -70 184 -31 82 -60 157 -66 168 -12 23 -48 24 -56 1zm-49 -803c53 -140 103 -271 111 -290 8 -19 75 -197 150 -395 75 -198 147 -387 160 -420 59 -151 85 -248 117 -430 34 -199 34 -819 0 -1005 -132 -715 -444 -1168 -898 -1301 -122 -36 -366 -34 -479 4 -232 77 -392 250 -466 502 -37 124 -34 408 5 550 99 363 333 626 896 1010 299 203 480 361 547 475 129 221 42 444 -150 386 -69 -21 -143 -81 -243 -198 -227 -266 -320 -329 -398 -267 -52 41 -42 86 112 494 27 72 133 355 236 630 189 502 195 519 201 513 2 -2 47 -118 99 -258zM298 3456c-31 -12 -60 -25 -64 -29 -12 -12 -21 -8 -27 11 -6 25 -41 33 -66 15 -27 -18 -27 -37 -1 -21 17 11 25 10 49 -3 27 -16 111 -12 141 6 9 5 35 47 28 44 -2 -1 -29 -11 -60 -23zM100 3341c0 -13 18 -17 127 -32 83 -11 117 -9 101 6 -6 6 -173 35 -205 35 -13 0 -23 -4 -23 -9zM80 3180c0 -12 17 -12 45 0 17 7 15 9 -12 9 -18 1 -33 -3 -33 -9zM281 3052c-22 -24 -26 -25 -117 -18 -76 5 -94 4 -94 -7 0 -10 23 -16 86 -21 94 -7 121 2 144 45 16 29 9 29 -19 1zM280 2855c7 -9 15 -13 17 -11 7 7 -7 26 -19 26 -6 0 -6 -6 2 -15zM177 2823c-4 -3 -7 -13 -7 -22 1 -13 3 -13 11 2 11 19 8 33 -4 20zM60 2750c0 -6 33 -10 78 -10 42 0 94 -3 115 -6 30 -5 37 -4 37 10 0 14 -15 16 -115 16 -70 0 -115 -4 -115 -10zM163 2493c-77 -3 -93 -6 -93 -20 0 -14 10 -15 77 -9 42 3 93 6 115 6 27 0 38 4 38 15 0 10 -8 14 -22 13 -13 -1 -65 -4 -115 -5zM221 2291c-57 -36 -99 -67 -92 -69 6 -2 48 19 94 47 45 28 90 51 100 51 18 0 21 8 9 25 -4 7 -46 -13 -111 -54zM345 2218c-10 -24 -40 -29 -80 -14 -11 5 -5 -2 13 -14 42 -28 82 -16 82 25 0 31 -3 31 -15 3zM223 2008c-71 -14 -103 -24 -103 -34 0 -9 8 -12 28 -8 158 31 196 41 200 52 5 15 2 15 -125 -10zM242 1878c-74 -15 -101 -23 -93 -31 14 -14 213 23 219 41 5 15 2 15 -126 -10zM210 1685c-6 -8 -10 -21 -8 -29 2 -11 8 -7 20 14 18 31 10 41 -12 15zM422 1652c-5 -69 -116 -132 -172 -97 -8 5 -11 4 -6 -3 3 -6 22 -16 41 -22 67 -22 151 43 142 111 -2 19 -4 24 -5 11z"/></g></svg></span><div><div class="brand">Chaleur Atelier · Staff only</div><h1>Spot audit</h1></div></div></header>
   <p class="hint" style="margin-top:8px">For Chaleur team members. Don't share this link with outlets.</p>
   <div class="card grid" style="margin-top:14px">
     <label class="f">Outlet<select id="outlet"></select></label>
@@ -114,13 +114,16 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
     <label class="f">Chiller temperature (°C) — target 0–5 (required)<input id="temp" inputmode="decimal" placeholder="e.g. 4.0"></label>
     <div id="tempshot"></div>
     <h2>Sell price on display</h2>
-    <p class="hint">Type the price on the tag (RM). Leave blank if the cake is not on display.</p>
-    <div class="card" id="prices"></div>
+    <p class="hint">Type the price on the tag (RM). Leave blank if the cake is not on display. Cakes the outlet should have are listed first.</p>
+    <div class="card" id="prices"><p class="hint">Sign in with your staff PIN to load the cakes.</p></div>
+    <button type="button" class="btn" id="showall" style="align-self:flex-start">Show all cakes</button>
     <h2>Spot count</h2>
     <p class="hint">Pick 2–3 cakes, tap the colour dots you see and count them. The office compares against the outlet's report.</p>
     <div id="counts" class="sec" style="margin-top:0"></div>
     <h2>Other photos (optional)</h2>
-    <div class="shot"><div class="t">Anything else worth recording (damage, wrong labels, expired stock). Up to 6.</div><div class="pv" id="extras"></div><label class="btn" style="align-self:flex-start">Add photo<input type="file" accept="image/&#42;" id="extra" hidden></label></div>
+    <div class="shot"><div class="t">Anything else worth recording (damage, wrong labels, expired stock). Up to 6.</div><div class="pv" id="extras"></div><div class="pv"><label class="btn">📷 Take photo<input type="file" accept="image/&#42;" capture="environment" data-extra="1" hidden></label><label class="btn">🖼 Choose from phone<input type="file" accept="image/&#42;" data-extra="1" hidden></label></div></div>
+    <h2>Suggestions</h2>
+    <div class="card" id="aibox"><p class="hint" style="margin:0">After taking the photos, tap the button. The AI looks at the display, chiller and menu photos and suggests what to fix now or send next time.</p><button type="button" class="btn" id="aigo" style="align-self:flex-start">✨ Get suggestions from the photos</button><div id="ailist"></div></div>
     <label class="f">Notes / follow-up<textarea id="anote" rows="3"></textarea></label>
   </section>
 </div>
@@ -135,7 +138,7 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const ORD=()=>[1,2,3,4,5,6,0].map(i=>CONFIG.colours[i]);
 const dayOf=c=>WD[CONFIG.colours.indexOf(c)];
-const pic=p=>p.img?`<img class="pic" src="${p.img}" alt="${esc(p.name)}">`:`<span class="pic ph" aria-hidden="true">${esc(p.name.slice(0,2))}</span>`;
+const pic=p=>p.img?`<img class="pic" src="${esc(p.img)}" alt="${esc(p.name)}">`:`<span class="pic ph" aria-hidden="true">${esc(p.name.slice(0,2))}</span>`;
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 function todayISO(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
 const PH={};
@@ -150,7 +153,7 @@ async function shrink(file,max=1400){
 function shotHTML(key,title,hint){
   const has=!!PH[key];
   return `<div class="shot ${has?"done":""}" id="shot-${key}"><div class="t"><b>Photo required:</b> ${esc(title)}${hint?`<br><span class="hint">${esc(hint)}</span>`:""}</div>
-    <div class="pv">${has?`<img src="${PH[key]}" alt="">`:""}<label class="btn">${has?"Retake":"Take / choose photo"}<input type="file" accept="image/&#42;" data-shot="${key}" hidden></label>${has?`<button type="button" class="btn" data-clearshot="${key}">Remove</button>`:""}</div></div>`;
+    <div class="pv">${has?`<img src="${PH[key]}" alt="">`:""}<label class="btn">📷 ${has?"Retake":"Take photo"}<input type="file" accept="image/&#42;" capture="environment" data-shot="${key}" hidden></label><label class="btn">🖼 Choose from phone<input type="file" accept="image/&#42;" data-shot="${key}" hidden></label>${has?`<button type="button" class="btn" data-clearshot="${key}">Remove</button>`:""}</div></div>`;
 }
 document.addEventListener("change",async e=>{const t=e.target; if(!t.dataset.shot||!t.files||!t.files[0]) return;
   const k=t.dataset.shot; const box=$("#shot-"+k); if(box) box.querySelector(".t").insertAdjacentHTML("beforeend",' <span class="hint">· processing…</span>');
@@ -161,36 +164,45 @@ function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}
 </script>
 
 <script>
-const chk={},cnt={},EX=[]; let staff=null;
+const chk={},cnt={},EX=[]; let staff=null, CAT=[], ONHAND=new Set(), SHOWALL=false, AI=[];
+const LIST=()=>{const on=CAT.filter(p=>ONHAND.has(p.id)); return SHOWALL||!on.length?CAT:on;};
+function loadCat(){ google.script.run.withSuccessHandler(r=>{ if(r.outlets&&r.outlets.length){const cur=$("#outlet").value; $("#outlet").innerHTML=r.outlets.map(o=>`<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join(""); if(r.outlets.some(o=>o.code===cur)) $("#outlet").value=cur;} CAT=(r.products||[]).map(p=>({...p,img:p.photo})); ONHAND=new Set((r.stock||[]).map(s=>s.productId)); renderPrices(); render(); refresh();}).withFailureHandler(e=>{$("#prices").innerHTML=`<p class="err">${esc((e&&e.message)||"Could not load the cake list. Check your internet.")}</p>`;}).auditInfo(staff&&staff.pin,$("#outlet").value,$("#date").value); }
+function renderPrices(){const keep={}; document.querySelectorAll("[id^=pr-]").forEach(i=>{if(i.value) keep[i.id]=i.value;}); $("#prices").innerHTML=LIST().map(p=>`<div class="pr"><span class="id">${pic(p)}<span>${esc(p.name)}${ONHAND.has(p.id)?"":` <span class="sku">${esc(p.category||"")}</span>`}</span></span><input id="pr-${esc(p.id)}" inputmode="decimal" placeholder="RM" value="${esc(keep["pr-"+p.id]||"")}"></div>`).join("")||`<p class="hint">No cakes found.</p>`; $("#showall").textContent=SHOWALL?"Only cakes on hand":`Show all cakes (${CAT.length})`; $("#showall").hidden=!ONHAND.size;}
 function applies(c){const m=$("#menu").value; return !c.menu||m==="both"||m===c.menu;}
 $("#outlet").innerHTML=CONFIG.outlets.map(o=>`<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join("");
 if(CONFIG.outlets.some(o=>o.code===PRESET)) $("#outlet").value=PRESET;
 function menuDefault(){const o=CONFIG.outlets.find(o=>o.code===$("#outlet").value); if(o&&o.menu) $("#menu").value=o.menu;}
-menuDefault(); $("#outlet").addEventListener("change",()=>{menuDefault();render();refresh();});
+menuDefault(); $("#outlet").addEventListener("change",()=>{menuDefault(); if(staff) loadCat(); render();refresh();});
 $("#menu").addEventListener("change",()=>{render();refresh();});
 $("#date").value=todayISO();
 function render(){
   $("#checks").innerHTML=CONFIG.checks.filter(applies).map(({k,l,photo})=>`<div class="check"><span>${esc(l)}${photo?'<span class="req">photo required</span>':''}</span><div class="seg">${[["PASS","p","Pass"],["FAIL","x","Fail"],["NA","n","N/A"]].map(([v,c,t])=>`<button type="button" class="${c}" aria-pressed="${chk[k]===v}" data-chk="${k}" data-v="${v}">${t}</button>`).join("")}</div>${photo?`<div style="grid-column:1/-1">${shotHTML(k,l)}</div>`:""}</div>`).join("");
   $("#tempshot").innerHTML=shotHTML("temp","Chiller thermometer / display showing the temperature");
-  $("#counts").innerHTML=CONFIG.products.map(p=>{const sel=cnt[p.sku]||{};
-    const rows=CONFIG.colours.filter(c=>sel[c.name]!==undefined).map(c=>`<div class="row" style="grid-template-columns:auto 1fr"><span class="dot"><i style="background:${c.hex}"></i>${c.name} · ${dayOf(c)}</span><label class="num">Counted<input type="number" min="0" inputmode="numeric" id="c-${p.sku}-${c.name}" value="${sel[c.name]}" data-csku="${p.sku}" data-ccol="${c.name}"></label></div>`).join("");
-    return `<div class="prod"><div class="top"><div class="id">${pic(p)}<div><div class="name">${esc(p.name)}</div><div class="sku">${esc(p.sku)}</div></div></div><div class="chips">${ORD().map(c=>`<button type="button" class="chip" style="background:${c.hex}" data-day="${dayOf(c)}" aria-label="${c.name} ${dayOf(c)}" title="${c.name} · ${dayOf(c)}" aria-pressed="${sel[c.name]!==undefined}" data-sku="${p.sku}" data-col="${c.name}"></button>`).join("")}</div></div>${rows}</div>`;}).join("");
+  $("#counts").innerHTML=LIST().map(p=>{const sel=cnt[p.id]||{};
+    const rows=CONFIG.colours.filter(c=>sel[c.name]!==undefined).map(c=>`<div class="row" style="grid-template-columns:auto 1fr"><span class="dot"><i style="background:${c.hex}"></i>${c.name} · ${dayOf(c)}</span><label class="num">Counted<input type="number" min="0" step="1" inputmode="numeric" id="c-${esc(p.id)}-${c.name}" value="${sel[c.name]}" data-csku="${esc(p.id)}" data-ccol="${c.name}"></label></div>`).join("");
+    return `<div class="prod"><div class="top"><div class="id">${pic(p)}<div><div class="name">${esc(p.name)}</div><div class="sku">${esc(p.category||"")}</div></div></div><div class="chips">${ORD().map(c=>`<button type="button" class="chip" style="background:${c.hex}" data-day="${dayOf(c)}" aria-label="${c.name} ${dayOf(c)}" title="${c.name} · ${dayOf(c)}" aria-pressed="${sel[c.name]!==undefined}" data-sku="${esc(p.id)}" data-col="${c.name}"></button>`).join("")}</div></div>${rows}</div>`;}).join("")||`<p class="hint">Loading cakes…</p>`;
+  $("#ailist").innerHTML=AI.length?`<ul style="margin:6px 0 0;padding-left:18px">${AI.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"";
   $("#extras").innerHTML=EX.map((x,i)=>`<span style="position:relative"><img src="${x}" alt=""><button type="button" class="btn" data-rmx="${i}" style="position:absolute;top:-6px;right:-6px;padding:2px 7px;font-size:12px">×</button></span>`).join("");
 }
-$("#prices").innerHTML=CONFIG.products.map(p=>`<div class="pr"><span class="id">${pic(p)}<span>${esc(p.name)} <span class="sku">${esc(p.sku)}</span></span></span><input id="pr-${p.sku}" inputmode="decimal" placeholder="RM"></div>`).join("");
+$("#showall").onclick=()=>{SHOWALL=!SHOWALL;renderPrices();render();};
+$("#aigo").onclick=()=>{ if(!staff){$("#ailist").innerHTML=`<p class="err">Sign in with your staff PIN first.</p>`;return;}
+  const photos=["display","setup","menu_physical","menu_qr"].map(k=>PH[k]).filter(Boolean).concat(EX).slice(0,4);
+  if(!photos.length){$("#ailist").innerHTML=`<p class="err">Take the display photo first.</p>`;return;}
+  $("#aigo").disabled=true; $("#ailist").innerHTML=`<p class="hint">Looking at the photos… this takes a few seconds.</p>`;
+  google.script.run.withSuccessHandler(r=>{$("#aigo").disabled=false; if(r.ok){AI=r.suggestions||[]; render(); if(!AI.length) $("#ailist").innerHTML=`<p class="hint">Nothing to suggest. The display looks fine.</p>`;} else $("#ailist").innerHTML=`<p class="hint">${esc(r.note||"No suggestions right now.")}</p>`;}).withFailureHandler(e=>{$("#aigo").disabled=false;$("#ailist").innerHTML=`<p class="err">${esc((e&&e.message)||"Could not get suggestions.")}</p>`;}).auditSuggest(staff.pin,$("#outlet").value,photos);};
 function missing(){const m=[];
   if(!staff) m.push("sign in with your staff PIN");
   if(!$("#menu").value) m.push("menu type");
   for(const c of CONFIG.checks.filter(c=>c.photo&&applies(c))){ if(!chk[c.k]) m.push(`result for "${c.l}"`); if(!PH[c.k]) m.push(`${c.l.toLowerCase()} photo`);}
-  if(!/^-?\d+(\.\d+)?$/.test($("#temp").value.trim())) m.push("chiller temperature");
+  if(!/^-?\d+(\.\d+)?$/.test($("#temp").value.trim().replace(",","."))) m.push("chiller temperature");
   if(!PH.temp) m.push("thermometer photo");
   return m;}
 function refresh(){const m=missing();$("#send").disabled=!!m.length;$("#status").textContent=m.length?"Still needed: "+m.join(", ")+".":"Ready. Tap Submit to save the audit and photos.";}
 window.onShot=()=>{render();refresh();};
 $("#pinok").onclick=()=>{const p=$("#pin").value.trim(); if(!p) return; $("#pinmsg").textContent="Checking…";
-  google.script.run.withSuccessHandler(r=>{ if(r.ok){staff={pin:p,name:r.name};$("#pinmsg").innerHTML=`Signed in as <b>${esc(r.name)}</b>`;} else {staff=null;$("#pinmsg").innerHTML=`<span class="err">${esc(r.error)}</span>`;} refresh();}).checkPin(p);};
+  google.script.run.withSuccessHandler(r=>{ if(r.ok){staff={pin:p,name:r.name};$("#pinmsg").innerHTML=`Signed in as <b>${esc(r.name)}</b>`; loadCat();} else {staff=null;$("#pinmsg").innerHTML=`<span class="err">${esc(r.error)}</span>`;} refresh();}).checkPin(p);};
 $("#pin").addEventListener("input",()=>{staff=null;$("#pinmsg").textContent="";refresh();});
-$("#extra").addEventListener("change",async e=>{const f=e.target.files&&e.target.files[0]; if(!f||EX.length>=6) return; EX.push(await shrink(f)); e.target.value=""; render(); refresh();});
+document.addEventListener("change",async e=>{const t=e.target; if(!t.dataset||!t.dataset.extra) return; const f=t.files&&t.files[0]; if(!f||EX.length>=6) return; EX.push(await shrink(f)); t.value=""; render(); refresh();});
 document.addEventListener("click",e=>{
   const x=e.target.closest("[data-rmx]"); if(x){EX.splice(+x.dataset.rmx,1);render();return;}
   const ch=e.target.closest(".chip"); if(ch){const {sku,col}=ch.dataset; cnt[sku]=cnt[sku]||{}; if(cnt[sku][col]!==undefined) delete cnt[sku][col]; else cnt[sku][col]=""; render(); refresh(); return;}
@@ -199,12 +211,12 @@ document.addEventListener("click",e=>{
 document.addEventListener("input",e=>{const t=e.target; if(t.dataset.csku) cnt[t.dataset.csku][t.dataset.ccol]=t.value; refresh();});
 $("#send").onclick=()=>{ if(missing().length){refresh();return;}
   $("#send").disabled=true; $("#status").textContent="Uploading audit and photos… keep this page open.";
-  const prices={}; for(const p of CONFIG.products){const v=$("#pr-"+p.sku).value.trim(); if(v) prices[p.sku]=v;}
-  const counts=[]; for(const p of CONFIG.products){const s=cnt[p.sku]||{}; for(const c of CONFIG.colours) if(s[c.name]!==undefined&&s[c.name]!=="") counts.push({sku:p.sku,colour:c.name,n:s[c.name]});}
+  const prices={}; document.querySelectorAll("[id^=pr-]").forEach(i=>{const v=i.value.trim(); if(v) prices[i.id.slice(3)]=v;});
+  const counts=[]; for(const [pid,s] of Object.entries(cnt)){ for(const c of CONFIG.colours) if(s[c.name]!==undefined&&s[c.name]!=="") counts.push({productId:pid,colour:c.name,n:s[c.name]});}
   const photos={temp:PH.temp}; CONFIG.checks.filter(c=>c.photo&&applies(c)).forEach(c=>photos[c.k]=PH[c.k]);
-  const d={menu:$("#menu").value,pin:staff.pin,outlet:$("#outlet").value,date:$("#date").value,checks:chk,temp:$("#temp").value.trim(),prices,counts,note:$("#anote").value.trim(),photos,extra:EX};
+  const d={menu:$("#menu").value,pin:staff.pin,outlet:$("#outlet").value,date:$("#date").value,checks:chk,temp:$("#temp").value.trim().replace(",","."),prices,counts,note:$("#anote").value.trim(),photos,extra:EX,ai:AI};
   google.script.run.withSuccessHandler(r=>{ $("#bar").hidden=true;
-    $("#app").innerHTML=`<div class="done-card"><div class="ok">✓</div><h1 style="font-size:28px">Audit saved</h1><p>Thank you, ${esc(r.auditor)}. Reference <b style="font-family:var(--mono)">${esc(r.id)}</b>.</p><p class="hint">All photos are stored with this audit.</p><a class="btn primary" style="flex:none" target="_blank" rel="noopener" href="https:\/\/wa.me/${String(r.wa||"").replace(/\D/g,"")}?text=${encodeURIComponent(r.summary)}">Send PDF report to WhatsApp</a><a class="btn" target="_blank" rel="noopener" href="${esc(r.pdf)}">Open PDF</a><button class="btn" onclick="location.reload()">Start a new audit</button></div>`;
+    $("#app").innerHTML=`<div class="done-card"><div class="ok">✓</div><h1 style="font-size:28px">Audit saved</h1><p>Thank you, ${esc(r.auditor)}. Reference <b style="font-family:var(--mono)">${esc(r.id)}</b>.</p><p class="hint">All photos are stored with this audit and it shows in the office desk under Audits.</p>${AI.length?`<div class="card" style="text-align:left"><b>Suggestions</b><ul style="margin:6px 0 0;padding-left:18px">${AI.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}<a class="btn primary" style="flex:none" target="_blank" rel="noopener" href="https:\/\/wa.me/${String(r.wa||"").replace(/\D/g,"")}?text=${encodeURIComponent(r.summary)}">Send PDF report to WhatsApp</a><a class="btn" target="_blank" rel="noopener" href="${esc(r.pdf)}">Open PDF</a><button class="btn" onclick="location.reload()">Start a new audit</button></div>`;
   }).withFailureHandler(err=>{$("#send").disabled=false; alert0((err&&err.message)||"Upload failed. Check your internet and try again.");}).submitAudit(d);
 };
 render(); refresh();
