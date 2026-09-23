@@ -335,7 +335,7 @@ function chaseText(p,dates){
 }
 /* ---------- rendering ---------- */
 const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role);
-const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Daily reports"],["billing","Weekly billing"],["audits","Audits"],["setup","Setup"],["staff","Staff"]];
+const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Daily reports"],["log","Change log"],["billing","Weekly billing"],["audits","Audits"],["setup","Setup"],["staff","Staff"]];
 const NCOL=8;
 let rq=false, MENU=false;
 function render(){ if(rq) return; rq=true; requestAnimationFrame(()=>{rq=false; doRender();}); }
@@ -348,7 +348,7 @@ function doRender(){
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
   else if(S.loaded.size<NCOL) html=`<div class="empty">Loading consignment data…</div>`;
-  else html=({today:vToday,plan:vPlan,deliveries:vDeliveries,daily:vDaily,billing:vBilling,audits:vAudits,setup:vSetup,staff:vStaff})[S.tab](att);
+  else html=({today:vToday,plan:vPlan,deliveries:vDeliveries,daily:vDaily,log:vLog,billing:vBilling,audits:vAudits,setup:vSetup,staff:vStaff})[S.tab](att);
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
@@ -448,6 +448,7 @@ async function resolveAtt(a,as){
   if(f.kind==="expiry"){const take=Math.min(q,+L.b||0); if(as==="wasted"){L.w=(+L.w||0)+take;} L.b=(+L.b||0)-take;}
   else { if(as==="wasted") L.w=(+L.w||0)+q; else if(as==="remaining") L.b=(+L.b||0)+q; }
   r.history=[...(r.history||[]).slice(-4),{at:new Date().toISOString(),by:AUTH.name||"",change:`${as}: ${q} × ${prod(f.productId).name} ${L.colour} (from Needs attention)`}];
+  r._reason=`Needs attention: booked as ${as}`;
   await saveWeek(w); return true;}
 
 /* ---- TODAY ---- */
@@ -557,16 +558,47 @@ function vDaily(){
     ${pasteBox}
     <div class="panel">
       <div class="spread"><div class="row">${partnerSelect("d-p",pid)}<button class="btn sm" data-day="-1" aria-label="Previous day">‹</button><input type="date" id="d-d" data-ui="date" value="${date}"><button class="btn sm" data-day="1" aria-label="Next day">›</button></div>
-        <div class="row">${rep?`<span class="pill ok">Reported${rep.by?` by ${esc(rep.by)}`:""} · ${esc(rep.source||"")}</span>`:day.status==="missing"?`<span class="pill bad">Missing</span><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(p.phone,chaseText(p,[date])))}">Chase on WhatsApp</a>`:`<span class="pill mute">${day.status==="today"?"Due at closing":"Upcoming"}</span>`}
-        ${editing?`<button class="btn sm" data-act="cancelDay">Cancel</button><button class="btn sm pri" data-act="saveDay">Save report</button>`:(c.week.settlement?`<span class="pill info">Week billed — locked</span>`:`<button class="btn sm" data-act="editDay">${rep?"Correct report":"Enter report"}</button>`)}</div></div>
-      ${editing?`<div class="row"><label class="f">Reported by<input id="dd-by" data-ui="dayBy" value="${esc(S.ui.dayBy||"")}"></label><label class="f">Add a cake/colour<span class="row"><select id="dd-ap">${products().map(x=>opt(x.id,x.name,"")).join("")}</select><select id="dd-ac">${cfg().colours.map(x=>opt(x.name,x.name,"")).join("")}</select><button class="btn sm" data-act="addDayLine">Add</button></span></label></div>`:""}
+        <div class="row">${rep&&(rep.edits||[]).length?`<span class="pill warn" title="See the change log below">Changed ${rep.edits.length}× · last by ${esc(rep.edits[rep.edits.length-1].by||"")}</span>`:""}${rep?`<span class="pill ok">Reported${rep.by?` by ${esc(rep.by)}`:""} · ${esc(rep.source||"")}</span>`:day.status==="missing"?`<span class="pill bad">Missing</span><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(p.phone,chaseText(p,[date])))}">Chase on WhatsApp</a>`:`<span class="pill mute">${day.status==="today"?"Due at closing":"Upcoming"}</span>`}
+        ${editing?`<button class="btn sm" data-act="cancelDay">Cancel</button><button class="btn sm pri" data-act="saveDay">Save report</button>`:(c.week.settlement?`<span class="pill info" title="To change a billed week, Alfred or Joscelyn voids the bill in Weekly billing first">Week billed — locked</span>`:(RO()?"":`<button class="btn sm" data-act="editDay">${rep?"Correct report":"Enter report"}</button>`))}</div></div>
+      ${editing?`<div class="row"><label class="f">Reported by<input id="dd-by" data-ui="dayBy" value="${esc(S.ui.dayBy||"")}"></label><label class="f">Add a cake/colour<span class="row"><select id="dd-ap">${products().map(x=>opt(x.id,x.name,"")).join("")}</select><select id="dd-ac">${cfg().colours.map(x=>opt(x.name,x.name,"")).join("")}</select><button class="btn sm" data-act="addDayLine">Add</button></span></label></div>
+      <div class="fbar"><label class="f">Why are you changing this? (required)<select id="dd-why" data-ui="dayWhy">${opt("","Choose a reason…",S.ui.dayWhy||"")}${WHY.map(x=>opt(x,x,S.ui.dayWhy||"")).join("")}</select></label><label class="f" style="flex:2">Details<input id="dd-whyn" data-ui="dayWhyNote" value="${esc(S.ui.dayWhyNote||"")}" placeholder="e.g. 2 Pear found at the back of the chiller"></label></div>
+      <p class="small muted" style="margin:0">Saved under <b>${esc(AUTH.name||"your name")}</b> with the time and reason. The change log keeps the old numbers and what the outlet first sent.</p>`:""}
       ${tbl}
-      ${salesCheck(rep,pid,date)}
+      ${editing?soldEditor(day,rep):salesCheck(rep,pid,date)}
+      ${dayLog(rep)}
       ${rep&&rep.note?`<p class="small" style="margin:0"><b>Outlet note:</b> ${esc(rep.note)}</p>`:""}
       ${rep?`<div class="spread" style="border-top:1px solid var(--line);padding-top:12px"><h3>Closing photos ${(rep.photos||[]).length?`<span class="pill ok">${rep.photos.length}</span>`:`<span class="pill bad">required — none yet</span>`}</h3>
         <div class="row">${S.assets?`<label class="btn sm">Add photos from WhatsApp<input type="file" accept="image/&#42;" multiple data-repphoto="${pid}|${date}" hidden></label>`:""}${rep.drive?driveLink(rep.drive):(S.mcp?`<button class="btn sm" data-act="fileDaily">File report + photos to Drive</button>`:"")}</div></div>
         ${(rep.photos||[]).length?`<div class="photos">${rep.photos.map(id=>`<a href="${esc(photoLink(id))}" target="_blank" rel="noopener"><img src="${esc(photoSrc(id))}" alt="Closing photo"></a>`).join("")}</div>`:`<p class="small muted" style="margin:0">Save the outlet's WhatsApp photos to your phone/computer, then add them here so they're kept with this report.</p>`}`:""}
     </div>`;
+}
+const WHY=["Recount: cakes found or miscounted","Missing cake: confirmed sold","Missing cake: thrown away","Wrong colour dot entered","Delivery short or damaged","Outlet sent numbers by WhatsApp or phone","Sales photo read wrongly","Other"];
+const fmtTs=iso=>{try{return new Date(iso).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"});}catch(e){return String(iso||"");}};
+const locDay=iso=>{const d=new Date(iso);return isNaN(d)?"":`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
+const roleName=r=>({owner:"Owner",manager:"Manager",office:"Office",auditor:"Team",outlet:"Outlet"})[r]||r||"";
+const chgTxt=c=>{const v=x=>x==null||x===""?"–":esc(x);
+  if(!c.productId) return `${esc(c.field)}${c.field==="Report entered by office"?`: ${v(c.to)}`:`: “${v(c.from)}” → “${v(c.to)}”`}`;
+  return `${esc(prod(c.productId).name)}${c.colour?" "+dot(c.colour):""} · ${esc(c.field)} <b class="mono">${v(c.from)} → ${v(c.to)}</b>`;};
+function soldEditor(day,rep){
+  const ids=[...new Set([...day.lines.map(l=>l.productId),...Object.keys(S.ui.dayDraft||{}).map(k=>k.split("|")[0]),...Object.keys((rep&&rep.sold)||{})])].filter(Boolean);
+  if(!ids.length) return "";
+  const sd=S.ui.soldDraft||{};
+  return `<div style="border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px"><h3>Sold per cake from the sales photo <span class="small muted">(optional)</span></h3>
+    <p class="small muted" style="margin:0">Fill this in if the photo wasn't read or was read wrongly. It's used to check that the numbers add up.${(rep&&(rep.salesPhotos||[]).length)?` Sales photo: ${rep.salesPhotos.map((id,i)=>`<a href="${esc(photoLink(id))}" target="_blank" rel="noopener">${i+1}</a>`).join(" ")}`:""}</p>
+    <div class="tw"><table><thead><tr><th>Cake</th><th class="r">Sold (photo)</th></tr></thead><tbody>${ids.map(id=>`<tr><td>${thumb(id,24)} ${esc(prod(id).name)}</td><td class="r"><input class="made mono" type="number" min="0" step="1" inputmode="numeric" data-sd="${esc(id)}" id="sd-${esc(id)}" value="${esc(sd[id]??"")}" placeholder="–" aria-label="Sold from photo"></td></tr>`).join("")}</tbody></table></div></div>`;
+}
+function dayLog(rep){ const E=(rep&&rep.edits)||[]; if(!E.length&&!(rep&&rep.orig)) return "";
+  const o=rep.orig;
+  return `<div style="border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px"><div class="spread"><h3>Change log <span class="pill warn">${E.length}</span></h3><button class="btn sm" data-tab="log">All changes</button></div>
+    <div class="tw"><table><thead><tr><th>When</th><th>By</th><th>What changed</th><th>Why</th></tr></thead><tbody>${E.slice().reverse().map(e=>`<tr><td class="small">${esc(fmtTs(e.at))}</td><td><b>${esc(e.by||"")}</b><div class="small muted">${esc(roleName(e.role))}</div></td><td class="small">${(e.changes||[]).map(chgTxt).join("<br>")||"—"}</td><td class="small">${esc(e.reason||"")}</td></tr>`).join("")}</tbody></table></div>
+    ${o?`<details class="help"><summary>What was there before the first change${o.by?` (counted by ${esc(o.by)}`:" ("}${o.at?`${o.by?", ":""}${esc(fmtTs(o.at))}`:""}${o.source?` · ${esc(o.source)}`:""})</summary><div class="tw" style="margin-top:8px"><table><thead><tr><th>Cake</th><th>Batch</th><th class="r">Waste</th><th class="r">Left</th></tr></thead><tbody>${(o.lines||[]).map(l=>`<tr><td>${esc(prod(l.productId).name)}</td><td>${dot(l.colour)}</td><td class="r mono">${l.w??0}</td><td class="r mono">${l.b??0}</td></tr>`).join("")||`<tr><td colspan="4" class="small">No cakes counted.</td></tr>`}</tbody></table></div>${o.sold?`<p class="small muted" style="margin:6px 0 0">Sold (sales photo): ${Object.entries(o.sold).map(([k,v])=>`${esc(prod(k).name)} ${esc(v)}`).join(", ")||"none"}</p>`:""}</details>`:""}</div>`;}
+function editRows(){const out=[]; for(const w of Object.values(S.weeks)) for(const [d,r] of Object.entries(w.days||{})) for(const e of (r.edits||[])) out.push({pid:w.partnerId,date:d,...e}); return out.sort((a,b)=>String(b.at).localeCompare(String(a.at)));}
+function vLog(){ const F=S.ui.lF||{}, fl=!!(F.p||F.from||F.to||F.by), all=editRows(), people=[...new Set(all.map(x=>x.by).filter(Boolean))].sort();
+  const rows=all.filter(x=>(!F.p||x.pid===F.p)&&(!F.from||locDay(x.at)>=F.from)&&(!F.to||locDay(x.at)<=F.to)&&(!F.by||x.by===F.by));
+  const fbar=`<div class="fbar"><label class="f">Outlet<select data-flt="lF.p">${opt("","All outlets",F.p||"")}${partners(true).map(p=>opt(p.id,p.name,F.p||"")).join("")}</select></label><label class="f">Changed from<input type="date" data-flt="lF.from" value="${esc(F.from||"")}"></label><label class="f">To<input type="date" data-flt="lF.to" value="${esc(F.to||"")}"></label><label class="f">By<select data-flt="lF.by">${opt("","Everyone",F.by||"")}${people.map(n=>opt(n,n,F.by||"")).join("")}</select></label>${fl?`<button class="btn sm" data-act="clearLF">Clear filters</button>`:""}<span class="small muted">${rows.length} change${rows.length===1?"":"s"}</span></div>`;
+  return `<div class="head"><div><h1>Change log</h1><p class="lede">Every change the office makes to an outlet's stock count (waste, left, sold) is recorded here automatically, with the name of the person signed in, the time and the reason. Only office staff and managers can make changes, and nobody can edit or delete this log. A copy of each line also goes to the <b>Edit log</b> tab in the Google Sheet.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button></div></div>
+    <div class="panel">${fbar}
+    ${rows.length?`<div class="tw"><table><thead><tr><th>When</th><th>By</th><th>Outlet · report day</th><th>What changed</th><th>Why</th><th></th></tr></thead><tbody>${rows.slice(0,300).map(x=>`<tr><td class="small">${esc(fmtTs(x.at))}</td><td><b>${esc(x.by||"")}</b><div class="small muted">${esc(roleName(x.role))}</div></td><td>${esc(partner(x.pid).name)}<div class="small muted">${nice(x.date)}</div></td><td class="small">${(x.changes||[]).map(chgTxt).join("<br>")||"—"}</td><td class="small">${esc(x.reason||"")}</td><td class="r"><button class="btn sm" data-go-daily="${esc(x.pid)}|${esc(x.date)}">Open</button></td></tr>`).join("")}</tbody></table></div>${rows.length>300?`<p class="small muted" style="margin:0">Showing the latest 300. Use the filters to narrow it down.</p>`:""}`:`<div class="empty">${fl?"No changes match these filters.":"No changes yet. When the office corrects a closing report, it shows here."}</div>`}</div>`;
 }
 function salesCheck(rep,pid,date){ if(!rep||!rep.check) return "";
   const probs=rep.check.filter(c=>c.diff);
@@ -1062,6 +1094,9 @@ document.addEventListener("input",e=>{
   if(d.f!==undefined){S.f[d.f]=t.type==="checkbox"?t.checked:t.value; if(t.type==="checkbox") render(); return;}
   if(d.ui==="paste"){S.ui.paste=t.value;return;}
   if(d.ui==="dayBy"){S.ui.dayBy=t.value;return;}
+  if(d.ui==="dayWhy"){S.ui.dayWhy=t.value;return;}
+  if(d.ui==="dayWhyNote"){S.ui.dayWhyNote=t.value;return;}
+  if(d.sd){S.ui.soldDraft=S.ui.soldDraft||{}; S.ui.soldDraft[d.sd]=t.value; return;}
   if(d.do){const E=S.ui.doEdit; E[d.do]=t.value;
     if(d.do==="date"&&!E.batchTouched) E.batchDate=add(t.value,-(+cfg().prepLeadDays||0));
     if(d.do==="batchDate") E.batchTouched=true;
@@ -1095,7 +1130,7 @@ async function shrink(file,max=900){
 document.addEventListener("change",async e=>{
   const t=e.target;
   if(t.dataset.flt){const [g,k]=t.dataset.flt.split(".");S.ui[g]={...(S.ui[g]||{}),[k]:t.value};render();return;}
-  if(RO()&&!t.dataset.ui){toast("View only — ask a manager to make changes");render();return;}
+  if(RO()&&!t.dataset.ui&&t.id!=="lg-pin"){toast("View only — ask a manager to make changes");render();return;}
   if(t.dataset.repphoto&&t.files&&t.files.length){const [pid,date]=t.dataset.repphoto.split("|"); toast(`Uploading ${t.files.length} photo(s)…`);
     try{const ids=[];for(const f of t.files){const r=await S.assets.upload(await shrink(f,1400));ids.push(r.id);}
       const w=clone(weekDoc(pid,weekStartOf(date)));w.days[date]={...w.days[date],photos:[...((w.days[date]||{}).photos||[]),...ids]};await saveWeek(w);toast("Photos saved to the report");}
@@ -1116,7 +1151,7 @@ document.addEventListener("click",async e=>{
   if(d.menu){MENU=!MENU;render();return;}
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
-  if(RO()&&b.id!=="lg-go"&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF")){toast("View only — ask a manager to make changes");return;}
+  if(RO()&&b.id!=="lg-go"&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
   if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;render();window.scrollTo(0,0);return;}
   if(d.stnew){S.ui.stEdit={row:0,name:"",code:"",role:"auditor",notes:""};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
@@ -1187,20 +1222,26 @@ async function act(a,b){
   case "parse":{S.ui.parsed=parseMsg(S.ui.paste||""); render(); return;}
   case "savePaste":{const p=S.ui.parsed; if(!p||!p.ok) return;
     if(p.type==="report"){const w=clone(weekDoc(p.partnerId,weekStartOf(p.date))); w.dos=w.dos||{}; w.days=w.days||{};
-      w.days[p.date]={lines:p.lines,by:p.by,note:p.note,source:"WhatsApp",photos:(w.days[p.date]||{}).photos||[],at:new Date().toISOString()}; await saveWeek(w);
+      w.days[p.date]={lines:p.lines,by:p.by,note:p.note,source:"WhatsApp",photos:(w.days[p.date]||{}).photos||[],at:new Date().toISOString(),_reason:"Entered from a WhatsApp message"}; await saveWeek(w);
       S.ui.partner=p.partnerId; S.ui.date=p.date; toast("Closing report saved");}
     else {const id=newId(); await put(`audits/${id}`,{id,...p.audit}); toast("Audit saved"); S.tab="audits";}
     S.ui.paste=""; S.ui.parsed=null; render(); return;}
   case "editDay":{const pid=curPartner(),date=S.ui.date||t; const c=calcWeek(pid,weekStartOf(date)); const day=c.days.find(x=>x.date===date);
     S.ui.dayDraft={}; for(const l of day.lines){const k=l.productId+"|"+l.colour; S.ui.dayDraft[k]=day.rep?{s:l.pos??"",w:l.waste,b:l.close??""}:{s:"",w:"",b:""};}
-    S.ui.dayBy=day.rep?.by||""; S.ui.editDay=true; render(); return;}
+    S.ui.dayBy=day.rep?.by||""; S.ui.dayWhy=""; S.ui.dayWhyNote=""; S.ui.soldDraft={}; if(day.rep&&day.rep.sold) for(const [k,v] of Object.entries(day.rep.sold)) S.ui.soldDraft[k]=String(v); S.ui.editDay=true; render(); return;}
   case "cancelDay": S.ui.editDay=false; render(); return;
   case "addDayLine":{const k=$("#dd-ap").value+"|"+$("#dd-ac").value; if(!S.ui.dayDraft[k]) S.ui.dayDraft[k]={s:"",w:"",b:""}; render(); return;}
   case "saveDay":{const pid=curPartner(),date=S.ui.date||t; const lines=[];
     for(const [k,v] of Object.entries(S.ui.dayDraft)){ const [p,c]=k.split("|"); lines.push({productId:p,colour:c,w:+v.w||0,b:+v.b||0,...(v.s!==""&&v.s!=null?{s:+v.s}:{})});}
     const w=clone(weekDoc(pid,weekStartOf(date))); w.dos=w.dos||{}; w.days=w.days||{};
-    w.days[date]={lines,by:S.ui.dayBy||"",note:(w.days[date]||{}).note||"",photos:(w.days[date]||{}).photos||[],source:"entered by office",at:new Date().toISOString()};
-    await saveWeek(w); S.ui.editDay=false; toast("Report saved"); return;}
+    const why=(S.ui.dayWhy||"").trim(), wn=(S.ui.dayWhyNote||"").trim();
+    if(!why){toast("Choose why you're changing this report");const x=$("#dd-why");x&&x.focus();return;}
+    if(why==="Other"&&!wn){toast("Write a short note to explain “Other”");const x=$("#dd-whyn");x&&x.focus();return;}
+    const prev=w.days[date]||{}, sd=S.ui.soldDraft||{}, sold={}; let anySold=false;
+    for(const [k,v] of Object.entries(sd)){ const n=String(v).split(/[.,]/)[0].replace(/[^0-9]/g,""); if(n!==""){sold[k]=+n;anySold=true;} }
+    w.days[date]={...prev,lines,by:S.ui.dayBy||"",note:prev.note||"",photos:prev.photos||[],source:prev.source||"entered by office",at:new Date().toISOString(),_reason:why+(wn?": "+wn:""),...(anySold||prev.sold?{sold:anySold?sold:null}:{})};
+    try{ await saveWeek(w); }catch(e){ toast((e&&e.message)||"Couldn't save the change"); return; }
+    S.ui.editDay=false; S.ui.dayWhy=""; S.ui.dayWhyNote=""; toast(`Report saved · change logged under ${AUTH.name||"your name"}`); render(); return;}
   case "askIssue": S.ui.confirm="issue"; render(); return;
   case "askVoid": S.ui.confirm="void"; render(); return;
   case "askClear": S.ui.confirm="clear"; render(); return;
@@ -1262,6 +1303,7 @@ async function act(a,b){
   case "printModal":{const m=S.ui.modal; if(!m) return; const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n"); printRaw((m.kind||"doc").toUpperCase(),`<style>${css} body{background:#fff} .paper{max-width:800px;margin:0 auto;padding:0}</style>${m.html}`); return;}
   case "clearDF": S.ui.dF={}; render(); return;
   case "clearBF": S.ui.bF={}; render(); return;
+  case "clearLF": S.ui.lF={}; render(); return;
   case "qrClose": S.ui.qrFor=null; S.ui.lnewAsk=null; render(); return;
   case "qrPrint":{const p=S.partners[S.ui.qrFor], q=S.ui.qrImg; if(!p||!q||!q.url) return; const w=window.open("","_blank"); if(!w){toast("Allow pop-ups to print, or use Download QR");return;}
     w.document.write(`<!DOCTYPE html><html><head><title>${esc(p.name)} closing QR</title></head><body style="font-family:sans-serif;text-align:center;padding:48px 24px;color:#2b1b1e"><div style="font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#6f5f62">Chaleur Atelier</div><h1 style="margin:8px 0 6px;font-size:34px">${esc(p.name)}</h1><p style="margin:0 0 22px;font-size:18px">Nightly closing report: scan at closing time</p><img src="${q.url}" alt="" style="width:340px;height:340px;image-rendering:pixelated"><p style="font-size:12px;color:#6f5f62;word-break:break-all;max-width:420px;margin:18px auto 0">${esc(formLink(p))}</p></body></html>`);
@@ -1312,8 +1354,8 @@ const shimDB={
   collection(col){return {onSnapshot(fn){DBX.subs.push({col,fn});setTimeout(()=>fn(snapFor(col)),0);return ()=>{};}};},
   doc(path){const [col,id]=path.split("/");return {
     get:async()=>{const d=(DBX.cache[col]||{})[id];return {id,exists:!!d,data:()=>d};},
-    set:async(data)=>{const c=JSON.parse(JSON.stringify(data));(DBX.cache[col]=DBX.cache[col]||{})[id]=c;fire(col);await GS("dbPut",col,id,c);},
-    update:async(data)=>{const c={...((DBX.cache[col]||{})[id]||{}),...JSON.parse(JSON.stringify(data))};(DBX.cache[col]=DBX.cache[col]||{})[id]=c;fire(col);await GS("dbPut",col,id,c);},
+    set:async(data)=>{const c=JSON.parse(JSON.stringify(data));(DBX.cache[col]=DBX.cache[col]||{})[id]=c;fire(col);const r=await GS("dbPut",col,id,c);if(r&&typeof r==="object"&&r.rec){DBX.cache[col][id]=r.rec;fire(col);}},
+    update:async(data)=>{const c={...((DBX.cache[col]||{})[id]||{}),...JSON.parse(JSON.stringify(data))};(DBX.cache[col]=DBX.cache[col]||{})[id]=c;fire(col);const r=await GS("dbPut",col,id,c);if(r&&typeof r==="object"&&r.rec){DBX.cache[col][id]=r.rec;fire(col);}},
     delete:async()=>{if(DBX.cache[col])delete DBX.cache[col][id];fire(col);await GS("dbDel",col,id);}
   };}
 };
