@@ -25,18 +25,71 @@ window.google={script:{run:mk(null,null)}};})();
 .ca-go{margin-top:16px;width:100%;padding:13px;border:0;border-radius:10px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 16px var(--body,system-ui,sans-serif);cursor:pointer}
 .ca-go:disabled{opacity:.6}
 .ca-err{color:#b3261e;font-size:14px;margin-top:10px;min-height:1.2em}
-.ca-hbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;border:0;border-radius:999px;padding:12px 18px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 15px var(--body,system-ui,sans-serif);box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer}
-.ca-hp{position:fixed;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:61;width:min(400px,calc(100vw - 24px));height:min(72vh,580px,calc(100vh - 180px));display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.28)}
-.ca-hp .ca-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line,#e8dcd6)}
-.ca-hp .ca-hd button{border:0;background:transparent;color:var(--ink,#2b1b1e);font-size:18px;cursor:pointer;min-width:36px;min-height:36px}
-.ca-hp .ca-msgs{overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
-.ca-hp .ca-m{padding:9px 11px;border-radius:12px;font-size:14.5px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere}
+.ca-va{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 8px;min-height:32px;max-width:180px}
+.ca-vabar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;background:#2b1b1e;color:#fff;padding:8px 14px;font:500 13.5px/1.35 var(--body,Jost,system-ui,sans-serif);position:relative;z-index:70}
+.ca-vabar b{color:#e3c466}.ca-vabar .ca-vact{display:flex;gap:8px;align-items:center}
+.ca-vabar button{font:600 13px var(--body,Jost,system-ui,sans-serif);border:0;border-radius:999px;padding:7px 14px;background:#e3c466;color:#2b1b1e;cursor:pointer;min-height:34px}
+.ca-vabar .ca-va{background:#fff;color:#2b1b1e}
+.ca-hbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;border:0;border-radius:999px;padding:0 20px;min-height:52px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 16px var(--body,Jost,system-ui,sans-serif);box-shadow:0 6px 16px rgba(0,0,0,.25);cursor:pointer}
+body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.ca-bd{position:fixed;inset:0;background:rgba(43,27,30,.45);z-index:80}
+.ca-hp{--s-soft:var(--soft,var(--accent-soft,#f3e4e5));--s-ground:var(--ground,#f7f2ec);position:fixed;left:50%;transform:translateX(-50%);bottom:0;z-index:81;width:min(560px,100%);height:min(760px,calc(100vh - 28px));height:min(760px,calc(100dvh - 28px));display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:24px 24px 0 0;box-shadow:0 -10px 40px rgba(43,27,30,.25);font-family:var(--body,Jost,system-ui,sans-serif);overflow:hidden}
+.ca-hp *{box-sizing:border-box}
+.ca-hp button{font-family:inherit;cursor:pointer}
+.ca-hp .ca-grab{display:flex;justify-content:center;padding:8px 0 4px;flex:none}.ca-hp .ca-grab span{width:40px;height:5px;border-radius:3px;background:var(--line,#e8dcd6)}
+.ca-hp .ca-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 18px 10px;flex:none}
+.ca-hp .ca-ttl{font:700 26px/1 var(--display,'Cormorant Garamond',Georgia,serif)}
+.ca-hp .ca-ttl small{display:block;font:500 12px var(--body,Jost,system-ui,sans-serif);color:var(--muted,#6f5f62);margin-bottom:2px}
+.ca-hp .ca-x{width:44px;height:44px;border-radius:50%;border:0;background:var(--s-soft);color:var(--ink,#2b1b1e);font-size:16px;flex:none}
+.ca-hp .ca-back{width:48px;height:48px;border-radius:14px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);font-size:22px;flex:none}
+.ca-hp .ca-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--s-soft);border-radius:14px;padding:4px;margin:0 18px 12px;flex:none}
+.ca-hp .ca-tabs button{min-height:46px;border:0;border-radius:11px;background:transparent;font-weight:600;font-size:15px;color:var(--ink,#2b1b1e);line-height:1.15;padding:4px 8px}
+.ca-hp .ca-tabs button[aria-selected="true"]{background:var(--paper,#fff);box-shadow:0 1px 2px rgba(43,27,30,.08)}
+.ca-hp .ca-body{flex:1;min-height:0;overflow:auto;padding:0 18px 12px;display:flex;flex-direction:column;gap:14px}
+.ca-hp .ca-foot{flex:none;padding:12px 18px calc(18px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line,#e8dcd6);display:flex;flex-direction:column;gap:8px}
+.ca-hp .ca-eb{font:600 11px var(--body,Jost,system-ui,sans-serif);letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#6f5f62);margin:0 0 8px}
+/* ask */
+.ca-hp .ca-msgs{display:flex;flex-direction:column;gap:8px}
+.ca-hp .ca-m{padding:10px 12px;border-radius:14px;font-size:14.5px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere}
 .ca-hp .ca-q{align-self:flex-end;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);max-width:85%}
-.ca-hp .ca-a{align-self:flex-start;background:var(--soft,var(--accent-soft,#f3e4e5));max-width:95%}
-.ca-hp form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line,#e8dcd6)}
-.ca-hp textarea{flex:1;font:inherit;font-size:16px;resize:none;border:1px solid var(--line,#e8dcd6);border-radius:10px;padding:9px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);min-height:44px;max-height:120px}
-.ca-hp form button{border:0;border-radius:10px;padding:0 16px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;cursor:pointer}
-body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bottom,0px))}body:has(.bar:not([hidden])) .ca-hp{bottom:calc(152px + env(safe-area-inset-bottom,0px))}
+.ca-hp .ca-a{align-self:flex-start;background:var(--s-soft);max-width:92%}
+.ca-hp .ca-askf{display:flex;gap:8px;margin:0}
+.ca-hp .ca-askf textarea{flex:1;font:inherit;font-size:16px;resize:none;border:1px solid var(--line,#e8dcd6);border-radius:12px;padding:13px 12px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);min-height:52px;max-height:120px}
+.ca-hp .ca-askf button{min-height:52px;border:0;border-radius:12px;padding:0 18px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;font-size:15px}
+/* report */
+.ca-hp .ca-types{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ca-hp .ca-types button{min-height:52px;border-radius:12px;border:2px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);font-weight:600;font-size:14px;padding:6px 10px;text-align:left;line-height:1.2}
+.ca-hp .ca-types button[aria-pressed="true"]{border-color:var(--accent,#7b1c2b);background:var(--s-soft)}
+.ca-hp .ca-ft{width:100%;min-height:84px;border:1px solid var(--line,#e8dcd6);border-radius:12px;padding:12px;font:15px var(--body,Jost,system-ui,sans-serif);color:var(--ink,#2b1b1e);background:var(--paper,#fff);resize:vertical}
+.ca-hp .ca-ph{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center}
+.ca-hp .ca-thumb{width:72px;height:72px;border-radius:12px;background:repeating-linear-gradient(135deg,var(--line,#efe6e1) 0 6px,var(--s-ground) 6px 12px);display:grid;place-items:center;font:10px ui-monospace,monospace;color:var(--muted,#6f5f62);overflow:hidden;position:relative}
+.ca-hp .ca-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ca-hp .ca-thumb button{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(43,27,30,.7);color:#fff;font-size:12px;line-height:1;padding:0}
+.ca-hp .ca-phb{display:flex;align-items:center;justify-content:center;min-height:52px;border:1px solid var(--line,#e8dcd6);border-radius:12px;background:var(--s-soft);color:var(--accent,#7b1c2b);font-weight:600;font-size:15px;cursor:pointer;text-align:center;padding:4px 10px}
+.ca-hp .ca-urg{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 14px;border-radius:12px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);text-align:left;color:var(--ink,#2b1b1e);font-size:15px;width:100%}
+.ca-hp .ca-urg i{width:28px;height:28px;border-radius:8px;border:2px solid #9a8f91;background:var(--paper,#fff);color:#fff;display:grid;place-items:center;font-size:15px;font-style:normal;flex:none}
+.ca-hp .ca-urg[aria-pressed="true"] i{border-color:#c0392b;background:#c0392b}
+.ca-hp .ca-note{font-size:12.5px;color:var(--muted,#6f5f62);line-height:1.45;margin:0}
+.ca-hp .ca-lnk{align-self:flex-start;border:0;background:none;color:var(--accent,#7b1c2b);font-weight:600;font-size:14px;padding:6px 0;min-height:36px}
+.ca-hp .ca-err{margin:0;min-height:0}
+.ca-hp .ca-go60{min-height:60px;width:100%;border:0;border-radius:14px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:700;font-size:17px}
+.ca-hp .ca-go60:disabled{background:var(--line,#e8dcd6);color:#9a8f91;cursor:default}
+.ca-hp .ca-sec56{min-height:56px;width:100%;border:1px solid var(--line,#e8dcd6);border-radius:14px;background:var(--paper,#fff);color:var(--accent,#7b1c2b);font-weight:600;font-size:15px}
+.ca-hp .ca-pri56{min-height:56px;width:100%;border:0;border-radius:14px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;font-size:16px}
+.ca-hp .ca-done{padding:10px 4px 0;display:flex;flex-direction:column;gap:12px}
+.ca-hp .ca-tick{width:56px;height:56px;border-radius:50%;background:#1e8449;color:#fff;display:grid;place-items:center;font-size:26px}
+.ca-hp .ca-thx{font:700 30px/1.05 var(--display,'Cormorant Garamond',Georgia,serif)}
+.ca-hp .ca-sum{background:var(--s-ground);border-radius:14px;padding:14px;font-size:14px}
+/* my reports */
+.ca-hp .ca-rc{background:var(--paper,#fff);border:1px solid var(--line,#e8dcd6);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.ca-hp .ca-rc.done{opacity:.75}
+.ca-hp .ca-rc .ca-rt{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ca-hp .ca-rc .ca-rt b{font-weight:600;font-size:15px}
+.ca-hp .ca-pill{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.ca-hp .ca-pill.open{background:var(--s-soft);color:var(--accent,#7b1c2b)}.ca-hp .ca-pill.doing{background:#fbecd2;color:#6b4206}.ca-hp .ca-pill.done{background:#dcefe2;color:#1e6b3a}
+.ca-hp .ca-rc .ca-tx{font-size:14px;color:var(--muted,#6f5f62);white-space:pre-wrap}
+.ca-hp .ca-rc .ca-rp{background:var(--s-soft);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.4;white-space:pre-wrap}
+.ca-hp .ca-rc .ca-mt{font-size:12px;color:#9a8f91}
 @media print{.ca-hbtn,.ca-hp,.ca-chip button{display:none!important}}
 </style>
 <script>
@@ -73,41 +126,143 @@ const CA=(function(){
   /* One sign-in page for everything: other pages send you to the home page and it brings you back. */
   function toLogin(msg){ const here=(location.pathname.split("/").pop()||HOME)+location.search+location.hash; location.replace(HOME+"?next="+encodeURIComponent(here)+(msg?"&msg="+encodeURIComponent(msg):"")); }
   function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(HOME),150);}
-  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(ROLE[s.role]||s.role)}</span> <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  /* Owner: "View as" another role, to see each person's screens without signing out */
+  const VA=[["owner","Owner (you)"],["manager","Manager"],["office","Office"],["supervisor","Kitchen supervisor"],["kitchen","Kitchen"],["auditor","Team"]];
+  const canView=()=>{ const c=get(); return !!(c&&(c.as||c.role==="owner")); };
+  const vaSelect=()=>{ const c=get()||{}; return `<select class="ca-va" data-ca-viewas="1" aria-label="See the app as">${VA.map(([v,l])=>`<option value="${v}" ${(c.as||"owner")===v?"selected":""}>${v==="owner"?l:"View as "+l}</option>`).join("")}</select>`; };
+  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(ROLE[s.role]||s.role)}</span>${canView()?" "+vaSelect():""} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  async function switchView(role){ const c=get(); if(!c) return; document.body.style.opacity=".5";
+    try{ const r=await run("viewAs",c.t,role); save({t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember,as:r.as||""}); location.reload(); }
+    catch(e){ document.body.style.opacity=""; alertBar((e&&e.message)||"Couldn't switch."); } }
+  function alertBar(m){ const d=document.createElement("div"); d.className="ca-vabar"; d.setAttribute("role","alert"); d.textContent=m; document.body.prepend(d); setTimeout(()=>d.remove(),5000); }
+  document.addEventListener("change",e=>{ const t=e.target; if(t&&t.matches&&t.matches("[data-ca-viewas]")) switchView(t.value); });
+  document.addEventListener("click",e=>{ const b=e.target&&e.target.closest&&e.target.closest("[data-ca-viewback]"); if(b){ e.preventDefault(); switchView("owner"); } });
+  /* While viewing as another role, a strip at the top of every page says so */
+  function vaStrip(){ const c=get(); if(!c||!c.as||document.getElementById("ca-vastrip")) return; const d=document.createElement("div"); d.id="ca-vastrip"; d.className="ca-vabar";
+    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(ROLE[c.as]||c.as)}</b>. Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d); }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",vaStrip); else setTimeout(vaStrip,0);
   /* Where a "what to do next" item goes: page + tab (#hash) + kitchen team */
   const nextHref=g=>g?(g.page+(g.team?"?team="+encodeURIComponent(g.team):"")+(g.hash?"#"+g.hash:"")):"";
   const nextList=(items,links)=>`<ul class="ca-next">${(items||[]).map(x=>`<li><i class="${esc(x.sev)}"></i><span>${links&&x.go?`<a href="${esc(nextHref(x.go))}">${esc(x.text)}</a>`:esc(x.text)}</span></li>`).join("")}</ul>`;
   document.addEventListener("click",e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-ca-logout]"); if(b){e.preventDefault(); b.disabled=true; logout();}});
+  /* Report a problem: what's wrong (same list as the server). Short names are used in My reports. */
+  const FBK=[["app","App not working","App problem"],["numbers","Wrong numbers","Wrong numbers"],["equipment","Equipment broken","Equipment"],["stock","Stock / ingredients","Stock"],["safety","Food safety","Food safety"],["idea","Idea / other","Idea"]];
+  const fbl=k=>(FBK.find(x=>x[0]===k)||["","Other","Other"]);
+  const FBS={open:"New",doing:"Being fixed",done:"✓ Done"};
+  /* Photo for a report: made smaller (max 1280 px, JPEG) so it sends fast on a phone */
+  const shrink=file=>new Promise((res,rej)=>{ const r=new FileReader(); r.onerror=()=>rej(new Error("Couldn't read the photo.")); r.onload=()=>{ const im=new Image(); im.onerror=()=>rej(new Error("Couldn't read the photo."));
+    im.onload=()=>{ const k=Math.min(1,1280/Math.max(im.width,im.height)), c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); res(c.toDataURL("image/jpeg",.8)); };
+    im.src=r.result; }; r.readAsDataURL(file); });
+  let openHelp=()=>{};
+  /* Sent with every report, so we know where it happened: the page, the link, the phone, and the last message on screen */
+  const LAST={t:"",at:0};
+  const note=t=>{ t=String(t||"").replace(/\s+/g," ").trim(); if(t&&!/^(Saving|Sending|Loading|Signing in|Checking)/i.test(t)){ LAST.t=t.slice(0,200); LAST.at=Date.now(); } };
+  function watchMsgs(){ if(watchMsgs.on||!document.body) return; watchMsgs.on=1;
+    window.addEventListener("error",e=>note("Error: "+(e.message||""))); window.addEventListener("unhandledrejection",e=>note("Error: "+((e.reason&&e.reason.message)||e.reason||"")));
+    try{ new MutationObserver(ms=>{ for(const m of ms){ const n=m.target.nodeType===1?m.target:m.target.parentElement; const el=n&&n.closest&&n.closest("#toast,#status,[role=alert],[role=status],.err"); if(el&&!el.closest(".ca-hp")&&!el.hidden) note(el.textContent); } }).observe(document.body,{childList:true,subtree:true,characterData:true}); }catch(e){} }
+  const device=()=>{ const u=navigator.userAgent||""; return [/iPhone|iPad|iPod/.test(u)?"iPhone/iPad":/Android/.test(u)?"Android":/Mac/.test(u)?"Mac":/Windows/.test(u)?"Windows":"Other",
+    /Edg\//.test(u)?"Edge":/CriOS|Chrome\//.test(u)?"Chrome":/FxiOS|Firefox/.test(u)?"Firefox":/Safari/.test(u)?"Safari":"Browser", (window.innerWidth||0)+"px"].join(" · "); };
+  const recent=()=>LAST.t&&Date.now()-LAST.at<15*60*1000?LAST.t:"";
+  const cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1).toLowerCase():"";
+  const hm=iso=>{ try{ return new Date(iso).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"}); }catch(e){ return ""; } };
+  const dayTxt=iso=>{ try{ const f=d=>d.toLocaleDateString("en-CA",{timeZone:"Asia/Kuala_Lumpur"}), d=new Date(iso), t=new Date(), y=new Date(Date.now()-864e5);
+    return f(d)===f(t)?"today "+hm(iso):f(d)===f(y)?"yesterday "+hm(iso):d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Asia/Kuala_Lumpur"}); }catch(e){ return ""; } };
   function helper(opt){
     if(document.getElementById("ca-hbtn")) return;
-    const b=document.createElement("button"); b.id="ca-hbtn"; b.className="ca-hbtn"; b.type="button"; b.textContent="? Ask"; b.setAttribute("aria-label","Ask the helper a question"); b.setAttribute("aria-expanded","false");
+    watchMsgs();
+    const b=document.createElement("button"); b.id="ca-hbtn"; b.className="ca-hbtn"; b.type="button"; b.textContent="? Ask"; b.setAttribute("aria-label","Ask the helper a question or report a problem"); b.setAttribute("aria-expanded","false");
     document.body.appendChild(b);
-    let panel=null, H=[], busy=false;
+    let panel=null, bd=null, H=[], busy=false, VIEW="ask";
+    const R0=()=>({type:"",text:"",photo:"",urgent:false,busy:false,err:"",sent:null});
+    let FB=R0(), MINE=null, MINEB=false;
     const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
     let NX=null, NXB=false;
-    function draw(){ if(!panel) return; const m=panel.querySelector(".ca-msgs");
-      const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(String(NX.name||"").split(" ")[0])}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      m.innerHTML=nx+`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
-      m.scrollTop=m.scrollHeight; }
-    function close(){ if(panel){panel.remove();panel=null;} b.setAttribute("aria-expanded","false"); b.focus(); }
-    b.onclick=()=>{ if(panel){close();return;}
-      panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-label","Helper");
-      panel.innerHTML=`<div class="ca-hd"><b>Helper</b><button type="button" class="ca-x" aria-label="Close helper">✕</button></div><div class="ca-msgs" aria-live="polite"></div><form><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form>`;
-      document.body.appendChild(panel); b.setAttribute("aria-expanded","true"); draw();
-      const au=opt.auth&&opt.auth(); if(au&&/^s1\./.test(String(au))&&!NX&&!NXB){ NXB=true; draw(); run("myNext",au).then(r=>{NX=r;}).catch(()=>{}).then(()=>{NXB=false; draw();}); }
-      const ta=panel.querySelector("textarea"); ta.focus();
+    const tok=()=>{ const au=opt.auth&&opt.auth(); return au&&/^s1\./.test(String(au))?au:(au||""); };
+    const first=()=>{ const s0=get(); return cap(String((s0&&s0.name)||(NX&&NX.name)||"").split(" ")[0]); };
+    const pageName=()=>opt.page?opt.page():document.title;
+    function loadMine(force){ const au=tok(); if(!au||MINEB||(MINE&&!force)) return; MINEB=true; run("feedbackMine",au).then(r=>{MINE=r||[];}).catch(()=>{MINE=MINE||[];}).then(()=>{MINEB=false; paint();}); }
+    function mineCount(){ if(!MINE||!MINE.length) return ""; const d=MINE.filter(x=>x.status==="doing").length, n=MINE.filter(x=>x.status==="open").length; return [d?d+" being fixed":"",n?n+" new":""].filter(Boolean).join(" · ")||MINE.length+" done"; }
+    function head(){ if(VIEW==="mine") return `<div class="ca-hd" style="justify-content:flex-start;gap:12px"><button type="button" class="ca-back" data-hv="fb" aria-label="Back">‹</button><div class="ca-ttl" style="flex:1"><small>Helper</small>My reports</div><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>`;
+      return `<div class="ca-hd"><span class="ca-ttl">Helper</span><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>
+        <div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`; }
+    function askHtml(){
+      const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+        <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
+    function fbHtml(){
+      if(FB.sent){ const x=FB.sent;
+        return `<div class="ca-body"><div class="ca-done" role="status"><span class="ca-tick" aria-hidden="true">✓</span><div class="ca-thx">Thanks, ${esc(first()||"there")}. We got it.</div>
+          <div style="font-size:15px;color:var(--muted,#6f5f62);line-height:1.5">Your report <b style="color:var(--ink,#2b1b1e)">#${esc(x.ref)}</b> went to the office. ${x.urgent?"Marked urgent: your supervisor gets a WhatsApp now.":"You'll see replies in My reports."}</div>
+          <div class="ca-sum"><div style="font-weight:600">${esc(fbl(x.type)[1])}${x.urgent?" · Urgent":""}</div><div style="color:var(--muted,#6f5f62);margin-top:2px;white-space:pre-wrap">${esc(x.text||(x.photo?"No description, photo only":"No description"))}</div><div style="color:var(--muted,#6f5f62);font-size:12px;margin-top:6px">From: ${esc(x.page)} · ${esc(hm(x.at))}</div></div>
+          <button type="button" class="ca-lnk" data-hv="mine">See my reports ›</button></div></div>
+          <div class="ca-foot"><button type="button" class="ca-sec56" data-fbreset="1">Report something else</button><button type="button" class="ca-pri56" data-fbclose="1">Back to my work</button></div>`; }
+      const lm=recent(), mc=mineCount();
+      return `<div class="ca-body">
+        <div><div class="ca-eb">What's wrong?</div><div class="ca-types">${FBK.map(([k,l])=>`<button type="button" data-fbt="${k}" aria-pressed="${FB.type===k}">${esc(l)}</button>`).join("")}</div></div>
+        <div><div class="ca-eb">Tell us in one line (any language)</div><textarea class="ca-ft" placeholder="e.g. Freezer 2 door doesn't close / Send button stuck" aria-label="What happened">${esc(FB.text)}</textarea></div>
+        <div class="ca-ph"><div class="ca-thumb">${FB.photo?`<img src="${esc(FB.photo)}" alt="Your photo"><button type="button" data-fbnophoto="1" aria-label="Remove photo">✕</button>`:"photo"}</div><label class="ca-phb">${FB.photo?"Change photo":"Add photo / screenshot"}<input type="file" accept="image/*" class="ca-fp" hidden></label></div>
+        <button type="button" class="ca-urg" data-fburg="1" aria-pressed="${FB.urgent}"><i aria-hidden="true">${FB.urgent?"✓":""}</i><span><b>Urgent</b>: it stops my work right now</span></button>
+        <p class="ca-note">We attach the page you were on (<b>${esc(pageName())}</b>) and your name, so you don't need to explain where.${lm?` We also attach the last message on your screen: “${esc(lm)}”.`:""}</p>
+        ${FB.err?`<p class="ca-err" role="alert">${esc(FB.err)}</p>`:""}
+        ${mc?`<button type="button" class="ca-lnk" data-hv="mine">My reports · ${esc(mc)} ›</button>`:""}</div>
+        <div class="ca-foot"><button type="button" class="ca-go60" data-fbsend="1" ${!FB.type||FB.busy?"disabled":""}>${FB.busy?"Sending…":FB.type?"Send report":"Pick what's wrong first"}</button></div>`; }
+    function mineHtml(){
+      const list=MINE==null?`<p class="ca-note">Loading your reports…</p>`:!MINE.length?`<p class="ca-note">No reports yet. When you report a problem, you'll see here what happens to it.</p>`:
+        MINE.map(x=>`<div class="ca-rc ${x.status==="done"?"done":""}"><div class="ca-rt"><b>${esc(fbl(x.kind)[2])}${x.urgent?" · Urgent":""}</b><span class="ca-pill ${esc(x.status)}">${esc(FBS[x.status]||x.status)}</span></div>
+          ${x.text?`<div class="ca-tx">${esc(x.text)}</div>`:""}${x.reply?`<div class="ca-rp"><b>${esc(cap(String(x.updBy||"Office").split(" ")[0]))}:</b> ${esc(x.reply)}</div>`:""}
+          <div class="ca-mt">${x.ref?"#"+esc(x.ref)+" · ":""}${esc(dayTxt(x.at))}</div></div>`).join("");
+      return `<div class="ca-body">${list}</div><div class="ca-foot"><button type="button" class="ca-pri56" data-hv="fb" data-fbreset="1" style="min-height:60px;font-size:17px">Report a new problem</button></div>`; }
+    function paint(){ if(!panel) return; const keep=panel.querySelector(".ca-ft"), kv=keep?keep.value:null;
+      panel.innerHTML=`<div class="ca-grab" aria-hidden="true"><span></span></div>${head()}${VIEW==="ask"?askHtml():VIEW==="mine"?mineHtml():fbHtml()}`;
+      if(kv!=null&&panel.querySelector(".ca-ft")) panel.querySelector(".ca-ft").value=FB.text;
+      const m=panel.querySelector(".ca-body"); if(VIEW==="ask"&&m) m.scrollTop=m.scrollHeight;
+      wire(); }
+    function wire(){
       panel.querySelector(".ca-x").onclick=close;
-      panel.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
-      ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();panel.querySelector("form").dispatchEvent(new Event("submit",{cancelable:true}));}});
-      panel.querySelector("form").onsubmit=async e=>{e.preventDefault(); const q=ta.value.trim(); if(!q||busy) return;
-        const auth=opt.auth(); if(!auth){H.push({q},{a:"Please sign in first, then ask again."}); ta.value=""; draw(); return;}
-        H.push({q}); ta.value=""; busy=true; draw();
-        try{const r=await run("askHelp",auth,q,opt.page?opt.page():"",H.slice(-7,-1)); H.push({a:r.answer||"Sorry, I don't know. Please ask your supervisor."});}
-        catch(err){H.push({a:(err&&err.message)||"The helper is not available right now."});}
-        busy=false; draw(); };
-    };
+      const ta=panel.querySelector(".ca-askf textarea");
+      if(ta){ ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();panel.querySelector(".ca-askf").dispatchEvent(new Event("submit",{cancelable:true}));}});
+        panel.querySelector(".ca-askf").onsubmit=async e=>{e.preventDefault(); const q=ta.value.trim(); if(!q||busy) return;
+          const auth=opt.auth(); if(!auth){H.push({q},{a:"Please sign in first, then ask again."}); paint(); return;}
+          H.push({q}); busy=true; paint();
+          try{const r=await run("askHelp",auth,q,pageName(),H.slice(-7,-1)); H.push({a:r.answer||"Sorry, I don't know. Please ask your supervisor."});}
+          catch(err){H.push({a:(err&&err.message)||"The helper is not available right now."});}
+          busy=false; paint(); const t2=panel&&panel.querySelector(".ca-askf textarea"); t2&&t2.focus(); }; }
+      const ft=panel.querySelector(".ca-ft"); if(ft) ft.oninput=()=>{FB.text=ft.value;};
+      const fp=panel.querySelector(".ca-fp"); if(fp) fp.onchange=async e=>{ const fl=e.target.files&&e.target.files[0]; if(!fl) return; try{ FB.photo=await shrink(fl); FB.err=""; }catch(x){ FB.err=x.message; } paint(); };
+    }
+    function onClick(e){ const t=e.target.closest("button"); if(!t||!panel||!panel.contains(t)) return; const d=t.dataset;
+      if(d.fbreset){ FB=R0(); }
+      if(d.hv){ setView(d.hv); return; }
+      if(d.fbt){ FB.type=d.fbt; FB.err=""; paint(); return; }
+      if(d.fburg){ FB.urgent=!FB.urgent; paint(); return; }
+      if(d.fbnophoto){ FB.photo=""; paint(); return; }
+      if(d.fbclose){ FB=R0(); close(); return; }
+      if(d.fbreset){ paint(); return; }
+      if(d.fbsend) send(); }
+    async function send(){ const au=tok(); if(!au){ FB.err="Please sign in first."; paint(); return; } if(!FB.type||FB.busy) return;
+      FB.busy=true; FB.err=""; paint();
+      const pg=pageName();
+      try{ const r=await run("feedbackSend",au,{kind:FB.type,text:FB.text.trim(),page:pg,photo:FB.photo,urgent:FB.urgent,url:(location.pathname.split("/").pop()||"index.html")+location.search+location.hash,dev:device(),last:recent()});
+        FB.sent={ref:r.ref||r.id,type:FB.type,text:FB.text.trim(),photo:!!FB.photo,urgent:FB.urgent,page:pg,at:r.at||new Date().toISOString()}; FB.busy=false; MINE=null; loadMine(true); }
+      catch(x){ FB.busy=false; FB.err=(x&&x.message)||"Couldn't send. Please try again."; }
+      paint(); }
+    function setView(v){ VIEW=v==="mine"?"mine":v==="fb"?"fb":"ask"; if(VIEW==="mine") loadMine(true); else if(VIEW==="fb") loadMine(); paint();
+      const f=panel&&panel.querySelector(VIEW==="ask"?".ca-askf textarea":VIEW==="fb"?".ca-types button":".ca-back"); if(f&&VIEW!=="fb") f.focus(); }
+    function close(){ if(panel){panel.remove();panel=null;} if(bd){bd.remove();bd=null;} document.removeEventListener("keydown",esc_); b.setAttribute("aria-expanded","false"); b.focus(); }
+    function esc_(e){ if(e.key==="Escape") close(); }
+    function open(v){
+      if(panel){ setView(v||VIEW); return; }
+      bd=document.createElement("div"); bd.className="ca-bd"; bd.onclick=close; document.body.appendChild(bd);
+      panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-modal","true"); panel.setAttribute("aria-label","Helper");
+      document.body.appendChild(panel); b.setAttribute("aria-expanded","true");
+      panel.addEventListener("click",onClick); document.addEventListener("keydown",esc_);
+      const au=tok(); if(au&&/^s1\./.test(String(au))&&!NX&&!NXB){ NXB=true; run("myNext",au).then(r=>{NX=r;}).catch(()=>{}).then(()=>{NXB=false; if(VIEW==="ask") paint();}); }
+      setView(v||VIEW);
+    }
+    b.onclick=()=>{ if(panel){close();return;} open(); };
+    openHelp=v=>open(v);
   }
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,ROLE,esc,nextHref,nextList,HOME};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect};
 })();
 </script>
 
@@ -352,6 +507,7 @@ function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}
 
 <script>
 const TABS=[["today","To-do"],["opening","Opening"],["closing","Closing"],["plan","Plan"],["lists","Setup"],["history","History"]];
+const SEEN={}; const partOf=(k,p)=>(INFO&&INFO.day&&INFO.day[k]&&INFO.day[k].parts&&INFO.day[k].parts[p])||null;
 let TOK=null, INFO=null, INFO_AT=0, TAB=(location.hash||"#today").slice(1), DATE=null, SENDING=false, RESULT=null, HIST=null, HISTERR="", PLE=null, NEWD=null, PART=null, PHWARN=false, RU={m:"",r:"",l:"1"};
 if(!TABS.some(([k])=>k===TAB)) TAB="today";
 const K={opening:null,closing:null}, P2={};
@@ -631,9 +787,9 @@ function refresh(){ if(SENDING) return; const b=$("#send"), nav=$("#eqnav"); if(
   if(PART==="eq") INFO.conf.equipment.forEach(e=>{ const el=document.getElementById("ew-"+e.id); if(el){ const z=eqState(e,st(TAB).equip[e.id],pre(TAB)+"eq_"+e.id); el.innerHTML=eqPill(e,z.v); } }); }
 function wasteBox(k){ if(k!=="closing") return; const s=st(k), wn=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0)+s.ev.reduce((a,x)=>a+(+x.w||0),0), box=document.getElementById("sb-cl_waste");
   if(wn>0&&!box){ const d0=document.getElementById("sb-cl_display"); if(d0) d0.insertAdjacentHTML("afterend",shotBox("cl_waste","Cakes thrown away","")); } else if(wn>0&&box){ const t0=box.querySelector(".t"); } else if(!wn&&box) box.remove(); }
-async function send(){ const kind=TAB, part=PART; if(SENDING||!part||missingPart(kind,part).length) return; const s=st(kind), p=pre(kind);
+async function send(replace){ const kind=TAB, part=PART; if(SENDING||!part||missingPart(kind,part).length) return; const s=st(kind), p=pre(kind);
   SENDING=true; const b=$("#send"); b.disabled=true; $("#status").textContent="Sending "+partName(kind,part).toLowerCase()+"… keep this page open (up to a minute).";
-  const d={date:DATE,nonce:s.nonce[part]||(s.nonce[part]=nonce()),note:s.notes[part]||""};
+  const d={date:DATE,nonce:s.nonce[part]||(s.nonce[part]=nonce()),note:s.notes[part]||"",seen:SEEN[kind+"|"+part]!==undefined?SEEN[kind+"|"+part]:((partOf(kind,part)||{}).id||"")}; if(replace===true) d.replace=true;
   if(part==="eq") d.equip=INFO.conf.equipment.map(e=>{const x=s.equip[e.id]; return {id:e.id,t:String((x.neg?-1:1)*Math.abs(+String(x.t).replace(",","."))),door:!!x.door,photo:P2[p+"eq_"+e.id]};});
   if(part==="display"){ d.counts=s.order.map(k=>{const [pid,c]=k.split("|"); return {productId:pid,colour:c,qty:+s.rows[k].q||0};}).filter(x=>x.qty>0); d.events=s.ev.filter(x=>x.name.trim()&&+x.q>0).map(x=>({name:x.name,colour:x.colour,qty:+x.q})); d.photo=P2.op_display; }
   if(part==="count"){ d.lines=s.order.map(k=>{const [pid,c]=k.split("|"), r=s.rows[k]; return {productId:pid,colour:c,w:+r.w||0,b:+r.b||0};}); d.events=s.ev.filter(x=>x.name.trim()).map(x=>({name:x.name,colour:x.colour,w:+x.w||0,b:+x.b||0})); d.photos={display:P2.cl_display,waste:P2.cl_waste}; }
@@ -641,8 +797,12 @@ async function send(){ const kind=TAB, part=PART; if(SENDING||!part||missingPart
   if(part==="lists"){ d.today=[1,2,3].map(j=>P2["cl_lt"+j]).filter(Boolean); d.days=[1,2,3].map(i=>[1,2].map(j=>P2["cl_ld"+i+"_"+j]).filter(Boolean)); }
   saveDraft(kind);
   try{ const r=await run("hqSubmitPart",kind,part,d); RESULT={kind,part,r}; clearPart(kind,part); SENDING=false; PART=null; HIST=null; INFO=await run("hqInfo",DATE).catch(()=>INFO); render(); window.scrollTo(0,0); }
-  catch(e){ SENDING=false; b.disabled=false; $("#status").innerHTML=`<span class="err">${esc(e.message)}</span>`; }
+  catch(e){ SENDING=false; b.disabled=false; const al=/^ALREADY\|([^|]*)\|(.*)$/.exec((e&&e.message)||"");
+    if(al){ $("#status").innerHTML=`<span class="err"><b>${esc(al[1])}</b> already sent this part at ${esc(hmOf(al[2]))} while you were doing it. Your answers are still on this phone.</span><span class="row" style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" data-partback="1">See theirs</button><button class="btn sm pri" type="button" data-replace="1">Send mine instead</button></span>`; return; }
+    $("#status").innerHTML=`<span class="err">${esc(e.message)}</span>`; }
 }
+/* Report screens refresh by themselves, so everyone sees which parts are already sent */
+setInterval(()=>{ if(document.visibilityState==="visible"&&INFO&&TOK&&!SENDING&&!PART&&!RESULT&&(TAB==="opening"||TAB==="closing")&&Date.now()-INFO_AT>45000) reload(); },15000);
 function vResult(){ const {kind,part,r}=RESULT, bad=(r.issues||[]).filter(i=>i.sev==="bad"), s0=r.state||INFO.state[kind];
   return `<div class="done-card"><div class="ok">✓</div><h2 style="margin:0;font-family:var(--display);font-size:26px">${esc(partName(kind,part))} sent</h2><p class="hint">Reference <b class="sku">${esc(r.id)}</b></p>
     ${(r.issues||[]).length?`<div class="card" style="text-align:left;${bad.length?"border-color:#a3262a":""}"><b>${bad.length?"Please act now":"Things to check"}</b><ul class="iss">${r.issues.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul>${bad.length?`<p class="hint">Alfred and the kitchen group have been told.</p>`:""}</div>`:`<p>Everything looks fine.</p>`}
@@ -729,8 +889,11 @@ document.addEventListener("click",async e=>{
   if(d.act==="reload"){ boot2(); return; }
   if(d.chase){ b.disabled=true; try{ const r=await run("hqChaseNow",d.chase); toast(r.ok?"Reminder sent to the kitchen group.":"The WhatsApp message could not be sent. Check Setup › Kitchen HQ & WhatsApp."); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.date){ RESULT=null; PART=null; K.opening=K.closing=null; await reload(d.date); return; }
-  if(d.part){ PART=d.part; RESULT=null; if(Date.now()-INFO_AT>60000) await reload(); render(); window.scrollTo(0,0); return; }
-  if(d.partback){ PART=null; render(); window.scrollTo(0,0); return; }
+  if(d.part){ const k0=TAB, was=partOf(k0,d.part); if(Date.now()-INFO_AT>20000) await reload(); const now=partOf(k0,d.part);
+    if(!was&&now){ toast(`${now.by} already sent ${partName(k0,d.part).toLowerCase()} at ${hmOf(now.at)}. No need to do it again.`); render(); return; }
+    PART=d.part; RESULT=null; SEEN[k0+"|"+d.part]=now?now.id:""; render(); window.scrollTo(0,0); return; }
+  if(d.partback){ PART=null; if(Date.now()-INFO_AT>20000) await reload(); render(); window.scrollTo(0,0); return; }
+  if(d.replace){ send(true); return; }
   if(d.eqstep){ const s=st(TAB); s.step=Math.max(0,Math.min(INFO.conf.equipment.length,s.step+(+d.eqstep))); saveDraft(TAB); render(); const c0=document.querySelector(".prog"); window.scrollTo(0,c0?Math.max(0,c0.getBoundingClientRect().top+window.scrollY-70):0); return; }
   if(d.eqgo!=null){ const s=st(TAB); s.step=+d.eqgo; saveDraft(TAB); render(); const c0=document.querySelector(".prog"); window.scrollTo(0,c0?Math.max(0,c0.getBoundingClientRect().top+window.scrollY-70):0); return; }
   if(d.kstep){ const a=d.kstep.split("|"), n=a.pop(), f=a.pop(), k=a.shift(), key=a.join("|"), s=st(k), r=key.indexOf("ev")===0&&key.indexOf("|")<0?s.ev[+key.slice(2)]:s.rows[key]; if(!r) return; const v=Math.max(0,(+r[f]||0)+(+n)); r[f]=v?String(v):""; const inp=document.querySelector(`input[data-kv="${CSS.escape(k+"|"+key+"|"+f)}"]`); if(inp) inp.value=r[f]; saveDraft(k); if(f==="w") wasteBox(k); refresh(); return; }

@@ -25,18 +25,71 @@ window.google={script:{run:mk(null,null)}};})();
 .ca-go{margin-top:16px;width:100%;padding:13px;border:0;border-radius:10px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 16px var(--body,system-ui,sans-serif);cursor:pointer}
 .ca-go:disabled{opacity:.6}
 .ca-err{color:#b3261e;font-size:14px;margin-top:10px;min-height:1.2em}
-.ca-hbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;border:0;border-radius:999px;padding:12px 18px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 15px var(--body,system-ui,sans-serif);box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer}
-.ca-hp{position:fixed;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:61;width:min(400px,calc(100vw - 24px));height:min(72vh,580px,calc(100vh - 180px));display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.28)}
-.ca-hp .ca-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line,#e8dcd6)}
-.ca-hp .ca-hd button{border:0;background:transparent;color:var(--ink,#2b1b1e);font-size:18px;cursor:pointer;min-width:36px;min-height:36px}
-.ca-hp .ca-msgs{overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
-.ca-hp .ca-m{padding:9px 11px;border-radius:12px;font-size:14.5px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere}
+.ca-va{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 8px;min-height:32px;max-width:180px}
+.ca-vabar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;background:#2b1b1e;color:#fff;padding:8px 14px;font:500 13.5px/1.35 var(--body,Jost,system-ui,sans-serif);position:relative;z-index:70}
+.ca-vabar b{color:#e3c466}.ca-vabar .ca-vact{display:flex;gap:8px;align-items:center}
+.ca-vabar button{font:600 13px var(--body,Jost,system-ui,sans-serif);border:0;border-radius:999px;padding:7px 14px;background:#e3c466;color:#2b1b1e;cursor:pointer;min-height:34px}
+.ca-vabar .ca-va{background:#fff;color:#2b1b1e}
+.ca-hbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;border:0;border-radius:999px;padding:0 20px;min-height:52px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 16px var(--body,Jost,system-ui,sans-serif);box-shadow:0 6px 16px rgba(0,0,0,.25);cursor:pointer}
+body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.ca-bd{position:fixed;inset:0;background:rgba(43,27,30,.45);z-index:80}
+.ca-hp{--s-soft:var(--soft,var(--accent-soft,#f3e4e5));--s-ground:var(--ground,#f7f2ec);position:fixed;left:50%;transform:translateX(-50%);bottom:0;z-index:81;width:min(560px,100%);height:min(760px,calc(100vh - 28px));height:min(760px,calc(100dvh - 28px));display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:24px 24px 0 0;box-shadow:0 -10px 40px rgba(43,27,30,.25);font-family:var(--body,Jost,system-ui,sans-serif);overflow:hidden}
+.ca-hp *{box-sizing:border-box}
+.ca-hp button{font-family:inherit;cursor:pointer}
+.ca-hp .ca-grab{display:flex;justify-content:center;padding:8px 0 4px;flex:none}.ca-hp .ca-grab span{width:40px;height:5px;border-radius:3px;background:var(--line,#e8dcd6)}
+.ca-hp .ca-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 18px 10px;flex:none}
+.ca-hp .ca-ttl{font:700 26px/1 var(--display,'Cormorant Garamond',Georgia,serif)}
+.ca-hp .ca-ttl small{display:block;font:500 12px var(--body,Jost,system-ui,sans-serif);color:var(--muted,#6f5f62);margin-bottom:2px}
+.ca-hp .ca-x{width:44px;height:44px;border-radius:50%;border:0;background:var(--s-soft);color:var(--ink,#2b1b1e);font-size:16px;flex:none}
+.ca-hp .ca-back{width:48px;height:48px;border-radius:14px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);font-size:22px;flex:none}
+.ca-hp .ca-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--s-soft);border-radius:14px;padding:4px;margin:0 18px 12px;flex:none}
+.ca-hp .ca-tabs button{min-height:46px;border:0;border-radius:11px;background:transparent;font-weight:600;font-size:15px;color:var(--ink,#2b1b1e);line-height:1.15;padding:4px 8px}
+.ca-hp .ca-tabs button[aria-selected="true"]{background:var(--paper,#fff);box-shadow:0 1px 2px rgba(43,27,30,.08)}
+.ca-hp .ca-body{flex:1;min-height:0;overflow:auto;padding:0 18px 12px;display:flex;flex-direction:column;gap:14px}
+.ca-hp .ca-foot{flex:none;padding:12px 18px calc(18px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line,#e8dcd6);display:flex;flex-direction:column;gap:8px}
+.ca-hp .ca-eb{font:600 11px var(--body,Jost,system-ui,sans-serif);letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#6f5f62);margin:0 0 8px}
+/* ask */
+.ca-hp .ca-msgs{display:flex;flex-direction:column;gap:8px}
+.ca-hp .ca-m{padding:10px 12px;border-radius:14px;font-size:14.5px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere}
 .ca-hp .ca-q{align-self:flex-end;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);max-width:85%}
-.ca-hp .ca-a{align-self:flex-start;background:var(--soft,var(--accent-soft,#f3e4e5));max-width:95%}
-.ca-hp form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line,#e8dcd6)}
-.ca-hp textarea{flex:1;font:inherit;font-size:16px;resize:none;border:1px solid var(--line,#e8dcd6);border-radius:10px;padding:9px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);min-height:44px;max-height:120px}
-.ca-hp form button{border:0;border-radius:10px;padding:0 16px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;cursor:pointer}
-body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bottom,0px))}body:has(.bar:not([hidden])) .ca-hp{bottom:calc(152px + env(safe-area-inset-bottom,0px))}
+.ca-hp .ca-a{align-self:flex-start;background:var(--s-soft);max-width:92%}
+.ca-hp .ca-askf{display:flex;gap:8px;margin:0}
+.ca-hp .ca-askf textarea{flex:1;font:inherit;font-size:16px;resize:none;border:1px solid var(--line,#e8dcd6);border-radius:12px;padding:13px 12px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);min-height:52px;max-height:120px}
+.ca-hp .ca-askf button{min-height:52px;border:0;border-radius:12px;padding:0 18px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;font-size:15px}
+/* report */
+.ca-hp .ca-types{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ca-hp .ca-types button{min-height:52px;border-radius:12px;border:2px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);font-weight:600;font-size:14px;padding:6px 10px;text-align:left;line-height:1.2}
+.ca-hp .ca-types button[aria-pressed="true"]{border-color:var(--accent,#7b1c2b);background:var(--s-soft)}
+.ca-hp .ca-ft{width:100%;min-height:84px;border:1px solid var(--line,#e8dcd6);border-radius:12px;padding:12px;font:15px var(--body,Jost,system-ui,sans-serif);color:var(--ink,#2b1b1e);background:var(--paper,#fff);resize:vertical}
+.ca-hp .ca-ph{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center}
+.ca-hp .ca-thumb{width:72px;height:72px;border-radius:12px;background:repeating-linear-gradient(135deg,var(--line,#efe6e1) 0 6px,var(--s-ground) 6px 12px);display:grid;place-items:center;font:10px ui-monospace,monospace;color:var(--muted,#6f5f62);overflow:hidden;position:relative}
+.ca-hp .ca-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ca-hp .ca-thumb button{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(43,27,30,.7);color:#fff;font-size:12px;line-height:1;padding:0}
+.ca-hp .ca-phb{display:flex;align-items:center;justify-content:center;min-height:52px;border:1px solid var(--line,#e8dcd6);border-radius:12px;background:var(--s-soft);color:var(--accent,#7b1c2b);font-weight:600;font-size:15px;cursor:pointer;text-align:center;padding:4px 10px}
+.ca-hp .ca-urg{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 14px;border-radius:12px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);text-align:left;color:var(--ink,#2b1b1e);font-size:15px;width:100%}
+.ca-hp .ca-urg i{width:28px;height:28px;border-radius:8px;border:2px solid #9a8f91;background:var(--paper,#fff);color:#fff;display:grid;place-items:center;font-size:15px;font-style:normal;flex:none}
+.ca-hp .ca-urg[aria-pressed="true"] i{border-color:#c0392b;background:#c0392b}
+.ca-hp .ca-note{font-size:12.5px;color:var(--muted,#6f5f62);line-height:1.45;margin:0}
+.ca-hp .ca-lnk{align-self:flex-start;border:0;background:none;color:var(--accent,#7b1c2b);font-weight:600;font-size:14px;padding:6px 0;min-height:36px}
+.ca-hp .ca-err{margin:0;min-height:0}
+.ca-hp .ca-go60{min-height:60px;width:100%;border:0;border-radius:14px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:700;font-size:17px}
+.ca-hp .ca-go60:disabled{background:var(--line,#e8dcd6);color:#9a8f91;cursor:default}
+.ca-hp .ca-sec56{min-height:56px;width:100%;border:1px solid var(--line,#e8dcd6);border-radius:14px;background:var(--paper,#fff);color:var(--accent,#7b1c2b);font-weight:600;font-size:15px}
+.ca-hp .ca-pri56{min-height:56px;width:100%;border:0;border-radius:14px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;font-size:16px}
+.ca-hp .ca-done{padding:10px 4px 0;display:flex;flex-direction:column;gap:12px}
+.ca-hp .ca-tick{width:56px;height:56px;border-radius:50%;background:#1e8449;color:#fff;display:grid;place-items:center;font-size:26px}
+.ca-hp .ca-thx{font:700 30px/1.05 var(--display,'Cormorant Garamond',Georgia,serif)}
+.ca-hp .ca-sum{background:var(--s-ground);border-radius:14px;padding:14px;font-size:14px}
+/* my reports */
+.ca-hp .ca-rc{background:var(--paper,#fff);border:1px solid var(--line,#e8dcd6);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.ca-hp .ca-rc.done{opacity:.75}
+.ca-hp .ca-rc .ca-rt{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ca-hp .ca-rc .ca-rt b{font-weight:600;font-size:15px}
+.ca-hp .ca-pill{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.ca-hp .ca-pill.open{background:var(--s-soft);color:var(--accent,#7b1c2b)}.ca-hp .ca-pill.doing{background:#fbecd2;color:#6b4206}.ca-hp .ca-pill.done{background:#dcefe2;color:#1e6b3a}
+.ca-hp .ca-rc .ca-tx{font-size:14px;color:var(--muted,#6f5f62);white-space:pre-wrap}
+.ca-hp .ca-rc .ca-rp{background:var(--s-soft);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.4;white-space:pre-wrap}
+.ca-hp .ca-rc .ca-mt{font-size:12px;color:#9a8f91}
 @media print{.ca-hbtn,.ca-hp,.ca-chip button{display:none!important}}
 </style>
 <script>
@@ -73,41 +126,143 @@ const CA=(function(){
   /* One sign-in page for everything: other pages send you to the home page and it brings you back. */
   function toLogin(msg){ const here=(location.pathname.split("/").pop()||HOME)+location.search+location.hash; location.replace(HOME+"?next="+encodeURIComponent(here)+(msg?"&msg="+encodeURIComponent(msg):"")); }
   function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(HOME),150);}
-  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(ROLE[s.role]||s.role)}</span> <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  /* Owner: "View as" another role, to see each person's screens without signing out */
+  const VA=[["owner","Owner (you)"],["manager","Manager"],["office","Office"],["supervisor","Kitchen supervisor"],["kitchen","Kitchen"],["auditor","Team"]];
+  const canView=()=>{ const c=get(); return !!(c&&(c.as||c.role==="owner")); };
+  const vaSelect=()=>{ const c=get()||{}; return `<select class="ca-va" data-ca-viewas="1" aria-label="See the app as">${VA.map(([v,l])=>`<option value="${v}" ${(c.as||"owner")===v?"selected":""}>${v==="owner"?l:"View as "+l}</option>`).join("")}</select>`; };
+  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(ROLE[s.role]||s.role)}</span>${canView()?" "+vaSelect():""} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  async function switchView(role){ const c=get(); if(!c) return; document.body.style.opacity=".5";
+    try{ const r=await run("viewAs",c.t,role); save({t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember,as:r.as||""}); location.reload(); }
+    catch(e){ document.body.style.opacity=""; alertBar((e&&e.message)||"Couldn't switch."); } }
+  function alertBar(m){ const d=document.createElement("div"); d.className="ca-vabar"; d.setAttribute("role","alert"); d.textContent=m; document.body.prepend(d); setTimeout(()=>d.remove(),5000); }
+  document.addEventListener("change",e=>{ const t=e.target; if(t&&t.matches&&t.matches("[data-ca-viewas]")) switchView(t.value); });
+  document.addEventListener("click",e=>{ const b=e.target&&e.target.closest&&e.target.closest("[data-ca-viewback]"); if(b){ e.preventDefault(); switchView("owner"); } });
+  /* While viewing as another role, a strip at the top of every page says so */
+  function vaStrip(){ const c=get(); if(!c||!c.as||document.getElementById("ca-vastrip")) return; const d=document.createElement("div"); d.id="ca-vastrip"; d.className="ca-vabar";
+    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(ROLE[c.as]||c.as)}</b>. Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d); }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",vaStrip); else setTimeout(vaStrip,0);
   /* Where a "what to do next" item goes: page + tab (#hash) + kitchen team */
   const nextHref=g=>g?(g.page+(g.team?"?team="+encodeURIComponent(g.team):"")+(g.hash?"#"+g.hash:"")):"";
   const nextList=(items,links)=>`<ul class="ca-next">${(items||[]).map(x=>`<li><i class="${esc(x.sev)}"></i><span>${links&&x.go?`<a href="${esc(nextHref(x.go))}">${esc(x.text)}</a>`:esc(x.text)}</span></li>`).join("")}</ul>`;
   document.addEventListener("click",e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-ca-logout]"); if(b){e.preventDefault(); b.disabled=true; logout();}});
+  /* Report a problem: what's wrong (same list as the server). Short names are used in My reports. */
+  const FBK=[["app","App not working","App problem"],["numbers","Wrong numbers","Wrong numbers"],["equipment","Equipment broken","Equipment"],["stock","Stock / ingredients","Stock"],["safety","Food safety","Food safety"],["idea","Idea / other","Idea"]];
+  const fbl=k=>(FBK.find(x=>x[0]===k)||["","Other","Other"]);
+  const FBS={open:"New",doing:"Being fixed",done:"✓ Done"};
+  /* Photo for a report: made smaller (max 1280 px, JPEG) so it sends fast on a phone */
+  const shrink=file=>new Promise((res,rej)=>{ const r=new FileReader(); r.onerror=()=>rej(new Error("Couldn't read the photo.")); r.onload=()=>{ const im=new Image(); im.onerror=()=>rej(new Error("Couldn't read the photo."));
+    im.onload=()=>{ const k=Math.min(1,1280/Math.max(im.width,im.height)), c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); res(c.toDataURL("image/jpeg",.8)); };
+    im.src=r.result; }; r.readAsDataURL(file); });
+  let openHelp=()=>{};
+  /* Sent with every report, so we know where it happened: the page, the link, the phone, and the last message on screen */
+  const LAST={t:"",at:0};
+  const note=t=>{ t=String(t||"").replace(/\s+/g," ").trim(); if(t&&!/^(Saving|Sending|Loading|Signing in|Checking)/i.test(t)){ LAST.t=t.slice(0,200); LAST.at=Date.now(); } };
+  function watchMsgs(){ if(watchMsgs.on||!document.body) return; watchMsgs.on=1;
+    window.addEventListener("error",e=>note("Error: "+(e.message||""))); window.addEventListener("unhandledrejection",e=>note("Error: "+((e.reason&&e.reason.message)||e.reason||"")));
+    try{ new MutationObserver(ms=>{ for(const m of ms){ const n=m.target.nodeType===1?m.target:m.target.parentElement; const el=n&&n.closest&&n.closest("#toast,#status,[role=alert],[role=status],.err"); if(el&&!el.closest(".ca-hp")&&!el.hidden) note(el.textContent); } }).observe(document.body,{childList:true,subtree:true,characterData:true}); }catch(e){} }
+  const device=()=>{ const u=navigator.userAgent||""; return [/iPhone|iPad|iPod/.test(u)?"iPhone/iPad":/Android/.test(u)?"Android":/Mac/.test(u)?"Mac":/Windows/.test(u)?"Windows":"Other",
+    /Edg\//.test(u)?"Edge":/CriOS|Chrome\//.test(u)?"Chrome":/FxiOS|Firefox/.test(u)?"Firefox":/Safari/.test(u)?"Safari":"Browser", (window.innerWidth||0)+"px"].join(" · "); };
+  const recent=()=>LAST.t&&Date.now()-LAST.at<15*60*1000?LAST.t:"";
+  const cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1).toLowerCase():"";
+  const hm=iso=>{ try{ return new Date(iso).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"}); }catch(e){ return ""; } };
+  const dayTxt=iso=>{ try{ const f=d=>d.toLocaleDateString("en-CA",{timeZone:"Asia/Kuala_Lumpur"}), d=new Date(iso), t=new Date(), y=new Date(Date.now()-864e5);
+    return f(d)===f(t)?"today "+hm(iso):f(d)===f(y)?"yesterday "+hm(iso):d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Asia/Kuala_Lumpur"}); }catch(e){ return ""; } };
   function helper(opt){
     if(document.getElementById("ca-hbtn")) return;
-    const b=document.createElement("button"); b.id="ca-hbtn"; b.className="ca-hbtn"; b.type="button"; b.textContent="? Ask"; b.setAttribute("aria-label","Ask the helper a question"); b.setAttribute("aria-expanded","false");
+    watchMsgs();
+    const b=document.createElement("button"); b.id="ca-hbtn"; b.className="ca-hbtn"; b.type="button"; b.textContent="? Ask"; b.setAttribute("aria-label","Ask the helper a question or report a problem"); b.setAttribute("aria-expanded","false");
     document.body.appendChild(b);
-    let panel=null, H=[], busy=false;
+    let panel=null, bd=null, H=[], busy=false, VIEW="ask";
+    const R0=()=>({type:"",text:"",photo:"",urgent:false,busy:false,err:"",sent:null});
+    let FB=R0(), MINE=null, MINEB=false;
     const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
     let NX=null, NXB=false;
-    function draw(){ if(!panel) return; const m=panel.querySelector(".ca-msgs");
-      const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(String(NX.name||"").split(" ")[0])}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      m.innerHTML=nx+`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
-      m.scrollTop=m.scrollHeight; }
-    function close(){ if(panel){panel.remove();panel=null;} b.setAttribute("aria-expanded","false"); b.focus(); }
-    b.onclick=()=>{ if(panel){close();return;}
-      panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-label","Helper");
-      panel.innerHTML=`<div class="ca-hd"><b>Helper</b><button type="button" class="ca-x" aria-label="Close helper">✕</button></div><div class="ca-msgs" aria-live="polite"></div><form><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form>`;
-      document.body.appendChild(panel); b.setAttribute("aria-expanded","true"); draw();
-      const au=opt.auth&&opt.auth(); if(au&&/^s1\./.test(String(au))&&!NX&&!NXB){ NXB=true; draw(); run("myNext",au).then(r=>{NX=r;}).catch(()=>{}).then(()=>{NXB=false; draw();}); }
-      const ta=panel.querySelector("textarea"); ta.focus();
+    const tok=()=>{ const au=opt.auth&&opt.auth(); return au&&/^s1\./.test(String(au))?au:(au||""); };
+    const first=()=>{ const s0=get(); return cap(String((s0&&s0.name)||(NX&&NX.name)||"").split(" ")[0]); };
+    const pageName=()=>opt.page?opt.page():document.title;
+    function loadMine(force){ const au=tok(); if(!au||MINEB||(MINE&&!force)) return; MINEB=true; run("feedbackMine",au).then(r=>{MINE=r||[];}).catch(()=>{MINE=MINE||[];}).then(()=>{MINEB=false; paint();}); }
+    function mineCount(){ if(!MINE||!MINE.length) return ""; const d=MINE.filter(x=>x.status==="doing").length, n=MINE.filter(x=>x.status==="open").length; return [d?d+" being fixed":"",n?n+" new":""].filter(Boolean).join(" · ")||MINE.length+" done"; }
+    function head(){ if(VIEW==="mine") return `<div class="ca-hd" style="justify-content:flex-start;gap:12px"><button type="button" class="ca-back" data-hv="fb" aria-label="Back">‹</button><div class="ca-ttl" style="flex:1"><small>Helper</small>My reports</div><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>`;
+      return `<div class="ca-hd"><span class="ca-ttl">Helper</span><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>
+        <div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`; }
+    function askHtml(){
+      const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+        <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
+    function fbHtml(){
+      if(FB.sent){ const x=FB.sent;
+        return `<div class="ca-body"><div class="ca-done" role="status"><span class="ca-tick" aria-hidden="true">✓</span><div class="ca-thx">Thanks, ${esc(first()||"there")}. We got it.</div>
+          <div style="font-size:15px;color:var(--muted,#6f5f62);line-height:1.5">Your report <b style="color:var(--ink,#2b1b1e)">#${esc(x.ref)}</b> went to the office. ${x.urgent?"Marked urgent: your supervisor gets a WhatsApp now.":"You'll see replies in My reports."}</div>
+          <div class="ca-sum"><div style="font-weight:600">${esc(fbl(x.type)[1])}${x.urgent?" · Urgent":""}</div><div style="color:var(--muted,#6f5f62);margin-top:2px;white-space:pre-wrap">${esc(x.text||(x.photo?"No description, photo only":"No description"))}</div><div style="color:var(--muted,#6f5f62);font-size:12px;margin-top:6px">From: ${esc(x.page)} · ${esc(hm(x.at))}</div></div>
+          <button type="button" class="ca-lnk" data-hv="mine">See my reports ›</button></div></div>
+          <div class="ca-foot"><button type="button" class="ca-sec56" data-fbreset="1">Report something else</button><button type="button" class="ca-pri56" data-fbclose="1">Back to my work</button></div>`; }
+      const lm=recent(), mc=mineCount();
+      return `<div class="ca-body">
+        <div><div class="ca-eb">What's wrong?</div><div class="ca-types">${FBK.map(([k,l])=>`<button type="button" data-fbt="${k}" aria-pressed="${FB.type===k}">${esc(l)}</button>`).join("")}</div></div>
+        <div><div class="ca-eb">Tell us in one line (any language)</div><textarea class="ca-ft" placeholder="e.g. Freezer 2 door doesn't close / Send button stuck" aria-label="What happened">${esc(FB.text)}</textarea></div>
+        <div class="ca-ph"><div class="ca-thumb">${FB.photo?`<img src="${esc(FB.photo)}" alt="Your photo"><button type="button" data-fbnophoto="1" aria-label="Remove photo">✕</button>`:"photo"}</div><label class="ca-phb">${FB.photo?"Change photo":"Add photo / screenshot"}<input type="file" accept="image/*" class="ca-fp" hidden></label></div>
+        <button type="button" class="ca-urg" data-fburg="1" aria-pressed="${FB.urgent}"><i aria-hidden="true">${FB.urgent?"✓":""}</i><span><b>Urgent</b>: it stops my work right now</span></button>
+        <p class="ca-note">We attach the page you were on (<b>${esc(pageName())}</b>) and your name, so you don't need to explain where.${lm?` We also attach the last message on your screen: “${esc(lm)}”.`:""}</p>
+        ${FB.err?`<p class="ca-err" role="alert">${esc(FB.err)}</p>`:""}
+        ${mc?`<button type="button" class="ca-lnk" data-hv="mine">My reports · ${esc(mc)} ›</button>`:""}</div>
+        <div class="ca-foot"><button type="button" class="ca-go60" data-fbsend="1" ${!FB.type||FB.busy?"disabled":""}>${FB.busy?"Sending…":FB.type?"Send report":"Pick what's wrong first"}</button></div>`; }
+    function mineHtml(){
+      const list=MINE==null?`<p class="ca-note">Loading your reports…</p>`:!MINE.length?`<p class="ca-note">No reports yet. When you report a problem, you'll see here what happens to it.</p>`:
+        MINE.map(x=>`<div class="ca-rc ${x.status==="done"?"done":""}"><div class="ca-rt"><b>${esc(fbl(x.kind)[2])}${x.urgent?" · Urgent":""}</b><span class="ca-pill ${esc(x.status)}">${esc(FBS[x.status]||x.status)}</span></div>
+          ${x.text?`<div class="ca-tx">${esc(x.text)}</div>`:""}${x.reply?`<div class="ca-rp"><b>${esc(cap(String(x.updBy||"Office").split(" ")[0]))}:</b> ${esc(x.reply)}</div>`:""}
+          <div class="ca-mt">${x.ref?"#"+esc(x.ref)+" · ":""}${esc(dayTxt(x.at))}</div></div>`).join("");
+      return `<div class="ca-body">${list}</div><div class="ca-foot"><button type="button" class="ca-pri56" data-hv="fb" data-fbreset="1" style="min-height:60px;font-size:17px">Report a new problem</button></div>`; }
+    function paint(){ if(!panel) return; const keep=panel.querySelector(".ca-ft"), kv=keep?keep.value:null;
+      panel.innerHTML=`<div class="ca-grab" aria-hidden="true"><span></span></div>${head()}${VIEW==="ask"?askHtml():VIEW==="mine"?mineHtml():fbHtml()}`;
+      if(kv!=null&&panel.querySelector(".ca-ft")) panel.querySelector(".ca-ft").value=FB.text;
+      const m=panel.querySelector(".ca-body"); if(VIEW==="ask"&&m) m.scrollTop=m.scrollHeight;
+      wire(); }
+    function wire(){
       panel.querySelector(".ca-x").onclick=close;
-      panel.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
-      ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();panel.querySelector("form").dispatchEvent(new Event("submit",{cancelable:true}));}});
-      panel.querySelector("form").onsubmit=async e=>{e.preventDefault(); const q=ta.value.trim(); if(!q||busy) return;
-        const auth=opt.auth(); if(!auth){H.push({q},{a:"Please sign in first, then ask again."}); ta.value=""; draw(); return;}
-        H.push({q}); ta.value=""; busy=true; draw();
-        try{const r=await run("askHelp",auth,q,opt.page?opt.page():"",H.slice(-7,-1)); H.push({a:r.answer||"Sorry, I don't know. Please ask your supervisor."});}
-        catch(err){H.push({a:(err&&err.message)||"The helper is not available right now."});}
-        busy=false; draw(); };
-    };
+      const ta=panel.querySelector(".ca-askf textarea");
+      if(ta){ ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();panel.querySelector(".ca-askf").dispatchEvent(new Event("submit",{cancelable:true}));}});
+        panel.querySelector(".ca-askf").onsubmit=async e=>{e.preventDefault(); const q=ta.value.trim(); if(!q||busy) return;
+          const auth=opt.auth(); if(!auth){H.push({q},{a:"Please sign in first, then ask again."}); paint(); return;}
+          H.push({q}); busy=true; paint();
+          try{const r=await run("askHelp",auth,q,pageName(),H.slice(-7,-1)); H.push({a:r.answer||"Sorry, I don't know. Please ask your supervisor."});}
+          catch(err){H.push({a:(err&&err.message)||"The helper is not available right now."});}
+          busy=false; paint(); const t2=panel&&panel.querySelector(".ca-askf textarea"); t2&&t2.focus(); }; }
+      const ft=panel.querySelector(".ca-ft"); if(ft) ft.oninput=()=>{FB.text=ft.value;};
+      const fp=panel.querySelector(".ca-fp"); if(fp) fp.onchange=async e=>{ const fl=e.target.files&&e.target.files[0]; if(!fl) return; try{ FB.photo=await shrink(fl); FB.err=""; }catch(x){ FB.err=x.message; } paint(); };
+    }
+    function onClick(e){ const t=e.target.closest("button"); if(!t||!panel||!panel.contains(t)) return; const d=t.dataset;
+      if(d.fbreset){ FB=R0(); }
+      if(d.hv){ setView(d.hv); return; }
+      if(d.fbt){ FB.type=d.fbt; FB.err=""; paint(); return; }
+      if(d.fburg){ FB.urgent=!FB.urgent; paint(); return; }
+      if(d.fbnophoto){ FB.photo=""; paint(); return; }
+      if(d.fbclose){ FB=R0(); close(); return; }
+      if(d.fbreset){ paint(); return; }
+      if(d.fbsend) send(); }
+    async function send(){ const au=tok(); if(!au){ FB.err="Please sign in first."; paint(); return; } if(!FB.type||FB.busy) return;
+      FB.busy=true; FB.err=""; paint();
+      const pg=pageName();
+      try{ const r=await run("feedbackSend",au,{kind:FB.type,text:FB.text.trim(),page:pg,photo:FB.photo,urgent:FB.urgent,url:(location.pathname.split("/").pop()||"index.html")+location.search+location.hash,dev:device(),last:recent()});
+        FB.sent={ref:r.ref||r.id,type:FB.type,text:FB.text.trim(),photo:!!FB.photo,urgent:FB.urgent,page:pg,at:r.at||new Date().toISOString()}; FB.busy=false; MINE=null; loadMine(true); }
+      catch(x){ FB.busy=false; FB.err=(x&&x.message)||"Couldn't send. Please try again."; }
+      paint(); }
+    function setView(v){ VIEW=v==="mine"?"mine":v==="fb"?"fb":"ask"; if(VIEW==="mine") loadMine(true); else if(VIEW==="fb") loadMine(); paint();
+      const f=panel&&panel.querySelector(VIEW==="ask"?".ca-askf textarea":VIEW==="fb"?".ca-types button":".ca-back"); if(f&&VIEW!=="fb") f.focus(); }
+    function close(){ if(panel){panel.remove();panel=null;} if(bd){bd.remove();bd=null;} document.removeEventListener("keydown",esc_); b.setAttribute("aria-expanded","false"); b.focus(); }
+    function esc_(e){ if(e.key==="Escape") close(); }
+    function open(v){
+      if(panel){ setView(v||VIEW); return; }
+      bd=document.createElement("div"); bd.className="ca-bd"; bd.onclick=close; document.body.appendChild(bd);
+      panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-modal","true"); panel.setAttribute("aria-label","Helper");
+      document.body.appendChild(panel); b.setAttribute("aria-expanded","true");
+      panel.addEventListener("click",onClick); document.addEventListener("keydown",esc_);
+      const au=tok(); if(au&&/^s1\./.test(String(au))&&!NX&&!NXB){ NXB=true; run("myNext",au).then(r=>{NX=r;}).catch(()=>{}).then(()=>{NXB=false; if(VIEW==="ask") paint();}); }
+      setView(v||VIEW);
+    }
+    b.onclick=()=>{ if(panel){close();return;} open(); };
+    openHelp=v=>open(v);
   }
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,ROLE,esc,nextHref,nextList,HOME};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect};
 })();
 </script>
 
@@ -331,6 +486,48 @@ const prod=id=>S.products[id]||{name:id,sku:id,retail:0,shelfDays:3};
 const CATS=["Petit gâteau","Cheesecake","Whole cake","Whole cheesecake"], CATL={"Petit gâteau":"Petit gâteau","Cheesecake":"Cheesecake (slice)","Whole cake":"Whole cake (entremet)","Whole cheesecake":"Whole cheesecake"};
 const catOf=p=>{p=p||{};const c=p.category||"Petit gâteau";return c==="Whole cake"&&/cheesecake/i.test(p.name||"")?"Whole cheesecake":c;};
 const isWhole=id=>/^Whole/.test(catOf(prod(id)));
+/* Whole cakes per outlet (Setup › Outlets). mode: "turns" = every ticked whole cake takes a turn, in a mixed order;
+   "random" = a fresh random pick (not the same as last time); "best" = the fastest sellers. min–max kinds per delivery, max of each. */
+const WHOLE_MODES=[["turns","Take turns (mixed order)"],["random","Random each time"],["best","Best sellers"]];
+const wholeDef=p=>p&&p.internal?{mode:"best",min:1,max:+(cfg().wholeTypes??2),each:+(cfg().wholeMax??1)}:{mode:"turns",min:1,max:2,each:1};
+function wholeOf(p){const d=wholeDef(p), w={...d,...((p&&p.whole)||{})}, num=(v,dv)=>{v=Math.round(+v); return isFinite(v)?v:dv;};
+  w.max=Math.max(0,Math.min(6,num(w.max,d.max))); w.min=Math.max(0,Math.min(w.max,num(w.min,d.min))); w.each=Math.max(1,Math.min(5,num(w.each,d.each)));
+  if(!WHOLE_MODES.some(m=>m[0]===w.mode)) w.mode=d.mode; return w;}
+const wholeDaysOf=p=>((p&&p.wholeDays)||cfg().wholeDays||[5,6,0]).map(Number);
+const daysTxt=a=>{const o=[1,2,3,4,5,6,0].filter(i=>a.includes(i)); return o.length===7?"every day":o.length?o.map(i=>WD[i]).join(" "):"no days";};
+/* Same numbers every time the page is opened (no reshuffle on refresh): a hash of outlet + date. */
+const seedR=(...a)=>{let h=2166136261; for(const ch of a.join("|")){h^=ch.charCodeAt(0); h=Math.imul(h,16777619)>>>0;} h^=h>>>15; h=Math.imul(h,2246822507)>>>0; h^=h>>>13; h=Math.imul(h,3266489909)>>>0; h^=h>>>16; return (h>>>0)/4294967296;};
+const seedInt=(lo,hi,...a)=>hi<=lo?lo:lo+Math.floor(seedR(...a)*(hi-lo+1));
+function wholeSent(pid,before){const last={}; let ld="";
+  for(const w of Object.values(S.weeks)){ if(w.partnerId!==pid) continue;
+    for(const o of Object.values(w.dos||{})){ if(o.status==="cancelled"||!(o.date<before)) continue;
+      for(const l of o.lines||[]) if(+l.qty>0&&isWhole(l.productId)){ if(!last[l.productId]||last[l.productId]<o.date) last[l.productId]=o.date; if(o.date>ld) ld=o.date; } } }
+  return {last,ld,lastKinds:new Set(Object.keys(last).filter(k=>last[k]===ld))};}
+/* Pick the whole cakes for one outlet's delivery on d1. lines: plan lines of this outlet; taken: whole kinds other outlets get that day. */
+function wholePick(p,lines,d1,taken){
+  const W=wholeOf(p), wl=lines.filter(l=>isWhole(l.productId)); if(!wl.length) return;
+  const days=wholeDaysOf(p);
+  if(!days.includes(dow(d1))){ wl.forEach(l=>{ if(l.suggest) l.notes.push(`whole cakes only go out ${daysTxt(days)}`); l.suggest=0; }); return; }
+  const tk=taken?(taken[d1]||(taken[d1]=new Set())):new Set();
+  if(W.mode==="best"){
+    wl.forEach(l=>{ if(l.suggest>W.each){ l.suggest=W.each; l.notes.push(`whole cakes: max ${W.each} each`); } });
+    const yest=new Set(p.internal?Object.values(weekDoc(p.id,weekStartOf(add(d1,-1))).dos||{}).filter(o=>o.date===add(d1,-1)&&o.status!=="cancelled").flatMap(o=>(o.lines||[]).filter(l=>+l.qty).map(l=>l.productId)):[]);
+    wl.filter(l=>l.suggest>0).sort((a,b)=>(yest.has(a.productId)-yest.has(b.productId))||(b.demand-a.demand)||(b.n-a.n)).slice(W.max).forEach(l=>{l.suggest=0; l.notes.push(`max ${W.max} whole-cake kinds per delivery`);});
+    wl.forEach(l=>{ if(l.suggest>0) tk.add(l.productId); }); return;
+  }
+  const H=wholeSent(p.id,d1), held=wl.filter(l=>l.usable>0), free=wl.filter(l=>!(l.usable>0));
+  const n=seedInt(W.min,W.max,"wn",p.id,d1), want=Math.max(0,n-held.length);
+  held.forEach(l=>{ l.suggest=0; l.notes=[`whole cake: ${l.usable} still sellable, counts as one of the ${n} on display`]; });
+  const rnd=(l,k)=>seedR(k,p.id,d1,l.productId);
+  const order=W.mode==="turns"
+    ? free.slice().sort((a,b)=>(H.last[a.productId]||"").localeCompare(H.last[b.productId]||"")||(tk.has(a.productId)-tk.has(b.productId))||(rnd(a,"wt")-rnd(b,"wt")))
+    : free.slice().sort((a,b)=>(H.lastKinds.has(a.productId)-H.lastKinds.has(b.productId))||(tk.has(a.productId)-tk.has(b.productId))||(rnd(a,"wr")-rnd(b,"wr")));
+  order.forEach((l,i)=>{
+    if(i<want){ l.suggest=seedInt(1,W.each,"wq",p.id,d1,l.productId); tk.add(l.productId);
+      l.notes=[W.mode==="turns"?(H.last[l.productId]?`whole cake: its turn (last sent ${nice(H.last[l.productId])})`:"whole cake: its turn (not sent yet)"):"whole cake: random pick"]; }
+    else { l.suggest=0; l.notes=[W.mode==="turns"?`whole cake: waits for its turn${H.last[l.productId]?` (last sent ${nice(H.last[l.productId])})`:""}`:"whole cake: not picked this time"]; }
+  });
+}
 const batchFor=(colour,iso)=>{const i=cfg().colours.findIndex(c=>c.name===colour); if(i<0) return iso; return add(iso,-((dow(iso)-i+7)%7));};
 const okColours=iso=>{const n=Math.max(0,+(cfg().maxDeliveryAge??1)); const out=[]; for(let i=n;i>=0;i--) out.push(colourOf(add(iso,-i)).name); return out;};
 const doColours=d=>[...new Set((d.lines||[]).filter(l=>+l.qty).map(l=>l.colour||d.colour))];
@@ -470,7 +667,7 @@ function chaseText(p,dates){
 }
 /* ---------- rendering ---------- */
 const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role), KIT=()=>["kitchen","supervisor"].includes(AUTH.role), SUP=()=>["owner","manager","supervisor"].includes(AUTH.role), SUPK=()=>AUTH.role==="supervisor";
-const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Outlet reports"],["log","Change log"],["billing","Weekly billing"],["audits","Spot audits"],["setup","Setup"],["staff","Staff"]];
+const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Outlet reports"],["log","Change log"],["billing","Weekly billing"],["audits","Spot audits"],["feedback","Problem reports"],["setup","Setup"],["staff","Staff"]];
 const NCOL=8;
 let rq=false, MENU=false;
 const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null)) return true; return d.made!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
@@ -480,13 +677,13 @@ function doRender(){
   memo=new Map();
   const a=document.activeElement, aid=a&&a.id, sel=a&&("selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const att=KIT()&&!SUPK()?[]:attention();
-  { const tabs=KIT()?TABS.filter(([k])=>k==="plan"||k==="deliveries"||(SUPK()&&k==="today")):TABS.filter(([k])=>k!=="staff"||MGR()); if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=KIT()&&!SUPK()?0:att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
+  { const tabs=KIT()?TABS.filter(([k])=>k==="plan"||k==="deliveries"||(SUPK()&&k==="today")):TABS.filter(([k])=>(k!=="staff"||MGR())&&(k!=="feedback"||!RO())); if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=KIT()&&!SUPK()?0:att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
     $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}<button role="menuitem" data-go="kitchen.html"><span>Kitchen HQ</span><span aria-hidden="true">↗</span></button><button role="menuitem" data-go="index.html"><span>‹ Home</span><span></span></button><div class="mwho">${CA.chip({name:AUTH.name,role:AUTH.role})}</div></div>`:""}`; }
   $("#who").innerHTML=AUTH.pin?CA.chip({name:AUTH.name,role:AUTH.role}):"";
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
   else if(S.loaded.size<NCOL) html=`<div class="empty">Loading consignment data…</div>`;
-  else html=({today:vToday,plan:vPlan,deliveries:vDeliveries,daily:vDaily,log:vLog,billing:vBilling,audits:vAudits,setup:vSetup,staff:vStaff})[S.tab](att);
+  else html=({today:vToday,plan:vPlan,deliveries:vDeliveries,daily:vDaily,log:vLog,billing:vBilling,audits:vAudits,feedback:vFeedback,setup:vSetup,staff:vStaff})[S.tab](att);
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
@@ -961,11 +1158,17 @@ function vSetup(){
       </div>
       <div class="fgrid"><div class="f"><span>Closed on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-cl-${i}" data-pearr="closed" data-v="${i}" ${((e.hours||{}).closed||[]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
         <div class="f"><span>We deliver on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-dd-${i}" data-pearr="deliveryDays" data-v="${i}" ${(e.deliveryDays||[1,3,5]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
+        <div style="grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-weight:600;margin-bottom:6px">Whole cakes</div>
+        <div class="fgrid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))"><div class="f"><span>Go out on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-wd-${i}" data-pearr="wholeDays" data-v="${i}" ${wholeDaysOf(e).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
+        ${(()=>{const W=wholeOf(e); return `<label class="f">How to choose<select id="pe-wm" data-pew="mode">${WHOLE_MODES.map(([v,l])=>opt(v,l,W.mode)).join("")}</select></label>
+        <label class="f">Kinds per delivery<span class="row" style="flex-wrap:nowrap"><input id="pe-wmin" data-pew="min" inputmode="numeric" value="${esc(W.min)}" aria-label="At least" style="width:4.5em"><span class="muted">to</span><input id="pe-wmax" data-pew="max" inputmode="numeric" value="${esc(W.max)}" aria-label="At most" style="width:4.5em"></span></label>
+        <label class="f">Max of each whole cake<input id="pe-weach" data-pew="each" inputmode="numeric" value="${esc(W.each)}"></label>`;})()}</div>
+        <p class="small muted" style="margin:8px 0 0">Picked from the whole cakes ticked in "Cakes this outlet carries". <b>Take turns</b>: every ticked whole cake gets a turn before any repeats, in a mixed order, and outlets get different ones on the same day where possible. The number of kinds is picked between the two numbers for each delivery. A whole cake still sellable at the outlet counts as one of them.</p></div>
         <details class="help" style="grid-column:1/-1"><summary>Cakes this outlet carries (${(e.carries||[]).length||"not set"}), used by Plan & prep</summary><div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px">${CATS.map(cat=>`<div style="flex-basis:100%;font-weight:600;margin-top:6px">${CATL[cat]}</div>${products().filter(pp=>catOf(pp)===cat).map(pp=>`<label class="chk"><input type="checkbox" data-pecarry="${pp.id}" ${(e.carries||[]).includes(pp.id)?"checked":""}>${esc(pp.name)}</label>`).join("")}`).join("")}</div></details>
         <label class="f">Active<select id="pe-act" data-pe="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label>
       </div><div class="row"><button class="btn pri" data-act="savePartner">Save outlet</button><button class="btn" data-act="cancelPartner">Cancel</button></div>`:""}
       <div class="tw"><table><thead><tr><th>Code</th><th>Outlet</th><th>Closing link</th><th class="r">Chaleur %</th><th>Terms</th><th>Wastage</th><th>Hours</th><th>Delivery days</th><th>WhatsApp</th><th></th></tr></thead><tbody>
-      ${partners(true).map(p=>`<tr><td class="mono">${esc(p.code)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}</td><td class="small">${p.internal?`<span class="muted">Kitchen closing report</span>`:p.formKey?`<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-lcopy="${p.id}">Copy</button><button class="btn sm" data-lqr="${p.id}">QR</button></div>`:(MGR()?`<button class="btn sm" data-lnew="${p.id}">Make link</button>`:`<span class="muted">not set</span>`)}</td><td class="r mono">${esc(p.pct)}%</td><td><span class="pill ${p.termsStatus==="Accepted"?"ok":"warn"}">${esc(p.termsStatus||"Proposed")}</span></td><td class="small">${esc(({credit:"Full credit",half:"50% retail",none:"No credit"})[p.wasteRule||"credit"])}</td><td class="small mono">${esc((p.hours||{}).wkOpen||"10:00")}–${esc((p.hours||{}).wkClose||"22:00")}${((p.hours||{}).closed||[]).length?`<br><span class="muted">closed ${(p.hours.closed).map(i=>WD[i]).join(", ")}</span>`:""}</td><td class="small">${(p.deliveryDays||[1,3,5]).map(i=>WD[i]).join(" ")}</td><td class="mono small">${esc(p.phone||"—")}</td><td class="r"><button class="btn sm" data-pedit="${p.id}">Edit</button></td></tr>`).join("")}
+      ${partners(true).map(p=>`<tr><td class="mono">${esc(p.code)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}</td><td class="small">${p.internal?`<span class="muted">Kitchen closing report</span>`:p.formKey?`<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-lcopy="${p.id}">Copy</button><button class="btn sm" data-lqr="${p.id}">QR</button></div>`:(MGR()?`<button class="btn sm" data-lnew="${p.id}">Make link</button>`:`<span class="muted">not set</span>`)}</td><td class="r mono">${esc(p.pct)}%</td><td><span class="pill ${p.termsStatus==="Accepted"?"ok":"warn"}">${esc(p.termsStatus||"Proposed")}</span></td><td class="small">${esc(({credit:"Full credit",half:"50% retail",none:"No credit"})[p.wasteRule||"credit"])}</td><td class="small mono">${esc((p.hours||{}).wkOpen||"10:00")}–${esc((p.hours||{}).wkClose||"22:00")}${((p.hours||{}).closed||[]).length?`<br><span class="muted">closed ${(p.hours.closed).map(i=>WD[i]).join(", ")}</span>`:""}</td><td class="small">${(p.deliveryDays||[1,3,5]).map(i=>WD[i]).join(" ")}<br><span class="muted">${(()=>{const W=wholeOf(p);return `Whole cakes ${esc(daysTxt(wholeDaysOf(p)))} · ${esc((WHOLE_MODES.find(m=>m[0]===W.mode)||[])[1]||"")} · ${W.min===W.max?W.max:W.min+"–"+W.max} kind${W.max===1?"":"s"}, max ${W.each} each`;})()}</span></td><td class="mono small">${esc(p.phone||"—")}</td><td class="r"><button class="btn sm" data-pedit="${p.id}">Edit</button></td></tr>`).join("")}
       </tbody></table></div></div>${S.ui.qrFor&&S.partners[S.ui.qrFor]&&S.partners[S.ui.qrFor].formKey?qrPanel(S.partners[S.ui.qrFor]):""}`;
   }
   if(sec==="products"){
@@ -1112,7 +1315,7 @@ function forecastFor(pid,prodId,hist){
   return {aw,ae,so,wr,n:h.length,sold,waste,source,per:iso=>(tradesLikeWeekend(iso)?ae:aw)*dayFactor(iso)*boost};
 }
 function nextDeliveries(pid,from){const dd=(partner(pid).deliveryDays||[1,3,5]).map(Number);const r=[];for(let i=0;i<28&&r.length<2;i++){const d=add(from,i);if(dd.includes(dow(d))&&!isClosed(pid,d))r.push(d);}return r;}
-function planOutlet(pid){
+function planOutlet(pid,taken){
   const t=today(), p=partner(pid), hist=salesHistory(pid,28), [d1,d2]=nextDeliveries(pid,add(t,((+cfg().prepLeadDays||0)>0||new Date().getHours()>=+(cfg().planSwitchHour??14))?1:0));
   if(!d1) return {pid,lines:[],note:"No delivery days set for this outlet (Setup › Outlets)."};
   const c=calcWeek(pid,weekStartOf(t)); const ref=[...c.days].reverse().find(d=>d.date<=t&&d.rep)||[...c.days].reverse().find(d=>d.date<t)||c.days[0];
@@ -1135,11 +1338,9 @@ function planOutlet(pid){
     const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
     if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`); if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — +15%`);
     if(d2&&diffDays(d2,d1)>life) notes.push(`gap to next delivery (${diffDays(d2,d1)}d) is longer than shelf life`);
-    if(isWhole(id)){const wd=(p.wholeDays||cfg().wholeDays||[5,6,0]).map(Number), mx=+(cfg().wholeMax??1); if(!wd.includes(dow(d1))){ if(suggest) notes.push(`whole cakes only go out ${wd.length===7?"":"Fri–Sun"}`.trim()); suggest=0; } else if(suggest>mx){ suggest=mx; notes.push(`whole cakes: max ${mx} each`); } }
     lines.push({productId:id,aw:f.aw,ae:f.ae,stockNow,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n});
   }
-  { const wt=+(cfg().wholeTypes??2), yest=new Set(p.internal?Object.values(weekDoc(pid,weekStartOf(add(d1,-1))).dos||{}).filter(o=>o.date===add(d1,-1)&&o.status!=="cancelled").flatMap(o=>(o.lines||[]).filter(l=>+l.qty).map(l=>l.productId)):[]);
-    lines.filter(l=>isWhole(l.productId)&&l.suggest>0).sort((a,b)=>(yest.has(a.productId)-yest.has(b.productId))||(b.demand-a.demand)||(b.n-a.n)).slice(wt).forEach(l=>{l.suggest=0; l.notes.push(`max ${wt} whole-cake kinds per delivery`);}); }
+  wholePick(p,lines,d1,taken);
   const hol=[]; for(let i=0;i<(d2?diffDays(d2,d1):3);i++){for(const e of dayEvents(add(d1,i))) if(!hol.includes(e)) hol.push(e);}
   return {pid,d1,d2,lines,planned,hol,carryNote,prepDate:add(d1,-(+cfg().prepLeadDays||0))};
 }
@@ -1155,7 +1356,9 @@ function splitMade(planned,made){const ids=Object.keys(planned).filter(k=>planne
   if(left>0&&tn>0){ const sh=ids.map(k=>({k,v:left*need[k]/tn})); let used=0; sh.forEach(x=>{const q=Math.min(need[x.k],Math.floor(x.v)); out[x.k]+=q; used+=q;}); let rem=left-used;
     sh.sort((a,b)=>(b.v-Math.floor(b.v))-(a.v-Math.floor(a.v))); for(const x of sh){ if(rem<=0) break; if(out[x.k]<planned[x.k]){out[x.k]++;rem--;} } }
   return out;}
-function planAll(){const plans=partners().map(p=>planOutlet(p.id)), prep={};
+function planAll(){const taken={};
+  for(const w of Object.values(S.weeks)) for(const o of Object.values(w.dos||{})) if(o.status!=="cancelled") for(const l of o.lines||[]) if(+l.qty>0&&isWhole(l.productId)) (taken[o.date]||(taken[o.date]=new Set())).add(l.productId);
+  const plans=partners().map(p=>planOutlet(p.id,taken)), prep={};
   for(const pl of plans){ if(pl.planned&&pl.planned.length){ const q={}; for(const o of pl.planned) for(const l of o.lines||[]) q[l.productId]=(q[l.productId]||0)+(+l.qty||0);
       for(const id of Object.keys(q)) if(!pl.lines.some(l=>l.productId===id)) pl.lines.push({productId:id,aw:null,ae:null,stockNow:0,usable:0,demand:0,buffer:0,suggest:0,notes:["on the delivery order"]});
       for(const l of pl.lines) l.base=q[l.productId]||0; }
@@ -1223,7 +1426,7 @@ function vPlan(){
             <td class="small">${plans.filter(pl=>pl.prepDate===d&&pm[pl.pid]).map(pl=>{const l=pl.lines.find(x=>x.productId===id);return `${esc(partner(pl.pid).code)} ${short?`${pm[pl.pid]}→<b>${l?l.send:0}</b>`:pm[pl.pid]}`}).join(" · ")}</td>
             <td>${short?`<select data-short="${d}|${id}" aria-label="Why short">${opt("","Why short?",(mk.reason||{})[id]||"")}${["Ingredient out","Short staff","Quality reject","Equipment","Other"].map(r=>opt(r,r,(mk.reason||{})[id]||"")).join("")}</select>`:""}</td></tr>`}).join("")}
           <tr><td><b>Total</b></td><td class="r mono"><b>${Object.values(prep[d]).reduce((a,b)=>a+b,0)}</b></td><td class="r mono"><b>${madeTot}</b></td><td></td><td></td></tr></tbody></table></div></div>`}).join(""):`<div class="empty">Nothing to prep — no suggestions yet.</div>`}
-        <p class="small muted" style="margin:0">If the kitchen makes fewer than planned, type the real number in <b>Made</b>: every outlet first gets at least one of each flavour it carries, and the rest goes to the outlet that sells it faster. Whole cakes only go out Fri–Sun: at most 2 kinds, 1 of each. Mark every prepared/thawed cake with the dot of the prep day. Lead time: ${+cfg().prepLeadDays||0} day(s) before delivery (change in Setup › Go-live & rules). ${(+cfg().prepLeadDays||0)>0?"":`Until ${+(cfg().planSwitchHour??14)}:00 this page shows today's delivery; after that, the next one.`}</p>
+        <p class="small muted" style="margin:0">If the kitchen makes fewer than planned, type the real number in <b>Made</b>: every outlet first gets at least one of each flavour it carries, and the rest goes to the outlet that sells it faster. Whole cakes follow each outlet's whole-cake setting in Setup › Outlets (usually Fri–Sun, 1–2 kinds, 1 of each, every ticked whole cake taking its turn). Mark every prepared/thawed cake with the dot of the prep day. Lead time: ${+cfg().prepLeadDays||0} day(s) before delivery (change in Setup › Go-live & rules). ${(+cfg().prepLeadDays||0)>0?"":`Until ${+(cfg().planSwitchHour??14)}:00 this page shows today's delivery; after that, the next one.`}</p>
       </div>
       <div class="panel"><div class="spread"><h2>Holidays & events</h2><span class="small muted">next 75 days</span></div>
         ${up.length?`<div class="items">${up.map(e=>`<div class="item"><span class="sev ${e.type==="public"?"warn":e.type==="event"?"bad":"info"}"></span><div><b>${esc(e.name)}</b> ${regionPill(e.region)}<div class="small muted">${nice(e.date)}${e.end&&e.end!==e.date?` – ${nice(e.end)}`:""} · ${esc(e.type)} · demand ${effUp(e)>=0?"+":""}${effUp(e)}%${e.source?` · ${esc(e.source)}`:""}</div></div>${RO()?"":`<button class="btn sm" data-evdel="${esc(e.id)}" aria-label="Remove">✕</button>`}</div>`).join("")}</div>`:`<div class="empty">No holidays in the next 75 days.</div>`}
@@ -1316,7 +1519,8 @@ document.addEventListener("input",e=>{
   if(d.pe){S.ui.pEdit[d.pe]=t.value;return;}
   if(d.peh){const e=S.ui.pEdit;e.hours={...(e.hours||{}),[d.peh]:t.value};return;}
   if(d.pecarry){const e=S.ui.pEdit; let arr=(e.carries||[]).filter(x=>x!==d.pecarry); if(t.checked) arr.push(d.pecarry); e.carries=arr; return;}
-  if(d.pearr){const e=S.ui.pEdit,k=d.pearr,v=+d.v;let arr=k==="closed"?((e.hours||{}).closed||[]):(e.deliveryDays||[1,3,5]);arr=arr.map(Number).filter(x=>x!==v);if(t.checked)arr.push(v);arr.sort();if(k==="closed")e.hours={...(e.hours||{}),closed:arr};else e.deliveryDays=arr;return;}
+  if(d.pearr){const e=S.ui.pEdit,k=d.pearr,v=+d.v;let arr=k==="closed"?((e.hours||{}).closed||[]):k==="wholeDays"?wholeDaysOf(e):(e.deliveryDays||[1,3,5]);arr=arr.map(Number).filter(x=>x!==v);if(t.checked)arr.push(v);arr.sort();if(k==="closed")e.hours={...(e.hours||{}),closed:arr};else if(k==="wholeDays")e.wholeDays=arr;else e.deliveryDays=arr;return;}
+  if(d.pew){const e=S.ui.pEdit; e.whole={...wholeOf(e),...(e.whole||{}),[d.pew]:t.value.trim()}; return;}
   if(d.ev){S.ui.ev=S.ui.ev||{};S.ui.ev[d.ev]=t.value;return;}
   if(d.pr){S.ui.prEdit[d.pr]=t.value;return;}
   if(d.pn){S.ui.priceNew=S.ui.priceNew||{}; S.ui.priceNew[d.pn]=t.value;
@@ -1366,7 +1570,7 @@ document.addEventListener("click",async e=>{
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
   if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null))&&!(KIT()&&(d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
-  if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;try{history.replaceState(null,"","#"+d.tab);}catch(_){ } render();window.scrollTo(0,0);return;}
+  if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;if(d.tab==="feedback")S.fb=null;try{history.replaceState(null,"","#"+d.tab);}catch(_){ } render();window.scrollTo(0,0);return;}
   if(d.stnew){S.ui.stEdit={row:0,name:"",phone:"",code:"",role:"kitchen",notes:""};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
   if(d.stedit){const x=(S.team||[]).find(r=>String(r.row)===d.stedit); if(x){S.ui.stEdit={...x,phone:x.phone&&/^60\d{8,10}$/.test(x.phone)?"0"+x.phone.slice(2):(x.phone||"")};render();window.scrollTo(0,0);} return;}
@@ -1451,7 +1655,7 @@ async function act(a,b){
   case "saveDO":{const e=S.ui.doEdit; const lines=Object.entries(e.lines).filter(([k,v])=>Math.round(+v.qty)>0).map(([k,v])=>({productId:k,qty:Math.round(+v.qty)}));
     if(!e.partnerId||!e.date){toast("Choose outlet and date");return;} if(!lines.length){toast("Enter at least one quantity");return;}
     {const age=diffDays(e.date,e.batchDate||e.date), mxA=+(cfg().maxDeliveryAge??1); if(age<0||age>mxA){toast(`Cakes made on ${nice(e.batchDate)} can't go out on ${nice(e.date)}. Only cakes made on the delivery day or the day before can be sent.`);return;}}
-    {const wl=lines.filter(l=>isWhole(l.productId)), wm=[], wt=+(cfg().wholeTypes??2), wx=+(cfg().wholeMax??1); if(wl.length){ if(!(partner(e.partnerId).wholeDays||cfg().wholeDays||[5,6,0]).map(Number).includes(dow(e.date))) wm.push("whole cakes only go out Fri–Sun"); if(wl.length>wt) wm.push(`max ${wt} whole-cake kinds`); if(wl.some(l=>l.qty>wx)) wm.push(`max ${wx} of each whole cake`);}
+    {const wl=lines.filter(l=>isWhole(l.productId)), wm=[], p0=partner(e.partnerId), W0=wholeOf(p0), wt=W0.max, wx=W0.each; if(wl.length){ const wd0=wholeDaysOf(p0); if(!wd0.includes(dow(e.date))) wm.push(`whole cakes only go out ${daysTxt(wd0)} for this outlet`); if(wl.length>wt) wm.push(`max ${wt} whole-cake kinds`); if(wl.some(l=>l.qty>wx)) wm.push(`max ${wx} of each whole cake`);}
       if(wm.length&&!e.wholeOk){e.wholeOk=true; toast(`Whole-cake rule: ${wm.join(", ")}. Tap the button again to save anyway.`); return;}}
     const ws=weekStartOf(e.date);
     const w=clone(weekDoc(e.partnerId,ws));
@@ -1557,6 +1761,7 @@ async function act(a,b){
   case "savePartner":{const e=S.ui.pEdit; e.parDay=+e.parDay||3; e.deliveryDays=(e.deliveryDays||[1,3,5]).map(Number); e.code=(e.code||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.code||!e.name){toast("Code and name are required");return;}
     if(partners(true).some(p=>p.code===e.code&&p.id!==e.id)){toast("That code is already used");return;}
     if(!e.formKey) e.formKey=newFormKey(e.code);
+    e.whole=wholeOf(e); e.wholeDays=wholeDaysOf(e);
     const id=e.id||e.code.toLowerCase(); await put(`partners/${id}`,{...e,id,pct:+e.pct||0,terms:+e.terms||14,active:String(e.active)!=="false"}); S.ui.pEdit=null; toast("Outlet saved"); return;}
   case "newProduct": S.ui.prEdit={id:"",sku:"",name:"",retail:"",shelfDays:3,active:true}; render(); return;
   case "cancelProduct": S.ui.prEdit=null; render(); return;
@@ -1625,6 +1830,34 @@ function vStaff(){
     ${form}<div class="panel"><div class="spread"><h2>Team</h2>${ed?"":`<button class="btn pri sm" data-stnew="1">+ Add staff</button>`}</div>
     <div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>PIN</th><th>Access</th><th>Status</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="small">No staff yet.</td></tr>`}</tbody></table></div></div>`;
 }
+/* ---------- Feedback: problems and ideas the team sends from "? Ask" › Report a problem ---------- */
+const FBS_L={open:"New",doing:"Being fixed",done:"Done"}, FBS_C={open:"warn",doing:"info",done:"ok"};
+function vFeedback(){
+  if(RO()) return `<div class="empty">Only the office and managers can see feedback.</div>`;
+  if(!S.fb){ if(!S.fbLoading){S.fbLoading=true; GS("feedbackList").then(r=>{S.fb=r;S.fbLoading=false;render();}).catch(e=>{S.fbLoading=false;S.fb={kinds:{},items:[],err:e.message};render();});} return `<div class="empty">Loading feedback…</div>`; }
+  const F=S.ui.fbf||"todo", K=S.fb.kinds||{}, all=S.fb.items||[], D=S.ui.fbd||(S.ui.fbd={});
+  const list=all.filter(x=>F==="all"||(F==="done"?x.status==="done":x.status!=="done"));
+  const n=k=>all.filter(x=>k==="all"||(k==="done"?x.status==="done":x.status!=="done")).length;
+  const when=iso=>{try{const d=new Date(iso);return d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"});}catch(e){return iso;}};
+  return `<div class="head"><div><h1>Problem reports</h1><p class="lede">What the team reported with <b>? Ask › Report a problem</b> on any page. Urgent ones also go by WhatsApp to the kitchen supervisors and your alert numbers. Set the status and write a reply: they see it in <b>? Ask › My reports</b> and on their home page.</p></div>
+      <div class="row"><button class="btn" data-fbrefresh="1">Refresh</button></div></div>
+    ${S.fb.err?`<p class="neg">${esc(S.fb.err)}</p>`:""}
+    <div class="sub">${[["todo","To do"],["done","Done"],["all","All"]].map(([k,l])=>`<button aria-pressed="${F===k}" data-fbf="${k}">${l} (${n(k)})</button>`).join("")}</div>
+    ${list.length?list.map(x=>{const d=D[x.id]||{}; return `<div class="panel" ${x.urgent&&x.status!=="done"?'style="box-shadow:0 0 0 2px #c0392b inset"':""}><div class="spread"><div>${x.ref?`<span class="mono small">#${esc(x.ref)}</span> `:""}<b>${esc(x.by)}</b> <span class="small muted">${esc(({owner:"Owner",manager:"Manager",office:"Office",supervisor:"Kitchen supervisor",kitchen:"Kitchen",auditor:"Team"})[x.role]||x.role||"")} · ${esc(when(x.at))}${x.page?` · ${esc(x.page)}`:""}</span></div>
+        <div class="row">${x.urgent?`<span class="pill bad">Urgent</span>`:""}<span class="pill mute">${esc(K[x.kind]||x.kind)}</span><span class="pill ${FBS_C[x.status]||"mute"}">${esc(FBS_L[x.status]||x.status)}</span></div></div>
+      <p style="margin:6px 0;white-space:pre-wrap">${esc(x.text||(x.photo?"(photo only)":"(no description)"))}</p>${x.last||x.url||x.dev?`<p class="small muted" style="margin:0 0 6px">${x.last?`Last message on their screen: “${esc(x.last)}”<br>`:""}${x.url?`Page link: <a href="${esc(x.url)}">${esc(x.url)}</a>`:""}${x.dev?` · ${esc(x.dev)}`:""}</p>`:""}${x.photo?`<p class="small" style="margin:0 0 6px"><a href="${esc(x.photo)}" target="_blank" rel="noopener">Open the photo</a></p>`:""}
+      ${x.reply&&!d.edit?`<p class="small" style="margin:0 0 6px;padding-left:8px;border-left:3px solid var(--accent)"><b>Reply${x.updBy?` from ${esc(x.updBy)}`:""}:</b> ${esc(x.reply)}</p>`:""}
+      <div class="fgrid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"><label class="f">Status<select id="fb-s-${esc(x.id)}" data-fbs="${esc(x.id)}">${["open","doing","done"].map(v=>opt(v,FBS_L[v],d.status??x.status)).join("")}</select></label>
+        <label class="f">Reply to ${esc(String(x.by).split(" ")[0])} (optional)<textarea id="fb-r-${esc(x.id)}" data-fbr="${esc(x.id)}" rows="2" placeholder="e.g. Fixed, please try again. Or: thanks, we'll try it next week.">${esc(d.reply??x.reply??"")}</textarea></label></div>
+      <div class="row"><button class="btn pri sm" data-fbsave="${esc(x.id)}">Save</button>${x.updAt?`<span class="small muted">Last changed by ${esc(x.updBy)} · ${esc(when(x.updAt))}</span>`:""}</div></div>`;}).join(""):`<div class="panel"><div class="empty">${F==="done"?"Nothing marked done yet.":"No open feedback. When the team reports a problem it shows here."}</div></div>`}`;
+}
+document.addEventListener("input",e=>{const t=e.target, d=t&&t.dataset; if(!d) return; if(d.fbs){(S.ui.fbd||(S.ui.fbd={}))[d.fbs]={...((S.ui.fbd||{})[d.fbs]||{}),status:t.value};} if(d.fbr){(S.ui.fbd||(S.ui.fbd={}))[d.fbr]={...((S.ui.fbd||{})[d.fbr]||{}),reply:t.value};}});
+document.addEventListener("click",async e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-fbf],[data-fbsave],[data-fbrefresh]"); if(!b) return; const d=b.dataset;
+  if(d.fbf){S.ui.fbf=d.fbf; render(); return;}
+  if(d.fbrefresh){S.fb=null; render(); return;}
+  if(d.fbsave){ const id=d.fbsave, x=((S.fb||{}).items||[]).find(y=>y.id===id)||{}, ch=(S.ui.fbd||{})[id]||{}; b.disabled=true;
+    try{ S.fb=await GS("feedbackUpdate",id,{status:ch.status??x.status,reply:ch.reply??x.reply??""}); delete S.ui.fbd[id]; toast("Saved. "+String(x.by||"").split(" ")[0]+" will see it."); render(); }
+    catch(err){ toast(err.message); b.disabled=false; } }});
 async function stSave(rec){ try{ S.team=await GS("teamSave",rec); S.ui.stEdit=null; toast("Staff saved"); render(); }catch(e){ toast(e.message); } }
 document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.st; if(k&&S.ui.stEdit) S.ui.stEdit[k]=e.target.value;});
 async function reload(){try{DBX.cache=await GS("dbLoadAll");fire();}catch(e){toast("Couldn't refresh — "+e.message);}}
@@ -1652,7 +1885,7 @@ async function start(){
   setInterval(()=>{ if(!AUTH.pin) return; const a=document.activeElement; if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; reload();},90000);
   render();
 }
-window.addEventListener("hashchange",()=>{ const h=(location.hash||"").slice(1); if(STARTED&&TABS.some(([k])=>k===h)&&S.tab!==h){ S.tab=h; MENU=false; S.ui.confirm=null; if(h==="staff") S.team=null; render(); window.scrollTo(0,0); } });
+window.addEventListener("hashchange",()=>{ const h=(location.hash||"").slice(1); if(STARTED&&TABS.some(([k])=>k===h)&&S.tab!==h){ S.tab=h; MENU=false; S.ui.confirm=null; if(h==="staff") S.team=null; if(h==="feedback") S.fb=null; render(); window.scrollTo(0,0); } });
 (function boot(){
   CA.helper({auth:()=>AUTH.pin,page:()=>"Office desk › "+((TABS.find(([k])=>k===S.tab)||["",""])[1])});
   const s=CA.get(); if(!s) return showLogin();
