@@ -101,6 +101,16 @@ const CA=(function(){
   function clear(){try{localStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem("chaleur.pin")}catch(e){}}
   function get(){const s=rd(sessionStorage)||rd(localStorage); if(s&&(!s.t||(s.exp&&Date.now()>s.exp))){clear();return null;} return s;}
   function save(s){clear(); try{(s.remember?localStorage:sessionStorage).setItem(K,JSON.stringify(s));}catch(e){}}
+  /* v20: access ticks. Old saved sign-ins (before v20) only know their role: use that role's usual ticks until the page refreshes them. */
+  const LEG={owner:"kitchen kapprove todo qc deliv doedit chase audit view money reports setup bills problems staff admin",manager:"kitchen kapprove todo qc deliv doedit chase audit view money reports setup bills problems staff admin",
+    office:"kitchen todo deliv doedit chase audit view money reports setup problems",supervisor:"kitchen kapprove todo qc deliv doedit chase",kitchen:"kitchen qc deliv",auditor:"kitchen audit view money"};
+  const LEGA={owner:"office",manager:"office",office:"office",supervisor:"kitchen",kitchen:"kitchen",auditor:"outlets"};
+  const permsOf=s=>s?(Array.isArray(s.perms)?s.perms:String(LEG[s.role]||LEG.auditor).split(" ")):[];
+  const labelOf=s=>s?(s.label||ROLE[s.role]||s.role||""):"";
+  const areaOf=s=>s?(s.area||LEGA[s.role]||"outlets"):"";
+  const can=p=>permsOf(get()).includes(p);
+  /* keep the saved sign-in in step with the server (access can change while someone is signed in) */
+  function update(u){ const c=get(); if(!c||!u) return c; const n=Object.assign({},c,{name:u.name||c.name,role:u.role||c.role,perms:u.perms||c.perms,label:u.label||c.label,area:u.area||c.area,as:u.as!=null?u.as:c.as}); save(n); return n; }
   const run=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(e instanceof Error?e:new Error((e&&e.message)||String(e))))[fn](...a));
   const isAuthErr=e=>/sign in again|expired/i.test((e&&e.message)||"");
   function loginForm(el,opt,done){
@@ -115,7 +125,7 @@ const CA=(function(){
     const go=async()=>{const id=q("#ca-id").value.trim(), pin=q("#ca-pin").value.trim(), rem=q("#ca-rem").checked;
       if(!id||!pin){err.textContent="Enter your phone number and PIN.";return;}
       btn.disabled=true; err.textContent="Signing in…";
-      try{const r=await run("login",id,pin,rem); const s={t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember}; save(s);
+      try{const r=await run("login",id,pin,rem); const s={t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember,perms:r.perms,label:r.label,area:r.area}; save(s);
         try{ if(rem) localStorage.setItem("chaleur.lastid",id); else localStorage.removeItem("chaleur.lastid"); }catch(e){}
         el.innerHTML=""; done(s);}
       catch(e){btn.disabled=false; err.textContent=(e&&e.message)||"Couldn't sign in."; q("#ca-pin").value=""; q("#ca-pin").focus();}};
@@ -126,20 +136,23 @@ const CA=(function(){
   /* One sign-in page for everything: other pages send you to the home page and it brings you back. */
   function toLogin(msg){ const here=(location.pathname.split("/").pop()||HOME)+location.search+location.hash; location.replace(HOME+"?next="+encodeURIComponent(here)+(msg?"&msg="+encodeURIComponent(msg):"")); }
   function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(HOME),150);}
-  /* Owner: "View as" another role, to see each person's screens without signing out */
-  const VA=[["owner","Owner (you)"],["manager","Manager"],["office","Office"],["supervisor","Kitchen supervisor"],["kitchen","Kitchen"],["auditor","Team"]];
+  /* Owner: "View as" any team member, to see exactly what they see without signing out */
+  let VAL=null, VALP=null;
   const canView=()=>{ const c=get(); return !!(c&&(c.as||c.role==="owner")); };
-  const vaSelect=()=>{ const c=get()||{}; return `<select class="ca-va" data-ca-viewas="1" aria-label="See the app as">${VA.map(([v,l])=>`<option value="${v}" ${(c.as||"owner")===v?"selected":""}>${v==="owner"?l:"View as "+l}</option>`).join("")}</select>`; };
-  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(ROLE[s.role]||s.role)}</span>${canView()?" "+vaSelect():""} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
-  async function switchView(role){ const c=get(); if(!c) return; document.body.style.opacity=".5";
-    try{ const r=await run("viewAs",c.t,role); save({t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember,as:r.as||""}); location.reload(); }
+  function loadVA(){ const c=get(); if(!c||VALP) return VALP; VALP=run("viewList",c.t).then(r=>{ VAL=r||[]; document.querySelectorAll("select[data-ca-viewas]").forEach(el=>{ el.innerHTML=vaOpts(); }); return VAL; }).catch(()=>{ VALP=null; }); return VALP; }
+  const vaOpts=()=>{ const c=get()||{}; const cur=c.as||""; const list=VAL||[];
+    return `<option value="owner" ${!cur?"selected":""}>${cur?"Back to Owner":"View as…"}</option>`+(VAL?"":`<option disabled>Loading the team…</option>`)+list.map(x=>`<option value="${esc(x.name)}" ${cur&&cur.toUpperCase()===String(x.name).toUpperCase()?"selected":""}>${esc(x.name)} · ${esc(x.label)}</option>`).join(""); };
+  const vaSelect=()=>{ if(canView()) setTimeout(loadVA,0); return `<select class="ca-va" data-ca-viewas="1" aria-label="See the app as a team member">${vaOpts()}</select>`; };
+  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(labelOf(s))}</span>${canView()?" "+vaSelect():""} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  async function switchView(who){ const c=get(); if(!c) return; document.body.style.opacity=".5";
+    try{ const r=await run("viewAs",c.t,who); save({t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember,as:r.as||"",perms:r.perms,label:r.label,area:r.area}); location.reload(); }
     catch(e){ document.body.style.opacity=""; alertBar((e&&e.message)||"Couldn't switch."); } }
   function alertBar(m){ const d=document.createElement("div"); d.className="ca-vabar"; d.setAttribute("role","alert"); d.textContent=m; document.body.prepend(d); setTimeout(()=>d.remove(),5000); }
   document.addEventListener("change",e=>{ const t=e.target; if(t&&t.matches&&t.matches("[data-ca-viewas]")) switchView(t.value); });
   document.addEventListener("click",e=>{ const b=e.target&&e.target.closest&&e.target.closest("[data-ca-viewback]"); if(b){ e.preventDefault(); switchView("owner"); } });
   /* While viewing as another role, a strip at the top of every page says so */
   function vaStrip(){ const c=get(); if(!c||!c.as||document.getElementById("ca-vastrip")) return; const d=document.createElement("div"); d.id="ca-vastrip"; d.className="ca-vabar";
-    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(ROLE[c.as]||c.as)}</b>. Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d); }
+    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(c.as)}</b> (${esc(labelOf(c))}). Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",vaStrip); else setTimeout(vaStrip,0);
   /* Where a "what to do next" item goes: page + tab (#hash) + kitchen team */
   const nextHref=g=>g?(g.page+(g.team?"?team="+encodeURIComponent(g.team):"")+(g.hash?"#"+g.hash:"")):"";
@@ -262,7 +275,7 @@ const CA=(function(){
     b.onclick=()=>{ if(panel){close();return;} open(); };
     openHelp=v=>open(v);
   }
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update};
 })();
 </script>
 

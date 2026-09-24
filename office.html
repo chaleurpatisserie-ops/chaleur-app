@@ -101,6 +101,16 @@ const CA=(function(){
   function clear(){try{localStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem("chaleur.pin")}catch(e){}}
   function get(){const s=rd(sessionStorage)||rd(localStorage); if(s&&(!s.t||(s.exp&&Date.now()>s.exp))){clear();return null;} return s;}
   function save(s){clear(); try{(s.remember?localStorage:sessionStorage).setItem(K,JSON.stringify(s));}catch(e){}}
+  /* v20: access ticks. Old saved sign-ins (before v20) only know their role: use that role's usual ticks until the page refreshes them. */
+  const LEG={owner:"kitchen kapprove todo qc deliv doedit chase audit view money reports setup bills problems staff admin",manager:"kitchen kapprove todo qc deliv doedit chase audit view money reports setup bills problems staff admin",
+    office:"kitchen todo deliv doedit chase audit view money reports setup problems",supervisor:"kitchen kapprove todo qc deliv doedit chase",kitchen:"kitchen qc deliv",auditor:"kitchen audit view money"};
+  const LEGA={owner:"office",manager:"office",office:"office",supervisor:"kitchen",kitchen:"kitchen",auditor:"outlets"};
+  const permsOf=s=>s?(Array.isArray(s.perms)?s.perms:String(LEG[s.role]||LEG.auditor).split(" ")):[];
+  const labelOf=s=>s?(s.label||ROLE[s.role]||s.role||""):"";
+  const areaOf=s=>s?(s.area||LEGA[s.role]||"outlets"):"";
+  const can=p=>permsOf(get()).includes(p);
+  /* keep the saved sign-in in step with the server (access can change while someone is signed in) */
+  function update(u){ const c=get(); if(!c||!u) return c; const n=Object.assign({},c,{name:u.name||c.name,role:u.role||c.role,perms:u.perms||c.perms,label:u.label||c.label,area:u.area||c.area,as:u.as!=null?u.as:c.as}); save(n); return n; }
   const run=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(e instanceof Error?e:new Error((e&&e.message)||String(e))))[fn](...a));
   const isAuthErr=e=>/sign in again|expired/i.test((e&&e.message)||"");
   function loginForm(el,opt,done){
@@ -115,7 +125,7 @@ const CA=(function(){
     const go=async()=>{const id=q("#ca-id").value.trim(), pin=q("#ca-pin").value.trim(), rem=q("#ca-rem").checked;
       if(!id||!pin){err.textContent="Enter your phone number and PIN.";return;}
       btn.disabled=true; err.textContent="Signing in…";
-      try{const r=await run("login",id,pin,rem); const s={t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember}; save(s);
+      try{const r=await run("login",id,pin,rem); const s={t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember,perms:r.perms,label:r.label,area:r.area}; save(s);
         try{ if(rem) localStorage.setItem("chaleur.lastid",id); else localStorage.removeItem("chaleur.lastid"); }catch(e){}
         el.innerHTML=""; done(s);}
       catch(e){btn.disabled=false; err.textContent=(e&&e.message)||"Couldn't sign in."; q("#ca-pin").value=""; q("#ca-pin").focus();}};
@@ -126,20 +136,23 @@ const CA=(function(){
   /* One sign-in page for everything: other pages send you to the home page and it brings you back. */
   function toLogin(msg){ const here=(location.pathname.split("/").pop()||HOME)+location.search+location.hash; location.replace(HOME+"?next="+encodeURIComponent(here)+(msg?"&msg="+encodeURIComponent(msg):"")); }
   function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(HOME),150);}
-  /* Owner: "View as" another role, to see each person's screens without signing out */
-  const VA=[["owner","Owner (you)"],["manager","Manager"],["office","Office"],["supervisor","Kitchen supervisor"],["kitchen","Kitchen"],["auditor","Team"]];
+  /* Owner: "View as" any team member, to see exactly what they see without signing out */
+  let VAL=null, VALP=null;
   const canView=()=>{ const c=get(); return !!(c&&(c.as||c.role==="owner")); };
-  const vaSelect=()=>{ const c=get()||{}; return `<select class="ca-va" data-ca-viewas="1" aria-label="See the app as">${VA.map(([v,l])=>`<option value="${v}" ${(c.as||"owner")===v?"selected":""}>${v==="owner"?l:"View as "+l}</option>`).join("")}</select>`; };
-  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(ROLE[s.role]||s.role)}</span>${canView()?" "+vaSelect():""} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
-  async function switchView(role){ const c=get(); if(!c) return; document.body.style.opacity=".5";
-    try{ const r=await run("viewAs",c.t,role); save({t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember,as:r.as||""}); location.reload(); }
+  function loadVA(){ const c=get(); if(!c||VALP) return VALP; VALP=run("viewList",c.t).then(r=>{ VAL=r||[]; document.querySelectorAll("select[data-ca-viewas]").forEach(el=>{ el.innerHTML=vaOpts(); }); return VAL; }).catch(()=>{ VALP=null; }); return VALP; }
+  const vaOpts=()=>{ const c=get()||{}; const cur=c.as||""; const list=VAL||[];
+    return `<option value="owner" ${!cur?"selected":""}>${cur?"Back to Owner":"View as…"}</option>`+(VAL?"":`<option disabled>Loading the team…</option>`)+list.map(x=>`<option value="${esc(x.name)}" ${cur&&cur.toUpperCase()===String(x.name).toUpperCase()?"selected":""}>${esc(x.name)} · ${esc(x.label)}</option>`).join(""); };
+  const vaSelect=()=>{ if(canView()) setTimeout(loadVA,0); return `<select class="ca-va" data-ca-viewas="1" aria-label="See the app as a team member">${vaOpts()}</select>`; };
+  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(labelOf(s))}</span>${canView()?" "+vaSelect():""} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  async function switchView(who){ const c=get(); if(!c) return; document.body.style.opacity=".5";
+    try{ const r=await run("viewAs",c.t,who); save({t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember,as:r.as||"",perms:r.perms,label:r.label,area:r.area}); location.reload(); }
     catch(e){ document.body.style.opacity=""; alertBar((e&&e.message)||"Couldn't switch."); } }
   function alertBar(m){ const d=document.createElement("div"); d.className="ca-vabar"; d.setAttribute("role","alert"); d.textContent=m; document.body.prepend(d); setTimeout(()=>d.remove(),5000); }
   document.addEventListener("change",e=>{ const t=e.target; if(t&&t.matches&&t.matches("[data-ca-viewas]")) switchView(t.value); });
   document.addEventListener("click",e=>{ const b=e.target&&e.target.closest&&e.target.closest("[data-ca-viewback]"); if(b){ e.preventDefault(); switchView("owner"); } });
   /* While viewing as another role, a strip at the top of every page says so */
   function vaStrip(){ const c=get(); if(!c||!c.as||document.getElementById("ca-vastrip")) return; const d=document.createElement("div"); d.id="ca-vastrip"; d.className="ca-vabar";
-    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(ROLE[c.as]||c.as)}</b>. Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d); }
+    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(c.as)}</b> (${esc(labelOf(c))}). Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",vaStrip); else setTimeout(vaStrip,0);
   /* Where a "what to do next" item goes: page + tab (#hash) + kitchen team */
   const nextHref=g=>g?(g.page+(g.team?"?team="+encodeURIComponent(g.team):"")+(g.hash?"#"+g.hash:"")):"";
@@ -262,7 +275,7 @@ const CA=(function(){
     b.onclick=()=>{ if(panel){close();return;} open(); };
     openHelp=v=>open(v);
   }
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update};
 })();
 </script>
 
@@ -393,6 +406,10 @@ textarea.paste{width:100%;min-height:110px;font-family:var(--mono);font-size:12p
 .photos a img{width:88px;height:88px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
 .chk{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;margin-right:10px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink)}
 .chk input{width:auto}
+.stticks{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:10px}.stg h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted,#6f5f62)}
+.stp{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:9px 10px;border:1px solid var(--line,#e8dcd6);border-radius:10px;margin-bottom:6px;cursor:pointer}.stp input{width:20px;height:20px;margin-top:2px}.stp.on{background:#f3e4e5;border-color:#d9b8bd}
+.stdl{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:4px 14px;margin:0}.stdl dt{font-weight:600}.stdl dd{margin:0;color:var(--muted,#6f5f62)}@media (max-width:640px){.stdl{grid-template-columns:1fr}.stdl dd{margin-bottom:6px}}
+.stmx td.c,.stmx th.c{text-align:center}.stmx th.c{min-width:74px}.stmx td:first-child{min-width:170px}
 .empty{color:var(--muted);padding:18px;text-align:center;border:1px dashed var(--line);border-radius:10px}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--warn-soft);color:var(--warn);padding:8px 10px;border-radius:8px}
 details.help summary{cursor:pointer;color:var(--muted);font-size:13px}
@@ -666,29 +683,35 @@ function chaseText(p,dates){
   return `Hi ${p.contact||p.name} team, this is Chaleur Atelier. We haven't received the closing report for ${dates.map(nice).join(", ")}. Please count the balance and wastage for each colour dot and send it here:\n${link}\nThank you!`;
 }
 /* ---------- rendering ---------- */
-const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role), KIT=()=>["kitchen","supervisor"].includes(AUTH.role), SUP=()=>["owner","manager","supervisor"].includes(AUTH.role), SUPK=()=>AUTH.role==="supervisor";
+/* v20: everything follows the person's access ticks (office desk › Staff), not a role */
+const can=p=>(AUTH.perms||[]).includes(p);
+const MGR=()=>can("admin"), KIT=()=>!can("money"), SUPK=()=>can("doedit"), DELIV=()=>can("deliv")||can("doedit");
+/* view-only depends on the page: Setup needs Setup, Staff needs Staff and access, Problem reports needs Problem reports, the rest needs Office work */
+const RO=()=>{ const t=S.tab; if(t==="setup") return !can("setup"); if(t==="staff") return !can("staff"); if(t==="feedback") return !can("problems"); if(t==="audits") return !(can("reports")||can("audit")); return !can("reports"); };
+const TABOK={today:()=>can("chase")||can("reports")||can("view"),plan:()=>DELIV()||can("reports")||can("view"),deliveries:()=>DELIV()||can("reports")||can("view"),daily:()=>can("reports")||can("view"),log:()=>can("reports")||can("view"),
+  billing:()=>can("money")&&(can("reports")||can("view")||can("bills")),audits:()=>can("audit")||can("kapprove"),feedback:()=>can("problems"),setup:()=>can("setup")||can("view"),staff:()=>can("staff")};
 const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Outlet reports"],["log","Change log"],["billing","Weekly billing"],["audits","Spot audits"],["feedback","Problem reports"],["setup","Setup"],["staff","Staff"]];
 const NCOL=8;
 let rq=false, MENU=false;
-const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null)) return true; return d.made!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
+const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null)) return true; if(!can("deliv")) return false; return d.made!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
 function render(){ if(rq||!AUTH.pin) return; rq=true; requestAnimationFrame(()=>{rq=false; doRender();}); }
 function doRender(){
   if(!AUTH.pin) return;
   memo=new Map();
   const a=document.activeElement, aid=a&&a.id, sel=a&&("selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
-  const att=KIT()&&!SUPK()?[]:attention();
-  { const tabs=KIT()?TABS.filter(([k])=>k==="plan"||k==="deliveries"||(SUPK()&&k==="today")):TABS.filter(([k])=>(k!=="staff"||MGR())&&(k!=="feedback"||!RO())); if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=KIT()&&!SUPK()?0:att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
-    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}<button role="menuitem" data-go="kitchen.html"><span>Kitchen HQ</span><span aria-hidden="true">↗</span></button><button role="menuitem" data-go="index.html"><span>‹ Home</span><span></span></button><div class="mwho">${CA.chip({name:AUTH.name,role:AUTH.role})}</div></div>`:""}`; }
-  $("#who").innerHTML=AUTH.pin?CA.chip({name:AUTH.name,role:AUTH.role}):"";
+  const att=(can("chase")||can("reports")||can("view"))?attention():[];
+  { let tabs=TABS.filter(([k])=>TABOK[k]()); if(!tabs.length) tabs=[["none","No office pages"]]; if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
+    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}<button role="menuitem" data-go="kitchen.html"><span>Kitchen HQ</span><span aria-hidden="true">↗</span></button><button role="menuitem" data-go="index.html"><span>‹ Home</span><span></span></button><div class="mwho">${CA.chip({name:AUTH.name,role:AUTH.role,label:AUTH.label})}</div></div>`:""}`; }
+  $("#who").innerHTML=AUTH.pin?CA.chip({name:AUTH.name,role:AUTH.role,label:AUTH.label}):"";
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
   else if(S.loaded.size<NCOL) html=`<div class="empty">Loading consignment data…</div>`;
-  else html=({today:vToday,plan:vPlan,deliveries:vDeliveries,daily:vDaily,log:vLog,billing:vBilling,audits:vAudits,feedback:vFeedback,setup:vSetup,staff:vStaff})[S.tab](att);
+  else html=({today:vToday,plan:vPlan,deliveries:vDeliveries,daily:vDaily,log:vLog,billing:vBilling,audits:vAudits,feedback:vFeedback,setup:vSetup,staff:vStaff,none:()=>`<div class="empty">Your access doesn't include any office desk pages. Kitchen reports are in <a href="kitchen.html">Kitchen HQ</a>; ask Alfred or Joscelyn if you need more.</div>`})[S.tab](att);
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
   cardify(document.getElementById("main")); cardify(document.getElementById("modal"));
-  if(RO()){ $("#testbar").innerHTML=`<div class="testbar">${KIT()?`${SUPK()?"Kitchen supervisor view: chase outlets, delivery orders, prep and colour checks.":"Kitchen view: colour checks and deliveries."} Kitchen reports are in <a href="kitchen.html">Kitchen HQ</a>.`:`View only — signed in as ${esc(AUTH.name)}. Ask Alfred or Joscelyn to make changes.`}</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!(KIT()&&kitOK(el))) el.disabled=true; }); }
+  if(RO()&&S.tab!=="none"){ const dv=DELIV()&&(S.tab==="plan"||S.tab==="deliveries"); $("#testbar").innerHTML=`<div class="testbar">${dv?`You can ${SUPK()?"create and edit delivery orders, ":""}check colours, type Made numbers and mark deliveries delivered here; the rest is view only.`:`This page is view only for you (${esc(AUTH.label||"your access")}). Ask Alfred or Joscelyn if you need to change it.`} Kitchen reports are in <a href="kitchen.html">Kitchen HQ</a>.</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!el.dataset.stp&&!el.dataset.st&&!(DELIV()&&kitOK(el))) el.disabled=true; }); }
   if(aid){const e=document.getElementById(aid); if(e){e.focus({preventScroll:true}); if(sel&&"setSelectionRange" in e){try{e.setSelectionRange(sel[0],sel[1])}catch(_){}}}}
 }
 const F=(k,d="")=>S.f[k]??d;
@@ -770,7 +793,7 @@ function attention(){
     if(ev.fails.length) push({sev:"warn",kind:"audit",key:`auditf|${a.id}`,pid:a.partnerId,text:`<b>${esc(partner(a.partnerId).name)}</b> audit ${nice(a.date)} — failed: ${ev.fails.map(esc).join(", ")}`,go:{tab:"audits"}});
   }
   const order={bad:0,warn:1,info:2}, KOK=["report","photo","photocheck","missing","extra","variance","expiry","last","salesread"];
-  return items.filter(a=>!KIT()||KOK.includes(a.kind)).sort((a,b)=>order[a.sev]-order[b.sev]);
+  return items.filter(a=>can("reports")||can("view")||KOK.includes(a.kind)).sort((a,b)=>order[a.sev]-order[b.sev]);
 }
 async function setHandled(key,val){const cur={...(S.handled||{})}; const lim=new Date(Date.now()-45*864e5).toISOString(); for(const k in cur) if(!cur[k]||String(cur[k].at||"")<lim) delete cur[k]; if(val) cur[key]={...val,by:AUTH.name||"",at:new Date().toISOString()}; else delete cur[key]; await put("config/handled",cur);}
 function findRepLine(pid,productId,colour,upto,needB){
@@ -809,7 +832,7 @@ function vToday(att){
   for(const p of ps){if(p.internal) continue; const c=calcWeek(p.id,wk);for(const k of Object.values(c.keys)){wkSold+=k.sold;wkWaste+=k.waste;wkVal+=k.sold*k.rate}}
   const bad=att.filter(a=>a.sev==="bad").length;
   return `<div class="head"><div><h1>${nice(t)}</h1><p class="lede">${bad?`${bad} thing${bad>1?"s need":" needs"} action today.`:"Nothing urgent. Reports and stock look in order."}</p></div>
-    <div class="row"><button class="btn" data-act="goNewDO">New delivery order</button>${KIT()?"":`<button class="btn" data-act="goPaste">Paste WhatsApp report</button><button class="btn pri" data-act="goAudit">Start spot audit</button>`}</div></div>
+    <div class="row"><button class="btn" data-act="goNewDO">New delivery order</button>${can("reports")?`<button class="btn" data-act="goPaste">Paste WhatsApp report</button>`:""}${can("audit")?`<button class="btn pri" data-act="goAudit">Start spot audit</button>`:""}</div></div>
     ${claude}
     <div class="cols">
       <div class="panel"><div class="spread"><h2>Needs attention</h2><div class="row"><span class="small muted">${att.length} item${att.length===1?"":"s"}</span>${(()=>{const n=Object.keys(S.handled||{}).length;return n?`<button class="btn sm" data-act="showHandled">${S.ui.showHandled?"Hide handled":`Handled (${n})`}</button>`:""})()}</div></div>${S.ui.showHandled?handledList():""}
@@ -863,14 +886,14 @@ function vDeliveries(){
   const allF=allDOs().filter(d=>(!F.p||d.partnerId===F.p)&&(!F.from||d.date>=F.from)&&(!F.to||d.date<=F.to)&&(!F.st||(F.st==="delivered"?d.status==="delivered":d.status!=="delivered")));
   const list=allF.slice(0,150);
   const fbar=`<div class="fbar"><label class="f">Outlet<select data-flt="dF.p">${opt("","All outlets",F.p||"")}${partners(true).map(p=>opt(p.id,p.name,F.p||"")).join("")}</select></label><label class="f">From<input type="date" data-flt="dF.from" value="${esc(F.from||"")}"></label><label class="f">To<input type="date" data-flt="dF.to" value="${esc(F.to||"")}"></label><label class="f">Status<select data-flt="dF.st">${[["","All"],["planned","Planned"],["delivered","Delivered"]].map(([v,l])=>opt(v,l,F.st||"")).join("")}</select></label>${fl?`<button class="btn sm" data-act="clearDF">Clear filters</button>`:""}<span class="small muted">${allF.length} DO${allF.length===1?"":"s"}</span></div>`;
-  return `<div class="head"><div><h1>Deliveries</h1><p class="lede">Before a delivery goes out, the team checks the colour dot on every cake (<b>Check colours</b>). Only cakes made on the delivery day or the day before can be sent. Stock only counts at the outlet once the DO is confirmed delivered, with accepted quantities.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button>${KIT()&&!SUPK()?"":`<button class="btn pri" data-act="newDO">New delivery order</button>`}</div></div>
+  return `<div class="head"><div><h1>Deliveries</h1><p class="lede">Before a delivery goes out, the team checks the colour dot on every cake (<b>Check colours</b>). Only cakes made on the delivery day or the day before can be sent. Stock only counts at the outlet once the DO is confirmed delivered, with accepted quantities.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button>${!SUPK()?"":`<button class="btn pri" data-act="newDO">New delivery order</button>`}</div></div>
     ${form}
     <div class="panel"><h2>Delivery orders</h2>${fbar}${list.length?`<div class="tw"><table><thead><tr><th>DO</th><th>Date</th><th>Outlet</th><th>Batch</th><th class="r">Units</th>${KIT()?"":`<th class="r">Value</th>`}<th>Status</th><th></th></tr></thead><tbody>
       ${list.map(d=>{const u=(d.lines||[]).reduce((s,l)=>s+(+(d.status==="delivered"?(l.accepted??l.qty):l.qty)||0),0);const v=(d.lines||[]).reduce((s,l)=>s+(+(l.accepted??l.qty)||0)*priceFor(d.partnerId,l.productId,d.date).net,0);
         const billed=(S.weeks[wid(d.partnerId,d.weekStart)]||{}).settlement;
         return `<tr><td class="mono">${esc(d.no)}${d.sample?` <span class="pill mute">sample</span>`:""}</td><td>${nice(d.date)}</td><td>${esc(partner(d.partnerId).name)}</td><td>${doColours(d).map(dot).join(" ")||dot(d.colour)}</td><td class="r mono">${u}</td>${KIT()?"":`<td class="r mono">${partner(d.partnerId).internal?"—":fm(v)}</td>`}
         <td>${d.status==="delivered"?`<span class="pill ok">Delivered</span>`:(d.checkedAt?`<span class="pill info" title="Checked by ${esc(d.checkedBy||"")}">Colours checked</span>`:`<span class="pill warn">Planned</span>`)}${billed?` <span class="pill info">Billed</span>`:""}</td>
-        <td><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${d.status!=="delivered"?`${d.checkedAt?`<button class="btn sm pri" data-rcv="${d.partnerId}|${d.weekStart}|${d.id}">Mark delivered</button>`:""}<button class="btn sm ${d.checkedAt?"":"pri"}" data-chk="${d.partnerId}|${d.weekStart}|${d.id}">${d.checkedAt?"Recheck colours":"Check colours"}</button>${KIT()&&!SUPK()?"":`<button class="btn sm" data-edo="${d.partnerId}|${d.weekStart}|${d.id}">Edit</button>`}`:""}<button class="btn sm" data-vdo="${d.partnerId}|${d.weekStart}|${d.id}">View</button><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(partner(d.partnerId).phone,doText(d)))}">WhatsApp</a></div></td></tr>`}).join("")}
+        <td><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${d.status!=="delivered"?`${d.checkedAt?`<button class="btn sm pri" data-rcv="${d.partnerId}|${d.weekStart}|${d.id}">Mark delivered</button>`:""}<button class="btn sm ${d.checkedAt?"":"pri"}" data-chk="${d.partnerId}|${d.weekStart}|${d.id}">${d.checkedAt?"Recheck colours":"Check colours"}</button>${!SUPK()?"":`<button class="btn sm" data-edo="${d.partnerId}|${d.weekStart}|${d.id}">Edit</button>`}`:""}<button class="btn sm" data-vdo="${d.partnerId}|${d.weekStart}|${d.id}">View</button><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(partner(d.partnerId).phone,doText(d)))}">WhatsApp</a></div></td></tr>`}).join("")}
       </tbody></table></div>`:`<div class="empty">${fl?"No delivery orders match these filters.":"No delivery orders yet."}</div>`}</div>`;
 }
 function doText(d){return `*${cfg().company.name}* — ${d.no}\nDelivery ${nice(d.date)} to ${partner(d.partnerId).name}\nColour dot: ${doColours(d).join(" + ")||d.colour}\n`+(d.lines||[]).filter(l=>+l.qty).map(l=>`• ${prod(l.productId).name} (${l.colour||d.colour}) × ${d.status==="delivered"?(l.accepted??l.qty):l.qty}`).join("\n")+`\nPlease count on arrival and reply with any shortfall or damage.`}
@@ -1026,7 +1049,7 @@ function vBilling(){
   if(!st){
     actions=`<div class="row"><label class="row small"><input type="checkbox" id="cs" data-f="creditShort_${wid(pid,ws)}" ${S.f["creditShort_"+wid(pid,ws)]?"checked":""} style="width:auto"> Credit shortage (outlet not charged for missing units)</label></div>
       ${conf==="issue"?`<div class="confirm">Issue ${esc(cfg().prefixes.INV)}, ${esc(cfg().prefixes.CF)}${live.cn.length?` and ${esc(cfg().prefixes.CN)}`:""} for ${esc(p.name)}? Numbers are assigned. Later changes to this week are logged and flagged here.<button class="btn sm pri" data-act="issue">Issue documents</button><button class="btn sm" data-act="noconfirm">Cancel</button></div>`
-      :`<div class="row">${MGR()?`<button class="btn pri" data-act="askIssue" ${live.inv.length?"":"disabled"}>Approve & issue invoice, CF${live.cn.length?" and CN":""}</button>`:`<span class="pill info">Draft ready: waiting for Alfred or Joscelyn to approve</span>`}${!ended?`<span class="pill warn">Week still running</span>`:""}</div>`}`;
+      :`<div class="row">${can("bills")?`<button class="btn pri" data-act="askIssue" ${live.inv.length?"":"disabled"}>Approve & issue invoice, CF${live.cn.length?" and CN":""}</button>`:`<span class="pill info">Draft ready: waiting for Alfred or Joscelyn to approve</span>`}${!ended?`<span class="pill warn">Week still running</span>`:""}</div>`}`;
   } else {
     const nextBilled=(S.weeks[wid(pid,add(ws,7))]||{}).settlement;
     actions=`<div class="fgrid">
@@ -1547,7 +1570,7 @@ document.addEventListener("change",async e=>{
   if(t.dataset.hq!==undefined){(S.ui.hqd=S.ui.hqd||{})[t.dataset.hq]=t.value;return;}
   if(t.dataset.hqcl!=null){const h=S.ui.hqd||(S.ui.hqd={}); const c=new Set(((h.closed??(S.ui.hqs||{}).closed)||[]).map(Number)); if(t.checked) c.add(+t.dataset.hqcl); else c.delete(+t.dataset.hqcl); h.closed=[...c].sort(); return;}
   if(t.dataset.flt){const [g,k]=t.dataset.flt.split(".");S.ui[g]={...(S.ui[g]||{}),[k]:t.value};render();return;}
-  if(RO()&&!t.dataset.ui&&!(KIT()&&kitOK(t))){toast("View only — ask a manager to make changes");render();return;}
+  if(RO()&&!t.dataset.ui&&!t.dataset.stp&&!t.dataset.st&&!(DELIV()&&kitOK(t))){toast("View only — your access doesn't include changing this");render();return;}
   if(t.dataset.ckc!=null&&S.ui.colChk){S.ui.colChk.rows[+t.dataset.ckc].colour=t.value;render();return;}
   if(t.dataset.ckok&&S.ui.colChk){S.ui.colChk.ok=t.checked;return;}
   if(t.dataset.sl!=null||t.dataset.slall!=null){render();return;}
@@ -1573,9 +1596,9 @@ document.addEventListener("click",async e=>{
   if(d.menu){MENU=!MENU;render();return;}
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
-  if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null))&&!(KIT()&&(d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
+  if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null))&&!(DELIV()&&(d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
   if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;if(d.tab==="feedback")S.fb=null;try{history.replaceState(null,"","#"+d.tab);}catch(_){ } render();window.scrollTo(0,0);return;}
-  if(d.stnew){S.ui.stEdit={row:0,name:"",phone:"",code:"",role:"kitchen",notes:""};render();return;}
+  if(d.stnew){const C=S.stCat||{presets:{kitchen:{staff:[]}}}; S.ui.stEdit={row:0,name:"",phone:"",code:"",role:"kitchen",notes:"",area:"kitchen",level:"staff",perms:(C.presets.kitchen.staff||[]).slice()};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
   if(d.stedit){const x=(S.team||[]).find(r=>String(r.row)===d.stedit); if(x){S.ui.stEdit={...x,phone:x.phone&&/^60\d{8,10}$/.test(x.phone)?"0"+x.phone.slice(2):(x.phone||"")};render();window.scrollTo(0,0);} return;}
   if(d.stsave){const x=S.ui.stEdit; if(x){b.disabled=true; await stSave({...x,active:x.row?x.active:true}); b.disabled=false;} return;}
@@ -1608,7 +1631,7 @@ document.addEventListener("click",async e=>{
   if(d.pedit){S.ui.pEdit=clone(S.partners[d.pedit]);render();return;}
   if(d.lcopy){const l=formLink(S.partners[d.lcopy]); try{await navigator.clipboard.writeText(l); toast("Link copied");}catch(err){S.ui.qrFor=d.lcopy; render(); toast("Copy the link shown under the QR code");} return;}
   if(d.lqr){S.ui.qrFor=d.lqr; S.ui.lnewAsk=null; render(); makeQR(S.partners[d.lqr]); return;}
-  if(d.lnew){if(!MGR()){toast("Only Alfred or Joscelyn can change outlet links");return;} const p=S.partners[d.lnew]; if(!p) return;
+  if(d.lnew){if(!MGR()){toast("You need \"Owner settings\" access to change outlet links");return;} const p=S.partners[d.lnew]; if(!p) return;
     if(p.formKey&&S.ui.lnewAsk!==p.id){S.ui.lnewAsk=p.id; render(); return;}
     b.disabled=true; await put(`partners/${p.id}`,{...p,formKey:newFormKey(p.code)}); S.ui.lnewAsk=null; S.ui.qrFor=p.id; toast(p.formKey?"New link made. The old link no longer works.":"Link made"); render(); makeQR(S.partners[p.id]); return;}
   if(d.predit){S.ui.prEdit=clone(S.products[d.predit]);render();return;}
@@ -1697,13 +1720,13 @@ async function act(a,b){
   case "askIssue": S.ui.confirm="issue"; render(); return;
   case "askVoid": S.ui.confirm="void"; render(); return;
   case "askClear": S.ui.confirm="clear"; render(); return;
-  case "issue":{ if(!MGR()){toast("Only Alfred or Joscelyn can approve and issue");return;}const pid=curPartner(); if(partner(pid).internal){toast("Chaleur HQ has no bills. Choose an outlet.");return;} const _x=0, ws=S.ui.week||weekStartOf(add(t,-7)); memo=new Map(); const c=calcWeek(pid,ws);
+  case "issue":{ if(!can("bills")){toast("You need \"Approve bills\" access to approve and issue");return;}const pid=curPartner(); if(partner(pid).internal){toast("Chaleur HQ has no bills. Choose an outlet.");return;} const _x=0, ws=S.ui.week||weekStartOf(add(t,-7)); memo=new Map(); const c=calcWeek(pid,ws);
     const cs=!!S.f["creditShort_"+wid(pid,ws)]; const s=buildSettlement(c,{creditShort:cs}); b.disabled=true;
     const invNo=await nextNo("INV",t), cfNo=await nextNo("CF",t), cnNo=s.cn.length?await nextNo("CN",t):"";
     const w=clone(c.week); w.dos=w.dos||{}; w.days=w.days||{};
     w.settlement={status:"issued",issuedAt:new Date().toISOString(),invNo,cfNo,cnNo,inv:s.inv,cf:s.cf,cn:s.cn,totals:s.totals,soldVal:s.soldVal,shortVal:s.shortVal,shortQty:s.shortQty,wasteCharged:s.wasteCharged,shortageCredited:cs,openingSrc:c.opening.src,pct:partner(pid).pct,bukku:{},paid:null};
     await saveWeek(w); S.ui.confirm=null; toast(`${invNo}, ${cfNo}${cnNo?", "+cnNo:""} issued`); return;}
-  case "void":{ if(!MGR()){toast("Only Alfred or Joscelyn can void a bill");return;} const pid=curPartner(); if(partner(pid).internal){toast("Chaleur HQ has no bills. Choose an outlet.");return;} const _x=0, ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws));
+  case "void":{ if(!can("bills")){toast("You need \"Approve bills\" access to void a bill");return;} const pid=curPartner(); if(partner(pid).internal){toast("Chaleur HQ has no bills. Choose an outlet.");return;} const _x=0, ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws));
     w.voided=[...(w.voided||[]).slice(-2),{invNo:w.settlement.invNo,cfNo:w.settlement.cfNo,cnNo:w.settlement.cnNo,totals:w.settlement.totals,issuedAt:w.settlement.issuedAt,voidedAt:new Date().toISOString(),by:AUTH.name||""}]; w.settlement=null; await saveWeek(w); S.ui.confirm=null; toast("Documents voided — week reopened"); return;}
   case "saveBk":{const pid=curPartner(); if(partner(pid).internal){toast("Chaleur HQ has no bills. Choose an outlet.");return;} const _x=0, ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws)); const g=id=>$(id).value.trim();
     w.settlement.bukku={inv:g("#bk-inv"),cf:g("#bk-cf")}; const pd=g("#pd-d"),pa=g("#pd-a"); w.settlement.paid=pd||pa?{date:pd,amount:pa===""?null:+pa}:null;
@@ -1797,10 +1820,10 @@ async function act(a,b){
   }
 }
 /* ---------- boot (Google Apps Script backend) ---------- */
-const AUTH={pin:null,name:"",role:""};
+const AUTH={pin:null,name:"",role:"",perms:[],label:"",area:""};
 const GS=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>{const m=(e&&e.message)||String(e); if(AUTH.pin&&CA.isAuthErr({message:m})) setTimeout(()=>signedOut(m),0); rej({code:"unavailable",message:m});})[fn](AUTH.pin,...a));
 let STARTED=false;
-function signedOut(m){ if(!AUTH.pin) return; AUTH.pin=null; AUTH.name=""; AUTH.role=""; CA.clear(); showLogin(m); }
+function signedOut(m){ if(!AUTH.pin) return; AUTH.pin=null; AUTH.name=""; AUTH.role=""; AUTH.perms=[]; CA.clear(); showLogin(m); }
 const photoSrc=id=>!id?"":(/^https?:/.test(id)?id:"https:\/\/drive.google.com/thumbnail?id="+encodeURIComponent(id)+"&sz=w400");
 const photoLink=id=>!id?"":(/^https?:/.test(id)?id:"https:\/\/drive.google.com/file/d/"+encodeURIComponent(id)+"/view");
 const DBX={cache:{},subs:[]};
@@ -1816,24 +1839,49 @@ const shimDB={
   };}
 };
 const shimAssets={upload:async(blob)=>{const du=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob);});const r=await GS("uploadPhoto",du,"photo");return {id:r.id,url:r.url};}};
+/* ---------- Staff & access (v20): where they work + a starting level + tick boxes, each with a plain description ---------- */
+function stNeeds(C,k){ const p=C.perms.find(x=>x.key===k); return p?p.needs:[]; }
+function stTick(ed,C,k,on){ const set=new Set(ed.perms||[]);
+  if(on){ const add=x=>{ if(set.has(x)) return; set.add(x); stNeeds(C,x).forEach(add); }; add(k); }
+  else { const rm=x=>{ set.delete(x); C.perms.filter(p=>p.needs.includes(x)&&set.has(p.key)).forEach(p=>rm(p.key)); }; rm(k); }
+  ed.perms=C.perms.map(p=>p.key).filter(x=>set.has(x)); }
+function stLabel(C,area,level,perms){ const base=(C.presets[area]||{})[level]||[]; const nm=area==="office"&&level==="manager"?"Manager":(C.areas[area]||"")+" "+String(C.levels[level]||"").toLowerCase(); return nm+(base.slice().sort().join()!==(perms||[]).slice().sort().join()?" (custom)":""); }
 function vStaff(){
-  if(!MGR()) return `<div class="empty">Only managers can manage staff.</div>`;
-  if(!S.team){ if(!S.teamLoading){S.teamLoading=true; GS("teamList").then(r=>{S.team=r;S.teamLoading=false;render();}).catch(e=>{S.teamLoading=false;S.team=[];toast(e.message);});} return `<div class="empty">Loading staff…</div>`; }
-  const ed=S.ui.stEdit, roleTxt={owner:"Owner — full access",manager:"Manager — full access + staff",office:"Office — edit desk + audits",supervisor:"Kitchen supervisor — kitchen + approves kitchen changes (no prices)",kitchen:"Kitchen — prep, reports, colour checks & deliveries (no prices)",auditor:"Team — view desk, audits, kitchen reports"};
+  if(!can("staff")) return `<div class="empty">You need "Staff and access" to manage staff.</div>`;
+  if(!S.team){ if(!S.teamLoading){S.teamLoading=true; GS("staffInfo").then(r=>{S.team=r.rows;S.stCat=r;S.teamLoading=false;render();}).catch(e=>{S.teamLoading=false;S.team=[];toast(e.message);});} return `<div class="empty">Loading staff…</div>`; }
+  const C=S.stCat||{perms:[],areas:{},levels:{},presets:{},mine:[]}, ed=S.ui.stEdit, mine=new Set(C.owner?C.perms.map(p=>p.key):(C.mine||[]));
+  const groups=[...new Set(C.perms.map(p=>p.group))];
+  const ticks=ed&&ed.role!=="owner"?groups.map(g=>`<div class="stg"><h3>${esc(g)}</h3>${C.perms.filter(p=>p.group===g).map(p=>{ const on=(ed.perms||[]).includes(p.key), dis=!mine.has(p.key);
+      return `<label class="stp ${on?"on":""}"><input type="checkbox" id="stp-${p.key}" data-stp="${p.key}" ${on?"checked":""} ${dis?"disabled":""}><span><b>${esc(p.name)}</b>${dis?` <span class="pill mute">you don't have this</span>`:""}<span class="small muted" style="display:block">${esc(p.desc)}${p.needs.length?` <i>Also ticks: ${p.needs.map(n=>esc((C.perms.find(x=>x.key===n)||{}).name||n)).join(", ")}.</i>`:""}</span></span></label>`; }).join("")}</div>`).join(""):"";
   const form=ed?`<div class="panel"><div class="spread"><h2>${ed.row?"Edit staff":"Add staff"}</h2><button class="btn sm" data-stcancel="1">Cancel</button></div>
     <div class="fgrid"><label class="f">Name<input id="st-name" data-st="name" value="${esc(ed.name||"")}" autocomplete="off"></label>
       <label class="f">Phone number (for signing in)<input id="st-phone" data-st="phone" type="tel" inputmode="tel" value="${esc(ed.phone||"")}" placeholder="012-345 6789" autocomplete="off"></label>
       <label class="f">PIN (4–6 digits, e.g. FeedMe staff code)<input id="st-code" data-st="code" inputmode="numeric" maxlength="6" value="${esc(ed.code||"")}" autocomplete="off"></label>
-      ${ed.role==="owner"?"":`<label class="f">Access<select id="st-role" data-st="role">${["auditor","kitchen","supervisor","office","manager"].map(r=>`<option value="${r}" ${ed.role===r?"selected":""}>${roleTxt[r]}</option>`).join("")}</select></label>`}
       <label class="f">Notes<input id="st-notes" data-st="notes" value="${esc(ed.notes||"")}"></label></div>
+    ${ed.role==="owner"?`<p class="small"><b>Owner</b> — has every access, always, and can view the app as anyone.</p>`:`
+    <h3 style="margin:14px 0 4px">Access</h3>
+    <div class="fgrid"><label class="f">Works in<select id="st-area" data-st="area">${Object.entries(C.areas).map(([k,l])=>`<option value="${k}" ${ed.area===k?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
+      <label class="f">Start from<select id="st-level" data-st="level">${Object.entries(C.levels).map(([k,l])=>`<option value="${k}" ${ed.level===k?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
+      <div class="f"><span>Access name</span><div style="padding-top:8px"><b>${esc(stLabel(C,ed.area,ed.level,ed.perms))}</b> · ${(ed.perms||[]).length} of ${C.perms.length} ticked</div></div></div>
+    <p class="small muted" style="margin:6px 0 0">Choosing "Works in" or "Start from" ticks the usual boxes for that job. Then tick or untick anything for this person. Changes work straight away; they don't need to sign in again.</p>
+    <div class="stticks">${ticks}</div>`}
     <div class="row"><button class="btn pri" data-stsave="1">Save</button><span class="small">They can sign in as soon as you save.</span></div></div>`:"";
   const fph=p=>{p=String(p||""); return /^60\d{8,10}$/.test(p)?"0"+p.slice(2):p;};
-  const rows=S.team.map(x=>`<tr><td><b>${esc(x.name)}</b>${x.notes?`<div class="small">${esc(x.notes)}</div>`:""}</td><td class="mono small">${x.phone?esc(fph(x.phone)):`<span class="pill warn">not set</span>`}</td><td>${esc(x.code)}</td><td>${esc(roleTxt[x.role]||x.role)}</td>
+  const rows=S.team.map(x=>`<tr><td><b>${esc(x.name)}</b>${x.notes?`<div class="small">${esc(x.notes)}</div>`:""}</td><td class="mono small">${x.phone?esc(fph(x.phone)):`<span class="pill warn">not set</span>`}</td><td>${esc(x.code)}</td>
+    <td>${esc(x.role==="owner"?"Owner":String(x.label||"").replace(/ \(custom\)$/,""))}${x.custom?` <span class="pill info">custom</span>`:""}<div class="small muted">${x.role==="owner"?"Everything":(x.perms||[]).map(k=>esc((C.perms.find(p=>p.key===k)||{}).name||k)).join(" · ")||"No access"}</div></td>
     <td>${x.active?`<span class="pill ok">Active</span>`:`<span class="pill mute">Inactive</span>`}</td>
-    <td class="r">${x.role==="owner"?(AUTH.role==="owner"?`<button class="btn sm" data-stedit="${x.row}">Edit</button>`:`<span class="small">Owner</span>`):`<button class="btn sm" data-stedit="${x.row}">Edit</button> <button class="btn sm" data-sttog="${x.row}">${x.active?"Deactivate":"Activate"}</button>`}</td></tr>`).join("");
-  return `<h1>Staff</h1><p class="lede">Who can sign in. Staff sign in with their <b>phone number and PIN</b> (or their name if no phone is set). Changing someone's PIN or phone, or deactivating them, signs them out on every phone. Their past records stay.</p>
+    <td class="r">${x.role==="owner"?(C.owner?`<button class="btn sm" data-stedit="${x.row}">Edit</button>`:`<span class="small">Owner</span>`):`<button class="btn sm" data-stedit="${x.row}">Edit</button> <button class="btn sm" data-sttog="${x.row}">${x.active?"Deactivate":"Activate"}</button>`}</td></tr>`).join("");
+  /* the plain-words reference: what each access means + what each job starts with */
+  const cols=[];Object.keys(C.areas).forEach(a=>Object.keys(C.levels).forEach(l=>cols.push([a,l])));
+  const ref=`<div class="panel" id="st-ref"><h2>What each access means</h2><p class="small muted" style="margin:0 0 8px">Tick only what the person needs. Money (prices, values, bills) is hidden from anyone without "See prices and bills".</p>
+    ${groups.map(g=>`<h3 style="margin:10px 0 4px">${esc(g)}</h3><dl class="stdl">${C.perms.filter(p=>p.group===g).map(p=>`<dt>${esc(p.name)}</dt><dd>${esc(p.desc)}</dd>`).join("")}</dl>`).join("")}
+    <h3 style="margin:14px 0 4px">What each job starts with</h3>
+    <div class="tw"><table class="stmx"><thead><tr><th></th>${cols.map(([a,l])=>`<th class="c small">${esc(stLabel(C,a,l,(C.presets[a]||{})[l]))}</th>`).join("")}</tr></thead>
+      <tbody>${C.perms.map(p=>`<tr><td class="small">${esc(p.name)}</td>${cols.map(([a,l])=>`<td class="c">${((C.presets[a]||{})[l]||[]).includes(p.key)?"✓":""}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    <p class="small muted">The owner (Alfred) always has everything. Someone with "Staff and access" can only give access they have themselves, and can't change people who have more access than them.</p></div>`;
+  return `<h1>Staff</h1><p class="lede">Who can sign in and what they can do. Staff sign in with their <b>phone number and PIN</b> (or their name if no phone is set). Changing someone's PIN or phone, or deactivating them, signs them out on every phone. Their past records stay.</p>
     ${form}<div class="panel"><div class="spread"><h2>Team</h2>${ed?"":`<button class="btn pri sm" data-stnew="1">+ Add staff</button>`}</div>
-    <div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>PIN</th><th>Access</th><th>Status</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="small">No staff yet.</td></tr>`}</tbody></table></div></div>`;
+    <div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>PIN</th><th>Access</th><th>Status</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="small">No staff yet.</td></tr>`}</tbody></table></div></div>${ref}`;
 }
 /* ---------- Team points & the monthly treat (owner/manager) ---------- */
 function gamePanel(){
@@ -1865,7 +1913,7 @@ function qcPanel(){
 /* ---------- Feedback: problems and ideas the team sends from "? Ask" › Report a problem ---------- */
 const FBS_L={open:"New",doing:"Being fixed",done:"Done"}, FBS_C={open:"warn",doing:"info",done:"ok"};
 function vFeedback(){
-  if(RO()) return `<div class="empty">Only the office and managers can see feedback.</div>`;
+  if(!can("problems")) return `<div class="empty">You need "Problem reports" access to see these.</div>`;
   if(!S.fb){ if(!S.fbLoading){S.fbLoading=true; GS("feedbackList").then(r=>{S.fb=r;S.fbLoading=false;render();}).catch(e=>{S.fbLoading=false;S.fb={kinds:{},items:[],err:e.message};render();});} return `<div class="empty">Loading feedback…</div>`; }
   const F=S.ui.fbf||"todo", K=S.fb.kinds||{}, all=S.fb.items||[], D=S.ui.fbd||(S.ui.fbd={});
   const list=all.filter(x=>F==="all"||(F==="done"?x.status==="done":x.status!=="done"));
@@ -1891,7 +1939,9 @@ document.addEventListener("click",async e=>{const b=e.target&&e.target.closest&&
     try{ S.fb=await GS("feedbackUpdate",id,{status:ch.status??x.status,reply:ch.reply??x.reply??""}); delete S.ui.fbd[id]; toast("Saved. "+String(x.by||"").split(" ")[0]+" will see it."); render(); }
     catch(err){ toast(err.message); b.disabled=false; } }});
 async function stSave(rec){ try{ S.team=await GS("teamSave",rec); S.ui.stEdit=null; toast("Staff saved"); render(); }catch(e){ toast(e.message); } }
-document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.st; if(k&&S.ui.stEdit) S.ui.stEdit[k]=e.target.value;});
+document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.st; if(k&&S.ui.stEdit){ S.ui.stEdit[k]=e.target.value;
+  if(k==="area"||k==="level"){ const C=S.stCat; if(C) S.ui.stEdit.perms=(((C.presets||{})[S.ui.stEdit.area]||{})[S.ui.stEdit.level]||[]).slice(); render(); } }});
+document.addEventListener("change",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.stp; if(k&&S.ui.stEdit&&S.stCat){ stTick(S.ui.stEdit,S.stCat,k,e.target.checked); render(); }});
 async function reload(){try{DBX.cache=await GS("dbLoadAll");fire();}catch(e){toast("Couldn't refresh — "+e.message);}}
 /* Phones: wide tables become one card per row, each value with its column name (CSS below 640px). */
 function cardify(root){ if(!root) return; root.querySelectorAll("table").forEach(tb=>{ if(tb.dataset.cf||tb.closest(".nocard")) return; const hs=[...tb.querySelectorAll("thead th")]; if(hs.length<3) return;
@@ -1921,8 +1971,8 @@ window.addEventListener("hashchange",()=>{ const h=(location.hash||"").slice(1);
 (function boot(){
   CA.helper({auth:()=>AUTH.pin,page:()=>"Office desk › "+((TABS.find(([k])=>k===S.tab)||["",""])[1])});
   const s=CA.get(); if(!s) return showLogin();
-  AUTH.pin=s.t; AUTH.name=s.name; AUTH.role=s.role;
-  GS("me").then(u=>{AUTH.name=u.name;AUTH.role=u.role;start();}).catch(e=>{ if(!AUTH.pin) return; if(CA.isAuthErr(e)) return signedOut(e.message); AUTH.pin=null; showLogin("Couldn't connect ("+e.message+"). Check the internet and try again."); });
+  AUTH.pin=s.t; AUTH.name=s.name; AUTH.role=s.role; AUTH.perms=CA.permsOf(s); AUTH.label=CA.labelOf(s); AUTH.area=s.area||"";
+  GS("me").then(u=>{AUTH.name=u.name;AUTH.role=u.role;AUTH.perms=u.perms||[];AUTH.label=u.label||"";AUTH.area=u.area||""; CA.update(u); start();}).catch(e=>{ if(!AUTH.pin) return; if(CA.isAuthErr(e)) return signedOut(e.message); AUTH.pin=null; showLogin("Couldn't connect ("+e.message+"). Check the internet and try again."); });
 })();
 </script>
 
