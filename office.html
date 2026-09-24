@@ -1127,6 +1127,7 @@ function vAudits(){
     <div class="row"><button class="btn" data-act="pickAudit">Pick random audit</button><button class="btn pri" data-act="newAudit">Start audit</button></div></div>
     ${sug?`<div class="claude"><h2>Next audit: ${esc(partner(sug.partnerId).name)}</h2><p style="margin:0">Last audited ${sug.lastDate==="2000-01-01"?"never":nice(sug.lastDate)}. Check sell prices and count: ${sug.products.map(id=>esc(prod(id).name)).join(", ")}.</p><div class="row"><button class="btn pri" data-act="startSuggested">Start this audit</button><a class="btn wa" target="_blank" rel="noopener" href="${esc(wa("",`Spot audit today: ${partner(sug.partnerId).name}. Check prices + count ${sug.products.map(id=>prod(id).name).join(", ")}. Form: ${(SITE_BASE?SITE_BASE+"audit.html":(cfg().auditFormUrl||"(set the staff audit form link in Setup)"))}`))}">Send to staff</a></div></div>`:""}
     ${form}
+    ${qcPanel()}
     <div class="panel"><h2>Audit history</h2>${list.length?`<div class="tw"><table><thead><tr><th>Date</th><th>Outlet</th><th>By</th><th class="r">Setup score</th><th>Temp</th><th>Price issues</th><th>Counts vs system</th><th>Notes</th></tr></thead><tbody>
       ${list.map(a=>{const e=evalAudit(a);return `<tr><td>${nice(a.date)} <span class="muted small">${esc(a.time||"")}</span></td><td>${esc(partner(a.partnerId).name)}</td><td>${esc(a.by||"")}</td>
         <td class="r">${e.score==null?"—":`<span class="pill ${e.score>=90?"ok":e.score>=70?"warn":"bad"}">${e.score}%</span>`}</td><td class="mono">${a.temp?esc(a.temp)+"°C":"—"}</td>
@@ -1267,6 +1268,7 @@ function vSetup(){
         <label class="f">4pm kitchen reminders to the group<select id="hq-br" data-hq="brief">${opt("true","On",String(v("brief")))}${opt("false","Off",String(v("brief")))}</select></label></div>
         <div class="f"><span>Kitchen closed on (no reports expected)</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="hq-cl-${i}" data-hqcl="${i}" ${cl.map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
         ${MGR()?`<div class="row"><button class="btn pri" data-act="saveHqs">Save kitchen settings</button></div>`:`<span class="pill info">Only Alfred or Joscelyn can change these</span>`}`}</div>
+      ${MGR()?gamePanel():""}
       ${MGR()?`<div class="panel"><h2>WhatsApp messages</h2><p class="small muted" style="margin:0">Sends the late-report reminders (with the link), the 4pm kitchen reminders and urgent alerts (for example a freezer that is too warm). Paste the <b>send message</b> link from your WasapBot dashboard (API section). It contains your instance ID and access token, so it is kept in the Google backend and never shown again. If the link has <span class="mono">{number}</span> and <span class="mono">{message}</span> in it, those are filled in; otherwise the number and message are added to the link.</p>
         <div class="row">${!S.ui.wa?`<span class="pill mute">Checking…</span>`:w.err?`<span class="neg small">${esc(w.err)}</span>`:`${w.set?`<span class="pill ok">Link saved (${esc(w.host)})</span>`:`<span class="pill warn">No link yet</span>`} ${w.on?`<span class="pill ok">On</span>`:`<span class="pill mute">Off</span>`} ${w.groupSet?`<span class="pill info">Group set</span>`:`<span class="pill mute">No group: goes to the kitchen numbers</span>`}`}</div>
         <div class="fgrid"><label class="f">Send-to-number link<input id="wa-url" type="password" autocomplete="off" placeholder="https://… (leave empty to keep the saved one)"></label>
@@ -1520,6 +1522,8 @@ document.addEventListener("input",e=>{
   if(d.peh){const e=S.ui.pEdit;e.hours={...(e.hours||{}),[d.peh]:t.value};return;}
   if(d.pecarry){const e=S.ui.pEdit; let arr=(e.carries||[]).filter(x=>x!==d.pecarry); if(t.checked) arr.push(d.pecarry); e.carries=arr; return;}
   if(d.pearr){const e=S.ui.pEdit,k=d.pearr,v=+d.v;let arr=k==="closed"?((e.hours||{}).closed||[]):k==="wholeDays"?wholeDaysOf(e):(e.deliveryDays||[1,3,5]);arr=arr.map(Number).filter(x=>x!==v);if(t.checked)arr.push(v);arr.sort();if(k==="closed")e.hours={...(e.hours||{}),closed:arr};else if(k==="wholeDays")e.wholeDays=arr;else e.deliveryDays=arr;return;}
+  if(d.gm){ (S.ui.gd||(S.ui.gd={}))[d.gm]=t.value; return; }
+  if(d.gml!=null){ const gd=S.ui.gd||(S.ui.gd={}); gd.ladder=(gd.ladder||S.ui.game.ladder).slice(); gd.ladder[+d.gml]=t.value; return; }
   if(d.pew){const e=S.ui.pEdit; e.whole={...wholeOf(e),...(e.whole||{}),[d.pew]:t.value.trim()}; return;}
   if(d.ev){S.ui.ev=S.ui.ev||{};S.ui.ev[d.ev]=t.value;return;}
   if(d.pr){S.ui.prEdit[d.pr]=t.value;return;}
@@ -1758,6 +1762,7 @@ async function act(a,b){
     w.document.close(); w.focus(); setTimeout(()=>w.print(),500); return;}
   case "newPartner": S.ui.pEdit={id:"",code:"",name:"",pct:75,termsStatus:"Proposed",wasteRule:"credit",terms:14,active:true}; render(); return;
   case "cancelPartner": S.ui.pEdit=null; render(); return;
+  case "saveGame":{ const gd=S.ui.gd||{}; try{ S.ui.game=await GS("gameSettings",{target:gd.target??S.ui.game.target,unlock:gd.unlock??S.ui.game.unlock,qcOn:String(gd.qcOn??S.ui.game.qcOn)==="true",qcBy:gd.qcBy??S.ui.game.qcBy,ladder:(gd.ladder||S.ui.game.ladder).map(Number)}); S.ui.gd={}; toast("Points settings saved"); render(); }catch(e){ toast(e.message); } return; }
   case "savePartner":{const e=S.ui.pEdit; e.parDay=+e.parDay||3; e.deliveryDays=(e.deliveryDays||[1,3,5]).map(Number); e.code=(e.code||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.code||!e.name){toast("Code and name are required");return;}
     if(partners(true).some(p=>p.code===e.code&&p.id!==e.id)){toast("That code is already used");return;}
     if(!e.formKey) e.formKey=newFormKey(e.code);
@@ -1829,6 +1834,33 @@ function vStaff(){
   return `<h1>Staff</h1><p class="lede">Who can sign in. Staff sign in with their <b>phone number and PIN</b> (or their name if no phone is set). Changing someone's PIN or phone, or deactivating them, signs them out on every phone. Their past records stay.</p>
     ${form}<div class="panel"><div class="spread"><h2>Team</h2>${ed?"":`<button class="btn pri sm" data-stnew="1">+ Add staff</button>`}</div>
     <div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>PIN</th><th>Access</th><th>Status</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="small">No staff yet.</td></tr>`}</tbody></table></div></div>`;
+}
+/* ---------- Team points & the monthly treat (owner/manager) ---------- */
+function gamePanel(){
+  if(S.ui.game===undefined){ S.ui.game=null; GS("gameSettings").then(r=>{S.ui.game=r;S.ui.gd={};render();}).catch(e=>{S.ui.game={err:e.message};render();}); }
+  const g=S.ui.game, d=S.ui.gd||(S.ui.gd={}), v=k=>d[k]??(g||{})[k];
+  if(!g) return `<div class="panel"><h2>Team points & treat</h2><div class="empty">Loading…</div></div>`;
+  if(g.err) return `<div class="panel"><h2>Team points & treat</h2><p class="neg small">${esc(g.err)}</p></div>`;
+  const lad=d.ladder||g.ladder;
+  return `<div class="panel"><h2>Team points & treat</h2><p class="small muted" style="margin:0">The kitchen fills one Team treat jar each month (on the home page). Points: report part on time +${g.pts.part} (late +${g.pts.late}), Random QC +${g.pts.qc}, good catch +${g.pts.catch}, to-do by its time +${g.pts.todo}, each fridge reading +${g.pts.unit}. The team gets the month's treat when the jar reaches the unlock %. Personal points only show on each person's own Me page.</p>
+    <div class="fgrid">
+      <label class="f">Jar target per month (0 = automatic)<input id="gm-t" data-gm="target" inputmode="numeric" value="${esc(v("target"))}"></label>
+      <div class="f"><span>Automatic target this month</span><div class="mono" style="padding-top:8px">${Number(g.auto).toLocaleString("en-MY")} points (a perfect month)</div></div>
+      <label class="f">Treat unlocks at (%)<input id="gm-u" data-gm="unlock" inputmode="numeric" value="${esc(v("unlock"))}"></label>
+      <label class="f">Random QC<select id="gm-q" data-gm="qcOn">${opt("true","On (every 1–2 days)",String(v("qcOn")))}${opt("false","Off",String(v("qcOn")))}</select></label>
+      <label class="f">QC due by<input type="time" id="gm-b" data-gm="qcBy" value="${esc(v("qcBy"))}"></label></div>
+    <div class="f"><span>Path to chef (points needed)</span><div class="fgrid" style="margin-top:4px">${g.names.map((n,i)=>`<label class="f">${esc(n)}<input id="gm-l${i}" data-gml="${i}" inputmode="numeric" value="${esc(lad[i])}" ${i===0?"readonly":""}></label>`).join("")}</div></div>
+    <div class="row"><button class="btn pri" data-act="saveGame">Save points settings</button></div></div>`;
+}
+/* ---------- Random QC history (the kitchen's taste checks, from the home page) ---------- */
+function qcPanel(){
+  if(S.qch===undefined){ S.qch=null; GS("qcHistory").then(r=>{S.qch=r||[];render();}).catch(e=>{S.qch={err:e.message};render();}); }
+  const V={good:["Good","ok"],unsure:["Not sure","warn"],off:["Off","bad"]}, h=S.qch;
+  return `<div class="panel"><div class="spread"><h2>Random QC</h2><span class="small muted">taste checks picked by the app, every 1–2 days</span></div>
+    ${h===null?`<div class="empty">Loading…</div>`:h.err?`<p class="neg small">${esc(h.err)}</p>`:!h.length?`<div class="empty">No QC yet. The kitchen sees it on the home page when it's drawn.</div>`:
+    `<div class="tw"><table><thead><tr><th>Date</th><th>Ref</th><th>By</th><th>Cakes</th></tr></thead><tbody>${h.slice(0,30).map(q=>`<tr><td>${nice(q.date)}</td><td class="mono">${esc(q.ref)}</td>
+      <td>${q.done?esc(q.done.by)+` <span class="muted small">${esc(new Date(q.done.at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"}))}</span>`:`<span class="pill warn">not done</span>`}</td>
+      <td class="small">${(q.done?q.done.results:q.items).map(x=>`<div>${dot(x.colour)} ${esc(x.name)} ${q.done?`<span class="pill ${V[x.verdict][1]}">${V[x.verdict][0]}</span>${x.note?` <span class="muted">${esc(x.note)}</span>`:""}${x.photo?` <a href="${esc(x.photo)}" target="_blank" rel="noopener">photo</a>`:""}`:`<span class="muted">${esc(x.why)}</span>`}</div>`).join("")}</td></tr>`).join("")}</tbody></table></div>`}</div>`;
 }
 /* ---------- Feedback: problems and ideas the team sends from "? Ask" › Report a problem ---------- */
 const FBS_L={open:"New",doing:"Being fixed",done:"Done"}, FBS_C={open:"warn",doing:"info",done:"ok"};

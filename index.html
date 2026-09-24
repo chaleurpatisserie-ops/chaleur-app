@@ -268,124 +268,405 @@ const CA=(function(){
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap">
 <style>
-:root{--ground:#f7f2ec;--paper:#fff;--ink:#2b1b1e;--muted:#6f5f62;--line:#e8dcd6;--accent:#7b1c2b;--accent-ink:#fff;--soft:#f3e4e5;--display:'Cormorant Garamond',Georgia,serif;--body:Jost,system-ui,sans-serif}
-@media (prefers-color-scheme:dark){:root{--ground:#161012;--paper:#201719;--ink:#f2e9e6;--muted:#b9a8aa;--line:#3a2c2f;--accent:#e4a1ac;--accent-ink:#1b1113;--soft:#3a2227}}
-*{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.45 var(--body)}
-button{font-family:inherit}
-.w{max-width:560px;margin:0 auto;padding:0 18px 90px}
-@media (min-width:900px){.w{max-width:980px}#next{max-width:720px}}
-/* 2a header: logo · title · Menu button */
-.hd{position:sticky;top:0;z-index:40;background:var(--ground);display:flex;gap:12px;align-items:center;padding:12px 0 10px}
-.m{width:40px;height:40px;border-radius:10px;background:#780a13;color:#e3c466;display:grid;place-items:center;flex:none}.m svg{width:31px;height:auto;display:block}
-.hd .tt{flex:1;min-width:0}.hd h1{font:700 21px/1 var(--display);margin:0}.sub{color:var(--muted);font-size:12px;margin-top:2px}
-.mb{height:48px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:var(--paper);display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;color:var(--ink);cursor:pointer;flex:none}
-.mb .bars{display:flex;flex-direction:column;gap:3px}.mb .bars i{width:16px;height:2px;background:var(--ink);display:block}
-h2{font:600 22px/1.15 var(--display);margin:0 0 6px}
-.hello h2{font:700 32px/1.05 var(--display);margin:14px 0 4px}.hello .sub{font-size:14px;margin:0 0 14px}
-.c{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px;margin:10px 0}
-.nx{list-style:none;margin:0;padding:0}.nx li{display:grid;grid-template-columns:10px minmax(0,1fr);gap:4px 10px;padding:10px 0;border-top:1px dashed var(--line)}.nx li:first-child{border-top:0;padding-top:4px}
-.nx i{width:10px;height:10px;border-radius:50%;margin-top:6px;background:#9a8f91}.nx i.bad{background:#c0392b}.nx i.warn{background:#d68910}.nx i.ok{background:#1e8449}
-.nx a.b{grid-column:2;justify-self:start}
-a.b{display:inline-flex;align-items:center;min-height:52px;text-decoration:none;background:var(--accent);color:var(--accent-ink);border-radius:12px;padding:0 18px;font:600 15px var(--body)}
-a.b.lt{background:var(--soft);color:var(--accent);border:1px solid var(--line)}
-.tip{font-size:12.5px;color:var(--muted);margin-top:18px;line-height:1.5}
-.hint{color:var(--muted);font-size:13.5px}
-.err{color:#b3261e}
-/* 2a menu: backdrop under the header, panel with one-open-at-a-time sections */
-.mbd{position:fixed;left:0;right:0;bottom:0;top:var(--mt,76px);background:rgba(43,27,30,.35);z-index:38}
-.mp{position:fixed;left:10px;right:10px;top:calc(var(--mt,76px) + 4px);max-width:540px;margin:0 auto;max-height:calc(100vh - var(--mt,76px) - 16px);max-height:calc(100dvh - var(--mt,76px) - 16px);overflow:auto;background:var(--paper);border-radius:20px;box-shadow:0 16px 40px rgba(43,27,30,.3);padding:8px 0;z-index:39}
-.ms{border-bottom:1px solid var(--line)}
-.ms>button{width:100%;min-height:60px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 18px;border:0;background:transparent;text-align:left;color:var(--ink);cursor:pointer}
-.ms>button b{display:block;font-weight:700;font-size:16px}.ms>button small{display:block;font-size:12px;color:var(--muted)}
-.ms .chev{width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--accent);display:grid;place-items:center;font-size:13px;flex:none}
-.mi{padding:0 10px 10px;display:flex;flex-direction:column;gap:4px}
-.mi a,.mi button{min-height:56px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:8px 12px;border:0;border-radius:12px;background:var(--ground);text-align:left;color:var(--ink);text-decoration:none;cursor:pointer;width:100%;font:inherit}
-.mi a:active,.mi button:active{background:var(--soft)}
-.mi b{display:block;font-weight:600;font-size:15px}.mi small{display:block;font-size:12.5px;color:var(--muted)}.mi .go{color:var(--accent);font-size:22px}
-.mf{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 12px 6px}
-.mf button{height:52px;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer}
-.mf .ask{border:0;background:var(--ink);color:var(--paper)}.mf .out{border:1px solid var(--line);background:var(--paper);color:var(--muted)}
-.mva{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 12px 6px;padding:10px 12px;border-radius:12px;background:var(--ground);font-size:13px;color:var(--muted);font-weight:600}
+/* Brigade mode (design v2, Turn 4). Colours from the brand; dark mode keeps the same structure. */
+:root{--ground:#f7f2ec;--paper:#fff;--ink:#2b1b1e;--muted:#6f5f62;--line:#e8dcd6;--cline:#ecdfd8;--soft:#f3e4e5;--accent:#7b1c2b;--accent-ink:#fff;--acc-sh:#4e0f19;
+  --deep:#780a13;--gold:#e3c466;--gold-sh:#b08f35;--gold-lt:#f1dfa0;--ok:#1e8449;--ok-sh:#13602f;--ok-bg:#dcefe2;--ok-tx:#1e6b3a;--warn:#d68910;--warn-tx:#a0620a;--warn-bg:#fbecd2;--bad:#c0392b;--bad-tx:#a3261a;--bad-bg:#f8dcd8;--seg:#efe4de;--row:#fdf8f5;
+  --display:'Cormorant Garamond',Georgia,serif;--body:Jost,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root{--ground:#161012;--paper:#201719;--ink:#f2e9e6;--muted:#b9a8aa;--line:#3a2c2f;--cline:#35282b;--soft:#3a2227;--accent:#e4a1ac;--accent-ink:#1b1113;--acc-sh:#9c5a66;--seg:#2c2124;--row:#271c1f;--ok-bg:#16301f;--ok-tx:#8fd3a5;--warn-bg:#3a2a12;--warn-tx:#f0b85a;--bad-bg:#3d1b18;--bad-tx:#ff9a8c}}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--ground);color:var(--ink);font:15px/1.45 var(--body);-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer}a{color:inherit}
+.ca-hbtn{display:none!important}
+.w{max-width:560px;margin:0 auto;padding:0 16px calc(104px + env(safe-area-inset-bottom,0px))}
+.hint{color:var(--muted);font-size:13.5px}.err{color:var(--bad-tx)}
+.eb{font:600 10.5px var(--body);letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+/* chunky buttons */
+.cb{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:16px;min-height:52px;padding:0 18px;font:700 15px var(--body);background:var(--accent);color:var(--accent-ink);box-shadow:0 4px 0 var(--acc-sh);text-decoration:none;transition:transform .05s}
+.cb:active{transform:translateY(3px);box-shadow:0 1px 0 var(--acc-sh)}.cb:disabled{background:var(--line);color:#9a8f91;box-shadow:0 4px 0 var(--cline);cursor:default;transform:none}
+.cb.gold{background:var(--gold);color:#2b1b1e;box-shadow:0 4px 0 var(--gold-sh)}.cb.ok{background:var(--ok);color:#fff;box-shadow:0 4px 0 var(--ok-sh)}
+.cb.ghost{background:var(--paper);color:var(--ink);border:1.5px solid var(--line);box-shadow:0 3px 0 var(--line)}.cb.ink{background:var(--ink);color:var(--paper);box-shadow:0 4px 0 #000}
+.cb.sm{min-height:40px;padding:0 14px;border-radius:12px;font-size:13px;box-shadow:0 3px 0 var(--acc-sh)}.cb.full{width:100%}
+.card{background:var(--paper);border:1.5px solid var(--cline);border-radius:20px;box-shadow:0 3px 0 var(--cline)}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* header */
+.hd{position:sticky;top:0;z-index:20;background:var(--ground);display:flex;align-items:center;gap:8px;padding:10px 0}
+.logo{width:36px;height:36px;border-radius:9px;background:var(--deep);color:var(--gold);display:grid;place-items:center;flex:none}.logo svg{width:28px;height:auto;display:block}
+.hd .tt{flex:1;min-width:0}.hd h1{font:700 20px/1.05 var(--display);margin:0}.hd .sub{font-size:12px;color:var(--muted)}
+.hd .sub button{border:0;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline dotted;min-height:24px}
+.hbtn{height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-weight:600;font-size:14px;color:var(--ink);box-shadow:0 3px 0 var(--line);flex:none}
+.qbtn{width:44px;height:44px;border-radius:50%;border:0;background:var(--ink);color:var(--paper);font-weight:700;font-size:17px;flex:none}
+.back{width:44px;height:44px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-size:20px;color:var(--ink);flex:none;display:grid;place-items:center;text-decoration:none}
+.ptitle{font:700 24px/1.05 var(--display);margin:0}
+/* jar */
+.jar{background:var(--deep);color:#fff;border-radius:24px;padding:16px;display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center;text-decoration:none;border:0;text-align:left;width:100%}
+.jarpic{width:64px;height:78px;display:flex;flex-direction:column;align-items:center}.jarpic .lid{width:40px;height:8px;border-radius:3px;background:var(--gold)}
+.jarpic .glass{width:56px;height:68px;border-radius:10px 10px 16px 16px;border:3px solid rgba(255,255,255,.55);margin-top:2px;position:relative;overflow:hidden;display:block}
+.jarpic .fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#e3c466,#d2a93f);transition:height .5s}
+.jarpic .dot{position:absolute;width:9px;height:9px;border-radius:50%}
+.jarpic .mark{position:absolute;left:-3px;right:-3px;height:0;border-top:2px dashed rgba(255,255,255,.8)}
+.jar .eb{color:var(--gold)}.jar .ttl{font:700 22px/1.1 var(--display);margin:3px 0 4px}.jar .ln{font-size:12.5px;color:var(--gold-lt)}
+/* QC card */
+.qcc{background:var(--paper);border:2px solid var(--warn);border-radius:20px;padding:14px;box-shadow:0 3px 0 var(--warn);display:flex;flex-direction:column;gap:10px}
+.qcc .top{display:flex;align-items:center;gap:12px}.ico{width:46px;height:46px;border-radius:14px;flex:none;display:grid;place-items:center}.ico svg{width:30px;height:30px}
+.qcc .eb{color:var(--warn-tx)}.qcc .ttl{font-weight:700;font-size:16px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{display:flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:var(--ground);font-size:12px;font-weight:600}.chip i{width:10px;height:10px;border-radius:50%;display:block}
+/* today list */
+.lh{display:flex;justify-content:space-between;align-items:baseline;margin:4px 2px 0}.lh b{font:700 20px var(--display)}.lh span{font-size:12.5px;color:var(--muted)}
+.rows{overflow:hidden}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--cline);min-height:56px;text-decoration:none;color:inherit}
+.row:last-child{border-bottom:0}.row.cur{background:var(--row)}
+.circ{width:30px;height:30px;border-radius:50%;border:2px solid #d9c9c1;display:grid;place-items:center;font-size:14px;color:#fff}
+.row.done .circ{background:var(--ok);border-color:var(--ok)}.row.cur .circ{border:3px solid var(--accent)}
+.row .t{display:block;font-size:15px}.row.cur .t{font-weight:700}.row.done .t{color:var(--muted);text-decoration:line-through}
+.row .s{display:block;font-size:12.5px;color:var(--muted)}.row.cur .s,.row .s.due{color:var(--warn-tx);font-weight:600}.row .s.late{color:var(--bad-tx);font-weight:600}
+.row .r{font-size:12.5px;font-weight:600;color:var(--accent);white-space:nowrap}.row.done .r{color:var(--ok);font-weight:500}.row .dotr{width:14px;height:14px;border-radius:50%}
+.teamsw{display:grid;grid-template-columns:1fr 1fr;background:var(--seg);border-radius:14px;padding:4px}
+.teamsw button,.seg button{height:44px;border:0;border-radius:11px;background:transparent;font-weight:700;font-size:14px;color:var(--ink)}
+.teamsw button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--paper);box-shadow:0 1px 2px rgba(43,27,30,.08)}
+.seg{display:grid;grid-template-columns:repeat(var(--n,2),1fr);background:var(--seg);border-radius:16px;padding:4px}
+.also{display:flex;flex-direction:column;gap:8px}.also a,.also div.it{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px;text-decoration:none;color:inherit}
+.sev{width:10px;height:10px;border-radius:50%;background:#9a8f91}.sev.bad{background:var(--bad)}.sev.warn{background:var(--warn)}.sev.ok{background:var(--ok)}
+/* board (office) */
+.board{display:grid;grid-template-columns:84px 1fr;gap:14px;align-items:center;padding:14px}
+.ring{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;position:relative}.ring b{font:700 28px var(--body)}.ring small{position:absolute;bottom:14px;font-size:10.5px;color:var(--muted)}
+/* tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--paper);border-top:1px solid var(--line);padding:0 0 env(safe-area-inset-bottom,0px)}
+.tabs nav{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:72px}
+.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:#9a8f91;font-size:12px;font-weight:600}
+.tabs a[aria-current="page"]{color:var(--accent)}.tabs svg{width:28px;height:26px}
+/* menu */
+.menu{position:fixed;inset:0;z-index:60;background:var(--ground);overflow:auto}
+.menu .in{max-width:560px;margin:0 auto;padding:10px 12px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px}
+.menu .mh{display:flex;align-items:center;gap:8px;padding:0 4px 4px}.menu .mh div{flex:1;font:700 26px var(--display)}
+.grp{overflow:hidden;flex-shrink:0}.grp>button{width:100%;min-height:66px;display:flex;align-items:center;gap:12px;padding:8px 14px;border:0;background:transparent;text-align:left;color:var(--ink)}
+.grp .nm{flex:1}.grp .nm b{display:block;font-weight:700;font-size:16px}.grp .nm small{display:block;font-size:12px;color:var(--muted)}
+.grp .chev{width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--accent);display:grid;place-items:center;font-size:12px;flex:none}
+.grp .its{padding:0 8px 8px;display:flex;flex-direction:column;gap:4px}
+.grp .its a,.grp .its button{min-height:54px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:8px 12px;border:0;border-radius:12px;background:var(--ground);text-align:left;color:var(--ink);text-decoration:none;width:100%;font:inherit}
+.grp .its a:active,.grp .its button:active{background:var(--soft)}.grp .its b{display:block;font-weight:600;font-size:15px}.grp .its small{display:block;font-size:12px;color:var(--muted)}.grp .its .go{color:var(--accent);font-size:22px}
+.mf{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px}
+.mva{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:var(--paper);border:1.5px solid var(--cline);font-size:13px;color:var(--muted);font-weight:600}
 .mva .ca-va{min-height:44px;font-size:14px;max-width:210px}
-</style></head><body><div class="w">
-<div class="hd" id="hd"><div class="m" aria-hidden="true"><svg viewBox="0 0 800 523" aria-hidden="true" focusable="false"><g transform="translate(0,523) scale(0.1,-0.1)" fill="currentColor"><path d="M2260 5159c-180 -12 -420 -57 -615 -114 -577 -169 -1068 -529 -1396 -1025 -52 -77 -179 -298 -179 -310 0 -3 62 -5 137 -5 117 0 147 -4 196 -22 42 -16 59 -19 62 -10 3 7 23 66 45 132 199 586 592 1002 1107 1174 606 202 1172 99 1673 -304 263 -212 512 -516 681 -831 23 -44 46 -83 50 -89 5 -5 9 153 9 358l0 368 -102 103c-336 337 -787 537 -1303 576 -142 11 -207 11 -365 -1zM5723 5053c-3 -10 -12 -34 -20 -53 -15 -37 -169 -444 -358 -945 -62 -165 -152 -403 -200 -530 -201 -531 -195 -513 -195 -577 0 -133 87 -178 227 -118 56 25 128 93 226 215 112 140 174 203 229 231 153 78 248 -54 159 -220 -61 -115 -219 -241 -606 -486 -596 -377 -867 -603 -1047 -875 -153 -231 -203 -396 -196 -656l3 -145 -64 -90c-440 -609 -1262 -830 -1968 -528 -445 190 -881 602 -1162 1097 -33 59 -49 68 -71 42 -19 -23 -109 -72 -186 -101 -59 -23 -85 -27 -181 -28 -70 -1 -113 -5 -113 -11 0 -18 108 -175 189 -274 623 -771 1595 -1100 2543 -860 371 93 716 259 989 475l83 64 40 -78c165 -315 447 -469 826 -449 456 25 819 236 1073 627 274 422 386 995 337 1724 -6 82 -9 151 -7 153 4 4 27 -53 233 -597 67 -179 157 -415 199 -525 135 -354 197 -528 221 -625 95 -378 -31 -572 -398 -610 -55 -5 -109 -10 -119 -10 -12 0 -19 -7 -19 -20 0 -20 7 -20 775 -20 688 0 775 2 775 15 0 18 -39 35 -78 35 -46 0 -150 57 -212 116 -79 76 -138 167 -225 347 -86 181 -106 231 -280 692 -48 127 -148 390 -222 585 -74 195 -179 472 -233 615 -54 143 -142 375 -195 515 -53 140 -102 271 -110 290 -8 19 -57 150 -110 290 -53 140 -109 289 -125 330 -16 41 -72 190 -125 330 -53 140 -102 271 -110 290 -8 19 -39 102 -70 184 -31 82 -60 157 -66 168 -12 23 -48 24 -56 1zm-49 -803c53 -140 103 -271 111 -290 8 -19 75 -197 150 -395 75 -198 147 -387 160 -420 59 -151 85 -248 117 -430 34 -199 34 -819 0 -1005 -132 -715 -444 -1168 -898 -1301 -122 -36 -366 -34 -479 4 -232 77 -392 250 -466 502 -37 124 -34 408 5 550 99 363 333 626 896 1010 299 203 480 361 547 475 129 221 42 444 -150 386 -69 -21 -143 -81 -243 -198 -227 -266 -320 -329 -398 -267 -52 41 -42 86 112 494 27 72 133 355 236 630 189 502 195 519 201 513 2 -2 47 -118 99 -258zM298 3456c-31 -12 -60 -25 -64 -29 -12 -12 -21 -8 -27 11 -6 25 -41 33 -66 15 -27 -18 -27 -37 -1 -21 17 11 25 10 49 -3 27 -16 111 -12 141 6 9 5 35 47 28 44 -2 -1 -29 -11 -60 -23zM100 3341c0 -13 18 -17 127 -32 83 -11 117 -9 101 6 -6 6 -173 35 -205 35 -13 0 -23 -4 -23 -9zM80 3180c0 -12 17 -12 45 0 17 7 15 9 -12 9 -18 1 -33 -3 -33 -9zM281 3052c-22 -24 -26 -25 -117 -18 -76 5 -94 4 -94 -7 0 -10 23 -16 86 -21 94 -7 121 2 144 45 16 29 9 29 -19 1zM280 2855c7 -9 15 -13 17 -11 7 7 -7 26 -19 26 -6 0 -6 -6 2 -15zM177 2823c-4 -3 -7 -13 -7 -22 1 -13 3 -13 11 2 11 19 8 33 -4 20zM60 2750c0 -6 33 -10 78 -10 42 0 94 -3 115 -6 30 -5 37 -4 37 10 0 14 -15 16 -115 16 -70 0 -115 -4 -115 -10zM163 2493c-77 -3 -93 -6 -93 -20 0 -14 10 -15 77 -9 42 3 93 6 115 6 27 0 38 4 38 15 0 10 -8 14 -22 13 -13 -1 -65 -4 -115 -5zM221 2291c-57 -36 -99 -67 -92 -69 6 -2 48 19 94 47 45 28 90 51 100 51 18 0 21 8 9 25 -4 7 -46 -13 -111 -54zM345 2218c-10 -24 -40 -29 -80 -14 -11 5 -5 -2 13 -14 42 -28 82 -16 82 25 0 31 -3 31 -15 3zM223 2008c-71 -14 -103 -24 -103 -34 0 -9 8 -12 28 -8 158 31 196 41 200 52 5 15 2 15 -125 -10zM242 1878c-74 -15 -101 -23 -93 -31 14 -14 213 23 219 41 5 15 2 15 -126 -10zM210 1685c-6 -8 -10 -21 -8 -29 2 -11 8 -7 20 14 18 31 10 41 -12 15zM422 1652c-5 -69 -116 -132 -172 -97 -8 5 -11 4 -6 -3 3 -6 22 -16 41 -22 67 -22 151 43 142 111 -2 19 -4 24 -5 11z"/></g></svg></div><div class="tt"><h1>Chaleur Brigade</h1><div class="sub" id="hsub">Chaleur Atelier · operations</div></div><span id="mbw"></span></div>
-<main id="main"><p class="hint">Loading…</p></main>
-</div>
-<div id="menu"></div>
+/* team / me / treat */
+.hero{border-radius:22px;background:var(--deep);color:#fff;padding:16px}.hero .eb{color:var(--gold)}.hero .big{font:700 38px/1 var(--body);color:var(--gold)}
+.bar{height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden;position:relative}.bar i{display:block;height:100%;border-radius:4px;background:var(--gold);transition:width .5s}
+.bar.lt{background:var(--seg)}
+.shout{padding:12px 14px;font-size:14px}.shout .tag{color:var(--warn-tx);font-weight:700}
+.badges{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 6px;padding:14px 8px}.badges div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;text-align:center;color:var(--muted)}
+.badges span{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:700 14px var(--body)}.badges .got span{background:var(--deep);color:var(--gold);border:2px solid var(--gold)}.badges .got{color:var(--ink);font-weight:600}.badges .no span{border:2px dashed #d9c9c1}
+.path{border-radius:22px;background:#2b1b1e;color:#fff;padding:16px}.path .eb{color:var(--gold)}.path .hello{font:700 24px/1.1 var(--display);margin:4px 0 2px}.path .msg{font-size:13px;color:#cdbfc1}.path .pts{font-size:12px;color:#cdbfc1;margin-top:6px}
+.lad{padding:6px 14px}.lad div{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0}.lad .d{width:12px;height:12px;border-radius:50%;border:2px solid #d9c9c1}
+.lad .past{color:#9a8f91}.lad .past .d{background:var(--ok);border-color:var(--ok)}.lad .past b{color:var(--muted)}.lad .me{background:var(--soft);margin:0 -14px;padding:10px 14px}.lad .me .d{background:var(--accent);border-color:var(--accent)}.lad small{font-size:12px;color:var(--muted)}.lad .me small{font-weight:700;color:var(--accent)}
+.av{width:56px;height:56px;border-radius:50%;background:var(--deep);border:3px solid var(--gold);color:var(--gold);display:grid;place-items:center;font:700 24px var(--display);flex:none}
+.lrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--cline);font-size:14.5px;text-decoration:none;color:inherit;background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left}.lrow:last-child{border-bottom:0}
+.fills{padding:4px 14px;font-size:14px}.fills div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--cline)}.fills div:last-child{border-bottom:0}
+.opt{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 14px;border-radius:16px;border:2px solid var(--line);background:var(--paper);text-align:left;color:var(--ink);font-weight:700;font-size:14.5px;width:100%}
+.opt i{width:22px;height:22px;border-radius:50%;border:2px solid #d9c9c1;flex:none}.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--soft)}.opt[aria-pressed="true"] i{background:var(--accent);border-color:var(--accent)}
+.inrow{display:flex;gap:8px}.inrow input{flex:1;min-width:0;height:52px;border:1.5px solid var(--line);border-radius:14px;padding:0 14px;font:16px var(--body);background:var(--paper);color:var(--ink)}
+.locked{border-radius:16px;background:var(--ok);color:#fff;padding:12px 14px}.locked .eb{color:#fff;opacity:.85}
+.idea{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px}.idea small{display:block;font-size:11.5px;color:var(--muted)}
+.vote{min-width:64px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);font-weight:700;color:var(--ink)}.vote[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+/* QC */
+.segs{display:flex;gap:4px}.segs span{flex:1;height:7px;border-radius:4px;background:var(--line)}.segs span.on{background:var(--accent)}.segs span.ok{background:var(--ok)}
+.bigdot{width:56px;height:56px;border-radius:50%;border:3px solid var(--paper);box-shadow:0 0 0 2px var(--line);flex:none}
+.shot{min-height:170px;border-radius:18px;border:2px dashed #d9c9c1;background:repeating-linear-gradient(135deg,var(--cline) 0 8px,var(--ground) 8px 16px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:700;color:var(--muted);cursor:pointer;overflow:hidden;position:relative}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.shot .re{position:absolute;right:10px;bottom:10px;background:rgba(43,27,30,.75);color:#fff;border-radius:999px;padding:6px 12px;font-size:13px}
+.verd{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.verd button{min-height:64px;border-radius:16px;border:2px solid var(--line);background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:14px;color:var(--ink);box-shadow:0 3px 0 var(--line)}
+.verd i{width:14px;height:14px;border-radius:50%}.verd button[aria-pressed="true"]{border-color:var(--accent);background:var(--soft)}
+.offp{background:var(--bad-bg);color:var(--bad-tx);border-radius:16px;padding:12px 14px;font-size:14px}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:35;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px calc(18px + env(safe-area-inset-bottom,0px))}.foot .in{max-width:528px;margin:0 auto}
+.tick{width:64px;height:64px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:30px;margin:10px auto 0}
+.center{text-align:center}
+/* sign in (3a) */
+.si{position:fixed;inset:0;z-index:70;background:var(--deep);color:#fff;overflow:auto}
+.si .in{max-width:420px;margin:0 auto;padding:28px 18px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.si .lg{width:64px;height:64px;border-radius:16px;border:1.5px solid var(--gold);display:grid;place-items:center;margin:8px auto 0;color:var(--gold)}.si .lg svg{width:48px}
+.si h1{font:700 30px/1.1 var(--display);text-align:center;margin:0}.si .tag{color:var(--gold-lt);text-align:center;margin-top:-8px;font-size:15px}
+.si .ph{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border-radius:14px;padding:0 14px;min-height:56px}
+.si .ph input{flex:1;min-width:0;background:transparent;border:0;color:#fff;font:500 18px var(--body);outline:none;height:54px}.si .ph input::placeholder{color:rgba(255,255,255,.55)}
+.si .ph button{border:0;background:none;color:var(--gold);font-size:14px;font-weight:600;min-height:44px}
+.si .dots{display:flex;justify-content:center;gap:12px;margin:4px 0}.si .dots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--gold)}.si .dots i.on{background:var(--gold)}
+.si .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.si .keys button{height:56px;border-radius:14px;border:0;background:rgba(255,255,255,.1);color:#fff;font:600 26px var(--display)}.si .keys button:active{background:rgba(255,255,255,.22)}
+.si .keys button.blank{visibility:hidden}
+.si .opts{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;color:var(--gold-lt)}.si .opts label{display:flex;gap:8px;align-items:center}.si .opts input{width:20px;height:20px;accent-color:var(--gold)}
+.si .msg{min-height:1.3em;text-align:center;font-size:14px;color:#ffd6cf}
+/* xp toast + confetti */
+.xp{position:fixed;left:50%;top:40%;transform:translate(-50%,0);background:var(--gold);color:#2b1b1e;font:700 16px var(--body);padding:10px 18px;border-radius:999px;z-index:90;box-shadow:0 6px 16px rgba(0,0,0,.25);animation:xp 1.4s ease-out forwards;pointer-events:none}
+@keyframes xp{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.05)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-40px)}}
+.cf{position:fixed;width:10px;height:10px;border-radius:50%;z-index:89;pointer-events:none;left:50%;top:40%}
+@media (min-width:900px){.w{max-width:620px}}
+</style></head><body>
+<div class="w" id="app"><p class="hint" style="padding-top:20px">Loading…</p></div>
+<div id="tabs"></div><div id="menu"></div><div id="si"></div>
+<template id="logo"><svg viewBox="0 0 800 523" aria-hidden="true" focusable="false"><g transform="translate(0,523) scale(0.1,-0.1)" fill="currentColor"><path d="M2260 5159c-180 -12 -420 -57 -615 -114 -577 -169 -1068 -529 -1396 -1025 -52 -77 -179 -298 -179 -310 0 -3 62 -5 137 -5 117 0 147 -4 196 -22 42 -16 59 -19 62 -10 3 7 23 66 45 132 199 586 592 1002 1107 1174 606 202 1172 99 1673 -304 263 -212 512 -516 681 -831 23 -44 46 -83 50 -89 5 -5 9 153 9 358l0 368 -102 103c-336 337 -787 537 -1303 576 -142 11 -207 11 -365 -1zM5723 5053c-3 -10 -12 -34 -20 -53 -15 -37 -169 -444 -358 -945 -62 -165 -152 -403 -200 -530 -201 -531 -195 -513 -195 -577 0 -133 87 -178 227 -118 56 25 128 93 226 215 112 140 174 203 229 231 153 78 248 -54 159 -220 -61 -115 -219 -241 -606 -486 -596 -377 -867 -603 -1047 -875 -153 -231 -203 -396 -196 -656l3 -145 -64 -90c-440 -609 -1262 -830 -1968 -528 -445 190 -881 602 -1162 1097 -33 59 -49 68 -71 42 -19 -23 -109 -72 -186 -101 -59 -23 -85 -27 -181 -28 -70 -1 -113 -5 -113 -11 0 -18 108 -175 189 -274 623 -771 1595 -1100 2543 -860 371 93 716 259 989 475l83 64 40 -78c165 -315 447 -469 826 -449 456 25 819 236 1073 627 274 422 386 995 337 1724 -6 82 -9 151 -7 153 4 4 27 -53 233 -597 67 -179 157 -415 199 -525 135 -354 197 -528 221 -625 95 -378 -31 -572 -398 -610 -55 -5 -109 -10 -119 -10 -12 0 -19 -7 -19 -20 0 -20 7 -20 775 -20 688 0 775 2 775 15 0 18 -39 35 -78 35 -46 0 -150 57 -212 116 -79 76 -138 167 -225 347 -86 181 -106 231 -280 692 -48 127 -148 390 -222 585 -74 195 -179 472 -233 615 -54 143 -142 375 -195 515 -53 140 -102 271 -110 290 -8 19 -57 150 -110 290 -53 140 -109 289 -125 330 -16 41 -72 190 -125 330 -53 140 -102 271 -110 290 -8 19 -39 102 -70 184 -31 82 -60 157 -66 168 -12 23 -48 24 -56 1zm-49 -803c53 -140 103 -271 111 -290 8 -19 75 -197 150 -395 75 -198 147 -387 160 -420 59 -151 85 -248 117 -430 34 -199 34 -819 0 -1005 -132 -715 -444 -1168 -898 -1301 -122 -36 -366 -34 -479 4 -232 77 -392 250 -466 502 -37 124 -34 408 5 550 99 363 333 626 896 1010 299 203 480 361 547 475 129 221 42 444 -150 386 -69 -21 -143 -81 -243 -198 -227 -266 -320 -329 -398 -267 -52 41 -42 86 112 494 27 72 133 355 236 630 189 502 195 519 201 513 2 -2 47 -118 99 -258zM298 3456c-31 -12 -60 -25 -64 -29 -12 -12 -21 -8 -27 11 -6 25 -41 33 -66 15 -27 -18 -27 -37 -1 -21 17 11 25 10 49 -3 27 -16 111 -12 141 6 9 5 35 47 28 44 -2 -1 -29 -11 -60 -23zM100 3341c0 -13 18 -17 127 -32 83 -11 117 -9 101 6 -6 6 -173 35 -205 35 -13 0 -23 -4 -23 -9zM80 3180c0 -12 17 -12 45 0 17 7 15 9 -12 9 -18 1 -33 -3 -33 -9zM281 3052c-22 -24 -26 -25 -117 -18 -76 5 -94 4 -94 -7 0 -10 23 -16 86 -21 94 -7 121 2 144 45 16 29 9 29 -19 1zM280 2855c7 -9 15 -13 17 -11 7 7 -7 26 -19 26 -6 0 -6 -6 2 -15zM177 2823c-4 -3 -7 -13 -7 -22 1 -13 3 -13 11 2 11 19 8 33 -4 20zM60 2750c0 -6 33 -10 78 -10 42 0 94 -3 115 -6 30 -5 37 -4 37 10 0 14 -15 16 -115 16 -70 0 -115 -4 -115 -10zM163 2493c-77 -3 -93 -6 -93 -20 0 -14 10 -15 77 -9 42 3 93 6 115 6 27 0 38 4 38 15 0 10 -8 14 -22 13 -13 -1 -65 -4 -115 -5zM221 2291c-57 -36 -99 -67 -92 -69 6 -2 48 19 94 47 45 28 90 51 100 51 18 0 21 8 9 25 -4 7 -46 -13 -111 -54zM345 2218c-10 -24 -40 -29 -80 -14 -11 5 -5 -2 13 -14 42 -28 82 -16 82 25 0 31 -3 31 -15 3zM223 2008c-71 -14 -103 -24 -103 -34 0 -9 8 -12 28 -8 158 31 196 41 200 52 5 15 2 15 -125 -10zM242 1878c-74 -15 -101 -23 -93 -31 14 -14 213 23 219 41 5 15 2 15 -126 -10zM210 1685c-6 -8 -10 -21 -8 -29 2 -11 8 -7 20 14 18 31 10 41 -12 15zM422 1652c-5 -69 -116 -132 -172 -97 -8 5 -11 4 -6 -3 3 -6 22 -16 41 -22 67 -22 151 43 142 111 -2 19 -4 24 -5 11z"/></g></svg></template>
 <script>
-const $=s=>document.querySelector(s), esc=CA.esc;
+const $=s=>document.querySelector(s), esc=CA.esc, LOGO=()=>document.getElementById("logo").innerHTML;
 const QS=new URLSearchParams(location.search);
 /* where to go back to after signing in (only our own pages) */
 const NEXT=(()=>{ const n=QS.get("next")||""; return /^(office|kitchen|audit)\.html(\?[A-Za-z0-9_=&%.-]*)?(#[A-Za-z0-9_-]*)?$/.test(n)?n:""; })();
-const ALL=["owner","manager","office","supervisor","kitchen","auditor"], KIT=["kitchen","supervisor","auditor","owner","manager","office"];
-/* The sections each person sees, by their access (Staff tab). Pages still check access on the server. */
+const KIT=["kitchen","supervisor","auditor","owner","manager","office"];
+/* Every page, by access (Staff tab). Pages still check access on the server. [group, title, description, link, roles] */
 const TILES=[
- ["Kitchen","Morning / Decoration","Opening report, finish & decorate, pack deliveries, orders","kitchen.html?team=am#today",KIT],
- ["Kitchen","Noon / Production","Production list, prep reminders, closing report","kitchen.html?team=pm#today",KIT],
- ["Kitchen","Production plan","The lists for the coming days, add a list from a photo","kitchen.html#plan",KIT],
- ["Kitchen","Kitchen history","Past kitchen reports, temperatures and photos","kitchen.html#history",["supervisor","owner","manager","office","auditor"]],
- ["Kitchen","Kitchen setup","HQ display cakes, fridges and freezers, reminders","kitchen.html#lists",["supervisor","owner","manager"]],
- ["Outlets & deliveries","Deliveries","Delivery orders: check colours, mark delivered","office.html#deliveries",["kitchen","supervisor","office","owner","manager"]],
- ["Outlets & deliveries","Plan & prep","Tomorrow's deliveries per outlet, prep sheet, draft DOs","office.html#plan",["supervisor","office","owner","manager"]],
- ["Outlets & deliveries","Outlets today","Missing closing reports, cakes to take off display, chase on WhatsApp","office.html#today",["supervisor","office","owner","manager","auditor"]],
- ["Outlets & deliveries","Outlet reports","Each outlet's nightly closing report and corrections","office.html#daily",["office","owner","manager","auditor"]],
- ["Outlets & deliveries","Spot audit","Check an outlet: display, prices, chiller and stock","audit.html",["auditor","office","owner","manager"]],
- ["Office","Weekly billing","Monday bills: invoice, carry forward, credit note","office.html#billing",["office","owner","manager"]],
+ ["Kitchen","Morning / Decoration","Opening report, finish & decorate, orders","kitchen.html?team=am#today",KIT],
+ ["Kitchen","Noon / Production","Production list, prep, closing report","kitchen.html?team=pm#today",KIT],
+ ["Kitchen","Production plan","Lists for coming days, add from a photo","kitchen.html#plan",KIT],
+ ["Kitchen","Kitchen history","Past reports, temps and photos","kitchen.html#history",["supervisor","owner","manager","office","auditor"]],
+ ["Kitchen","Kitchen setup","Display cakes, fridges, reminders","kitchen.html#lists",["supervisor","owner","manager"]],
+ ["Quality checks","Random QC","Today's taste check, picked by the app","#qc",["kitchen","supervisor","owner","manager"]],
+ ["Quality checks","QC history","Every taste check with photos","office.html#audits",["supervisor","office","owner","manager","auditor"]],
+ ["Outlets & deliveries","Deliveries","Check colours, mark delivered","office.html#deliveries",["kitchen","supervisor","office","owner","manager"]],
+ ["Outlets & deliveries","Plan & prep","Tomorrow's deliveries, prep sheet, draft DOs","office.html#plan",["supervisor","office","owner","manager"]],
+ ["Outlets & deliveries","Outlets today","Missing reports, cakes to take off, chase","office.html#today",["supervisor","office","owner","manager","auditor"]],
+ ["Outlets & deliveries","Outlet reports","Nightly closing reports and corrections","office.html#daily",["office","owner","manager","auditor"]],
+ ["Outlets & deliveries","Spot audit","Check an outlet: display, prices, chiller","audit.html",["auditor","office","owner","manager"]],
+ ["Office","Weekly billing","Invoice, carry forward, credit note","office.html#billing",["office","owner","manager"]],
  ["Office","Spot audit results","Every audit with photos and the PDF","office.html#audits",["office","owner","manager","auditor"]],
  ["Office","Change log","Every correction: who, when and why","office.html#log",["office","owner","manager"]],
- ["Office","Setup","Outlets & links, cakes, shelf life, prices, WhatsApp","office.html#setup",["office","owner","manager"]],
- ["Office","Problem reports","What the team reported in ? Ask: reply and mark done","office.html#feedback",["office","owner","manager"]],
+ ["Office","Problem reports","What the team reported: reply, mark done","office.html#feedback",["office","owner","manager"]],
+ ["Office","Setup","Outlets, cakes, prices, WhatsApp, points","office.html#setup",["office","owner","manager"]],
  ["Office","Staff","Who can sign in, PINs and access","office.html#staff",["owner","manager"]],
 ];
-/* Help is for everyone: these open the ? Ask sheet */
-const HELP=[["? Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","See what happened and the office's reply","mine"]];
-let S=null, NX=null, MINE=null, MENU=false, OPEN=(()=>{ try{ return localStorage.getItem("chaleur.menu")||""; }catch(e){ return ""; } })();
-function hi(){ const h=+new Date().toLocaleString("en-GB",{hour:"2-digit",hour12:false,timeZone:"Asia/Kuala_Lumpur"}); return h<12?"Good morning":h<17?"Good afternoon":"Good evening"; }
+const HELP=[["? Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat","This month's treat and the jar","#treat"]];
+const ICON={
+ Kitchen:["#f3e4e5",`<svg viewBox="0 0 30 30"><circle cx="15" cy="5" r="3" fill="#c0392b"/><path d="M7 12h16v4H7z" fill="#e0707a"/><path d="M5 16h20v9H5z" fill="#7b1c2b"/><path d="M5 19h20v2H5z" fill="#e3c466"/></svg>`],
+ "Quality checks":["#fbecd2",`<svg viewBox="0 0 30 30"><circle cx="12" cy="12" r="7" fill="none" stroke="#a0620a" stroke-width="3"/><circle cx="10" cy="10" r="2.5" fill="#f2c230"/><path d="M17 17l8 8" stroke="#a0620a" stroke-width="4" stroke-linecap="round"/></svg>`],
+ "Outlets & deliveries":["#dde8f8",`<svg viewBox="0 0 30 30"><path d="M4 9h22v4H4z" fill="#b07c44"/><path d="M6 13h18v12H6z" fill="#c9955b"/><path d="M13 13h4v12h-4z" fill="#ecc98f"/><circle cx="23" cy="22" r="4" fill="#2f6fd0" stroke="#fff" stroke-width="1.5"/></svg>`],
+ Office:["#fbf1d3",`<svg viewBox="0 0 30 30"><rect x="6" y="5" width="18" height="22" rx="3" fill="#fff" stroke="#2b1b1e" stroke-width="2"/><rect x="11" y="3" width="8" height="5" rx="2" fill="#2b1b1e"/><path d="M10 13h10M10 17h7M10 21h9" stroke="#a0620a" stroke-width="2"/></svg>`],
+ Help:["#dcefe2",`<svg viewBox="0 0 30 30"><path d="M4 6h22v14H13l-6 5v-5H4z" fill="#1e8449"/><text x="15" y="17" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Jost,sans-serif">?</text></svg>`]};
+const TABI={
+ today:`<svg viewBox="0 0 28 26"><path d="M8 2v22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M9 3h13l-3 5 3 5H9z" fill="currentColor"/></svg>`,
+ kitchen:`<svg viewBox="0 0 28 26"><circle cx="14" cy="3" r="2.5" fill="currentColor"/><path d="M6 10h16v5H6z" fill="currentColor" opacity=".55"/><path d="M4 15h20v9H4z" fill="currentColor"/></svg>`,
+ office:`<svg viewBox="0 0 28 26"><rect x="5" y="3" width="18" height="21" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M10 11h8M10 15h6M10 19h7" stroke="currentColor" stroke-width="2.2"/></svg>`,
+ team:`<svg viewBox="0 0 28 26"><circle cx="9" cy="8" r="4.5" fill="currentColor"/><circle cx="19.5" cy="9" r="4" fill="currentColor" opacity=".6"/><path d="M1.5 23c0-5 3.5-8 7.5-8s7.5 3 7.5 8z" fill="currentColor"/><path d="M14 23c.5-4 3-7 5.5-7s5.8 3 6 7z" fill="currentColor" opacity=".6"/></svg>`,
+ me:`<svg viewBox="0 0 28 26"><circle cx="14" cy="8" r="6" fill="currentColor"/><path d="M3 25c0-6.5 5-10 11-10s11 3.5 11 10z" fill="currentColor"/></svg>`};
+const DOTS=["#b5b5b5","#f39c4a","#f2c230","#3c9a50","#2f6fd0","#e0707a","#a98bd6"];
+let S=null, VIEW="", TODAY=null, NX=null, ME=null, TEAMI=null, RW=null, MINE=null, MENU=false, OPEN=(()=>{ try{ return localStorage.getItem("chaleur.menu")||""; }catch(e){ return ""; } })();
+let TEAM=(()=>{ try{ return localStorage.getItem("kh2.team")||""; }catch(e){ return ""; } })();
 const cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1).toLowerCase():"";
-function signIn(msg){ $("#mbw").innerHTML=""; $("#hsub").textContent="Chaleur Atelier · operations"; closeMenu();
-  CA.loginForm($("#main"),{title:"Sign in",lede:"One sign-in for everything: your phone number and your staff PIN. You'll see the parts of the app for your job.",msg},s=>{ S=s; if(NEXT){ location.replace(NEXT); return; } history.replaceState(null,"",location.pathname); home(); loadNext(); });
-  $("#main").insertAdjacentHTML("beforeend",`<div class="c" style="max-width:390px;margin:10px auto"><b>Partner outlet?</b><p class="hint" style="margin:4px 0 0">Use your outlet's own link or QR code from Chaleur. It doesn't need a sign-in.</p></div>
-    <p class="tip" style="max-width:390px;margin:18px auto 0">Tip: add this page to your home screen. iPhone: Safari › Share › Add to Home Screen. Android: Chrome › ⋮ › Add to Home screen.</p>`); }
-function nextHtml(){ if(!NX) return `<p class="hint" style="margin:0">Checking what's next for you…</p>`; if(NX.err) return `<p class="err" style="margin:0">${esc(NX.err)}</p>`;
-  return `<ul class="nx">${NX.items.map(x=>`<li><i class="${esc(x.sev)}"></i><span>${esc(x.text)}</span>${x.go?`<a class="b ${x.sev==="info"?"lt":""}" href="${esc(CA.nextHref(x.go))}">${esc(x.btn||"Open")}</a>`:""}</li>`).join("")}</ul>`; }
-function todayTxt(){ try{ return new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Asia/Kuala_Lumpur"}).replace(",",""); }catch(e){ return ""; } }
-function countTxt(){ if(!NX||NX.err) return todayTxt(); const n=(NX.items||[]).filter(x=>x.sev!=="ok").length; return todayTxt()+" · "+(n?n+(n===1?" thing":" things")+" for you":"all done for now"); }
-function home(){ const s=S, role=s.role;
-  $("#hsub").textContent=CA.ROLE[role]||role;
-  $("#mbw").innerHTML=`<button class="mb" id="mb" type="button" aria-haspopup="true" aria-expanded="${MENU}" aria-controls="menu"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span><span id="mbl">${MENU?"Close":"Menu"}</span></button>`;
-  $("#main").innerHTML=`<div class="hello"><h2>${esc(hi())}, ${esc(cap(String(s.name||"").split(" ")[0]))}</h2><div class="sub" id="cnt">${esc(countTxt())}</div></div>
-    <div class="c" id="next"><h2>Next for you</h2>${nextHtml()}</div>
-    <p class="tip">Everything else is in <b>Menu</b> at the top. Stuck? Tap <b>? Ask</b> at the bottom right, in English, Malay or Chinese. Urgent: WhatsApp Alfred 014-665 0928.</p>`;
-  if(MENU) drawMenu(); }
-/* ---------- 2a: the menu ---------- */
+const first=()=>cap(String((S&&S.name)||"").split(" ")[0].replace(/[()]/g,""));
+const isKit=()=>S&&["kitchen","supervisor"].includes(S.role), isMgr=()=>S&&["owner","manager"].includes(S.role), isOffice=()=>S&&["owner","manager","office"].includes(S.role);
+const nf=n=>Number(n||0).toLocaleString("en-MY");
+function hi(){ const h=+new Date().toLocaleString("en-GB",{hour:"2-digit",hour12:false,timeZone:"Asia/Kuala_Lumpur"}); return h<12?"Morning":h<17?"Afternoon":"Evening"; }
+function dateTxt(){ try{ return new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Asia/Kuala_Lumpur"}).replace(",",""); }catch(e){ return ""; } }
+function hmOf(iso){ try{ return new Date(iso).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"}); }catch(e){ return ""; } }
+function myTeam(){ if(TEAM==="am"||TEAM==="pm") return TEAM; const h=+new Date().toLocaleString("en-GB",{hour:"2-digit",hour12:false,timeZone:"Asia/Kuala_Lumpur"}); return h<13?"am":"pm"; }
+function toast(m){ const d=document.createElement("div"); d.className="xp"; d.style.background="var(--ink)"; d.style.color="var(--paper)"; d.style.fontWeight="600"; d.textContent=m; document.body.appendChild(d); setTimeout(()=>d.remove(),1500); }
+function xp(n){ if(!(n>0)) return; const d=document.createElement("div"); d.className="xp"; d.textContent="+"+n+" to the team jar"; document.body.appendChild(d); setTimeout(()=>d.remove(),1500); }
+function confetti(){ if(matchMedia("(prefers-reduced-motion: reduce)").matches) return; for(let i=0;i<34;i++){ const d=document.createElement("i"); d.className="cf"; d.style.background=DOTS[i%7]; document.body.appendChild(d);
+  const a=Math.random()*Math.PI*2, r=120+Math.random()*160, x=Math.cos(a)*r, y=Math.sin(a)*r-60, dur=1000+Math.random()*600;
+  d.animate([{transform:"translate(-50%,-50%) scale(.6)",opacity:1},{transform:`translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) scale(1)`,opacity:1,offset:.7},{transform:`translate(calc(-50% + ${x}px),calc(-50% + ${y+80}px)) scale(.8)`,opacity:0}],{duration:dur,easing:"cubic-bezier(.2,.7,.3,1)"}); setTimeout(()=>d.remove(),dur+50); } }
+/* ---------- sign in (3a): phone + big PIN pad ---------- */
+let PIN="", SIBUSY=false;
+function signIn(msg){ S=null; $("#tabs").innerHTML=""; $("#menu").innerHTML=""; $("#app").innerHTML="";
+  let last=""; try{ last=localStorage.getItem("chaleur.lastid")||""; }catch(e){}
+  PIN=""; $("#si").innerHTML=`<div class="si" role="dialog" aria-label="Sign in"><div class="in">
+    <div class="lg" aria-hidden="true">${LOGO()}</div><h1>Chaleur Brigade</h1><div class="tag">Ready for your shift?</div>
+    <div class="ph">${last?`<span style="flex:1;font:500 18px var(--body)" id="si-show">${esc(last)}</span><input id="ca-id" type="hidden" value="${esc(last)}"><button type="button" data-sichange="1">Change</button>`:`<input id="ca-id" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="Phone number (or name)" aria-label="Phone number or name">`}</div>
+    <div class="dots" aria-hidden="true">${[0,1,2,3,4,5].map(i=>`<i data-d="${i}"></i>`).join("")}</div>
+    <input id="ca-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" aria-label="PIN" style="position:absolute;opacity:0;width:1px;height:1px;left:-99px">
+    <div class="keys" role="group" aria-label="PIN pad">${["1","2","3","4","5","6","7","8","9","","0","⌫"].map(k=>`<button type="button" ${k?`data-key="${k}" aria-label="${k==="⌫"?"Delete":k}"`:'class="blank" tabindex="-1" aria-hidden="true"'}>${k}</button>`).join("")}</div>
+    <button class="cb gold full" id="ca-go" type="button" disabled style="min-height:60px;font-size:17px">Enter your PIN</button>
+    <div class="msg" id="si-msg" role="alert">${esc(msg||"")}</div>
+    <div class="opts"><label><input id="ca-rem" type="checkbox" ${last?"checked":""}> Remember me 30 days</label><span style="text-align:right">Partner outlet? Scan your outlet's QR</span></div>
+    <p style="font-size:12.5px;color:var(--gold-lt);opacity:.85;margin:0;text-align:center">No phone number set up yet? Type your name instead. Don't tick "Remember me" on a shared phone.</p></div></div>`;
+  drawPin(); const idi=$("#ca-id"); if(idi&&idi.type!=="hidden") setTimeout(()=>idi.focus(),50); }
+function drawPin(){ document.querySelectorAll(".si .dots i").forEach((d,i)=>d.classList.toggle("on",i<PIN.length)); const b=$("#ca-go"); if(!b) return; b.disabled=PIN.length<4||SIBUSY; b.textContent=SIBUSY?"Signing in…":PIN.length<4?"Enter your PIN":"Start my shift"; const p=$("#ca-pin"); if(p) p.value=PIN; }
+async function doSignIn(){ const id=($("#ca-id")||{}).value.trim(), rem=$("#ca-rem").checked, m=$("#si-msg"); if(!id){ m.textContent="Type your phone number first."; return; } if(PIN.length<4||SIBUSY) return;
+  SIBUSY=true; drawPin(); m.textContent="";
+  try{ const r=await CA.run("login",id,PIN,rem); CA.save({t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember});
+    try{ if(rem) localStorage.setItem("chaleur.lastid",id); else localStorage.removeItem("chaleur.lastid"); }catch(e){}
+    SIBUSY=false; $("#si").innerHTML=""; S=CA.get(); if(NEXT){ location.replace(NEXT); return; } history.replaceState(null,"",location.pathname); boot(); }
+  catch(e){ SIBUSY=false; PIN=""; drawPin(); m.textContent=(e&&e.message)||"Couldn't sign in."; } }
+document.addEventListener("click",e=>{ const t=e.target.closest&&e.target.closest("[data-key],[data-sichange],#ca-go"); if(!t||!$(".si")) return;
+  if(t.id==="ca-go"){ doSignIn(); return; }
+  if(t.dataset.sichange!=null){ const ph=$(".si .ph"); ph.innerHTML=`<input id="ca-id" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="Phone number (or name)" aria-label="Phone number or name">`; const rm=$("#ca-rem"); if(rm) rm.checked=false; $("#ca-id").focus(); return; }
+  const k=t.dataset.key; if(k==="⌫") PIN=PIN.slice(0,-1); else if(PIN.length<6) PIN+=k; drawPin(); if(PIN.length===6) doSignIn(); });
+/* a password manager (or a test) can fill the hidden PIN field */
+document.addEventListener("input",e=>{ if(e.target&&e.target.id==="ca-pin"){ PIN=String(e.target.value||"").replace(/\D/g,"").slice(0,6); drawPin(); } });
+document.addEventListener("keydown",e=>{ if(!$(".si")) return; const a=document.activeElement; if(a&&a.id==="ca-id"&&a.type!=="hidden"){ if(e.key==="Enter"){ e.preventDefault(); a.blur(); } return; }
+  if(/^[0-9]$/.test(e.key)){ if(PIN.length<6){ PIN+=e.key; drawPin(); } e.preventDefault(); } else if(e.key==="Backspace"){ PIN=PIN.slice(0,-1); drawPin(); e.preventDefault(); } else if(e.key==="Enter"){ doSignIn(); } });
+/* ---------- header, tab bar, menu ---------- */
+function header(){ return `<div class="hd"><div class="logo" aria-hidden="true">${LOGO()}</div><div class="tt"><h1>${esc(hi())}, ${esc(first())}</h1>
+    <div class="sub">${esc(dateTxt())} · ${isKit()||S.as==="kitchen"?`<button type="button" data-team="1" aria-label="Switch team">${myTeam()==="am"?"Morning team":"Production team"}</button>`:esc(CA.ROLE[S.role]||S.role)}</div></div>
+    <button class="hbtn" type="button" data-menu="1" aria-haspopup="true">☰ Menu</button><button class="qbtn" type="button" data-help="ask" aria-label="Ask the helper or report a problem">?</button></div>`; }
+function subHead(title,back){ return `<div class="hd">${back?`<a class="back" href="#${back==="home"?"":back}" aria-label="Back">‹</a>`:""}<div class="tt"><div class="ptitle">${esc(title)}</div></div><button class="hbtn" type="button" data-menu="1">☰ Menu</button><button class="qbtn" type="button" data-help="ask" aria-label="Ask the helper or report a problem">?</button></div>`; }
+function tabs(){ const second=isKit()||["auditor"].includes(S.role)?["kitchen","Kitchen","kitchen.html"]:["office","Office","office.html"];
+  const T=[["today","Today","#"],second,["team","Team","#team"],["me","Me","#me"]];
+  $("#tabs").innerHTML=`<div class="tabs"><nav aria-label="Main">${T.map(([k,l,h])=>`<a href="${h}" ${((VIEW||"today")===k)?'aria-current="page"':""}>${TABI[k]}<span>${l}</span></a>`).join("")}</nav></div>`; }
 function sections(){ const role=S.role, tiles=TILES.filter(x=>x[4].includes(role)), secs=[...new Set(tiles.map(x=>x[0]))];
   const mc=MINE&&MINE.length?[MINE.filter(x=>x.status==="doing").length?MINE.filter(x=>x.status==="doing").length+" being fixed":"",MINE.filter(x=>x.status==="open").length?MINE.filter(x=>x.status==="open").length+" new":""].filter(Boolean).join(" · "):"";
   return secs.map(sec=>({name:sec,items:tiles.filter(x=>x[0]===sec).map(x=>({t:x[1],d:x[2],href:x[3]}))}))
-    .concat([{name:"Help",items:HELP.map(([t,d,v])=>({t,d:v==="mine"&&mc?mc:d,help:v}))}]); }
-function drawMenu(){ const m=$("#menu"); if(!MENU||!S){ m.innerHTML=""; return; }
-  const hd=$("#hd").getBoundingClientRect(); document.documentElement.style.setProperty("--mt",Math.round(Math.max(0,hd.bottom))+"px");
+    .concat([{name:"Help",items:HELP.map(([t,d,v])=>/^#/.test(v)?{t,d,href:v}:{t,d:v==="mine"&&mc?mc:d,help:v})}]); }
+function drawMenu(){ const m=$("#menu"); if(!MENU||!S){ m.innerHTML=""; document.body.style.overflow=""; return; } document.body.style.overflow="hidden";
   const secs=sections(); if(OPEN&&!secs.some(x=>x.name===OPEN)) OPEN="";
-  m.innerHTML=`<div class="mbd" data-mclose="1"></div><nav class="mp" aria-label="Menu">${secs.map(sec=>{ const op=OPEN===sec.name;
-      return `<div class="ms"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span><b>${esc(sec.name)}</b><small>${sec.items.length} ${sec.items.length===1?"page":"pages"}</small></span><span class="chev" aria-hidden="true">${op?"▴":"▾"}</span></button>
-        ${op?`<div class="mi">${sec.items.map(it=>it.help?`<button type="button" data-help="${it.help}"><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></button>`:`<a href="${esc(it.href)}"><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join("")}
-    <div class="mf"><button type="button" class="ask" data-help="fb">? Ask / Report</button><button type="button" class="out" data-ca-logout="1">Log out</button></div>
-    ${CA.canView()?`<label class="mva"><span>Owner: see the app as</span>${CA.vaSelect()}</label>`:""}</nav>`; }
-function setMenu(on){ MENU=!!on; const b=$("#mb"); if(b){ b.setAttribute("aria-expanded",String(MENU)); $("#mbl").textContent=MENU?"Close":"Menu"; } drawMenu(); if(MENU&&!MINE) loadMine(); }
-function closeMenu(){ if(MENU) setMenu(false); }
-document.addEventListener("click",e=>{ const t=e.target&&e.target.closest?e.target:null; if(!t) return;
-  if(t.closest("#mb")){ setMenu(!MENU); return; }
-  if(t.closest("[data-mclose]")){ setMenu(false); return; }
-  const sb=t.closest("[data-msec]"); if(sb){ const n=sb.dataset.msec; OPEN=OPEN===n?"":n; try{ localStorage.setItem("chaleur.menu",OPEN); }catch(x){} drawMenu(); return; }
-  const h=t.closest("[data-help]"); if(h){ setMenu(false); CA.openHelp(h.dataset.help); return; } });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&MENU){ setMenu(false); const b=$("#mb"); b&&b.focus(); } });
-window.addEventListener("resize",()=>{ if(MENU) drawMenu(); });
+  m.innerHTML=`<div class="menu" role="dialog" aria-modal="true" aria-label="Menu"><div class="in"><div class="mh"><div>Menu</div><button class="hbtn" type="button" data-mclose="1">✕ Close</button></div>
+    ${secs.map(sec=>{ const op=OPEN===sec.name, ic=ICON[sec.name]||ICON.Help;
+      return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${sec.items.length} ${sec.items.length===1?"page":"pages"}</small></span><span class="chev" aria-hidden="true">${op?"▲":"▼"}</span></button>
+        ${op?`<div class="its">${sec.items.map(it=>it.help?`<button type="button" data-help="${it.help}"><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></button>`:`<a href="${esc(it.href)}" data-mgo="1"><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join("")}
+    <div class="mf"><button type="button" class="cb ink" data-help="fb">? Ask / Report</button><button type="button" class="cb ghost" data-ca-logout="1" style="color:var(--muted)">Log out</button></div>
+    ${CA.canView()?`<label class="mva"><span>Owner: see the app as</span>${CA.vaSelect()}</label>`:""}</div></div>`; }
+function setMenu(on){ MENU=!!on; drawMenu(); if(MENU&&!MINE) loadMine(); }
 async function loadMine(){ try{ MINE=await CA.run("feedbackMine",S.t); }catch(e){ MINE=[]; } if(MENU) drawMenu(); }
-async function loadNext(){ try{ NX=await CA.run("myNext",S.t); }catch(e){ if(CA.isAuthErr(e)){ CA.clear(); S=null; return signIn(e.message); } NX={err:"Couldn't load your list ("+e.message+"). Pull down to refresh."}; }
-  const n=$("#next"); if(n) n.innerHTML=`<h2>Next for you</h2>${nextHtml()}`; const c=$("#cnt"); if(c) c.textContent=countTxt(); }
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&S){ loadNext(); MINE=null; } });
-(function(){ CA.helper({auth:()=>S&&S.t,page:()=>"Home"});
-  S=CA.get(); if(!S) return signIn(QS.get("msg")||"");
-  if(NEXT){ location.replace(NEXT); return; }
-  home(); loadNext(); })();
+/* ---------- views ---------- */
+function jarCard(j,treat,link){ if(!j) return ""; const pct=j.pct||0, fill=Math.max(4,Math.min(100,pct));
+  const ln=j.unlocked?`${pct}% reached: the treat is on! Keep it up until the end of the month.`:`Needs ${j.unlock}% by the end of the month (${nf(j.points)} of ${nf(j.target)} points). Every on-time report, to-do and QC adds to it.${j.mineToday?` You added ${nf(j.mineToday)} today.`:""}`;
+  return `<${link?'a href="#treat"':'div'} class="jar" aria-label="Team treat jar ${pct}% full"><div class="jarpic" aria-hidden="true"><span class="lid"></span><span class="glass"><span class="fill" style="height:${fill}%"></span><span class="mark" style="bottom:${j.unlock}%"></span>
+      <span class="dot" style="left:8px;bottom:10px;background:#2f6fd0"></span><span class="dot" style="left:24px;bottom:18px;background:#3c9a50"></span><span class="dot" style="left:34px;bottom:8px;background:#e0707a"></span><span class="dot" style="left:14px;bottom:27px;background:#f39c4a"></span></span></div>
+    <div><div class="eb">Team treat jar · ${pct}%</div><div class="ttl">${esc(treat||"This month's treat: not chosen yet")}</div><div class="ln">${esc(ln)}</div></div></${link?"a":"div"}>`; }
+function qcCard(q){ if(!q||q.done) return ""; const late=TODAY&&TODAY.now>q.by;
+  return `<div class="qcc"><div class="top"><span class="ico" style="background:var(--warn-bg)" aria-hidden="true">${ICON["Quality checks"][1]}</span><div style="flex:1"><div class="eb">New · Random QC</div><div class="ttl">Taste-check ${q.items.length} cake${q.items.length>1?"s":""}</div><div class="hint" style="font-size:12.5px;${late?"color:var(--bad-tx);font-weight:600":""}">${late?"Was due "+esc(q.by):"Before "+esc(q.by)} · picked by the app</div></div></div>
+    <div class="chips">${q.items.map(x=>`<span class="chip"><i style="background:${esc(x.hex)}"></i>${esc(x.name)}</span>`).join("")}</div>
+    <a class="cb full" href="#qc">Start QC</a></div>`; }
+function rowHtml(r){ const right=r.done?`<span class="r">${esc(hmOf(r.at))}</span>`:r.cur&&r.go?`<a class="cb sm" href="${esc(CA.nextHref(r.go))}">${esc(r.btn||"Start")}</a>`:r.dot?`<span class="dotr" style="background:${esc(r.dot)}"></span>`:r.due?`<span class="r">${esc(r.due)}</span>`:"";
+  const sub=r.done?(r.by?"✓ "+esc(cap(String(r.by).split(" ")[0]))+(r.sub?" · "+esc(r.sub):""):esc(r.sub||"")):esc(r.sub||"");
+  const inner=`<span class="circ" aria-hidden="true">${r.done?"✓":""}</span><span><span class="t">${esc(r.title)}</span>${sub?`<span class="s ${!r.done&&r.late?"late":""}">${sub}</span>`:""}</span>${right}`;
+  return r.go&&!r.cur?`<a class="row ${r.done?"done":""}" href="${esc(CA.nextHref(r.go))}">${inner}</a>`:`<div class="row ${r.done?"done":""} ${r.cur?"cur":""}">${inner}</div>`; }
+function vHome(){
+  const T=TODAY, kit=isKit()||S.as==="kitchen";
+  let html=header()+`<div class="stack">`;
+  html+=T?jarCard(T.jar,T.treat,true):`<div class="jar" style="min-height:110px"></div>`;
+  if(kit&&T) html+=qcCard(T.qc);
+  if(kit){ const tm=myTeam(), rows=T?T.rows.filter(r=>r.team===tm):[], dn=rows.filter(r=>r.done).length;
+    html+=`<div class="lh"><b>Today</b><span>${T?`${dn} of ${rows.length} done`:""}</span></div>
+      <div class="teamsw" role="group" aria-label="Team"><button type="button" data-setteam="am" aria-pressed="${tm==="am"}">Morning</button><button type="button" data-setteam="pm" aria-pressed="${tm==="pm"}">Production</button></div>
+      <div class="card rows">${!T?`<div class="row"><span class="hint">Loading today's list…</span></div>`:T.closed?`<div class="row"><span class="circ"></span><span class="t">The kitchen is closed today.</span></div>`:rows.length?rows.map(rowHtml).join(""):`<div class="row"><span class="circ"></span><span class="t">Nothing on the list for this team today.</span></div>`}</div>`;
+    const also=(NX&&NX.items||[]).filter(i=>i.sev!=="ok"&&!/^(Opening report|Closing report|Morning team|Production team|Finish & decorate|Production today|Random QC)/.test(i.text));
+    if(also.length) html+=`<div class="lh"><b>Also for you</b><span></span></div><div class="card also">${also.map(nxItem).join("")}</div>`;
+  } else {
+    const items=(NX&&NX.items||[]).filter(i=>i.sev!=="ok"), n=items.length, done=NX&&NX.items&&NX.items.some(i=>i.sev==="ok");
+    const deg=n?Math.max(20,360-n*40):360;
+    html+=`<div class="card board"><div class="ring" style="background:conic-gradient(var(--ok) ${360-deg}deg,var(--line) 0)"><div style="position:absolute;inset:8px;border-radius:50%;background:var(--paper)"></div><b style="position:relative">${NX?n:"…"}</b><small style="position:relative">to clear</small></div>
+      <div><div style="font:700 22px/1.1 var(--display)">${!NX?"Checking…":n?"Clear the board":"All clear"}</div><div class="hint">${!NX?"":n?"One at a time. Tap an item to go there.":"Nothing is waiting for you right now."}</div></div></div>
+      ${n?`<div class="card also">${items.map(nxItem).join("")}</div>`:""}`;
+  }
+  html+=`<p class="hint" style="margin:6px 2px 0">Everything else is in <b>☰ Menu</b>. Stuck? Tap <b>?</b> (English, Malay or Chinese). Urgent: WhatsApp Alfred 014-665 0928.</p></div>`;
+  return html; }
+function nxItem(x){ const inner=`<span class="sev ${esc(x.sev)}"></span><span>${esc(x.text)}</span>${x.go?`<span class="cb sm" style="${x.sev==="info"?"background:var(--soft);color:var(--accent);box-shadow:0 3px 0 var(--line)":""}">${esc(x.btn||"Open")}</span>`:""}`;
+  return x.go?`<a href="${esc(CA.nextHref(x.go))}">${inner}</a>`:`<div class="it">${inner}</div>`; }
+function vTeam(){ const T=TEAMI; if(!T) return subHead("The brigade")+`<p class="hint">Loading…</p>`;
+  const bar=(l,x)=>`<div><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px"><span>${l}</span><span>${x.done} / ${x.total}</span></div><div class="bar"><i style="width:${x.total?Math.round(x.done*100/x.total):0}%"></i></div></div>`;
+  const got=T.badges.filter(b=>b.got).length;
+  return subHead("The brigade")+`<div class="stack">
+    <div class="hero"><div class="eb">This month, together</div><div class="big" style="margin:6px 0 2px">${T.jar.pct}%</div><div style="font-size:13px;color:var(--gold-lt)">of the Team treat jar · ${T.jar.unlocked?"treat unlocked":"needs "+T.jar.unlock+"%"}${T.treat?" → "+esc(T.treat):""}</div>
+      <div class="bar" style="margin-top:10px;height:10px"><i style="width:${T.jar.pct}%"></i><span style="position:absolute;top:-3px;bottom:-3px;left:${T.jar.unlock}%;border-left:2px dashed #fff"></span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">${bar("Morning team · on time",T.teams.am)}${bar("Production team · on time",T.teams.pm)}</div></div>
+    <a class="card lrow" href="#treat"><span><b>Team treat</b><span class="hint" style="display:block;font-size:12.5px">${T.treat?esc(T.treat):"Not chosen yet"} · how the jar fills</span></span><span style="color:var(--accent);font-size:22px">›</span></a>
+    <div class="eb" style="margin:4px 2px 0">Shout-outs</div>
+    ${T.shout.length?T.shout.map(s=>`<div class="card shout"><b>${esc(s.who)}</b> ${esc(s.text)} ${s.tag?`<span class="tag">${esc(s.tag)}</span>`:""}</div>`).join(""):`<div class="card shout hint">Good catches and outlet streaks show here.</div>`}
+    <div class="eb" style="margin:4px 2px 0">Your badges · ${got} of ${T.badges.length}</div>
+    <div class="card badges">${T.badges.map(b=>`<div class="${b.got?"got":"no"}"><span aria-hidden="true">${b.got?esc(b.icon):""}</span>${esc(b.name)}</div>`).join("")}</div>
+    <p class="hint" style="margin:0 2px">No ranking of people: the whole brigade fills one jar.</p></div>`; }
+function vMe(){ const M=ME; const sub=`<div style="display:flex;align-items:center;gap:14px;padding:10px 0 2px"><div class="av" aria-hidden="true">${esc(first().charAt(0)||"?")}</div><div><div style="font:700 26px/1 var(--display)">Good ${hi().toLowerCase()}, ${esc(first())}</div><div class="hint">Only you can see this page</div></div></div>`;
+  if(!M) return sub+`<p class="hint">Loading…</p>`;
+  const showPath=isKit()||S.role==="auditor"||M.points>0||S.as;
+  const next=M.next, pct=next?Math.min(100,Math.round((M.points-M.from)*100/Math.max(1,next-M.from))):100;
+  return `<div class="stack">${sub}
+    ${showPath?`<div class="path"><div class="eb">Your path to chef</div><div class="hello">${esc(M.hello)}</div><div class="msg">${esc(M.msg)}</div>
+      <div class="bar" style="margin-top:12px"><i style="width:${pct}%"></i></div><div class="pts">${nf(M.points)}${next?" / "+nf(next):""} points · ${nf(M.month)} this month</div></div>
+    <div class="card lad">${M.ladder.map((l,i)=>`<div class="${i<M.rank?"past":i===M.rank?"me":""}"><span class="d"></span><span><b>${esc(l.name)}</b> · ${esc(l.desc)}</span><small>${i<M.rank?"✓":i===M.rank?"you":nf(l.min)}</small></div>`).join("")}</div>`:""}
+    ${showPath&&M.recent.length?`<div class="eb" style="margin:2px">Recent points</div><div class="card fills">${M.recent.map(r=>`<div><span>${esc(r.why)}</span><b>+${nf(r.pts)}</b></div>`).join("")}</div>`:""}
+    <div class="seg" style="--n:3" role="group" aria-label="Language"><button type="button" aria-pressed="true">English</button><button type="button" disabled title="Coming soon" style="opacity:.55">Melayu</button><button type="button" disabled title="Coming soon" style="opacity:.55">中文</button></div>
+    <p class="hint" style="margin:-4px 2px 0;font-size:12px">Melayu and 中文 are coming soon.</p>
+    <div class="card"><button class="lrow" type="button" data-help="mine"><span>My reports</span><span style="color:var(--accent);font-size:22px">›</span></button>
+      <div class="lrow"><span>Remember me on this phone</span><span class="hint">${S.remember?"On (30 days)":"Off"}</span></div>
+      ${CA.canView()?`<div class="lrow"><span>See the app as</span>${CA.vaSelect()}</div>`:""}
+      <div class="lrow"><span>${esc(S.name)}</span><span class="hint">${esc(CA.ROLE[S.role]||S.role)}</span></div></div>
+    <button class="cb ghost full" type="button" data-ca-logout="1">Log out</button></div>`; }
+function vTreat(){ const R0=RW; const head=`<div class="hd"><a class="back" href="#" aria-label="Back">‹</a><div class="tt"><div class="ptitle">Team treat</div></div><button class="qbtn" type="button" data-help="ask" aria-label="Help">?</button></div>`;
+  if(!R0) return head+`<p class="hint">Loading…</p>`;
+  const j=R0.jar, P=R0.pts, reset=new Date(j.resets+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  let body=`<div class="hero center"><div class="big" style="font-size:40px">${j.pct}%</div><div style="font-size:13px;color:var(--gold-lt);margin-top:4px">full · ${nf(j.points)} of ${nf(j.target)} points · starts again on ${esc(reset)}</div>
+      <div class="bar" style="height:12px;margin-top:12px"><i style="width:${j.pct}%"></i><span style="position:absolute;top:-3px;bottom:-3px;left:${j.unlock}%;border-left:2px dashed #fff"></span></div>
+      <div style="font-size:13px;margin-top:8px;color:#fff">${j.unlocked?"🎉 "+j.unlock+"% reached: the team gets the treat!":"The team gets the treat at "+j.unlock+"% ("+nf(j.need)+" points) · "+j.daysLeft+" day"+(j.daysLeft===1?"":"s")+" left"}</div></div>
+    <div class="eb">What fills it</div>
+    <div class="card fills"><div><span>Report part sent on time</span><b>+${P.part}</b></div><div><span>Report part sent late</span><b>+${P.late}</b></div><div><span>Random QC done</span><b>+${P.qc}</b></div><div><span>Good catch (warm fridge or problem reported)</span><b>+${P.catch}</b></div><div><span>To-do done by its time</span><b>+${P.todo}</b></div><div><span>Each fridge or freezer reading</span><b>+${P.unit}</b></div></div>
+    <p class="hint" style="margin:0 2px;font-size:12.5px">Points are for doing the work and reporting on time, never for a "good" number. A warm fridge you report is a Good catch.</p>
+    <div class="eb">This month's treat · who decides?</div>
+    <div class="seg" role="group" aria-label="Who decides"><button type="button" data-rmode="pick" aria-pressed="${R0.mode==="pick"}" ${R0.canManage?"":"disabled"}>Alfred picks</button><button type="button" data-rmode="vote" aria-pressed="${R0.mode==="vote"}" ${R0.canManage?"":"disabled"}>Team suggests & votes</button></div>`;
+  if(R0.mode==="pick"){
+    if(R0.canManage) body+=`<div class="hint" style="font-size:12.5px;padding:0 2px">Pick one, or write your own. Your pick is final and the team sees it.</div>
+      ${R0.defaults.map(d=>`<button type="button" class="opt" data-rpick="${esc(d)}" aria-pressed="${R0.pick===d}"><i></i><span style="flex:1">${esc(d)}</span></button>`).join("")}
+      <div class="inrow"><input id="r-custom" placeholder="Or write my own treat…" maxlength="80" value="${esc(R0.defaults.includes(R0.pick)?"":R0.pick)}"><button class="cb ink" type="button" data-ruse="1">Use</button></div>`;
+    body+=R0.pick?`<div class="locked"><div class="eb">Locked in · shown to the team</div><div style="font-weight:700;font-size:16px;margin-top:2px">${esc(R0.pick)}</div></div>`:`<div class="card shout hint">${R0.canManage?"Pick this month's treat above.":"Alfred hasn't picked this month's treat yet."}</div>`;
+  } else {
+    const cl=new Date(R0.closes.replace(" ","T")+":00").toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    const max=Math.max(1,...R0.ideas.map(i=>i.votes));
+    body+=`<div class="hint" style="font-size:12.5px;padding:0 2px">${R0.open?`Anyone can add an idea. One vote each. Voting closes ${esc(cl)} and the top idea wins.`:`Voting closed. ${R0.treat?"The treat: <b>"+esc(R0.treat)+"</b>.":"No votes this month."}`}</div>
+      ${R0.open?`<div class="inrow"><input id="r-new" placeholder="Suggest a treat…" maxlength="80"><button class="cb" type="button" data-radd="1">Add</button></div>`:""}
+      ${R0.ideas.map(i=>`<div class="card idea"><div style="min-width:0"><div style="font-weight:700;font-size:14.5px">${esc(i.t)}</div><small>by ${esc(cap(String(i.by).split(" ")[0]))}</small><div class="bar lt" style="height:5px;margin-top:6px"><i style="width:${Math.round(i.votes*100/max)}%"></i></div></div><button type="button" class="vote" data-rvote="${esc(i.id)}" aria-pressed="${i.mine}" ${R0.open?"":"disabled"} aria-label="Vote">▲ ${i.votes}</button></div>`).join("")||`<div class="card shout hint">No ideas yet. Add the first one.</div>`}`;
+  }
+  return head+`<div class="stack">${body}</div>`; }
+/* ---------- Random QC (4b): one cake per screen ---------- */
+let QC=null, QCI=0, QCD=null, QCRES=null;
+function qcLoadDraft(date){ try{ const x=JSON.parse(sessionStorage.getItem("chaleur.qc")||"null"); if(x&&x.date===date) return x; }catch(e){} return {date,items:[]}; }
+function qcSaveDraft(){ try{ sessionStorage.setItem("chaleur.qc",JSON.stringify(QCD)); }catch(e){} }
+const shrink=file=>new Promise((res,rej)=>{ const r=new FileReader(); r.onerror=()=>rej(new Error("Couldn't read the photo.")); r.onload=()=>{ const im=new Image(); im.onerror=()=>rej(new Error("Couldn't read the photo."));
+  im.onload=()=>{ const k=Math.min(1,1280/Math.max(im.width,im.height)), c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); res(c.toDataURL("image/jpeg",.8)); }; im.src=r.result; }; r.readAsDataURL(file); });
+function vQC(){ const head=(sub,pos)=>`<div class="hd"><a class="back" href="#" aria-label="Back">‹</a><div class="tt"><div class="hint" style="font-size:12px">Random QC · ${esc(dateTxt())}</div><div class="ptitle">Taste check</div></div>${pos?`<span class="hint">${pos}</span>`:""}</div>`;
+  if(!QC) return head()+`<p class="hint">Loading…</p>`;
+  const q=QC.today;
+  if(QCRES||(q&&q.done)){ const d=(QCRES&&QCRES.qc&&QCRES.qc.done)||q.done, V={good:["Good","var(--ok)"],unsure:["Not sure","var(--warn-tx)"],off:["Off","var(--bad-tx)"]};
+    return head()+`<div class="stack"><div class="tick" aria-hidden="true">✓</div><div class="center" style="font:700 30px/1.05 var(--display)">QC report sent</div>
+      <div class="center hint">Ref ${esc(d.ref)} · by ${esc(cap(String(d.by).split(" ")[0]))} at ${esc(hmOf(d.at))} · the office sees it under Spot audits</div>
+      <div class="card fills">${d.results.map(r=>`<div style="align-items:center"><span style="display:flex;align-items:center;gap:10px"><i style="width:14px;height:14px;border-radius:50%;background:${esc(r.hex)};display:block"></i><b style="font-weight:600">${esc(r.name)}</b></span><b style="color:${V[r.verdict][1]}">${V[r.verdict][0]}</b></div>`).join("")}</div>
+      ${QCRES&&QCRES.pts?`<div class="center" style="color:var(--warn-tx);font-weight:600">+${QCRES.pts} to the Team treat jar</div>`:""}
+      <a class="cb full" href="#" style="min-height:56px">Back to today</a></div>`; }
+  if(!q) return head()+`<div class="card shout"><b>No Random QC today.</b><div class="hint">The app picks 2–5 cakes from the HQ display every 1–2 days, oldest dots first. It shows on the home page when it's drawn.</div></div>`;
+  if(!QCD||QCD.date!==q.date) QCD=qcLoadDraft(q.date);
+  const n=q.items.length; QCI=Math.max(0,Math.min(QCI,n-1)); const x=q.items[QCI], d=QCD.items[QCI]||(QCD.items[QCI]={}), last=/last day|one more/.test(x.why);
+  const ready=!!(d.photo&&d.verdict), allReady=q.items.every((_,i)=>QCD.items[i]&&QCD.items[i].photo&&QCD.items[i].verdict);
+  const segs=q.items.map((_,i)=>`<span class="${i<QCI||(QCD.items[i]&&QCD.items[i].photo&&QCD.items[i].verdict)?"ok":i===QCI?"on":""}"></span>`).join("");
+  const btn=!ready?"Photo + verdict needed":QCI<n-1?"Next cake ›":allReady?"Send QC report":"Finish the other cakes";
+  return head(null,`${QCI+1} of ${n}`)+`<div class="segs" style="margin:2px 0 14px">${segs}</div><div class="stack" style="padding-bottom:110px">
+    <div style="display:flex;align-items:center;gap:12px"><span class="bigdot" style="background:${esc(x.hex)}"></span><div><div style="font-weight:700;font-size:20px">${esc(x.name)}</div><div style="font-size:13px;font-weight:600;color:${last?"var(--warn-tx)":"var(--muted)"}">${esc(x.why)}</div></div></div>
+    <label class="shot">${d.photo?`<img src="${esc(d.photo)}" alt="Photo of the cut ${esc(x.name)}"><span class="re">Retake</span>`:`<span style="font:11px ui-monospace,monospace;font-weight:400">camera</span>Tap to photograph the cut cake`}<input type="file" accept="image/*" capture="environment" data-qcphoto="1" hidden></label>
+    <div><div class="eb" style="margin-bottom:8px">How is it?</div><div class="verd">${[["good","Good","var(--ok)"],["unsure","Not sure","var(--warn)"],["off","Off","var(--bad)"]].map(([v,l,c])=>`<button type="button" data-qcv="${v}" aria-pressed="${d.verdict===v}"><i style="background:${c}"></i>${l}</button>`).join("")}</div></div>
+    ${d.verdict==="off"?`<div class="offp"><b>Take it off the display.</b> Check the other cakes with the same dot. The office gets told when you send.</div>`:""}
+    ${d.verdict&&d.verdict!=="good"?`<div class="inrow"><input id="qc-note" placeholder="What's wrong? (optional)" maxlength="200" value="${esc(d.note||"")}"></div>`:""}
+    <div class="card lrow"><span class="hint">Tasted by</span><b>${esc(first())} · ${esc(hmOf(new Date().toISOString()))}</b></div>
+    <p class="err" id="qc-err" role="alert" style="margin:0"></p></div>
+    <div class="foot"><div class="in"><button class="cb full ${ready&&QCI===n-1&&allReady?"ok":""}" type="button" data-qcnext="1" ${ready&&(QCI<n-1||allReady)?"":"disabled"} style="min-height:60px;font-size:17px">${esc(btn)}</button>${QCI>0?`<button type="button" data-qcprev="1" style="border:0;background:none;color:var(--muted);font-weight:600;min-height:40px;width:100%;margin-top:6px">‹ Previous cake</button>`:""}</div></div>`; }
+async function qcSend(){ const q=QC.today, b=document.querySelector("[data-qcnext]"); b.disabled=true; b.textContent="Sending… keep this page open";
+  try{ QCRES=await CA.run("qcSubmit",S.t,{date:q.date,items:q.items.map((_,i)=>({photo:QCD.items[i].photo,verdict:QCD.items[i].verdict,note:QCD.items[i].note||""}))});
+    try{ sessionStorage.removeItem("chaleur.qc"); }catch(e){} QCD=null; render(); confetti(); if(QCRES.pts) xp(QCRES.pts); TODAY=null; }
+  catch(e){ b.disabled=false; b.textContent="Send QC report"; const er=$("#qc-err"); if(er) er.textContent=(e&&e.message)||"Couldn't send. Try again."; } }
+/* ---------- render + data ---------- */
+function render(){ if(!S) return; const v=VIEW; const a=$("#app");
+  a.innerHTML=v==="team"?vTeam():v==="me"?vMe():v==="treat"?vTreat():v==="qc"?vQC():vHome();
+  $("#tabs").innerHTML=""; if(v!=="qc") tabs(); drawMenu(); }
+async function load(){ const v=VIEW, t=S.t;
+  try{
+    if(v===""){ const [a,b]=await Promise.all([CA.run("myToday",t),CA.run("myNext",t).catch(e=>({items:[],err:e.message}))]); TODAY=a; NX=b; }
+    else if(v==="team") TEAMI=await CA.run("teamInfo",t);
+    else if(v==="me") ME=await CA.run("meInfo",t);
+    else if(v==="treat") RW=await CA.run("rewardGet",t);
+    else if(v==="qc"){ QC=await CA.run("qcInfo",t); if(!TODAY) CA.run("myToday",t).then(x=>{TODAY=x;}).catch(()=>{}); }
+  }catch(e){ if(CA.isAuthErr(e)){ CA.clear(); return signIn(e.message); } toast((e&&e.message)||"Couldn't load. Pull down to refresh."); }
+  if(VIEW===v) render(); }
+function route(){ const h=(location.hash||"").slice(1); VIEW=["team","me","treat","qc"].includes(h)?h:""; MENU=false; if(VIEW!=="qc"){ QCRES=null; } render(); window.scrollTo(0,0); load(); }
+window.addEventListener("hashchange",()=>{ if(S) route(); });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&S&&VIEW!=="qc"){ MINE=null; load(); } });
+document.addEventListener("click",async e=>{ const t=e.target&&e.target.closest?e.target:null; if(!t||!S||$(".si")) return;
+  const g=s=>t.closest(s);
+  if(g("[data-menu]")){ setMenu(true); return; }
+  if(g("[data-mclose]")){ setMenu(false); return; }
+  if(g("[data-mgo]")&&/^#/.test(g("[data-mgo]").getAttribute("href"))){ setMenu(false); return; }
+  const sb=g("[data-msec]"); if(sb){ const n=sb.dataset.msec; OPEN=OPEN===n?"":n; try{ localStorage.setItem("chaleur.menu",OPEN); }catch(x){} drawMenu(); return; }
+  const h=g("[data-help]"); if(h){ setMenu(false); CA.openHelp(h.dataset.help); return; }
+  if(g("[data-team]")||g("[data-setteam]")){ const b=g("[data-setteam]"); TEAM=b?b.dataset.setteam:(myTeam()==="am"?"pm":"am"); try{ localStorage.setItem("kh2.team",TEAM); }catch(x){} render(); return; }
+  const rm=g("[data-rmode]"); if(rm&&!rm.disabled){ try{ RW=await CA.run("rewardSet",S.t,{mode:rm.dataset.rmode}); render(); }catch(x){ toast(x.message); } return; }
+  const rp=g("[data-rpick]"); if(rp){ try{ RW=await CA.run("rewardSet",S.t,{pick:rp.dataset.rpick}); render(); toast("Locked in. The team sees it."); }catch(x){ toast(x.message); } return; }
+  if(g("[data-ruse]")){ const v=($("#r-custom")||{}).value||""; if(v.trim().length<3){ toast("Write the treat in a few words."); return; } try{ RW=await CA.run("rewardSet",S.t,{pick:v.trim()}); render(); toast("Locked in. The team sees it."); }catch(x){ toast(x.message); } return; }
+  if(g("[data-radd]")){ const i=$("#r-new"), v=i?i.value.trim():""; if(v.length<3){ toast("Write your idea in a few words."); return; } try{ RW=await CA.run("rewardSuggest",S.t,v); render(); }catch(x){ toast(x.message); } return; }
+  const rv=g("[data-rvote]"); if(rv&&!rv.disabled){ rv.disabled=true; try{ RW=await CA.run("rewardVote",S.t,rv.dataset.rvote); render(); }catch(x){ toast(x.message); rv.disabled=false; } return; }
+  const qv=g("[data-qcv]"); if(qv){ const d=QCD.items[QCI]||(QCD.items[QCI]={}); d.verdict=qv.dataset.qcv; qcSaveDraft(); render(); return; }
+  if(g("[data-qcprev]")){ QCI--; render(); window.scrollTo(0,0); return; }
+  const qn=g("[data-qcnext]"); if(qn&&!qn.disabled){ const n=QC.today.items.length; if(QCI<n-1){ QCI++; render(); window.scrollTo(0,0); } else qcSend(); return; }
+});
+document.addEventListener("input",e=>{ if(e.target.id==="qc-note"&&QCD){ (QCD.items[QCI]||(QCD.items[QCI]={})).note=e.target.value; qcSaveDraft(); } });
+document.addEventListener("change",async e=>{ if(e.target.matches&&e.target.matches("[data-qcphoto]")){ const f=e.target.files&&e.target.files[0]; if(!f) return;
+  try{ const u=await shrink(f); (QCD.items[QCI]||(QCD.items[QCI]={})).photo=u; qcSaveDraft(); render(); }catch(x){ toast(x.message); } } });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&MENU) setMenu(false); });
+function boot(){ S=CA.get(); if(!S) return signIn(QS.get("msg")||""); if(NEXT){ location.replace(NEXT); return; } route(); }
+(function(){ CA.helper({auth:()=>S&&S.t,page:()=>VIEW==="qc"?"Random QC":VIEW==="team"?"Team":VIEW==="me"?"Me":VIEW==="treat"?"Team treat":"Home"}); boot(); })();
 </script>
 </body></html>
