@@ -9,7 +9,97 @@ function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new A
  .catch(function(e){done();fail&&fail(new Error(e&&e.name==="AbortError"?"This is taking too long. Check your internet and try again.":(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again.")));});}
 function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
 window.google={script:{run:mk(null,null)}};})();
+</script><style>
+.ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
+.ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
+.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:32px}
+.ca-login{max-width:390px;margin:28px auto;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;padding:18px}
+.ca-login h2{font-family:var(--display,Georgia,serif);font-size:30px;line-height:1.1;margin:0 0 6px;font-weight:600}
+.ca-login p{margin:0;color:var(--muted,#6f5f62);font-size:14px}
+.ca-login label{display:flex;flex-direction:column;gap:4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#6f5f62);margin-top:12px}
+.ca-login input[type=tel],.ca-login input[type=password]{font:inherit;font-size:17px;padding:11px 12px;border:1px solid var(--line,#e8dcd6);border-radius:10px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);width:100%}
+.ca-login label.ca-rem{flex-direction:row;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--ink,#2b1b1e)}
+.ca-login label.ca-rem input{width:20px;height:20px;accent-color:var(--accent,#7b1c2b)}
+.ca-go{margin-top:16px;width:100%;padding:13px;border:0;border-radius:10px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 16px var(--body,system-ui,sans-serif);cursor:pointer}
+.ca-go:disabled{opacity:.6}
+.ca-err{color:#b3261e;font-size:14px;margin-top:10px;min-height:1.2em}
+.ca-hbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;border:0;border-radius:999px;padding:12px 18px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 15px var(--body,system-ui,sans-serif);box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer}
+.ca-hp{position:fixed;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:61;width:min(400px,calc(100vw - 24px));height:min(72vh,580px,calc(100vh - 180px));display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.28)}
+.ca-hp .ca-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line,#e8dcd6)}
+.ca-hp .ca-hd button{border:0;background:transparent;color:var(--ink,#2b1b1e);font-size:18px;cursor:pointer;min-width:36px;min-height:36px}
+.ca-hp .ca-msgs{overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ca-hp .ca-m{padding:9px 11px;border-radius:12px;font-size:14.5px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere}
+.ca-hp .ca-q{align-self:flex-end;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);max-width:85%}
+.ca-hp .ca-a{align-self:flex-start;background:var(--soft,var(--accent-soft,#f3e4e5));max-width:95%}
+.ca-hp form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line,#e8dcd6)}
+.ca-hp textarea{flex:1;font:inherit;font-size:16px;resize:none;border:1px solid var(--line,#e8dcd6);border-radius:10px;padding:9px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);min-height:44px;max-height:120px}
+.ca-hp form button{border:0;border-radius:10px;padding:0 16px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;cursor:pointer}
+body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bottom,0px))}body:has(.bar:not([hidden])) .ca-hp{bottom:calc(152px + env(safe-area-inset-bottom,0px))}
+@media print{.ca-hbtn,.ca-hp,.ca-chip button{display:none!important}}
+</style>
+<script>
+/* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
+const CA=(function(){
+  const K="chaleur.s", ROLE={owner:"Owner",manager:"Manager",office:"Office",supervisor:"Kitchen supervisor",kitchen:"Kitchen",auditor:"Team"};
+  const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const rd=st=>{try{const v=st.getItem(K);return v?JSON.parse(v):null}catch(e){return null}};
+  function clear(){try{localStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem("chaleur.pin")}catch(e){}}
+  function get(){const s=rd(sessionStorage)||rd(localStorage); if(s&&(!s.t||(s.exp&&Date.now()>s.exp))){clear();return null;} return s;}
+  function save(s){clear(); try{(s.remember?localStorage:sessionStorage).setItem(K,JSON.stringify(s));}catch(e){}}
+  const run=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(e instanceof Error?e:new Error((e&&e.message)||String(e))))[fn](...a));
+  const isAuthErr=e=>/sign in again|expired/i.test((e&&e.message)||"");
+  function loginForm(el,opt,done){
+    opt=opt||{}; let last=""; try{last=localStorage.getItem("chaleur.lastid")||"";}catch(e){}
+    el.innerHTML=`<div class="ca-login"><h2>${esc(opt.title||"Sign in")}</h2><p>${esc(opt.lede||"Use your phone number and your staff PIN.")}</p>
+      <label>Phone number (or name)<input id="ca-id" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="012-345 6789" value="${esc(last)}"></label>
+      <label>PIN<input id="ca-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6"></label>
+      <label class="ca-rem"><input id="ca-rem" type="checkbox"> Remember me on this phone for 30 days</label>
+      <button class="ca-go" id="ca-go" type="button">Sign in</button><div class="ca-err" id="ca-err" role="alert">${esc(opt.msg||"")}</div>
+      <p style="font-size:12.5px;margin-top:8px">No phone number set up yet? Type your name instead. Don't tick "Remember me" on a shared phone or computer.</p></div>`;
+    const q=s=>el.querySelector(s), btn=q("#ca-go"), err=q("#ca-err");
+    const go=async()=>{const id=q("#ca-id").value.trim(), pin=q("#ca-pin").value.trim(), rem=q("#ca-rem").checked;
+      if(!id||!pin){err.textContent="Enter your phone number and PIN.";return;}
+      btn.disabled=true; err.textContent="Signing in…";
+      try{const r=await run("login",id,pin,rem); const s={t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember}; save(s);
+        try{ if(rem) localStorage.setItem("chaleur.lastid",id); else localStorage.removeItem("chaleur.lastid"); }catch(e){}
+        el.innerHTML=""; done(s);}
+      catch(e){btn.disabled=false; err.textContent=(e&&e.message)||"Couldn't sign in."; q("#ca-pin").value=""; q("#ca-pin").focus();}};
+    btn.onclick=go; q("#ca-pin").addEventListener("keydown",e=>{if(e.key==="Enter")go();}); q("#ca-id").addEventListener("keydown",e=>{if(e.key==="Enter")q("#ca-pin").focus();});
+    setTimeout(()=>{const x=q(last?"#ca-pin":"#ca-id"); x&&x.focus();},50);
+  }
+  function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(location.pathname),150);}
+  const chip=s=>s?`<span class="ca-chip">Signed in as <b>${esc(s.name)}</b> · ${esc(ROLE[s.role]||s.role)} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  document.addEventListener("click",e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-ca-logout]"); if(b){e.preventDefault(); b.disabled=true; logout();}});
+  function helper(opt){
+    if(document.getElementById("ca-hbtn")) return;
+    const b=document.createElement("button"); b.id="ca-hbtn"; b.className="ca-hbtn"; b.type="button"; b.textContent="? Ask"; b.setAttribute("aria-label","Ask the helper a question"); b.setAttribute("aria-expanded","false");
+    document.body.appendChild(b);
+    let panel=null, H=[], busy=false;
+    const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
+    function draw(){ if(!panel) return; const m=panel.querySelector(".ca-msgs");
+      m.innerHTML=`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
+      m.scrollTop=m.scrollHeight; }
+    function close(){ if(panel){panel.remove();panel=null;} b.setAttribute("aria-expanded","false"); b.focus(); }
+    b.onclick=()=>{ if(panel){close();return;}
+      panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-label","Helper");
+      panel.innerHTML=`<div class="ca-hd"><b>Helper</b><button type="button" class="ca-x" aria-label="Close helper">✕</button></div><div class="ca-msgs" aria-live="polite"></div><form><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form>`;
+      document.body.appendChild(panel); b.setAttribute("aria-expanded","true"); draw();
+      const ta=panel.querySelector("textarea"); ta.focus();
+      panel.querySelector(".ca-x").onclick=close;
+      panel.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+      ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();panel.querySelector("form").dispatchEvent(new Event("submit",{cancelable:true}));}});
+      panel.querySelector("form").onsubmit=async e=>{e.preventDefault(); const q=ta.value.trim(); if(!q||busy) return;
+        const auth=opt.auth(); if(!auth){H.push({q},{a:"Please sign in first, then ask again."}); ta.value=""; draw(); return;}
+        H.push({q}); ta.value=""; busy=true; draw();
+        try{const r=await run("askHelp",auth,q,opt.page?opt.page():"",H.slice(-7,-1)); H.push({a:r.answer||"Sorry, I don't know. Please ask your supervisor."});}
+        catch(err){H.push({a:(err&&err.message)||"The helper is not available right now."});}
+        busy=false; draw(); };
+    };
+  }
+  return {get,save,clear,run,isAuthErr,loginForm,logout,chip,helper,ROLE,esc};
+})();
 </script>
+
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Jost:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -145,13 +235,14 @@ details.help summary{cursor:pointer;color:var(--muted);font-size:13px}
 .howto{font-size:13px;color:var(--ink);background:var(--accent-soft);border-radius:8px;padding:8px 10px;margin-top:6px}
 .ign{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}.ign input{flex:1;min-width:160px}
 input.made{width:70px;text-align:right}
+.who{margin-left:auto}.menu a.mlink{display:flex;justify-content:space-between;gap:10px;text-decoration:none;color:inherit}
 @media print{.top,#testbar,.testbar,#toast,.btn,button,.fbar,details.help,.noprint,.ign{display:none!important}body{background:#fff!important;color:#000}.panel,.claude{border:0!important;box-shadow:none!important;padding:0!important}.tw{overflow:visible!important;border:0!important}table{font-size:11px}main{padding:0!important;max-width:none!important}.cols{display:block!important}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:12mm}}
 </style>
 </head><body>
 
 <div id="testbar"></div><div class="top"><div class="in">
   <div class="logo"><span class="mono-ca" aria-hidden="true"><svg class="mark" viewBox="0 0 800 523" aria-hidden="true" focusable="false"><g transform="translate(0,523) scale(0.1,-0.1)" fill="currentColor"><path d="M2260 5159c-180 -12 -420 -57 -615 -114 -577 -169 -1068 -529 -1396 -1025 -52 -77 -179 -298 -179 -310 0 -3 62 -5 137 -5 117 0 147 -4 196 -22 42 -16 59 -19 62 -10 3 7 23 66 45 132 199 586 592 1002 1107 1174 606 202 1172 99 1673 -304 263 -212 512 -516 681 -831 23 -44 46 -83 50 -89 5 -5 9 153 9 358l0 368 -102 103c-336 337 -787 537 -1303 576 -142 11 -207 11 -365 -1zM5723 5053c-3 -10 -12 -34 -20 -53 -15 -37 -169 -444 -358 -945 -62 -165 -152 -403 -200 -530 -201 -531 -195 -513 -195 -577 0 -133 87 -178 227 -118 56 25 128 93 226 215 112 140 174 203 229 231 153 78 248 -54 159 -220 -61 -115 -219 -241 -606 -486 -596 -377 -867 -603 -1047 -875 -153 -231 -203 -396 -196 -656l3 -145 -64 -90c-440 -609 -1262 -830 -1968 -528 -445 190 -881 602 -1162 1097 -33 59 -49 68 -71 42 -19 -23 -109 -72 -186 -101 -59 -23 -85 -27 -181 -28 -70 -1 -113 -5 -113 -11 0 -18 108 -175 189 -274 623 -771 1595 -1100 2543 -860 371 93 716 259 989 475l83 64 40 -78c165 -315 447 -469 826 -449 456 25 819 236 1073 627 274 422 386 995 337 1724 -6 82 -9 151 -7 153 4 4 27 -53 233 -597 67 -179 157 -415 199 -525 135 -354 197 -528 221 -625 95 -378 -31 -572 -398 -610 -55 -5 -109 -10 -119 -10 -12 0 -19 -7 -19 -20 0 -20 7 -20 775 -20 688 0 775 2 775 15 0 18 -39 35 -78 35 -46 0 -150 57 -212 116 -79 76 -138 167 -225 347 -86 181 -106 231 -280 692 -48 127 -148 390 -222 585 -74 195 -179 472 -233 615 -54 143 -142 375 -195 515 -53 140 -102 271 -110 290 -8 19 -57 150 -110 290 -53 140 -109 289 -125 330 -16 41 -72 190 -125 330 -53 140 -102 271 -110 290 -8 19 -39 102 -70 184 -31 82 -60 157 -66 168 -12 23 -48 24 -56 1zm-49 -803c53 -140 103 -271 111 -290 8 -19 75 -197 150 -395 75 -198 147 -387 160 -420 59 -151 85 -248 117 -430 34 -199 34 -819 0 -1005 -132 -715 -444 -1168 -898 -1301 -122 -36 -366 -34 -479 4 -232 77 -392 250 -466 502 -37 124 -34 408 5 550 99 363 333 626 896 1010 299 203 480 361 547 475 129 221 42 444 -150 386 -69 -21 -143 -81 -243 -198 -227 -266 -320 -329 -398 -267 -52 41 -42 86 112 494 27 72 133 355 236 630 189 502 195 519 201 513 2 -2 47 -118 99 -258zM298 3456c-31 -12 -60 -25 -64 -29 -12 -12 -21 -8 -27 11 -6 25 -41 33 -66 15 -27 -18 -27 -37 -1 -21 17 11 25 10 49 -3 27 -16 111 -12 141 6 9 5 35 47 28 44 -2 -1 -29 -11 -60 -23zM100 3341c0 -13 18 -17 127 -32 83 -11 117 -9 101 6 -6 6 -173 35 -205 35 -13 0 -23 -4 -23 -9zM80 3180c0 -12 17 -12 45 0 17 7 15 9 -12 9 -18 1 -33 -3 -33 -9zM281 3052c-22 -24 -26 -25 -117 -18 -76 5 -94 4 -94 -7 0 -10 23 -16 86 -21 94 -7 121 2 144 45 16 29 9 29 -19 1zM280 2855c7 -9 15 -13 17 -11 7 7 -7 26 -19 26 -6 0 -6 -6 2 -15zM177 2823c-4 -3 -7 -13 -7 -22 1 -13 3 -13 11 2 11 19 8 33 -4 20zM60 2750c0 -6 33 -10 78 -10 42 0 94 -3 115 -6 30 -5 37 -4 37 10 0 14 -15 16 -115 16 -70 0 -115 -4 -115 -10zM163 2493c-77 -3 -93 -6 -93 -20 0 -14 10 -15 77 -9 42 3 93 6 115 6 27 0 38 4 38 15 0 10 -8 14 -22 13 -13 -1 -65 -4 -115 -5zM221 2291c-57 -36 -99 -67 -92 -69 6 -2 48 19 94 47 45 28 90 51 100 51 18 0 21 8 9 25 -4 7 -46 -13 -111 -54zM345 2218c-10 -24 -40 -29 -80 -14 -11 5 -5 -2 13 -14 42 -28 82 -16 82 25 0 31 -3 31 -15 3zM223 2008c-71 -14 -103 -24 -103 -34 0 -9 8 -12 28 -8 158 31 196 41 200 52 5 15 2 15 -125 -10zM242 1878c-74 -15 -101 -23 -93 -31 14 -14 213 23 219 41 5 15 2 15 -126 -10zM210 1685c-6 -8 -10 -21 -8 -29 2 -11 8 -7 20 14 18 31 10 41 -12 15zM422 1652c-5 -69 -116 -132 -172 -97 -8 5 -11 4 -6 -3 3 -6 22 -16 41 -22 67 -22 151 43 142 111 -2 19 -4 24 -5 11z"/></g></svg></span><span><b>Chaleur Atelier</b><small>Consignment desk</small></span></div>
-  <nav id="nav"></nav>
+  <nav id="nav"></nav><div id="who" class="who"></div>
 </div></div>
 <main id="main"><div class="empty">Loading consignment data…</div></main>
 <div id="modal"></div>
@@ -340,18 +431,20 @@ function chaseText(p,dates){
   return `Hi ${p.contact||p.name} team, this is Chaleur Atelier. We haven't received the closing report for ${dates.map(nice).join(", ")}. Please count the balance and wastage for each colour dot and send it here:\n${link}\nThank you!`;
 }
 /* ---------- rendering ---------- */
-const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role), KIT=()=>AUTH.role==="kitchen";
+const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role), KIT=()=>["kitchen","supervisor"].includes(AUTH.role), SUP=()=>["owner","manager","supervisor"].includes(AUTH.role), SUPK=()=>AUTH.role==="supervisor";
 const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Daily reports"],["log","Change log"],["billing","Weekly billing"],["audits","Audits"],["setup","Setup"],["staff","Staff"]];
 const NCOL=8;
 let rq=false, MENU=false;
-const kitOK=el=>{const d=el.dataset||{}; return d.made!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
-function render(){ if(rq) return; rq=true; requestAnimationFrame(()=>{rq=false; doRender();}); }
+const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null)) return true; return d.made!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
+function render(){ if(rq||!AUTH.pin) return; rq=true; requestAnimationFrame(()=>{rq=false; doRender();}); }
 function doRender(){
+  if(!AUTH.pin) return;
   memo=new Map();
   const a=document.activeElement, aid=a&&a.id, sel=a&&("selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
-  const att=KIT()?[]:attention();
-  { const tabs=KIT()?TABS.filter(([k])=>k==="plan"||k==="deliveries"):TABS.filter(([k])=>k!=="staff"||MGR()); if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=KIT()?0:att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
-    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}</div>`:""}`; }
+  const att=KIT()&&!SUPK()?[]:attention();
+  { const tabs=KIT()?TABS.filter(([k])=>k==="plan"||k==="deliveries"||(SUPK()&&k==="today")):TABS.filter(([k])=>k!=="staff"||MGR()); if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=KIT()&&!SUPK()?0:att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
+    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}<button role="menuitem" data-go="kitchen.html"><span>Kitchen HQ</span><span aria-hidden="true">↗</span></button></div>`:""}`; }
+  $("#who").innerHTML=AUTH.pin?CA.chip({name:AUTH.name,role:AUTH.role}):"";
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
   else if(S.loaded.size<NCOL) html=`<div class="empty">Loading consignment data…</div>`;
@@ -359,13 +452,13 @@ function doRender(){
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
-  if(RO()){ $("#testbar").innerHTML=`<div class="testbar">${KIT()?`Kitchen login — ${esc(AUTH.name)}. Prep, colour checks and deliveries.`:`View only — signed in as ${esc(AUTH.name)}. Ask Alfred or Joscelyn to make changes.`}</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!(KIT()&&kitOK(el))) el.disabled=true; }); }
+  if(RO()){ $("#testbar").innerHTML=`<div class="testbar">${KIT()?`${AUTH.role==="supervisor"?"Kitchen supervisor":"Kitchen"} login — ${esc(AUTH.name)}. ${SUPK()?"Chase reports (Today), delivery orders, prep and colour checks.":"Prep, colour checks and deliveries."} Reports and the production plan are in <a href="kitchen.html">Kitchen HQ</a>.`:`View only — signed in as ${esc(AUTH.name)}. Ask Alfred or Joscelyn to make changes.`}</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!(KIT()&&kitOK(el))) el.disabled=true; }); }
   if(aid){const e=document.getElementById(aid); if(e){e.focus({preventScroll:true}); if(sel&&"setSelectionRange" in e){try{e.setSelectionRange(sel[0],sel[1])}catch(_){}}}}
 }
 const F=(k,d="")=>S.f[k]??d;
 const opt=(v,l,cur)=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`;
-const partnerSelect=(id,cur,withAll)=>`<select id="${id}" data-ui="partner">${withAll?opt("","All outlets",cur):""}${partners().map(p=>opt(p.id,`${p.name} (${p.code})`,cur)).join("")}</select>`;
-function curPartner(){ if(!S.ui.partner||!S.partners[S.ui.partner]) S.ui.partner=(partners()[0]||{}).id||""; return S.ui.partner; }
+const partnerSelect=(id,cur,withAll,noInt)=>`<select id="${id}" data-ui="partner">${withAll?opt("","All outlets",cur):""}${partners().filter(p=>!(noInt&&p.internal)).map(p=>opt(p.id,`${p.name} (${p.code})`,cur)).join("")}</select>`;
+function curPartner(){ if(!S.ui.partner||!S.partners[S.ui.partner]) S.ui.partner=(partners().find(p=>!p.internal)||partners()[0]||{}).id||""; return S.ui.partner; }
 
 /* ---- attention items (shared by Today tab and Claude's check) ---- */
 const TIPS={
@@ -400,15 +493,15 @@ function attention(){
   const t=today(), items=[], HD=S.handled||{};
   const push=it=>{ if(!HD[it.key]) items.push({...it,tip:it.tip||TIPS[it.kind]||""}); };
   for(const p of partners()){
-    const miss=[], noPhoto=[], now=new Date();
-    for(let i=7;i>=0;i--){const d=add(t,-i); if(isClosed(p.id,d)) continue; if(i===0&&now<reportDueAt(p.id,d)) continue;
+    const miss=[], noPhoto=[], now=new Date(), hq=!!p.internal;
+    for(let i=7;i>=0&&!hq;i--){const d=add(t,-i); if(isClosed(p.id,d)) continue; if(i===0&&now<reportDueAt(p.id,d)) continue;
       const w=S.weeks[wid(p.id,weekStartOf(d))]; const r=w&&w.days&&w.days[d]; if(!r) miss.push(d); else if(!(r.photos||[]).length) noPhoto.push(d);}
     const first=Object.values(S.weeks).filter(w=>w.partnerId===p.id).map(w=>w.weekStart).sort()[0];
     const co=cfg().cutoffDate||"";
     const realMiss=first?miss.filter(d=>d>=first&&d>=co):[];
     if(noPhoto.length) push({sev:"warn",kind:"photo",key:`photo|${p.id}|${noPhoto.join(",")}`,pid:p.id,text:`<b>${esc(p.name)}</b> — closing report without photos: ${noPhoto.map(nice).join(", ")}`,action:`<a class="btn sm wa" href="${esc(wa(p.phone,`Hi ${p.contact||p.name} team, please send the closing photos (chiller + waste) for ${noPhoto.map(nice).join(", ")}. Thank you!`))}" target="_blank" rel="noopener">Ask for photos</a>`,go:{tab:"daily",date:noPhoto[noPhoto.length-1]}});
     if(realMiss.length) push({sev:"bad",kind:"report",key:`report|${p.id}|${realMiss.join(",")}`,pid:p.id,text:`<b>${esc(p.name)}</b> — no closing report for ${realMiss.map(nice).join(", ")} <span class="muted small">(closes ${hoursOf(p.id,realMiss[realMiss.length-1]).close})</span>`,action:`<a class="btn sm wa" href="${esc(wa(p.phone,chaseText(p,realMiss)))}" target="_blank" rel="noopener">Chase on WhatsApp</a>`});
-    for(let i=7;i>=0;i--){const dd=add(t,-i); const ww=S.weeks[wid(p.id,weekStartOf(dd))]; const rr=ww&&ww.days&&ww.days[dd]; if(rr&&(rr.photoCheck||[]).some(x=>!x.ok)) push({sev:"warn",kind:"photocheck",key:`pchk|${p.id}|${dd}`,pid:p.id,text:`<b>${esc(p.name)}</b> ${nice(dd)} — photo doesn't look right: ${rr.photoCheck.filter(x=>!x.ok).map(x=>`${esc(x.label)} (${esc(x.why)})`).join(", ")}`,go:{tab:"daily",date:dd}});
+    for(let i=7;i>=0&&!hq;i--){const dd=add(t,-i); const ww=S.weeks[wid(p.id,weekStartOf(dd))]; const rr=ww&&ww.days&&ww.days[dd]; if(rr&&(rr.photoCheck||[]).some(x=>!x.ok)) push({sev:"warn",kind:"photocheck",key:`pchk|${p.id}|${dd}`,pid:p.id,text:`<b>${esc(p.name)}</b> ${nice(dd)} — photo doesn't look right: ${rr.photoCheck.filter(x=>!x.ok).map(x=>`${esc(x.label)} (${esc(x.why)})`).join(", ")}`,go:{tab:"daily",date:dd}});
       if(!rr||!rr.check) continue;
       if(rr.readOk){ for(const c of rr.check.filter(c=>c.diff)){ const nm=esc(prod(c.productId).name);
           if(c.diff>0){ const cause=missingCause(p.id,dd,c.productId,c.diff,rr);
@@ -428,7 +521,7 @@ function attention(){
       }
     }
     const cur=weekStartOf(t);
-    for(const w of Object.values(S.weeks).filter(w=>w.partnerId===p.id)){
+    for(const w of Object.values(S.weeks).filter(w=>w.partnerId===p.id&&!hq)){
       if(w.weekStart<cur&&!w.settlement&&(Object.keys(w.dos||{}).length||Object.keys(w.days||{}).length))
         push({sev:"warn",kind:"bill",key:`bill|${p.id}|${w.weekStart}`,pid:p.id,text:`<b>${esc(p.name)}</b> — week ${nice(w.weekStart)}–${nice(add(w.weekStart,6))} ended: the bill is drafted and waiting for approval`,go:{tab:"billing",week:w.weekStart}});
       if(w.settlement&&(w.afterBill||[]).length){const ab=w.afterBill; push({sev:"warn",kind:"afterbill",key:`afterbill|${p.id}|${w.weekStart}|${ab.length}`,pid:p.id,text:`<b>${esc(p.name)}</b> — week ${nice(w.weekStart)}–${nice(add(w.weekStart,6))} was changed after the bill was issued (${ab.length} change${ab.length>1?"s":""}, last by ${esc(ab[ab.length-1].by||"")})`,go:{tab:"billing",week:w.weekStart}});}
@@ -440,7 +533,8 @@ function attention(){
     if(ev.priceBad.length) push({sev:"warn",kind:"audit",key:`auditp|${a.id}`,pid:a.partnerId,text:`<b>${esc(partner(a.partnerId).name)}</b> audit ${nice(a.date)} — wrong sell price: ${ev.priceBad.map(x=>`${esc(x.name)} RM${fm(x.shown)} (should be RM${fm(x.approved)})`).join(", ")}`,go:{tab:"audits"}});
     if(ev.fails.length) push({sev:"warn",kind:"audit",key:`auditf|${a.id}`,pid:a.partnerId,text:`<b>${esc(partner(a.partnerId).name)}</b> audit ${nice(a.date)} — failed: ${ev.fails.map(esc).join(", ")}`,go:{tab:"audits"}});
   }
-  const order={bad:0,warn:1,info:2}; return items.sort((a,b)=>order[a.sev]-order[b.sev]);
+  const order={bad:0,warn:1,info:2}, KOK=["report","photo","photocheck","missing","extra","variance","expiry","last","salesread"];
+  return items.filter(a=>!KIT()||KOK.includes(a.kind)).sort((a,b)=>order[a.sev]-order[b.sev]);
 }
 async function setHandled(key,val){const cur={...(S.handled||{})}; const lim=new Date(Date.now()-45*864e5).toISOString(); for(const k in cur) if(!cur[k]||String(cur[k].at||"")<lim) delete cur[k]; if(val) cur[key]={...val,by:AUTH.name||"",at:new Date().toISOString()}; else delete cur[key]; await put("config/handled",cur);}
 function findRepLine(pid,productId,colour,upto,needB){
@@ -473,13 +567,13 @@ function vToday(att){
     ${ps.map(p=>`<div class="small" style="font-weight:600">${esc(p.name)}</div>${days.map(d=>{const w=S.weeks[wid(p.id,weekStartOf(d))];const got=w&&w.days&&w.days[d];const closed=!got&&isClosed(p.id,d);const pre=cfg().cutoffDate&&d<cfg().cutoffDate;const cls=got?"got":(closed||pre||d>=t?"wait":"miss");return `<button class="cell ${cls}" data-go-daily="${p.id}|${d}" title="${esc(p.name)} ${nice(d)}${closed?" (closed)":""}">${got?((w.days[d].photos||[]).length?"✓":"✓·"):(closed?"closed":(d>=t?"·":"!"))}</button>`}).join("")}`).join("")}
   </div></div>`;
   const claude=al?`<div class="claude"><div class="spread"><h2>Daily check</h2><span class="small muted">${esc(al.by||"")} · ${esc(new Date(al.generatedAt).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}))}${al.sample?" · sample":""}</span></div><p style="margin:0">${esc(al.summary||"")}</p>${(al.items||[]).length?`<ul style="margin:0;padding-left:18px">${al.items.map(i=>`<li>${esc(i.text)}</li>`).join("")}</ul>`:""}</div>`
-    :`<div class="claude"><h2>Daily check</h2><p style="margin:0">No check has run yet. It runs after every closing report and a final time at 10pm: missing reports, cakes past shelf life and tomorrow's prep.</p></div>`;
+    :`<div class="claude"><h2>Daily check</h2><p style="margin:0">No check has run yet. It runs after every report and at 4am and 4pm: missing reports, cakes past shelf life, deliveries and the kitchen.</p></div>`;
   const wk=weekStartOf(t);
   let wkSold=0,wkWaste=0,wkVal=0;
-  for(const p of ps){const c=calcWeek(p.id,wk);for(const k of Object.values(c.keys)){wkSold+=k.sold;wkWaste+=k.waste;wkVal+=k.sold*k.rate}}
+  for(const p of ps){if(p.internal) continue; const c=calcWeek(p.id,wk);for(const k of Object.values(c.keys)){wkSold+=k.sold;wkWaste+=k.waste;wkVal+=k.sold*k.rate}}
   const bad=att.filter(a=>a.sev==="bad").length;
   return `<div class="head"><div><h1>${nice(t)}</h1><p class="lede">${bad?`${bad} thing${bad>1?"s need":" needs"} action today.`:"Nothing urgent. Reports and stock look in order."}</p></div>
-    <div class="row"><button class="btn" data-act="goNewDO">New delivery order</button><button class="btn" data-act="goPaste">Paste WhatsApp report</button><button class="btn pri" data-act="goAudit">Start spot audit</button></div></div>
+    <div class="row"><button class="btn" data-act="goNewDO">New delivery order</button>${KIT()?"":`<button class="btn" data-act="goPaste">Paste WhatsApp report</button><button class="btn pri" data-act="goAudit">Start spot audit</button>`}</div></div>
     ${claude}
     <div class="cols">
       <div class="panel"><div class="spread"><h2>Needs attention</h2><div class="row"><span class="small muted">${att.length} item${att.length===1?"":"s"}</span>${(()=>{const n=Object.keys(S.handled||{}).length;return n?`<button class="btn sm" data-act="showHandled">${S.ui.showHandled?"Hide handled":`Handled (${n})`}</button>`:""})()}</div></div>${S.ui.showHandled?handledList():""}
@@ -490,7 +584,7 @@ function vToday(att){
           <p class="small muted" style="margin:0">Each outlet has its own closing link and QR code: Setup › Outlets &amp; terms.</p></div>
         <div class="panel"><h2>This week so far</h2><div class="stats">
           <div class="stat"><h3>Sold</h3><span class="v">${wkSold}</span><span class="small muted">units</span></div>
-          <div class="stat"><h3>Earned</h3><span class="v">${fm(wkVal)}</span><span class="small muted">RM at partner rates</span></div>
+          ${KIT()?"":`<div class="stat"><h3>Earned</h3><span class="v">${fm(wkVal)}</span><span class="small muted">RM at partner rates</span></div>`}
           <div class="stat"><h3>Wastage</h3><span class="v">${wkWaste}</span><span class="small muted">units</span></div></div></div>
       </div>
     </div>`;
@@ -533,14 +627,14 @@ function vDeliveries(){
   const allF=allDOs().filter(d=>(!F.p||d.partnerId===F.p)&&(!F.from||d.date>=F.from)&&(!F.to||d.date<=F.to)&&(!F.st||(F.st==="delivered"?d.status==="delivered":d.status!=="delivered")));
   const list=allF.slice(0,150);
   const fbar=`<div class="fbar"><label class="f">Outlet<select data-flt="dF.p">${opt("","All outlets",F.p||"")}${partners(true).map(p=>opt(p.id,p.name,F.p||"")).join("")}</select></label><label class="f">From<input type="date" data-flt="dF.from" value="${esc(F.from||"")}"></label><label class="f">To<input type="date" data-flt="dF.to" value="${esc(F.to||"")}"></label><label class="f">Status<select data-flt="dF.st">${[["","All"],["planned","Planned"],["delivered","Delivered"]].map(([v,l])=>opt(v,l,F.st||"")).join("")}</select></label>${fl?`<button class="btn sm" data-act="clearDF">Clear filters</button>`:""}<span class="small muted">${allF.length} DO${allF.length===1?"":"s"}</span></div>`;
-  return `<div class="head"><div><h1>Deliveries</h1><p class="lede">Before a delivery goes out, the team checks the colour dot on every cake (<b>Check colours</b>). Only cakes made on the delivery day or the day before can be sent. Stock only counts at the outlet once the DO is confirmed delivered, with accepted quantities.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button>${KIT()?"":`<button class="btn pri" data-act="newDO">New delivery order</button>`}</div></div>
+  return `<div class="head"><div><h1>Deliveries</h1><p class="lede">Before a delivery goes out, the team checks the colour dot on every cake (<b>Check colours</b>). Only cakes made on the delivery day or the day before can be sent. Stock only counts at the outlet once the DO is confirmed delivered, with accepted quantities.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button>${KIT()&&!SUPK()?"":`<button class="btn pri" data-act="newDO">New delivery order</button>`}</div></div>
     ${form}
     <div class="panel"><h2>Delivery orders</h2>${fbar}${list.length?`<div class="tw"><table><thead><tr><th>DO</th><th>Date</th><th>Outlet</th><th>Batch</th><th class="r">Units</th>${KIT()?"":`<th class="r">Value</th>`}<th>Status</th><th></th></tr></thead><tbody>
       ${list.map(d=>{const u=(d.lines||[]).reduce((s,l)=>s+(+(d.status==="delivered"?(l.accepted??l.qty):l.qty)||0),0);const v=(d.lines||[]).reduce((s,l)=>s+(+(l.accepted??l.qty)||0)*priceFor(d.partnerId,l.productId,d.date).net,0);
         const billed=(S.weeks[wid(d.partnerId,d.weekStart)]||{}).settlement;
-        return `<tr><td class="mono">${esc(d.no)}${d.sample?` <span class="pill mute">sample</span>`:""}</td><td>${nice(d.date)}</td><td>${esc(partner(d.partnerId).name)}</td><td>${doColours(d).map(dot).join(" ")||dot(d.colour)}</td><td class="r mono">${u}</td>${KIT()?"":`<td class="r mono">${fm(v)}</td>`}
+        return `<tr><td class="mono">${esc(d.no)}${d.sample?` <span class="pill mute">sample</span>`:""}</td><td>${nice(d.date)}</td><td>${esc(partner(d.partnerId).name)}</td><td>${doColours(d).map(dot).join(" ")||dot(d.colour)}</td><td class="r mono">${u}</td>${KIT()?"":`<td class="r mono">${partner(d.partnerId).internal?"—":fm(v)}</td>`}
         <td>${d.status==="delivered"?`<span class="pill ok">Delivered</span>`:(d.checkedAt?`<span class="pill info" title="Checked by ${esc(d.checkedBy||"")}">Colours checked</span>`:`<span class="pill warn">Planned</span>`)}${billed?` <span class="pill info">Billed</span>`:""}</td>
-        <td><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${d.status!=="delivered"?`${d.checkedAt?`<button class="btn sm pri" data-rcv="${d.partnerId}|${d.weekStart}|${d.id}">Mark delivered</button>`:""}<button class="btn sm ${d.checkedAt?"":"pri"}" data-chk="${d.partnerId}|${d.weekStart}|${d.id}">${d.checkedAt?"Recheck colours":"Check colours"}</button>${KIT()?"":`<button class="btn sm" data-edo="${d.partnerId}|${d.weekStart}|${d.id}">Edit</button>`}`:""}<button class="btn sm" data-vdo="${d.partnerId}|${d.weekStart}|${d.id}">View</button><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(partner(d.partnerId).phone,doText(d)))}">WhatsApp</a></div></td></tr>`}).join("")}
+        <td><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${d.status!=="delivered"?`${d.checkedAt?`<button class="btn sm pri" data-rcv="${d.partnerId}|${d.weekStart}|${d.id}">Mark delivered</button>`:""}<button class="btn sm ${d.checkedAt?"":"pri"}" data-chk="${d.partnerId}|${d.weekStart}|${d.id}">${d.checkedAt?"Recheck colours":"Check colours"}</button>${KIT()&&!SUPK()?"":`<button class="btn sm" data-edo="${d.partnerId}|${d.weekStart}|${d.id}">Edit</button>`}`:""}<button class="btn sm" data-vdo="${d.partnerId}|${d.weekStart}|${d.id}">View</button><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(partner(d.partnerId).phone,doText(d)))}">WhatsApp</a></div></td></tr>`}).join("")}
       </tbody></table></div>`:`<div class="empty">${fl?"No delivery orders match these filters.":"No delivery orders yet."}</div>`}</div>`;
 }
 function doText(d){return `*${cfg().company.name}* — ${d.no}\nDelivery ${nice(d.date)} to ${partner(d.partnerId).name}\nColour dot: ${doColours(d).join(" + ")||d.colour}\n`+(d.lines||[]).filter(l=>+l.qty).map(l=>`• ${prod(l.productId).name} (${l.colour||d.colour}) × ${d.status==="delivered"?(l.accepted??l.qty):l.qty}`).join("\n")+`\nPlease count on arrival and reply with any shortfall or damage.`}
@@ -577,7 +671,7 @@ function vDaily(){
     ${pasteBox}
     <div class="panel">
       <div class="spread"><div class="row">${partnerSelect("d-p",pid)}<button class="btn sm" data-day="-1" aria-label="Previous day">‹</button><input type="date" id="d-d" data-ui="date" value="${date}"><button class="btn sm" data-day="1" aria-label="Next day">›</button></div>
-        <div class="row">${rep&&(rep.edits||[]).length?`<span class="pill warn" title="See the change log below">Changed ${rep.edits.length}× · last by ${esc(rep.edits[rep.edits.length-1].by||"")}</span>`:""}${rep?`<span class="pill ok">Reported${rep.by?` by ${esc(rep.by)}`:""} · ${esc(rep.source||"")}</span>`:day.status==="missing"?`<span class="pill bad">Missing</span><a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(p.phone,chaseText(p,[date])))}">Chase on WhatsApp</a>`:`<span class="pill mute">${day.status==="today"?"Due at closing":"Upcoming"}</span>`}
+        <div class="row">${rep&&(rep.edits||[]).length?`<span class="pill warn" title="See the change log below">Changed ${rep.edits.length}× · last by ${esc(rep.edits[rep.edits.length-1].by||"")}</span>`:""}${rep?`<span class="pill ok">Reported${rep.by?` by ${esc(rep.by)}`:""} · ${esc(rep.source||"")}</span>`:day.status==="missing"?`<span class="pill bad">Missing</span>${p.internal?`<a class="btn sm" href="kitchen.html#closing">Kitchen closing report</a>`:`<a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(p.phone,chaseText(p,[date])))}">Chase on WhatsApp</a>`}`:`<span class="pill mute">${day.status==="today"?"Due at closing":"Upcoming"}</span>`}
         ${editing?`<button class="btn sm" data-act="cancelDay">Cancel</button><button class="btn sm pri" data-act="saveDay">Save report</button>`:`${c.week.settlement?`<span class="pill info" title="Changes are logged and flagged on the bill">Week billed</span>`:""}${RO()?"":`<button class="btn sm" data-act="editDay">${rep?"Correct report":"Enter report"}</button>`}`}</div></div>
       ${editing?`<div class="row"><label class="f">Reported by<input id="dd-by" data-ui="dayBy" value="${esc(S.ui.dayBy||"")}"></label><label class="f">Add a cake/colour<span class="row"><select id="dd-ap">${products().map(x=>opt(x.id,x.name,"")).join("")}</select><select id="dd-ac">${cfg().colours.map(x=>opt(x.name,x.name,"")).join("")}</select><button class="btn sm" data-act="addDayLine">Add</button></span></label></div>
       <div class="fbar"><label class="f">Why are you changing this? (required)<select id="dd-why" data-ui="dayWhy">${opt("","Choose a reason…",S.ui.dayWhy||"")}${WHY.map(x=>opt(x,x,S.ui.dayWhy||"")).join("")}</select></label><label class="f" style="flex:2">Details<input id="dd-whyn" data-ui="dayWhyNote" value="${esc(S.ui.dayWhyNote||"")}" placeholder="e.g. 2 Pear found at the back of the chiller"></label></div>
@@ -667,16 +761,16 @@ function parseMsg(txt){
 
 /* ---- BILLING ---- */
 function billingHistory(){const F=S.ui.bF||{}, fl=!!(F.p||F.from||F.to||F.st), rows=[];
-  for(const w of Object.values(S.weeks)){ if(!(Object.keys(w.dos||{}).length||Object.keys(w.days||{}).length)) continue; if(F.p&&w.partnerId!==F.p) continue; if(F.from&&add(w.weekStart,6)<F.from) continue; if(F.to&&w.weekStart>F.to) continue;
+  for(const w of Object.values(S.weeks)){ if(partner(w.partnerId).internal) continue; if(!(Object.keys(w.dos||{}).length||Object.keys(w.days||{}).length)) continue; if(F.p&&w.partnerId!==F.p) continue; if(F.from&&add(w.weekStart,6)<F.from) continue; if(F.to&&w.weekStart>F.to) continue;
     const st=w.settlement, status=st?(st.paid&&st.paid.date?"paid":"issued"):"draft"; if(F.st&&F.st!==status) continue;
     let net=null; if(st) net=st.totals.net; else { try{net=buildSettlement(calcWeek(w.partnerId,w.weekStart),{}).totals.net;}catch(e){} }
     rows.push({w,st,status,net}); }
   rows.sort((a,b)=>b.w.weekStart.localeCompare(a.w.weekStart)||partner(a.w.partnerId).name.localeCompare(partner(b.w.partnerId).name));
   return `<div class="panel"><div class="spread"><h2>All weeks</h2><span class="small muted">${rows.length} week${rows.length===1?"":"s"}</span></div>
-   <div class="fbar"><label class="f">Outlet<select data-flt="bF.p">${opt("","All outlets",F.p||"")}${partners(true).map(p=>opt(p.id,p.name,F.p||"")).join("")}</select></label><label class="f">From<input type="date" data-flt="bF.from" value="${esc(F.from||"")}"></label><label class="f">To<input type="date" data-flt="bF.to" value="${esc(F.to||"")}"></label><label class="f">Status<select data-flt="bF.st">${[["","All"],["draft","Draft (waiting approval)"],["issued","Issued, unpaid"],["paid","Paid"]].map(([v,l])=>opt(v,l,F.st||"")).join("")}</select></label>${fl?`<button class="btn sm" data-act="clearBF">Clear filters</button>`:""}</div>
+   <div class="fbar"><label class="f">Outlet<select data-flt="bF.p">${opt("","All outlets",F.p||"")}${partners(true).filter(p=>!p.internal).map(p=>opt(p.id,p.name,F.p||"")).join("")}</select></label><label class="f">From<input type="date" data-flt="bF.from" value="${esc(F.from||"")}"></label><label class="f">To<input type="date" data-flt="bF.to" value="${esc(F.to||"")}"></label><label class="f">Status<select data-flt="bF.st">${[["","All"],["draft","Draft (waiting approval)"],["issued","Issued, unpaid"],["paid","Paid"]].map(([v,l])=>opt(v,l,F.st||"")).join("")}</select></label>${fl?`<button class="btn sm" data-act="clearBF">Clear filters</button>`:""}</div>
    ${rows.length?`<div class="tw"><table><thead><tr><th>Outlet</th><th>Week</th><th>Status</th><th>Invoice</th><th class="r">Net (RM)</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(partner(r.w.partnerId).name)}</td><td>${nice(r.w.weekStart)} – ${nice(add(r.w.weekStart,6))}</td><td><span class="pill ${r.status==="paid"?"ok":r.status==="issued"?"info":"warn"}">${({draft:"Draft",issued:"Issued",paid:"Paid"})[r.status]}</span></td><td class="mono small">${r.st?esc(r.st.invNo):"—"}</td><td class="r mono">${r.net==null?"—":fm(r.net)}</td><td class="r"><button class="btn sm" data-bopen="${r.w.partnerId}|${r.w.weekStart}">Open</button></td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">No weeks match.</div>`}</div>`;}
 function vBilling(){
-  const pid=curPartner(); if(!pid) return `<div class="empty">Add an outlet in Setup first.</div>`;
+  let pid=curPartner(); if(pid&&partner(pid).internal){const bp=partners().find(p=>!p.internal); pid=bp?bp.id:""; S.ui.partner=pid;} if(!pid) return `<div class="empty">Add an outlet in Setup first.</div>`;
   const t=today(); const ws=S.ui.week||weekStartOf(add(t,-7)); const p=partner(pid);
   const c=calcWeek(pid,ws), w=c.week, st=w.settlement;
   const live=buildSettlement(c,{creditShort:st?!!st.shortageCredited:!!S.f["creditShort_"+wid(pid,ws)]});
@@ -711,7 +805,7 @@ function vBilling(){
   }
   return `<div class="head"><div><h1>Weekly billing</h1><p class="lede">Each Monday last week's bill is drafted automatically from the reports. A manager checks it and taps <b>Approve & issue</b>; edit only if something is wrong. Invoice all stock held (carried-forward + new deliveries) → credit the unsold balance on a CF note → credit wastage on a CN per the outlet's terms. The net equals what was actually sold at the agreed rate.</p></div></div>
     <div class="panel">
-      <div class="spread"><div class="row">${partnerSelect("b-p",pid)}<button class="btn sm" data-wk="-7" aria-label="Previous week">‹</button><span class="mono" style="font-weight:600">${nice(ws)} – ${nice(add(ws,6))}</span><input type="date" data-ui="bweek" value="${ws}" aria-label="Jump to week" title="Jump to the week of a date" style="width:auto"><button class="btn sm" data-wk="7" aria-label="Next week">›</button></div>
+      <div class="spread"><div class="row">${partnerSelect("b-p",pid,false,true)}<button class="btn sm" data-wk="-7" aria-label="Previous week">‹</button><span class="mono" style="font-weight:600">${nice(ws)} – ${nice(add(ws,6))}</span><input type="date" data-ui="bweek" value="${ws}" aria-label="Jump to week" title="Jump to the week of a date" style="width:auto"><button class="btn sm" data-wk="7" aria-label="Next week">›</button></div>
         <div class="row">${st?`<span class="pill ok">Issued ${esc(st.issuedAt.slice(0,10))}</span>${st.bukku&&st.bukku.inv?`<span class="pill info">In Bukku</span>`:`<span class="pill warn">Not in Bukku yet</span>`}${st.paid&&st.paid.date?`<span class="pill ok">Paid</span>`:""}`:`<span class="pill mute">Draft</span>`}</div></div>
       <p class="small muted" style="margin:0">Opening stock from: ${esc(c.opening.src)} · Terms: ${p.pct}% to Chaleur · Wastage: ${({credit:"Chaleur bears (full credit)",half:"Outlet pays 50% of retail",none:"Outlet bears (no credit)"})[p.wasteRule||"credit"]}</p>
       ${(st?[]:live.warns).length?`<div class="warns">${live.warns.map(([k,m])=>`<div class="${k}">${esc(m)}</div>`).join("")}</div>`:""}
@@ -765,7 +859,7 @@ function evalAudit(a){
   return {priceBad,fails,counts,score:n?Math.round(pass/n*100):null};
 }
 function suggestAudit(){
-  const ps=partners(); if(!ps.length) return null;
+  const ps=partners().filter(p=>!p.internal); if(!ps.length) return null;
   const last=pid=>Object.values(S.audits).filter(a=>a.partnerId===pid).map(a=>a.date).sort().pop()||"2000-01-01";
   const weights=ps.map(p=>Math.max(1,diffDays(today(),last(p.id))));
   let r=Math.random()*weights.reduce((a,b)=>a+b,0), pick=ps[0];
@@ -778,7 +872,7 @@ function vAudits(){
   let form="";
   if(d){
     form=`<div class="panel"><div class="spread"><h2>Spot audit</h2><button class="btn sm" data-act="cancelAudit">Cancel</button></div>
-      <div class="fgrid"><label class="f">Outlet<select id="au-p" data-au="partnerId">${partners().map(p=>opt(p.id,p.name,d.partnerId)).join("")}</select></label>
+      <div class="fgrid"><label class="f">Outlet<select id="au-p" data-au="partnerId">${partners().filter(p=>!p.internal).map(p=>opt(p.id,p.name,d.partnerId)).join("")}</select></label>
         <label class="f">Date<input type="date" id="au-d" data-au="date" value="${esc(d.date)}"></label>
         <label class="f">Auditor<input id="au-b" data-au="by" value="${esc(d.by||"")}"></label>
         <label class="f">Chiller temp (°C)<input id="au-t" data-au="temp" inputmode="decimal" value="${esc(d.temp||"")}"></label></div>
@@ -811,7 +905,7 @@ const sampleCount=r=>sampleSecs(r).reduce((s,[,a])=>s+a.length,0);
 function sampleList(r){const sec=sampleSecs(r); return sec.length?`<div class="tw"><table><tbody>${sec.map(([k,a])=>`<tr><td><b>${esc(k)}</b> <span class="small muted">${a.length}</span></td><td class="small">${a.slice(0,60).map(esc).join(" · ")}${a.length>60?" …":""}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">Nothing to remove: no sample or test data found.</div>`;}
 function vSetup(){
   const sec=S.ui.setup;
-  const subs=[["partners","Outlets & terms"],["products","Products"],["shelf","Shelf life"],["prices","Price register"],["opening","Opening stock"],["general","Go-live & rules"]];
+  const subs=[["partners","Outlets & terms"],["products","Products"],["shelf","Shelf life"],["prices","Price register"],["opening","Opening stock"],["general","Go-live & rules"],["kitchen","Kitchen HQ & WhatsApp"]];
   let body="";
   if(sec==="partners"){
     const e=S.ui.pEdit;
@@ -832,7 +926,7 @@ function vSetup(){
         <label class="f">Active<select id="pe-act" data-pe="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label>
       </div><div class="row"><button class="btn pri" data-act="savePartner">Save outlet</button><button class="btn" data-act="cancelPartner">Cancel</button></div>`:""}
       <div class="tw"><table><thead><tr><th>Code</th><th>Outlet</th><th>Closing link</th><th class="r">Chaleur %</th><th>Terms</th><th>Wastage</th><th>Hours</th><th>Delivery days</th><th>WhatsApp</th><th></th></tr></thead><tbody>
-      ${partners(true).map(p=>`<tr><td class="mono">${esc(p.code)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}</td><td class="small">${p.formKey?`<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-lcopy="${p.id}">Copy</button><button class="btn sm" data-lqr="${p.id}">QR</button></div>`:(MGR()?`<button class="btn sm" data-lnew="${p.id}">Make link</button>`:`<span class="muted">not set</span>`)}</td><td class="r mono">${esc(p.pct)}%</td><td><span class="pill ${p.termsStatus==="Accepted"?"ok":"warn"}">${esc(p.termsStatus||"Proposed")}</span></td><td class="small">${esc(({credit:"Full credit",half:"50% retail",none:"No credit"})[p.wasteRule||"credit"])}</td><td class="small mono">${esc((p.hours||{}).wkOpen||"10:00")}–${esc((p.hours||{}).wkClose||"22:00")}${((p.hours||{}).closed||[]).length?`<br><span class="muted">closed ${(p.hours.closed).map(i=>WD[i]).join(", ")}</span>`:""}</td><td class="small">${(p.deliveryDays||[1,3,5]).map(i=>WD[i]).join(" ")}</td><td class="mono small">${esc(p.phone||"—")}</td><td class="r"><button class="btn sm" data-pedit="${p.id}">Edit</button></td></tr>`).join("")}
+      ${partners(true).map(p=>`<tr><td class="mono">${esc(p.code)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}</td><td class="small">${p.internal?`<span class="muted">Kitchen closing report</span>`:p.formKey?`<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-lcopy="${p.id}">Copy</button><button class="btn sm" data-lqr="${p.id}">QR</button></div>`:(MGR()?`<button class="btn sm" data-lnew="${p.id}">Make link</button>`:`<span class="muted">not set</span>`)}</td><td class="r mono">${esc(p.pct)}%</td><td><span class="pill ${p.termsStatus==="Accepted"?"ok":"warn"}">${esc(p.termsStatus||"Proposed")}</span></td><td class="small">${esc(({credit:"Full credit",half:"50% retail",none:"No credit"})[p.wasteRule||"credit"])}</td><td class="small mono">${esc((p.hours||{}).wkOpen||"10:00")}–${esc((p.hours||{}).wkClose||"22:00")}${((p.hours||{}).closed||[]).length?`<br><span class="muted">closed ${(p.hours.closed).map(i=>WD[i]).join(", ")}</span>`:""}</td><td class="small">${(p.deliveryDays||[1,3,5]).map(i=>WD[i]).join(" ")}</td><td class="mono small">${esc(p.phone||"—")}</td><td class="r"><button class="btn sm" data-pedit="${p.id}">Edit</button></td></tr>`).join("")}
       </tbody></table></div></div>${S.ui.qrFor&&S.partners[S.ui.qrFor]&&S.partners[S.ui.qrFor].formKey?qrPanel(S.partners[S.ui.qrFor]):""}`;
   }
   if(sec==="products"){
@@ -862,7 +956,7 @@ function vSetup(){
     const rows=Object.values(S.prices).sort((a,b)=>partner(a.partnerId).name.localeCompare(partner(b.partnerId).name)||prod(a.productId).name.localeCompare(prod(b.productId).name)||b.from.localeCompare(a.from));
     body=`<div class="panel"><h2>Price register</h2><p class="small muted" style="margin:0">One approved price per outlet × product × date. Only <b>Active</b> rows are used on invoices; anything else falls back to the outlet's default % of the product's retail and is flagged. Issued invoices keep the price they were issued with.</p>
       <div class="fgrid">
-        <label class="f">Outlet<select id="pn-p" data-pn="partnerId">${opt("","Choose…",n.partnerId)}${partners().map(p=>opt(p.id,p.name,n.partnerId)).join("")}</select></label>
+        <label class="f">Outlet<select id="pn-p" data-pn="partnerId">${opt("","Choose…",n.partnerId)}${partners().filter(p=>!p.internal).map(p=>opt(p.id,p.name,n.partnerId)).join("")}</select></label>
         <label class="f">Product<select id="pn-pr" data-pn="productId">${opt("","Choose…",n.productId)}${products().map(p=>opt(p.id,p.name,n.productId)).join("")}</select></label>
         <label class="f">Retail RM<input id="pn-r" data-pn="retail" inputmode="decimal" value="${esc(n.retail??"")}"></label>
         <label class="f">Chaleur %<input id="pn-pc" data-pn="pct" inputmode="decimal" value="${esc(n.pct??"")}"></label>
@@ -916,6 +1010,32 @@ function vSetup(){
       <div class="panel"><h2>Sample & test data</h2><p class="small muted" style="margin:0">Removes the sample outlet and anything marked sample, reports and audits entered as "Testing" or "Test", and the "Example Staff" login. You see the full list first. A backup of everything removed is saved to Drive (Backups folder).</p>
       ${S.ui.sampleDone?`<p class="small" style="margin:0">Done. Backup: <a href="${esc(S.ui.sampleDone)}" target="_blank" rel="noopener">open in Drive</a></p>`:""}${S.ui.sampleScan?sampleList(S.ui.sampleScan):""}
       <div class="row">${MGR()?(S.ui.sampleScan?(sampleCount(S.ui.sampleScan)?`<button class="btn danger" data-act="clearSample2">Remove these (backup first)</button>`:"")+`<button class="btn" data-act="noSample">Close</button>`:`<button class="btn" data-act="scanSample">Show sample & test data</button>`):`<span class="pill info">Only Alfred or Joscelyn can do this</span>`}</div></div>`;
+  }
+  if(sec==="kitchen"){
+    if(!S.ui.hqs&&!S.ui.hqsAsk){S.ui.hqsAsk=GS("hqSettings").then(r=>{S.ui.hqs=r;render();}).catch(e=>{S.ui.hqs={err:e.message};render();});}
+    if(MGR()&&!S.ui.wa&&!S.ui.waAsk){S.ui.waAsk=GS("waStatus").then(r=>{S.ui.wa=r;render();}).catch(e=>{S.ui.wa={err:e.message};render();});}
+    const h=S.ui.hqs||{}, w=S.ui.wa||{}, hd=S.ui.hqd||(S.ui.hqd={}), v=k=>hd[k]??h[k], cl=(hd.closed??h.closed)||[];
+    body=`<div class="panel"><h2>Kitchen HQ reports</h2><p class="small muted" style="margin:0">The kitchen sends an <b>opening report</b> (fridge and freezer temperatures with photos, set-up photo, cakes put on the HQ display, today's deliveries) and a <b>closing report</b> (temperatures, HQ display count, mise en place photos, tomorrow's list) on the <a href="kitchen.html">Kitchen HQ</a> page. If a report is late, the kitchen WhatsApp group gets a reminder with the link, up to 3 times (the 3rd also goes to the alert numbers). Checks run at 4am and 4pm and after every report.</p>
+      ${!S.ui.hqs?`<span class="pill mute">Loading…</span>`:h.err?`<p class="neg small">${esc(h.err)}</p>`:`<div class="fgrid">
+        <label class="f">Opening report due<input type="time" id="hq-ob" data-hq="openBy" value="${esc(v("openBy"))}"></label>
+        <label class="f">Closing report due<input type="time" id="hq-cb" data-hq="closeBy" value="${esc(v("closeBy"))}"></label>
+        <label class="f">Minutes late before the reminder<input id="hq-gr" data-hq="grace" inputmode="numeric" value="${esc(v("grace"))}"></label>
+        <label class="f">Production plan needed for (days ahead)<input id="hq-pd" data-hq="planDays" inputmode="numeric" value="${esc(v("planDays"))}"></label>
+        <label class="f">Remind on WhatsApp when late<select id="hq-ch" data-hq="chase">${opt("true","On",String(v("chase")))}${opt("false","Off",String(v("chase")))}</select></label>
+        <label class="f">4pm kitchen reminders to the group<select id="hq-br" data-hq="brief">${opt("true","On",String(v("brief")))}${opt("false","Off",String(v("brief")))}</select></label></div>
+        <div class="f"><span>Kitchen closed on (no reports expected)</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="hq-cl-${i}" data-hqcl="${i}" ${cl.map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
+        ${MGR()?`<div class="row"><button class="btn pri" data-act="saveHqs">Save kitchen settings</button></div>`:`<span class="pill info">Only Alfred or Joscelyn can change these</span>`}`}</div>
+      ${MGR()?`<div class="panel"><h2>WhatsApp messages</h2><p class="small muted" style="margin:0">Sends the late-report reminders (with the link), the 4pm kitchen reminders and urgent alerts (for example a freezer that is too warm). Paste the <b>send message</b> link from your WasapBot dashboard (API section). It contains your instance ID and access token, so it is kept in the Google backend and never shown again. If the link has <span class="mono">{number}</span> and <span class="mono">{message}</span> in it, those are filled in; otherwise the number and message are added to the link.</p>
+        <div class="row">${!S.ui.wa?`<span class="pill mute">Checking…</span>`:w.err?`<span class="neg small">${esc(w.err)}</span>`:`${w.set?`<span class="pill ok">Link saved (${esc(w.host)})</span>`:`<span class="pill warn">No link yet</span>`} ${w.on?`<span class="pill ok">On</span>`:`<span class="pill mute">Off</span>`} ${w.groupSet?`<span class="pill info">Group set</span>`:`<span class="pill mute">No group: goes to the kitchen numbers</span>`}`}</div>
+        <div class="fgrid"><label class="f">Send-to-number link<input id="wa-url" type="password" autocomplete="off" placeholder="https://… (leave empty to keep the saved one)"></label>
+          <label class="f">Send-to-group link (if different)<input id="wa-gurl" type="password" autocomplete="off" placeholder="https://… (optional)"></label>
+          <label class="f">Group ID<input id="wa-grp" autocomplete="off" placeholder="${w.groupSet?"(saved, leave empty to keep)":"e.g. 1203630…@g.us"}"></label>
+          <label class="f">Group parameter name<input id="wa-gp" value="${esc(w.groupParam||"group_id")}"></label>
+          <label class="f">Method<select id="wa-m">${opt("get","GET",w.method||"get")}${opt("post","POST",w.method||"get")}</select></label>
+          <label class="f">Kitchen numbers (if no group)<input id="wa-nums" value="${esc((w.numbers||[]).join(", "))}" placeholder="0123456789, 0198765432"></label>
+          <label class="f">Alert numbers (Alfred, Joscelyn)<input id="wa-al" value="${esc((w.alerts||[]).join(", "))}" placeholder="0146650928"></label></div>
+        <div class="row"><button class="btn pri" data-act="saveWA">Save</button><button class="btn" data-act="testWA" ${w.set?"":"disabled"}>Send a test message</button>${w.set?(w.on?`<button class="btn sm" data-act="waOff">Switch off</button>`:`<button class="btn sm" data-act="waOn">Switch on</button>`):""}${w.groupSet?`<button class="btn sm" data-act="waNoGroup">Forget group</button>`:""}</div>
+        ${(w.log||[]).length?`<details class="help"><summary>Last messages sent (${w.log.length})</summary><div class="small">${w.log.map(x=>`<div>${esc(x.at)} · ${x.ok?"✓":"✗"} ${esc(x.what)}<br><span class="muted">${(x.res||[]).map(esc).join(" · ")}</span></div>`).join("")}</div></details>`:""}</div>`:""}`;
   }
   return `<div class="head"><div><h1>Setup</h1><p class="lede">Outlets, terms, products, approved prices and document settings.</p></div></div>
     <div class="sub">${subs.map(([k,l])=>`<button aria-pressed="${sec===k}" data-setup="${k}">${l}</button>`).join("")}</div>${body}`;
@@ -976,10 +1096,11 @@ function planOutlet(pid){
     const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
     if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`); if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — +15%`);
     if(d2&&diffDays(d2,d1)>life) notes.push(`gap to next delivery (${diffDays(d2,d1)}d) is longer than shelf life`);
-    if(isWhole(id)){const wd=(cfg().wholeDays||[5,6,0]).map(Number), mx=+(cfg().wholeMax??1); if(!wd.includes(dow(d1))){ if(suggest) notes.push("whole cakes only go out Fri–Sun"); suggest=0; } else if(suggest>mx){ suggest=mx; notes.push(`whole cakes: max ${mx} each`); } }
+    if(isWhole(id)){const wd=(p.wholeDays||cfg().wholeDays||[5,6,0]).map(Number), mx=+(cfg().wholeMax??1); if(!wd.includes(dow(d1))){ if(suggest) notes.push(`whole cakes only go out ${wd.length===7?"":"Fri–Sun"}`.trim()); suggest=0; } else if(suggest>mx){ suggest=mx; notes.push(`whole cakes: max ${mx} each`); } }
     lines.push({productId:id,aw:f.aw,ae:f.ae,stockNow,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n});
   }
-  { const wt=+(cfg().wholeTypes??2); lines.filter(l=>isWhole(l.productId)&&l.suggest>0).sort((a,b)=>(b.demand-a.demand)||(b.n-a.n)).slice(wt).forEach(l=>{l.suggest=0; l.notes.push(`max ${wt} whole-cake kinds per delivery`);}); }
+  { const wt=+(cfg().wholeTypes??2), yest=new Set(p.internal?Object.values(weekDoc(pid,weekStartOf(add(d1,-1))).dos||{}).filter(o=>o.date===add(d1,-1)&&o.status!=="cancelled").flatMap(o=>(o.lines||[]).filter(l=>+l.qty).map(l=>l.productId)):[]);
+    lines.filter(l=>isWhole(l.productId)&&l.suggest>0).sort((a,b)=>(yest.has(a.productId)-yest.has(b.productId))||(b.demand-a.demand)||(b.n-a.n)).slice(wt).forEach(l=>{l.suggest=0; l.notes.push(`max ${wt} whole-cake kinds per delivery`);}); }
   const hol=[]; for(let i=0;i<(d2?diffDays(d2,d1):3);i++){for(const e of dayEvents(add(d1,i))) if(!hol.includes(e)) hol.push(e);}
   return {pid,d1,d2,lines,planned,hol,carryNote,prepDate:add(d1,-(+cfg().prepLeadDays||0))};
 }
@@ -1085,7 +1206,7 @@ function vPlan(){
         </tbody></table></div></div>`}).join("")}
     ${KIT()?"":`<div class="panel"><div class="spread"><h2>Wastage by outlet</h2><span class="small muted">last 28 days</span></div>
       <div class="tw"><table><thead><tr><th>Outlet</th><th class="r">Sold</th><th class="r">Wasted</th><th class="r">Waste %</th><th class="r">Waste value (RM)</th><th class="r">Sales value (RM)</th><th>Most wasted</th></tr></thead><tbody>
-      ${ps.map(p=>{const w=wasteStats(p.id);return `<tr><td>${esc(p.name)}</td><td class="r mono">${w.sold}</td><td class="r mono">${w.waste}</td><td class="r"><span class="pill ${w.rate>.15?"bad":w.rate>.08?"warn":"ok"}">${Math.round(w.rate*100)}%</span></td><td class="r mono">${fm(w.wasteRM)}</td><td class="r mono">${fm(w.soldRM)}</td><td class="small">${w.byProd.filter(x=>x.w).slice(0,3).map(x=>`${esc(prod(x.id).name)} ${x.w}`).join(" · ")||"—"}</td></tr>`}).join("")}
+      ${ps.filter(p=>!p.internal).map(p=>{const w=wasteStats(p.id);return `<tr><td>${esc(p.name)}</td><td class="r mono">${w.sold}</td><td class="r mono">${w.waste}</td><td class="r"><span class="pill ${w.rate>.15?"bad":w.rate>.08?"warn":"ok"}">${Math.round(w.rate*100)}%</span></td><td class="r mono">${fm(w.wasteRM)}</td><td class="r mono">${fm(w.soldRM)}</td><td class="small">${w.byProd.filter(x=>x.w).slice(0,3).map(x=>`${esc(prod(x.id).name)} ${x.w}`).join(" · ")||"—"}</td></tr>`}).join("")}
       </tbody></table></div>
       <p class="small muted" style="margin:0">Waste value = wasted units × partner rate (what Chaleur loses when wastage is credited). Target under 8%. Over 15% means the planner drops the buffer for that outlet.</p></div>`}`;
 }
@@ -1131,6 +1252,8 @@ function dailyHtml(pid,date){
 /* ---------- events ---------- */
 document.addEventListener("input",e=>{
   const t=e.target, d=t.dataset;
+  if(t.closest&&t.closest(".ca-login,.ca-hp")) return;
+  if(d.hq){(S.ui.hqd=S.ui.hqd||{})[d.hq]=t.value;return;}
   if(d.f!==undefined){S.f[d.f]=t.type==="checkbox"?t.checked:t.value; if(t.type==="checkbox") render(); return;}
   if(d.ui==="paste"){S.ui.paste=t.value;return;}
   if(d.ui==="dayBy"){S.ui.dayBy=t.value;return;}
@@ -1173,8 +1296,11 @@ async function shrink(file,max=900){
 }
 document.addEventListener("change",async e=>{
   const t=e.target;
+  if(t.closest&&t.closest(".ca-login,.ca-hp")) return;
+  if(t.dataset.hq!==undefined){(S.ui.hqd=S.ui.hqd||{})[t.dataset.hq]=t.value;return;}
+  if(t.dataset.hqcl!=null){const h=S.ui.hqd||(S.ui.hqd={}); const c=new Set(((h.closed??(S.ui.hqs||{}).closed)||[]).map(Number)); if(t.checked) c.add(+t.dataset.hqcl); else c.delete(+t.dataset.hqcl); h.closed=[...c].sort(); return;}
   if(t.dataset.flt){const [g,k]=t.dataset.flt.split(".");S.ui[g]={...(S.ui[g]||{}),[k]:t.value};render();return;}
-  if(RO()&&!t.dataset.ui&&t.id!=="lg-pin"&&!(KIT()&&kitOK(t))){toast("View only — ask a manager to make changes");render();return;}
+  if(RO()&&!t.dataset.ui&&!(KIT()&&kitOK(t))){toast("View only — ask a manager to make changes");render();return;}
   if(t.dataset.ckc!=null&&S.ui.colChk){S.ui.colChk.rows[+t.dataset.ckc].colour=t.value;render();return;}
   if(t.dataset.ckok&&S.ui.colChk){S.ui.colChk.ok=t.checked;return;}
   if(t.dataset.sl!=null||t.dataset.slall!=null){render();return;}
@@ -1195,14 +1321,16 @@ document.addEventListener("click",async e=>{
   if(MENU&&!e.target.closest("#nav")){MENU=false;render();}
   const b=e.target.closest("button,[data-close]"); if(!b) return;
   const d=b.dataset;
+  if(b.id==="ca-hbtn"||d.caLogout||b.closest(".ca-hp,.ca-login")) return;
+  if(d.go){location.href=d.go;return;}
   if(d.menu){MENU=!MENU;render();return;}
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
-  if(RO()&&b.id!=="lg-go"&&!(KIT()&&(d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
+  if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null))&&!(KIT()&&(d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
   if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;render();window.scrollTo(0,0);return;}
-  if(d.stnew){S.ui.stEdit={row:0,name:"",code:"",role:"auditor",notes:""};render();return;}
+  if(d.stnew){S.ui.stEdit={row:0,name:"",phone:"",code:"",role:"kitchen",notes:""};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
-  if(d.stedit){const x=(S.team||[]).find(r=>String(r.row)===d.stedit); if(x){S.ui.stEdit={...x};render();window.scrollTo(0,0);} return;}
+  if(d.stedit){const x=(S.team||[]).find(r=>String(r.row)===d.stedit); if(x){S.ui.stEdit={...x,phone:x.phone&&/^60\d{8,10}$/.test(x.phone)?"0"+x.phone.slice(2):(x.phone||"")};render();window.scrollTo(0,0);} return;}
   if(d.stsave){const x=S.ui.stEdit; if(x){b.disabled=true; await stSave({...x,active:x.row?x.active:true}); b.disabled=false;} return;}
   if(d.sttog){const x=(S.team||[]).find(r=>String(r.row)===d.sttog); if(x){b.disabled=true; await stSave({...x,active:!x.active});} return;}
   if(d.goDaily){const [p,dt]=d.goDaily.split("|");S.ui.partner=p;S.ui.date=dt;S.tab="daily";S.ui.editDay=false;render();return;}
@@ -1227,7 +1355,7 @@ document.addEventListener("click",async e=>{
     if(d.vdo){S.ui.modal={kind:"do",html:docHTML("do",pid,ws,x),doc:x,pid};render();return;}
     const lines={};(x.lines||[]).forEach(l=>{const o=lines[l.productId]; lines[l.productId]={qty:(+(o&&o.qty)||0)+(+l.qty||0),accepted:l.accepted};});
     S.ui.doEdit={...x,partnerId:pid,weekStart:ws,origPid:pid,origWs:ws,lines,mode:d.rcv?"receive":"edit",rl:(x.lines||[]).filter(l=>+l.qty).map(l=>({...l,colour:l.colour||x.colour,accepted:l.accepted??l.qty})),batchTouched:true,receivedAt:x.receivedAt||new Date().toTimeString().slice(0,5)};render();window.scrollTo(0,0);return;}
-  if(d.doc){const pid=curPartner(),ws=S.ui.week||weekStartOf(add(today(),-7));const st=weekDoc(pid,ws).settlement;S.ui.modal={kind:d.doc,html:docHTML(d.doc,pid,ws,st),st,pid};render();return;}
+  if(d.doc){const pid=curPartner(); if(partner(pid).internal) return; const _x=0,ws=S.ui.week||weekStartOf(add(today(),-7));const st=weekDoc(pid,ws).settlement;S.ui.modal={kind:d.doc,html:docHTML(d.doc,pid,ws,st),st,pid};render();return;}
   if(d.auc){S.ui.auditDraft.checks[d.auc]=d.v;render();return;}
   if(d.rmc){S.ui.auditDraft.counts.splice(+d.rmc,1);render();return;}
   if(d.pedit){S.ui.pEdit=clone(S.partners[d.pedit]);render();return;}
@@ -1251,7 +1379,12 @@ async function act(a,b){
   const t=today();
   switch(a){
     case "saveReader": { const k=(($("#rd-key")||{}).value||"").trim(); if(!k){toast("Paste the API key first");return;} b.disabled=true; toast("Checking the key…"); try{const rr=await GS("setReaderKey",k); S.ui.readerOn=true; S.ui.readerProv=rr.provider; toast("Sales photo reader is on"); render();}catch(e){toast(e.message);} b.disabled=false; return; }
-    case "readerOff": { try{await GS("readerOff"); S.ui.readerOn=false; toast("Sales photo reader switched off"); render();}catch(e){toast(e.message);} return; }
+    case "saveHqs": { b.disabled=true; try{ const h=S.ui.hqd||{}; S.ui.hqs=await GS("hqSettings",{...h,chase:h.chase==null?undefined:h.chase==="true"||h.chase===true,brief:h.brief==null?undefined:h.brief==="true"||h.brief===true}); S.ui.hqd={}; toast("Kitchen settings saved"); }catch(e){toast(e.message);} b.disabled=false; render(); return; }
+  case "saveWA": { const val=id=>(($(id)||{}).value||"").trim(); b.disabled=true; try{ S.ui.wa=await GS("waSave",{url:val("#wa-url"),groupUrl:val("#wa-gurl"),group:val("#wa-grp"),groupParam:val("#wa-gp")||"group_id",method:val("#wa-m"),numbers:val("#wa-nums"),alerts:val("#wa-al"),on:(S.ui.wa&&S.ui.wa.on)||!!val("#wa-url")}); toast("WhatsApp settings saved"); }catch(e){toast(e.message);} b.disabled=false; render(); return; }
+  case "waOn": case "waOff": { try{ S.ui.wa=await GS("waSave",{on:d.act==="waOn"}); toast(d.act==="waOn"?"WhatsApp messages on":"WhatsApp messages off"); }catch(e){toast(e.message);} render(); return; }
+  case "waNoGroup": { try{ S.ui.wa=await GS("waSave",{clearGroup:true,clearGroupUrl:true}); toast("Group removed: messages go to the kitchen numbers"); }catch(e){toast(e.message);} render(); return; }
+  case "testWA": { b.disabled=true; toast("Sending a test message…"); try{ const r=await GS("waTest"); S.ui.wa=r.status; const bad=r.res.filter(x=>!x.ok); toast(r.res.length?(bad.length?`Failed for ${bad.map(x=>x.to).join(", ")}: ${bad[0].code} ${bad[0].body||""}`.slice(0,160):`Sent to ${r.res.map(x=>x.to).join(", ")}. Check WhatsApp.`):"Nothing to send to: add a group ID or numbers."); }catch(e){toast(e.message);} b.disabled=false; render(); return; }
+  case "readerOff": { try{await GS("readerOff"); S.ui.readerOn=false; toast("Sales photo reader switched off"); render();}catch(e){toast(e.message);} return; }
   case "goNewDO": S.tab="deliveries"; return act("newDO");
   case "goPaste": S.tab="daily"; render(); setTimeout(()=>{const x=$("#paste"); x&&x.focus()},50); return;
   case "goAudit": S.tab="audits"; return act("newAudit");
@@ -1279,7 +1412,7 @@ async function act(a,b){
   case "saveDO":{const e=S.ui.doEdit; const lines=Object.entries(e.lines).filter(([k,v])=>Math.round(+v.qty)>0).map(([k,v])=>({productId:k,qty:Math.round(+v.qty)}));
     if(!e.partnerId||!e.date){toast("Choose outlet and date");return;} if(!lines.length){toast("Enter at least one quantity");return;}
     {const age=diffDays(e.date,e.batchDate||e.date), mxA=+(cfg().maxDeliveryAge??1); if(age<0||age>mxA){toast(`Cakes made on ${nice(e.batchDate)} can't go out on ${nice(e.date)}. Only cakes made on the delivery day or the day before can be sent.`);return;}}
-    {const wl=lines.filter(l=>isWhole(l.productId)), wm=[], wt=+(cfg().wholeTypes??2), wx=+(cfg().wholeMax??1); if(wl.length){ if(!(cfg().wholeDays||[5,6,0]).map(Number).includes(dow(e.date))) wm.push("whole cakes only go out Fri–Sun"); if(wl.length>wt) wm.push(`max ${wt} whole-cake kinds`); if(wl.some(l=>l.qty>wx)) wm.push(`max ${wx} of each whole cake`);}
+    {const wl=lines.filter(l=>isWhole(l.productId)), wm=[], wt=+(cfg().wholeTypes??2), wx=+(cfg().wholeMax??1); if(wl.length){ if(!(partner(e.partnerId).wholeDays||cfg().wholeDays||[5,6,0]).map(Number).includes(dow(e.date))) wm.push("whole cakes only go out Fri–Sun"); if(wl.length>wt) wm.push(`max ${wt} whole-cake kinds`); if(wl.some(l=>l.qty>wx)) wm.push(`max ${wx} of each whole cake`);}
       if(wm.length&&!e.wholeOk){e.wholeOk=true; toast(`Whole-cake rule: ${wm.join(", ")}. Tap the button again to save anyway.`); return;}}
     const ws=weekStartOf(e.date);
     const w=clone(weekDoc(e.partnerId,ws));
@@ -1317,15 +1450,15 @@ async function act(a,b){
   case "askIssue": S.ui.confirm="issue"; render(); return;
   case "askVoid": S.ui.confirm="void"; render(); return;
   case "askClear": S.ui.confirm="clear"; render(); return;
-  case "issue":{ if(!MGR()){toast("Only Alfred or Joscelyn can approve and issue");return;}const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); memo=new Map(); const c=calcWeek(pid,ws);
+  case "issue":{ if(!MGR()){toast("Only Alfred or Joscelyn can approve and issue");return;}const pid=curPartner(); if(partner(pid).internal){toast("Chaleur HQ has no bills. Choose an outlet.");return;} const _x=0, ws=S.ui.week||weekStartOf(add(t,-7)); memo=new Map(); const c=calcWeek(pid,ws);
     const cs=!!S.f["creditShort_"+wid(pid,ws)]; const s=buildSettlement(c,{creditShort:cs}); b.disabled=true;
     const invNo=await nextNo("INV",t), cfNo=await nextNo("CF",t), cnNo=s.cn.length?await nextNo("CN",t):"";
     const w=clone(c.week); w.dos=w.dos||{}; w.days=w.days||{};
     w.settlement={status:"issued",issuedAt:new Date().toISOString(),invNo,cfNo,cnNo,inv:s.inv,cf:s.cf,cn:s.cn,totals:s.totals,soldVal:s.soldVal,shortVal:s.shortVal,shortQty:s.shortQty,wasteCharged:s.wasteCharged,shortageCredited:cs,openingSrc:c.opening.src,pct:partner(pid).pct,bukku:{},paid:null};
     await saveWeek(w); S.ui.confirm=null; toast(`${invNo}, ${cfNo}${cnNo?", "+cnNo:""} issued`); return;}
-  case "void":{ if(!MGR()){toast("Only Alfred or Joscelyn can void a bill");return;} const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws));
+  case "void":{ if(!MGR()){toast("Only Alfred or Joscelyn can void a bill");return;} const pid=curPartner(); if(partner(pid).internal){toast("Chaleur HQ has no bills. Choose an outlet.");return;} const _x=0, ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws));
     w.voided=[...(w.voided||[]).slice(-2),{invNo:w.settlement.invNo,cfNo:w.settlement.cfNo,cnNo:w.settlement.cnNo,totals:w.settlement.totals,issuedAt:w.settlement.issuedAt,voidedAt:new Date().toISOString(),by:AUTH.name||""}]; w.settlement=null; await saveWeek(w); S.ui.confirm=null; toast("Documents voided — week reopened"); return;}
-  case "saveBk":{const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws)); const g=id=>$(id).value.trim();
+  case "saveBk":{const pid=curPartner(); if(partner(pid).internal){toast("Chaleur HQ has no bills. Choose an outlet.");return;} const _x=0, ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws)); const g=id=>$(id).value.trim();
     w.settlement.bukku={inv:g("#bk-inv"),cf:g("#bk-cf")}; const pd=g("#pd-d"),pa=g("#pd-a"); w.settlement.paid=pd||pa?{date:pd,amount:pa===""?null:+pa}:null;
     await saveWeek(w); toast("Saved"); return;}
   case "closeModal": S.ui.modal=null; render(); return;
@@ -1341,7 +1474,7 @@ async function act(a,b){
     try{const kind=m.kind, pid=m.pid, iso=kind==="do"?m.doc.date:m.st.issuedAt.slice(0,10), no=kind==="do"?m.doc.no:m.st[kind+"No"];
       const url=await driveUploadHtml(pid,iso,kind,`${no} — ${partner(pid).name}`,m.html); toast("Filed in Drive"); m.drive=url; render();}
     catch(e){b.disabled=false; toast(driveErr(e));} return;}
-  case "fileWeek":{const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws)), st=w.settlement; b.disabled=true; toast("Filing to Google Drive…");
+  case "fileWeek":{const pid=curPartner(); if(partner(pid).internal){toast("Chaleur HQ has no bills. Choose an outlet.");return;} const _x=0, ws=S.ui.week||weekStartOf(add(t,-7)); const w=clone(weekDoc(pid,ws)), st=w.settlement; b.disabled=true; toast("Filing to Google Drive…");
     try{const iso=st.issuedAt.slice(0,10), drive={};
       for(const k of ["inv","cf","cn"]) if(st[k+"No"]) drive[k]=await driveUploadHtml(pid,iso,k,`${st[k+"No"]} — ${partner(pid).name}`,docHTML(k,pid,ws,st));
       for(const d of Object.values(w.dos||{})) await driveUploadHtml(pid,d.date,"do",`${d.no} — ${partner(pid).name}`,docHTML("do",pid,ws,d));
@@ -1363,7 +1496,7 @@ async function act(a,b){
     const html=`<html><head><meta charset="utf-8"><style>${css} body{background:#fff} .paper{max-width:800px;margin:0 auto}</style></head><body>${m.html}</body></html>`;
     try{const r=await GS("saveDocPdf",m.pid,m.kind,iso,`${no} — ${partner(m.pid).name}`,html); m.drive=r.url; toast(`${no} saved as PDF in the partner's Drive folder`); render();}
     catch(e){b.disabled=false; toast("Couldn't save the PDF — "+(e.message||"try again"));} return;}
-  case "newAudit":{const s=S.ui.suggest||suggestAudit(); S.ui.auditDraft={partnerId:s?s.partnerId:curPartner(),date:t,time:new Date().toTimeString().slice(0,5),by:"",temp:"",checks:{},prices:{},counts:[],note:"",focus:s?s.products:[]}; render(); return;}
+  case "newAudit":{const s=S.ui.suggest||suggestAudit(); S.ui.auditDraft={partnerId:s?s.partnerId:((partners().find(p=>!p.internal)||{}).id||""),date:t,time:new Date().toTimeString().slice(0,5),by:"",temp:"",checks:{},prices:{},counts:[],note:"",focus:s?s.products:[]}; render(); return;}
   case "pickAudit": S.ui.suggest=suggestAudit(); render(); return;
   case "startSuggested": return act("newAudit");
   case "cancelAudit": S.ui.auditDraft=null; render(); return;
@@ -1416,7 +1549,9 @@ async function act(a,b){
 }
 /* ---------- boot (Google Apps Script backend) ---------- */
 const AUTH={pin:null,name:"",role:""};
-const GS=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej({code:"unavailable",message:(e&&e.message)||String(e)}))[fn](AUTH.pin,...a));
+const GS=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>{const m=(e&&e.message)||String(e); if(AUTH.pin&&CA.isAuthErr({message:m})) setTimeout(()=>signedOut(m),0); rej({code:"unavailable",message:m});})[fn](AUTH.pin,...a));
+let STARTED=false;
+function signedOut(m){ if(!AUTH.pin) return; AUTH.pin=null; AUTH.name=""; AUTH.role=""; CA.clear(); showLogin(m); }
 const photoSrc=id=>!id?"":(/^https?:/.test(id)?id:"https:\/\/drive.google.com/thumbnail?id="+encodeURIComponent(id)+"&sz=w400");
 const photoLink=id=>!id?"":(/^https?:/.test(id)?id:"https:\/\/drive.google.com/file/d/"+encodeURIComponent(id)+"/view");
 const DBX={cache:{},subs:[]};
@@ -1435,35 +1570,33 @@ const shimAssets={upload:async(blob)=>{const du=await new Promise((res,rej)=>{co
 function vStaff(){
   if(!MGR()) return `<div class="empty">Only managers can manage staff.</div>`;
   if(!S.team){ if(!S.teamLoading){S.teamLoading=true; GS("teamList").then(r=>{S.team=r;S.teamLoading=false;render();}).catch(e=>{S.teamLoading=false;S.team=[];toast(e.message);});} return `<div class="empty">Loading staff…</div>`; }
-  const ed=S.ui.stEdit, roleTxt={owner:"Owner — full access",manager:"Manager — full access + staff",office:"Office — edit desk + audits",kitchen:"Kitchen — prep, colour checks & deliveries (no prices)",auditor:"Team — view desk + audits"};
+  const ed=S.ui.stEdit, roleTxt={owner:"Owner — full access",manager:"Manager — full access + staff",office:"Office — edit desk + audits",supervisor:"Kitchen supervisor — kitchen + approves kitchen changes (no prices)",kitchen:"Kitchen — prep, reports, colour checks & deliveries (no prices)",auditor:"Team — view desk, audits, kitchen reports"};
   const form=ed?`<div class="panel"><div class="spread"><h2>${ed.row?"Edit staff":"Add staff"}</h2><button class="btn sm" data-stcancel="1">Cancel</button></div>
     <div class="fgrid"><label class="f">Name<input id="st-name" data-st="name" value="${esc(ed.name||"")}" autocomplete="off"></label>
-      <label class="f">Login code (FeedMe staff code)<input id="st-code" data-st="code" inputmode="numeric" maxlength="6" value="${esc(ed.code||"")}" autocomplete="off"></label>
-      <label class="f">Access<select id="st-role" data-st="role">${["auditor","kitchen","office","manager"].map(r=>`<option value="${r}" ${ed.role===r?"selected":""}>${roleTxt[r]}</option>`).join("")}</select></label>
+      <label class="f">Phone number (for signing in)<input id="st-phone" data-st="phone" type="tel" inputmode="tel" value="${esc(ed.phone||"")}" placeholder="012-345 6789" autocomplete="off"></label>
+      <label class="f">PIN (4–6 digits, e.g. FeedMe staff code)<input id="st-code" data-st="code" inputmode="numeric" maxlength="6" value="${esc(ed.code||"")}" autocomplete="off"></label>
+      ${ed.role==="owner"?"":`<label class="f">Access<select id="st-role" data-st="role">${["auditor","kitchen","supervisor","office","manager"].map(r=>`<option value="${r}" ${ed.role===r?"selected":""}>${roleTxt[r]}</option>`).join("")}</select></label>`}
       <label class="f">Notes<input id="st-notes" data-st="notes" value="${esc(ed.notes||"")}"></label></div>
     <div class="row"><button class="btn pri" data-stsave="1">Save</button><span class="small">They can sign in as soon as you save.</span></div></div>`:"";
-  const rows=S.team.map(x=>`<tr><td><b>${esc(x.name)}</b>${x.notes?`<div class="small">${esc(x.notes)}</div>`:""}</td><td>${esc(x.code)}</td><td>${esc(roleTxt[x.role]||x.role)}</td>
+  const fph=p=>{p=String(p||""); return /^60\d{8,10}$/.test(p)?"0"+p.slice(2):p;};
+  const rows=S.team.map(x=>`<tr><td><b>${esc(x.name)}</b>${x.notes?`<div class="small">${esc(x.notes)}</div>`:""}</td><td class="mono small">${x.phone?esc(fph(x.phone)):`<span class="pill warn">not set</span>`}</td><td>${esc(x.code)}</td><td>${esc(roleTxt[x.role]||x.role)}</td>
     <td>${x.active?`<span class="pill ok">Active</span>`:`<span class="pill mute">Inactive</span>`}</td>
-    <td class="r">${x.role==="owner"?`<span class="small">Owner</span>`:`<button class="btn sm" data-stedit="${x.row}">Edit</button> <button class="btn sm" data-sttog="${x.row}">${x.active?"Deactivate":"Activate"}</button>`}</td></tr>`).join("");
-  return `<h1>Staff</h1><p class="lede">Who can sign in. Team members can view the desk (prep, deliveries, reports) and do spot audits; office staff can also edit; managers can also manage staff. Deactivate someone to stop their login — their past records stay.</p>
+    <td class="r">${x.role==="owner"?(AUTH.role==="owner"?`<button class="btn sm" data-stedit="${x.row}">Edit</button>`:`<span class="small">Owner</span>`):`<button class="btn sm" data-stedit="${x.row}">Edit</button> <button class="btn sm" data-sttog="${x.row}">${x.active?"Deactivate":"Activate"}</button>`}</td></tr>`).join("");
+  return `<h1>Staff</h1><p class="lede">Who can sign in. Staff sign in with their <b>phone number and PIN</b> (or their name if no phone is set). Changing someone's PIN or phone, or deactivating them, signs them out on every phone. Their past records stay.</p>
     ${form}<div class="panel"><div class="spread"><h2>Team</h2>${ed?"":`<button class="btn pri sm" data-stnew="1">+ Add staff</button>`}</div>
-    <div class="tw"><table><thead><tr><th>Name</th><th>Code</th><th>Access</th><th>Status</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="5" class="small">No staff yet.</td></tr>`}</tbody></table></div></div>`;
+    <div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>PIN</th><th>Access</th><th>Status</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="small">No staff yet.</td></tr>`}</tbody></table></div></div>`;
 }
 async function stSave(rec){ try{ S.team=await GS("teamSave",rec); S.ui.stEdit=null; toast("Staff saved"); render(); }catch(e){ toast(e.message); } }
 document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.st; if(k&&S.ui.stEdit) S.ui.stEdit[k]=e.target.value;});
 async function reload(){try{DBX.cache=await GS("dbLoadAll");fire();}catch(e){toast("Couldn't refresh — "+e.message);}}
 function showLogin(msg){
-  $("#main").innerHTML=`<div class="panel" style="max-width:380px;margin:40px auto"><h1 style="font-size:30px">Office login</h1><p class="lede">Enter your office PIN. Outlet and audit staff use their own links.</p>
-    <label class="f">PIN<input id="lg-pin" type="password" inputmode="numeric" autocomplete="off"></label>
-    <div class="row"><button class="btn pri" id="lg-go">Sign in</button><span class="small neg">${esc(msg||"")}</span></div></div>`;
-  const go=async()=>{AUTH.pin=$("#lg-pin").value.trim(); if(!AUTH.pin) return; $("#lg-go").disabled=true;
-    try{const u=await GS("login"); AUTH.name=u.name; AUTH.role=u.role; try{sessionStorage.setItem("chaleur.pin",AUTH.pin)}catch(_){} start();}
-    catch(e){AUTH.pin=null; showLogin(e.message);}};
-  $("#lg-go").onclick=go; $("#lg-pin").addEventListener("keydown",e=>{if(e.key==="Enter")go();}); setTimeout(()=>{const x=$("#lg-pin");x&&x.focus()},50);
+  MENU=false; S.ui.modal=null; $("#nav").innerHTML=""; $("#who").innerHTML=""; $("#testbar").innerHTML=""; $("#modal").innerHTML="";
+  CA.loginForm($("#main"),{title:"Office desk",lede:"Sign in with your phone number and staff PIN.",msg},s=>{AUTH.pin=s.t;AUTH.name=s.name;AUTH.role=s.role; if(STARTED) location.reload(); else start();});
 }
 async function start(){
   $("#main").innerHTML=`<div class="empty">Loading consignment data…</div>`;
-  try{DBX.cache=await GS("dbLoadAll");}catch(e){AUTH.pin=null;try{sessionStorage.removeItem("chaleur.pin")}catch(_){} return showLogin(e.message);}
+  STARTED=true; { const h=(location.hash||"").slice(1); if(TABS.some(([k])=>k===h)) S.tab=h; }
+  try{DBX.cache=await GS("dbLoadAll");}catch(e){ if(!AUTH.pin) return; if(CA.isAuthErr(e)) return signedOut(e.message); AUTH.pin=null; return showLogin(e.message); }
   S.db=shimDB; S.assets=shimAssets; S.dl=null; S.mcp=null;
   const sub=(col,fn)=>shimDB.collection(col).onSnapshot(snap=>{fn(snap);S.loaded.add(col);render();});
   const into=(key)=>s=>{const o={};for(const d of s.docs)o[d.id]={...d.data(),id:d.data().id||d.id};S[key]=o;};
@@ -1472,13 +1605,14 @@ async function start(){
   sub("partners",into("partners")); sub("products",into("products")); sub("prices",into("prices"));
   sub("weeks",into("weeks")); sub("audits",into("audits"));
   sub("alerts",s=>{const d=s.docs.find(x=>x.id==="latest");S.alerts=d?d.data():null;});
-  setInterval(()=>{const a=document.activeElement; if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; reload();},90000);
+  setInterval(()=>{ if(!AUTH.pin) return; const a=document.activeElement; if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; reload();},90000);
   render();
 }
 (function boot(){
-  let saved=null; try{saved=sessionStorage.getItem("chaleur.pin")}catch(_){}
-  if(saved){AUTH.pin=saved; GS("login").then(u=>{AUTH.name=u.name;AUTH.role=u.role;start();}).catch(()=>{AUTH.pin=null;showLogin();});}
-  else showLogin();
+  CA.helper({auth:()=>AUTH.pin,page:()=>"Office desk › "+((TABS.find(([k])=>k===S.tab)||["",""])[1])});
+  const s=CA.get(); if(!s) return showLogin();
+  AUTH.pin=s.t; AUTH.name=s.name; AUTH.role=s.role;
+  GS("me").then(u=>{AUTH.name=u.name;AUTH.role=u.role;start();}).catch(e=>{ if(!AUTH.pin) return; if(CA.isAuthErr(e)) return signedOut(e.message); AUTH.pin=null; showLogin("Couldn't connect ("+e.message+"). Check the internet and try again."); });
 })();
 </script>
 

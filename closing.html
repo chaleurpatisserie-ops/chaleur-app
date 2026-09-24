@@ -9,7 +9,97 @@ function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new A
  .catch(function(e){done();fail&&fail(new Error(e&&e.name==="AbortError"?"This is taking too long. Check your internet and try again.":(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again.")));});}
 function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
 window.google={script:{run:mk(null,null)}};})();
+</script><style>
+.ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
+.ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
+.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:32px}
+.ca-login{max-width:390px;margin:28px auto;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;padding:18px}
+.ca-login h2{font-family:var(--display,Georgia,serif);font-size:30px;line-height:1.1;margin:0 0 6px;font-weight:600}
+.ca-login p{margin:0;color:var(--muted,#6f5f62);font-size:14px}
+.ca-login label{display:flex;flex-direction:column;gap:4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#6f5f62);margin-top:12px}
+.ca-login input[type=tel],.ca-login input[type=password]{font:inherit;font-size:17px;padding:11px 12px;border:1px solid var(--line,#e8dcd6);border-radius:10px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);width:100%}
+.ca-login label.ca-rem{flex-direction:row;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--ink,#2b1b1e)}
+.ca-login label.ca-rem input{width:20px;height:20px;accent-color:var(--accent,#7b1c2b)}
+.ca-go{margin-top:16px;width:100%;padding:13px;border:0;border-radius:10px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 16px var(--body,system-ui,sans-serif);cursor:pointer}
+.ca-go:disabled{opacity:.6}
+.ca-err{color:#b3261e;font-size:14px;margin-top:10px;min-height:1.2em}
+.ca-hbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;border:0;border-radius:999px;padding:12px 18px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 15px var(--body,system-ui,sans-serif);box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer}
+.ca-hp{position:fixed;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:61;width:min(400px,calc(100vw - 24px));height:min(72vh,580px,calc(100vh - 180px));display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.28)}
+.ca-hp .ca-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line,#e8dcd6)}
+.ca-hp .ca-hd button{border:0;background:transparent;color:var(--ink,#2b1b1e);font-size:18px;cursor:pointer;min-width:36px;min-height:36px}
+.ca-hp .ca-msgs{overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ca-hp .ca-m{padding:9px 11px;border-radius:12px;font-size:14.5px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere}
+.ca-hp .ca-q{align-self:flex-end;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);max-width:85%}
+.ca-hp .ca-a{align-self:flex-start;background:var(--soft,var(--accent-soft,#f3e4e5));max-width:95%}
+.ca-hp form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line,#e8dcd6)}
+.ca-hp textarea{flex:1;font:inherit;font-size:16px;resize:none;border:1px solid var(--line,#e8dcd6);border-radius:10px;padding:9px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);min-height:44px;max-height:120px}
+.ca-hp form button{border:0;border-radius:10px;padding:0 16px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;cursor:pointer}
+body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bottom,0px))}body:has(.bar:not([hidden])) .ca-hp{bottom:calc(152px + env(safe-area-inset-bottom,0px))}
+@media print{.ca-hbtn,.ca-hp,.ca-chip button{display:none!important}}
+</style>
+<script>
+/* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
+const CA=(function(){
+  const K="chaleur.s", ROLE={owner:"Owner",manager:"Manager",office:"Office",supervisor:"Kitchen supervisor",kitchen:"Kitchen",auditor:"Team"};
+  const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const rd=st=>{try{const v=st.getItem(K);return v?JSON.parse(v):null}catch(e){return null}};
+  function clear(){try{localStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem("chaleur.pin")}catch(e){}}
+  function get(){const s=rd(sessionStorage)||rd(localStorage); if(s&&(!s.t||(s.exp&&Date.now()>s.exp))){clear();return null;} return s;}
+  function save(s){clear(); try{(s.remember?localStorage:sessionStorage).setItem(K,JSON.stringify(s));}catch(e){}}
+  const run=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(e instanceof Error?e:new Error((e&&e.message)||String(e))))[fn](...a));
+  const isAuthErr=e=>/sign in again|expired/i.test((e&&e.message)||"");
+  function loginForm(el,opt,done){
+    opt=opt||{}; let last=""; try{last=localStorage.getItem("chaleur.lastid")||"";}catch(e){}
+    el.innerHTML=`<div class="ca-login"><h2>${esc(opt.title||"Sign in")}</h2><p>${esc(opt.lede||"Use your phone number and your staff PIN.")}</p>
+      <label>Phone number (or name)<input id="ca-id" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="012-345 6789" value="${esc(last)}"></label>
+      <label>PIN<input id="ca-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6"></label>
+      <label class="ca-rem"><input id="ca-rem" type="checkbox"> Remember me on this phone for 30 days</label>
+      <button class="ca-go" id="ca-go" type="button">Sign in</button><div class="ca-err" id="ca-err" role="alert">${esc(opt.msg||"")}</div>
+      <p style="font-size:12.5px;margin-top:8px">No phone number set up yet? Type your name instead. Don't tick "Remember me" on a shared phone or computer.</p></div>`;
+    const q=s=>el.querySelector(s), btn=q("#ca-go"), err=q("#ca-err");
+    const go=async()=>{const id=q("#ca-id").value.trim(), pin=q("#ca-pin").value.trim(), rem=q("#ca-rem").checked;
+      if(!id||!pin){err.textContent="Enter your phone number and PIN.";return;}
+      btn.disabled=true; err.textContent="Signing in…";
+      try{const r=await run("login",id,pin,rem); const s={t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember}; save(s);
+        try{ if(rem) localStorage.setItem("chaleur.lastid",id); else localStorage.removeItem("chaleur.lastid"); }catch(e){}
+        el.innerHTML=""; done(s);}
+      catch(e){btn.disabled=false; err.textContent=(e&&e.message)||"Couldn't sign in."; q("#ca-pin").value=""; q("#ca-pin").focus();}};
+    btn.onclick=go; q("#ca-pin").addEventListener("keydown",e=>{if(e.key==="Enter")go();}); q("#ca-id").addEventListener("keydown",e=>{if(e.key==="Enter")q("#ca-pin").focus();});
+    setTimeout(()=>{const x=q(last?"#ca-pin":"#ca-id"); x&&x.focus();},50);
+  }
+  function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(location.pathname),150);}
+  const chip=s=>s?`<span class="ca-chip">Signed in as <b>${esc(s.name)}</b> · ${esc(ROLE[s.role]||s.role)} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  document.addEventListener("click",e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-ca-logout]"); if(b){e.preventDefault(); b.disabled=true; logout();}});
+  function helper(opt){
+    if(document.getElementById("ca-hbtn")) return;
+    const b=document.createElement("button"); b.id="ca-hbtn"; b.className="ca-hbtn"; b.type="button"; b.textContent="? Ask"; b.setAttribute("aria-label","Ask the helper a question"); b.setAttribute("aria-expanded","false");
+    document.body.appendChild(b);
+    let panel=null, H=[], busy=false;
+    const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
+    function draw(){ if(!panel) return; const m=panel.querySelector(".ca-msgs");
+      m.innerHTML=`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
+      m.scrollTop=m.scrollHeight; }
+    function close(){ if(panel){panel.remove();panel=null;} b.setAttribute("aria-expanded","false"); b.focus(); }
+    b.onclick=()=>{ if(panel){close();return;}
+      panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-label","Helper");
+      panel.innerHTML=`<div class="ca-hd"><b>Helper</b><button type="button" class="ca-x" aria-label="Close helper">✕</button></div><div class="ca-msgs" aria-live="polite"></div><form><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form>`;
+      document.body.appendChild(panel); b.setAttribute("aria-expanded","true"); draw();
+      const ta=panel.querySelector("textarea"); ta.focus();
+      panel.querySelector(".ca-x").onclick=close;
+      panel.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+      ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();panel.querySelector("form").dispatchEvent(new Event("submit",{cancelable:true}));}});
+      panel.querySelector("form").onsubmit=async e=>{e.preventDefault(); const q=ta.value.trim(); if(!q||busy) return;
+        const auth=opt.auth(); if(!auth){H.push({q},{a:"Please sign in first, then ask again."}); ta.value=""; draw(); return;}
+        H.push({q}); ta.value=""; busy=true; draw();
+        try{const r=await run("askHelp",auth,q,opt.page?opt.page():"",H.slice(-7,-1)); H.push({a:r.answer||"Sorry, I don't know. Please ask your supervisor."});}
+        catch(err){H.push({a:(err&&err.message)||"The helper is not available right now."});}
+        busy=false; draw(); };
+    };
+  }
+  return {get,save,clear,run,isAuthErr,loginForm,logout,chip,helper,ROLE,esc};
+})();
 </script>
+
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Jost:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 :root{--ground:#f7f2ec;--paper:#fff;--ink:#2b1b1e;--muted:#6f5f62;--line:#e8dcd6;--accent:#7b1c2b;--accent-ink:#fff;--soft:#f3e4e5;--ok:#2f6b45;--ok-soft:#e6f0e8;--warn:#9a5a12;--warn-soft:#f8ecd9;--bad:#a3262a;--go:#1f8f55;
@@ -307,5 +397,6 @@ document.addEventListener("change",async e=>{const t=e.target;
 wasW=false;
 document.getElementById("next").onclick=review;
 load();
+if(typeof CA!=="undefined") CA.helper({auth:()=>KEY&&INFO&&INFO.outlet?"o:"+KEY:"",page:()=>"Outlet closing form",hello:"Hi! Ask me anything about the closing form, for example: \u201cWhat do I do with a cake past its shelf life?\u201d or \u201cWhat does the colour dot mean?\u201d"});
 </script>
 </body></html>

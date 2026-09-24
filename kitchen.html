@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Chaleur · Kitchen HQ</title><meta name="theme-color" content="#780a13"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
+/* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
+(function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
+function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new AbortController():null,tm=ac?setTimeout(function(){ac.abort();},150000):null,done=function(){if(tm)clearTimeout(tm);};
+ fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args}),signal:ac?ac.signal:undefined})
+ .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.text();})
+ .then(function(t){done();var j;try{j=JSON.parse(t);}catch(x){throw new Error("The server sent an unexpected reply. Please try again.");}if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
+ .catch(function(e){done();fail&&fail(new Error(e&&e.name==="AbortError"?"This is taking too long. Check your internet and try again.":(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again.")));});}
+function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
+window.google={script:{run:mk(null,null)}};})();
+</script><style>
+.ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
+.ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
+.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:32px}
+.ca-login{max-width:390px;margin:28px auto;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;padding:18px}
+.ca-login h2{font-family:var(--display,Georgia,serif);font-size:30px;line-height:1.1;margin:0 0 6px;font-weight:600}
+.ca-login p{margin:0;color:var(--muted,#6f5f62);font-size:14px}
+.ca-login label{display:flex;flex-direction:column;gap:4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#6f5f62);margin-top:12px}
+.ca-login input[type=tel],.ca-login input[type=password]{font:inherit;font-size:17px;padding:11px 12px;border:1px solid var(--line,#e8dcd6);border-radius:10px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);width:100%}
+.ca-login label.ca-rem{flex-direction:row;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--ink,#2b1b1e)}
+.ca-login label.ca-rem input{width:20px;height:20px;accent-color:var(--accent,#7b1c2b)}
+.ca-go{margin-top:16px;width:100%;padding:13px;border:0;border-radius:10px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 16px var(--body,system-ui,sans-serif);cursor:pointer}
+.ca-go:disabled{opacity:.6}
+.ca-err{color:#b3261e;font-size:14px;margin-top:10px;min-height:1.2em}
+.ca-hbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;border:0;border-radius:999px;padding:12px 18px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 15px var(--body,system-ui,sans-serif);box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer}
+.ca-hp{position:fixed;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:61;width:min(400px,calc(100vw - 24px));height:min(72vh,580px,calc(100vh - 180px));display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.28)}
+.ca-hp .ca-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line,#e8dcd6)}
+.ca-hp .ca-hd button{border:0;background:transparent;color:var(--ink,#2b1b1e);font-size:18px;cursor:pointer;min-width:36px;min-height:36px}
+.ca-hp .ca-msgs{overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ca-hp .ca-m{padding:9px 11px;border-radius:12px;font-size:14.5px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere}
+.ca-hp .ca-q{align-self:flex-end;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);max-width:85%}
+.ca-hp .ca-a{align-self:flex-start;background:var(--soft,var(--accent-soft,#f3e4e5));max-width:95%}
+.ca-hp form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line,#e8dcd6)}
+.ca-hp textarea{flex:1;font:inherit;font-size:16px;resize:none;border:1px solid var(--line,#e8dcd6);border-radius:10px;padding:9px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);min-height:44px;max-height:120px}
+.ca-hp form button{border:0;border-radius:10px;padding:0 16px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;cursor:pointer}
+body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bottom,0px))}body:has(.bar:not([hidden])) .ca-hp{bottom:calc(152px + env(safe-area-inset-bottom,0px))}
+@media print{.ca-hbtn,.ca-hp,.ca-chip button{display:none!important}}
+</style>
+<script>
+/* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
+const CA=(function(){
+  const K="chaleur.s", ROLE={owner:"Owner",manager:"Manager",office:"Office",supervisor:"Kitchen supervisor",kitchen:"Kitchen",auditor:"Team"};
+  const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const rd=st=>{try{const v=st.getItem(K);return v?JSON.parse(v):null}catch(e){return null}};
+  function clear(){try{localStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem("chaleur.pin")}catch(e){}}
+  function get(){const s=rd(sessionStorage)||rd(localStorage); if(s&&(!s.t||(s.exp&&Date.now()>s.exp))){clear();return null;} return s;}
+  function save(s){clear(); try{(s.remember?localStorage:sessionStorage).setItem(K,JSON.stringify(s));}catch(e){}}
+  const run=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(e instanceof Error?e:new Error((e&&e.message)||String(e))))[fn](...a));
+  const isAuthErr=e=>/sign in again|expired/i.test((e&&e.message)||"");
+  function loginForm(el,opt,done){
+    opt=opt||{}; let last=""; try{last=localStorage.getItem("chaleur.lastid")||"";}catch(e){}
+    el.innerHTML=`<div class="ca-login"><h2>${esc(opt.title||"Sign in")}</h2><p>${esc(opt.lede||"Use your phone number and your staff PIN.")}</p>
+      <label>Phone number (or name)<input id="ca-id" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="012-345 6789" value="${esc(last)}"></label>
+      <label>PIN<input id="ca-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6"></label>
+      <label class="ca-rem"><input id="ca-rem" type="checkbox"> Remember me on this phone for 30 days</label>
+      <button class="ca-go" id="ca-go" type="button">Sign in</button><div class="ca-err" id="ca-err" role="alert">${esc(opt.msg||"")}</div>
+      <p style="font-size:12.5px;margin-top:8px">No phone number set up yet? Type your name instead. Don't tick "Remember me" on a shared phone or computer.</p></div>`;
+    const q=s=>el.querySelector(s), btn=q("#ca-go"), err=q("#ca-err");
+    const go=async()=>{const id=q("#ca-id").value.trim(), pin=q("#ca-pin").value.trim(), rem=q("#ca-rem").checked;
+      if(!id||!pin){err.textContent="Enter your phone number and PIN.";return;}
+      btn.disabled=true; err.textContent="Signing in…";
+      try{const r=await run("login",id,pin,rem); const s={t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember}; save(s);
+        try{ if(rem) localStorage.setItem("chaleur.lastid",id); else localStorage.removeItem("chaleur.lastid"); }catch(e){}
+        el.innerHTML=""; done(s);}
+      catch(e){btn.disabled=false; err.textContent=(e&&e.message)||"Couldn't sign in."; q("#ca-pin").value=""; q("#ca-pin").focus();}};
+    btn.onclick=go; q("#ca-pin").addEventListener("keydown",e=>{if(e.key==="Enter")go();}); q("#ca-id").addEventListener("keydown",e=>{if(e.key==="Enter")q("#ca-pin").focus();});
+    setTimeout(()=>{const x=q(last?"#ca-pin":"#ca-id"); x&&x.focus();},50);
+  }
+  function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(location.pathname),150);}
+  const chip=s=>s?`<span class="ca-chip">Signed in as <b>${esc(s.name)}</b> · ${esc(ROLE[s.role]||s.role)} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  document.addEventListener("click",e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-ca-logout]"); if(b){e.preventDefault(); b.disabled=true; logout();}});
+  function helper(opt){
+    if(document.getElementById("ca-hbtn")) return;
+    const b=document.createElement("button"); b.id="ca-hbtn"; b.className="ca-hbtn"; b.type="button"; b.textContent="? Ask"; b.setAttribute("aria-label","Ask the helper a question"); b.setAttribute("aria-expanded","false");
+    document.body.appendChild(b);
+    let panel=null, H=[], busy=false;
+    const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
+    function draw(){ if(!panel) return; const m=panel.querySelector(".ca-msgs");
+      m.innerHTML=`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
+      m.scrollTop=m.scrollHeight; }
+    function close(){ if(panel){panel.remove();panel=null;} b.setAttribute("aria-expanded","false"); b.focus(); }
+    b.onclick=()=>{ if(panel){close();return;}
+      panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-label","Helper");
+      panel.innerHTML=`<div class="ca-hd"><b>Helper</b><button type="button" class="ca-x" aria-label="Close helper">✕</button></div><div class="ca-msgs" aria-live="polite"></div><form><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form>`;
+      document.body.appendChild(panel); b.setAttribute("aria-expanded","true"); draw();
+      const ta=panel.querySelector("textarea"); ta.focus();
+      panel.querySelector(".ca-x").onclick=close;
+      panel.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+      ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();panel.querySelector("form").dispatchEvent(new Event("submit",{cancelable:true}));}});
+      panel.querySelector("form").onsubmit=async e=>{e.preventDefault(); const q=ta.value.trim(); if(!q||busy) return;
+        const auth=opt.auth(); if(!auth){H.push({q},{a:"Please sign in first, then ask again."}); ta.value=""; draw(); return;}
+        H.push({q}); ta.value=""; busy=true; draw();
+        try{const r=await run("askHelp",auth,q,opt.page?opt.page():"",H.slice(-7,-1)); H.push({a:r.answer||"Sorry, I don't know. Please ask your supervisor."});}
+        catch(err){H.push({a:(err&&err.message)||"The helper is not available right now."});}
+        busy=false; draw(); };
+    };
+  }
+  return {get,save,clear,run,isAuthErr,loginForm,logout,chip,helper,ROLE,esc};
+})();
+</script>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Jost:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{
+  --ground:#f7f2ec; --paper:#ffffff; --ink:#2b1b1e; --muted:#6f5f62; --line:#e8dcd6;
+  --accent:#7b1c2b; --accent-ink:#ffffff; --soft:#f3e4e5; --ok:#2f6b45; --warn:#9a5a12;
+  --display:"Cormorant Garamond","Times New Roman",Georgia,serif;
+  --body:"Jost",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#161012; --paper:#201719; --ink:#f2e9e6; --muted:#b9a8aa; --line:#3a2c2f;
+  --accent:#e4a1ac; --accent-ink:#1b1113; --soft:#3a2227; --ok:#7fd1a0; --warn:#f0b46a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ground:#161012; --paper:#201719; --ink:#f2e9e6; --muted:#b9a8aa; --line:#3a2c2f;
+  --accent:#e4a1ac; --accent-ink:#1b1113; --soft:#3a2227; --ok:#7fd1a0; --warn:#f0b46a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:18px 120px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:600;font-size:34px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.brand{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.tabs{display:flex;gap:6px;margin:16px 0;background:var(--soft);padding:4px;border-radius:10px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--ink);font:600 14px var(--body);padding:10px;border-radius:8px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+label.f input,label.f select,label.f textarea,.num input{font-size:16px;text-transform:none;letter-spacing:0}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sec{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+.sec h2{font-family:var(--display);font-weight:600;font-size:22px;margin:0}
+.hint{color:var(--muted);font-size:13px;margin:0}
+.prod{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.prod .top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.prod .name{font-weight:600}
+.id{display:flex;align-items:center;gap:10px}
+.pic{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none;background:var(--soft)}
+.pic.ph{display:grid;place-items:center;font:600 18px var(--display);color:var(--muted)}
+.sku{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{width:30px;height:30px;border-radius:50%;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);cursor:pointer;position:relative}
+.chip[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.chip[aria-pressed="true"]::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px;text-shadow:0 0 2px rgba(0,0,0,.6)}
+.row{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:end;border-top:1px dashed var(--line);padding-top:10px}
+.dot{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding-bottom:10px}
+.dot i{width:14px;height:14px;border-radius:50%;display:inline-block}
+.num{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.num input{text-align:center;font-family:var(--mono);font-variant-numeric:tabular-nums;padding:9px 4px}
+.check{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--paper);color:var(--ink);padding:7px 10px;font:600 12px var(--body);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--ok);color:#fff}
+.seg button[aria-pressed="true"].x{background:#b3261e;color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--muted);color:var(--paper)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.bar .in{max-width:640px;margin:0 auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:12px 16px;font:600 15px var(--body);text-decoration:none;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn.primary{background:#1f8f55;border-color:#1f8f55;color:#fff;flex:1}
+.btn.primary[aria-disabled="true"]{background:var(--line);border-color:var(--line);color:var(--muted);pointer-events:none}
+.mono-ca{width:46px;height:46px;border-radius:11px;background:#780a13;color:#e3c466;display:grid;place-items:center;flex:none}.mono-ca svg{width:36px;height:auto;display:block}
+header>div{display:flex;align-items:center;gap:10px}
+.chip[data-day]::before{content:attr(data-day);position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);margin-top:2px}
+.chips{padding-bottom:12px}
+.photo{display:flex;gap:10px;align-items:flex-start;background:var(--soft);border-radius:12px;padding:12px;font-size:14px}
+.photo input{width:22px;height:22px;flex:none;margin-top:1px}
+.status{font-size:13px;color:var(--muted);flex-basis:100%}
+pre{white-space:pre-wrap;font-family:var(--mono);font-size:12px;background:var(--soft);padding:12px;border-radius:10px;margin:0;max-height:260px;overflow:auto}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+.req{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.03em}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.pr{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;padding:6px 0}
+
+.shot{display:flex;flex-direction:column;gap:8px;background:var(--soft);border-radius:12px;padding:12px}
+.shot .t{font-size:14px}
+.shot .t b{color:var(--accent)}
+.shot .pv{display:flex;gap:10px;align-items:center}
+.shot img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.shot .btn{padding:10px 14px;font-size:14px}
+.shot.done{background:color-mix(in srgb,var(--ok) 14%,var(--paper))}
+.shot.need{outline:2px solid var(--warn);outline-offset:-2px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.req{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.03em}
+.done-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:30px}
+.done-card .ok{width:54px;height:54px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:28px}
+.err{color:#b3261e;font-weight:600}
+.pinrow{display:flex;gap:8px;align-items:end}
+.pinrow input{font-family:var(--mono);letter-spacing:.3em}
+</style>
+
+<style>
+.wrap{max-width:720px}
+.top2{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.tabs{flex-wrap:wrap}.tabs button{flex:1 1 30%;white-space:nowrap;padding:10px 8px}
+input,select,textarea{font-size:16px}
+.card h3{margin:0 0 6px;font-size:16px}
+.cards{display:flex;flex-direction:column;gap:10px}
+.st{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:600;background:var(--soft);color:var(--ink)}
+.pill.ok{background:color-mix(in srgb,var(--ok) 18%,var(--paper));color:var(--ok)}
+.pill.bad{background:#f8e1e0;color:#a3262a}.pill.warn{background:#f8ecd9;color:#9a5a12}
+@media (prefers-color-scheme:dark){.pill.bad{background:#401d1c;color:#ff9a92}.pill.warn{background:#3a2a17;color:#f0b46a}}
+.eq{display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.eq:first-child{border-top:0}
+.eq .nm{font-weight:600}.eq .nm small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.eq .ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap;grid-column:1/-1}
+.sign{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.sign button{border:0;background:var(--paper);color:var(--ink);width:40px;height:42px;font:700 18px var(--body);cursor:pointer}
+.sign button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.tin{width:82px;text-align:center;font-family:var(--mono);font-size:17px}
+.dchk{display:flex;align-items:center;gap:6px;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.dchk input{width:20px;height:20px;accent-color:var(--ok)}
+.mini{display:inline-flex;align-items:center;gap:6px}
+.mini img{width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.mini .btn{padding:9px 12px;font-size:14px}
+.mini .btn.have{background:color-mix(in srgb,var(--ok) 16%,var(--paper));border-color:var(--ok)}
+.ln{display:grid;grid-template-columns:1fr 110px 70px 36px;gap:6px;align-items:center;padding:6px 0;border-top:1px dashed var(--line)}
+.ln .x{border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;min-height:40px}
+.cnt{display:grid;grid-template-columns:1fr 78px 78px;gap:8px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)}
+.cnt .num input{padding:9px 4px}
+.tag{font-size:11.5px;font-weight:600;border-radius:6px;padding:1px 6px;margin-left:6px}
+.tag.bad{background:#f8e1e0;color:#a3262a}.tag.warn{background:#f8ecd9;color:#9a5a12}
+.pl{display:grid;grid-template-columns:1fr 70px 1fr 36px;gap:6px;align-items:center;padding:4px 0}
+.items{margin:4px 0 0;padding-left:18px}.items li{margin:2px 0}
+.iss{margin:6px 0 0;padding-left:18px}.iss li{margin:3px 0}
+.iss li.bad{color:#a3262a;font-weight:600}
+@media (prefers-color-scheme:dark){.iss li.bad{color:#ff9a92}}
+.ph-grid{display:flex;flex-wrap:wrap;gap:8px}.ph-grid a img{width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+table.t{width:100%;border-collapse:collapse;font-size:13.5px}table.t td,table.t th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}table.t td.r,table.t th.r{text-align:right;font-family:var(--mono)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.btn.sm{padding:8px 12px;font-size:13.5px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.muted{color:var(--muted)}
+.grpt{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:10px 0 2px}
+.chk2{display:inline-flex;align-items:center;gap:6px;margin:3px 12px 3px 0;font-size:14px}
+</style>
+</head><body>
+<div class="wrap" id="app">
+  <header><div><span class="mono-ca" aria-hidden="true"><svg viewBox="0 0 800 523" aria-hidden="true" focusable="false"><g transform="translate(0,523) scale(0.1,-0.1)" fill="currentColor"><path d="M2260 5159c-180 -12 -420 -57 -615 -114 -577 -169 -1068 -529 -1396 -1025 -52 -77 -179 -298 -179 -310 0 -3 62 -5 137 -5 117 0 147 -4 196 -22 42 -16 59 -19 62 -10 3 7 23 66 45 132 199 586 592 1002 1107 1174 606 202 1172 99 1673 -304 263 -212 512 -516 681 -831 23 -44 46 -83 50 -89 5 -5 9 153 9 358l0 368 -102 103c-336 337 -787 537 -1303 576 -142 11 -207 11 -365 -1zM5723 5053c-3 -10 -12 -34 -20 -53 -15 -37 -169 -444 -358 -945 -62 -165 -152 -403 -200 -530 -201 -531 -195 -513 -195 -577 0 -133 87 -178 227 -118 56 25 128 93 226 215 112 140 174 203 229 231 153 78 248 -54 159 -220 -61 -115 -219 -241 -606 -486 -596 -377 -867 -603 -1047 -875 -153 -231 -203 -396 -196 -656l3 -145 -64 -90c-440 -609 -1262 -830 -1968 -528 -445 190 -881 602 -1162 1097 -33 59 -49 68 -71 42 -19 -23 -109 -72 -186 -101 -59 -23 -85 -27 -181 -28 -70 -1 -113 -5 -113 -11 0 -18 108 -175 189 -274 623 -771 1595 -1100 2543 -860 371 93 716 259 989 475l83 64 40 -78c165 -315 447 -469 826 -449 456 25 819 236 1073 627 274 422 386 995 337 1724 -6 82 -9 151 -7 153 4 4 27 -53 233 -597 67 -179 157 -415 199 -525 135 -354 197 -528 221 -625 95 -378 -31 -572 -398 -610 -55 -5 -109 -10 -119 -10 -12 0 -19 -7 -19 -20 0 -20 7 -20 775 -20 688 0 775 2 775 15 0 18 -39 35 -78 35 -46 0 -150 57 -212 116 -79 76 -138 167 -225 347 -86 181 -106 231 -280 692 -48 127 -148 390 -222 585 -74 195 -179 472 -233 615 -54 143 -142 375 -195 515 -53 140 -102 271 -110 290 -8 19 -57 150 -110 290 -53 140 -109 289 -125 330 -16 41 -72 190 -125 330 -53 140 -102 271 -110 290 -8 19 -39 102 -70 184 -31 82 -60 157 -66 168 -12 23 -48 24 -56 1zm-49 -803c53 -140 103 -271 111 -290 8 -19 75 -197 150 -395 75 -198 147 -387 160 -420 59 -151 85 -248 117 -430 34 -199 34 -819 0 -1005 -132 -715 -444 -1168 -898 -1301 -122 -36 -366 -34 -479 4 -232 77 -392 250 -466 502 -37 124 -34 408 5 550 99 363 333 626 896 1010 299 203 480 361 547 475 129 221 42 444 -150 386 -69 -21 -143 -81 -243 -198 -227 -266 -320 -329 -398 -267 -52 41 -42 86 112 494 27 72 133 355 236 630 189 502 195 519 201 513 2 -2 47 -118 99 -258zM298 3456c-31 -12 -60 -25 -64 -29 -12 -12 -21 -8 -27 11 -6 25 -41 33 -66 15 -27 -18 -27 -37 -1 -21 17 11 25 10 49 -3 27 -16 111 -12 141 6 9 5 35 47 28 44 -2 -1 -29 -11 -60 -23zM100 3341c0 -13 18 -17 127 -32 83 -11 117 -9 101 6 -6 6 -173 35 -205 35 -13 0 -23 -4 -23 -9zM80 3180c0 -12 17 -12 45 0 17 7 15 9 -12 9 -18 1 -33 -3 -33 -9zM281 3052c-22 -24 -26 -25 -117 -18 -76 5 -94 4 -94 -7 0 -10 23 -16 86 -21 94 -7 121 2 144 45 16 29 9 29 -19 1zM280 2855c7 -9 15 -13 17 -11 7 7 -7 26 -19 26 -6 0 -6 -6 2 -15zM177 2823c-4 -3 -7 -13 -7 -22 1 -13 3 -13 11 2 11 19 8 33 -4 20zM60 2750c0 -6 33 -10 78 -10 42 0 94 -3 115 -6 30 -5 37 -4 37 10 0 14 -15 16 -115 16 -70 0 -115 -4 -115 -10zM163 2493c-77 -3 -93 -6 -93 -20 0 -14 10 -15 77 -9 42 3 93 6 115 6 27 0 38 4 38 15 0 10 -8 14 -22 13 -13 -1 -65 -4 -115 -5zM221 2291c-57 -36 -99 -67 -92 -69 6 -2 48 19 94 47 45 28 90 51 100 51 18 0 21 8 9 25 -4 7 -46 -13 -111 -54zM345 2218c-10 -24 -40 -29 -80 -14 -11 5 -5 -2 13 -14 42 -28 82 -16 82 25 0 31 -3 31 -15 3zM223 2008c-71 -14 -103 -24 -103 -34 0 -9 8 -12 28 -8 158 31 196 41 200 52 5 15 2 15 -125 -10zM242 1878c-74 -15 -101 -23 -93 -31 14 -14 213 23 219 41 5 15 2 15 -126 -10zM210 1685c-6 -8 -10 -21 -8 -29 2 -11 8 -7 20 14 18 31 10 41 -12 15zM422 1652c-5 -69 -116 -132 -172 -97 -8 5 -11 4 -6 -3 3 -6 22 -16 41 -22 67 -22 151 43 142 111 -2 19 -4 24 -5 11z"/></g></svg></span><div><div class="brand">Chaleur Atelier · Kitchen HQ</div><h1>Kitchen</h1></div></div></header>
+  <div class="top2"><div id="acct"></div><a class="btn sm" href="office.html#plan">Plan &amp; deliveries ↗</a></div>
+  <nav class="tabs" id="tabs" role="tablist" hidden></nav>
+  <main id="main"><p class="hint">Loading…</p></main>
+</div>
+<div class="bar" id="bar" hidden><div class="in"><button id="send" class="btn primary" type="button">Send</button><div class="status" id="status" aria-live="polite"></div></div></div>
+<script>const CONFIG={"chaleurWhatsApp": "60146650928", "outlets": [{"code": "KNK", "name": "Knocknock", "menu": "", "legalName": "Knocknock F&B Sdn Bhd"}, {"code": "JRN", "name": "Jiran Cafe", "menu": "", "legalName": "THE JIRAN MARKETING SDN. BHD."}], "colours": [{"name": "BLACK", "hex": "#1e1e1e"}, {"name": "ORANGE", "hex": "#f08a24"}, {"name": "YELLOW", "hex": "#f2c53d"}, {"name": "GREEN", "hex": "#3c9a52"}, {"name": "BLUE", "hex": "#2f6fd0"}, {"name": "RED", "hex": "#d63333"}, {"name": "PURPLE", "hex": "#8b4fc6"}], "products": [{"sku": "NOIR", "name": "Noir"}, {"sku": "KUNAFA", "name": "Kunafa"}, {"sku": "ONDEH", "name": "Ondeh"}, {"sku": "PANDAN", "name": "Pandan"}, {"sku": "POIRE", "name": "Poire"}, {"sku": "ISPAHAN", "name": "Ispahan"}], "checks": [{"k": "display", "l": "Display clean and tidy", "photo": true}, {"k": "fifo", "l": "Oldest colour at the front (FIFO)"}, {"k": "labels", "l": "Every cake has its colour dot / label"}, {"k": "expired", "l": "No overdue colour on display"}, {"k": "tags", "l": "Price tags present on every cake"}, {"k": "setup", "l": "Signage & setup as agreed", "photo": true}, {"k": "menu_physical", "l": "Physical menu: correct items, prices and current photos", "photo": true, "menu": "physical"}, {"k": "menu_qr", "l": "QR ordering system: correct items, prices and current photos (screenshot)", "photo": true, "menu": "qr"}, {"k": "packaging", "l": "Boxes, sporks, bags stocked"}, {"k": "chiller", "l": "Chiller closed, running, light on"}]}; const PRESET=(new URLSearchParams(location.search).get('o')||'').toUpperCase();</script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const ORD=()=>[1,2,3,4,5,6,0].map(i=>CONFIG.colours[i]);
+const dayOf=c=>WD[CONFIG.colours.indexOf(c)];
+const pic=p=>p.img?`<img class="pic" src="${esc(p.img)}" alt="${esc(p.name)}">`:`<span class="pic ph" aria-hidden="true">${esc(p.name.slice(0,2))}</span>`;
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function todayISO(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+const PH={};
+async function shrink(file,max=1400){
+  const url=URL.createObjectURL(file);
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url;});
+  const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+  return c.toDataURL("image/jpeg",0.82);
+}
+function shotHTML(key,title,hint){
+  const has=!!PH[key];
+  return `<div class="shot ${has?"done":""}" id="shot-${key}"><div class="t"><b>Photo required:</b> ${esc(title)}${hint?`<br><span class="hint">${esc(hint)}</span>`:""}</div>
+    <div class="pv">${has?`<img src="${PH[key]}" alt="">`:""}<label class="btn">📷 ${has?"Retake":"Take photo"}<input type="file" accept="image/&#42;" capture="environment" data-shot="${key}" hidden></label><label class="btn">🖼 Choose from phone<input type="file" accept="image/&#42;" data-shot="${key}" hidden></label>${has?`<button type="button" class="btn" data-clearshot="${key}">Remove</button>`:""}</div></div>`;
+}
+document.addEventListener("change",async e=>{const t=e.target; if(!t.dataset.shot||!t.files||!t.files[0]) return;
+  const k=t.dataset.shot; const box=$("#shot-"+k); if(box) box.querySelector(".t").insertAdjacentHTML("beforeend",' <span class="hint">· processing…</span>');
+  try{PH[k]=await shrink(t.files[0]);}catch(err){alert0("That photo couldn't be read. Please try again.");}
+  window.onShot&&window.onShot();});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-clearshot]"); if(b){delete PH[b.dataset.clearshot]; window.onShot&&window.onShot();}});
+function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}</span>`;}
+</script>
+
+<script>
+const TABS=[["today","Today"],["opening","Opening"],["closing","Closing"],["plan","Plan"],["lists","Lists"],["history","History"]];
+let TOK=null, INFO=null, INFO_AT=0, TAB=(location.hash||"#today").slice(1), DATE=null, SENDING=false, RESULT=null, HIST=null, HISTERR="", PLANED=null, READ=null, PHWARN=false, RU={m:"",r:"",l:"1"};
+if(!TABS.some(([k])=>k===TAB)) TAB="today";
+const K={opening:null,closing:null}, P2={};
+const WDL=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const dw=iso=>new Date(iso+"T00:00:00Z").getUTCDay();
+const addD=(iso,n)=>{const d=new Date(iso+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
+const niceD=iso=>{const d=new Date(iso+"T00:00:00Z");return WDL[d.getUTCDay()]+" "+d.getUTCDate()+" "+MON[d.getUTCMonth()];};
+const colOf=iso=>CONFIG.colours[dw(iso)];
+const TZO={timeZone:"Asia/Kuala_Lumpur"};
+const hmOf=at=>{ if(!at) return ""; try{return new Date(at).toLocaleTimeString("en-GB",Object.assign({hour:"2-digit",minute:"2-digit"},TZO));}catch(e){return "";} };
+const dtOf=at=>{ if(!at) return ""; try{return new Date(at).toLocaleString("en-GB",Object.assign({day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"},TZO));}catch(e){return "";} };
+const hex=n=>(CONFIG.colours.find(c=>c.name===n)||{}).hex||"#999";
+const dotH=n=>`<span class="dot" style="padding:0"><i style="background:${hex(n)}"></i>${esc(n)} · ${esc(WDL[CONFIG.colours.findIndex(c=>c.name===n)]||"")}</span>`;
+const prodOf=id=>((INFO&&INFO.products)||[]).find(p=>p.id===id)||{id,name:id,category:"",shelfDays:3};
+const ageOf=(colour,iso)=>{const i=CONFIG.colours.findIndex(c=>c.name===colour); return i<0?0:(dw(iso)-i+7)%7;};
+const okCols=iso=>{const out=[]; for(let i=Math.max(0,(INFO&&INFO.maxAge)||1);i>=0;i--) out.push(colOf(addD(iso,-i)).name); return out;};
+const CATS=["Petit gâteau","Cheesecake","Whole cake","Whole cheesecake"], CATL={"Petit gâteau":"Petit gâteau","Cheesecake":"Cheesecake (slice)","Whole cake":"Whole cake (entremet)","Whole cheesecake":"Whole cheesecake"};
+const SUP=()=>INFO&&INFO.me&&INFO.me.sup;
+const run=(fn,...a)=>CA.run(fn,TOK,...a).catch(e=>{ if(CA.isAuthErr(e)){CA.clear(); TOK=null; signIn(e.message);} throw e; });
+const nonce=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+const dkey=(kind)=>"kh."+kind+"."+DATE;
+function saveDraft(kind){ try{localStorage.setItem(dkey(kind),JSON.stringify(K[kind]));}catch(e){} }
+function loadDraft(kind){ try{const v=localStorage.getItem(dkey(kind)); return v?JSON.parse(v):null;}catch(e){return null;} }
+const IDB={p:null,open(){ return this.p||(this.p=new Promise((res,rej)=>{ try{ const r=indexedDB.open("chaleur-kitchen",1); r.onupgradeneeded=()=>r.result.createObjectStore("ph",{keyPath:"k"}); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){rej(e);} })); },
+  async tx(mode,fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction("ph",mode), out=fn(t.objectStore("ph")); t.oncomplete=()=>res(out&&out.v); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); },
+  put(key,v){ return this.tx("readwrite",st=>{ if(v) st.put({k:key,d:key.slice(0,10),v}); else st.delete(key); }); },
+  all(){ return this.tx("readonly",st=>{ const o={v:[]}; const rq=st.openCursor(); rq.onsuccess=()=>{const c=rq.result; if(c){o.v.push(c.value); c.continue();}}; return o; }); } };
+function savePh(k){ const key=DATE+"|"+k, v=P2[k]; IDB.put(key,v).then(()=>{ if(PHWARN&&v){ PHWARN=false; const w=document.getElementById("phwarn"); if(w) w.remove(); } }).catch(()=>{ if(v&&!PHWARN){ PHWARN=true; const h=document.querySelector("#main h2"); if(h&&!document.getElementById("phwarn")) h.insertAdjacentHTML("afterend",phWarn()); } }); }
+const phWarn=()=>`<p class="err" id="phwarn">This phone could not keep the photos. Don't close this page until you have sent the report.</p>`;
+async function loadPhs(){ try{ const t0=todayISO(), all=await IDB.all(); for(const x of all||[]){ if(x.d===DATE){ const k=x.k.slice(11); if(!P2[k]) P2[k]=x.v; } else if(x.d<addD(t0,-2)) IDB.put(x.k,null).catch(()=>{}); } }catch(e){} }
+function clearDraft(kind){ try{localStorage.removeItem(dkey(kind));}catch(e){} const pre=kind==="opening"?"op_":"cl_"; Object.keys(P2).forEach(k=>{ if(k.indexOf(pre)===0){ delete P2[k]; savePh(k);} }); K[kind]=null; }
+
+/* ---------- sign in ---------- */
+function signIn(msg){ $("#tabs").hidden=true; $("#bar").hidden=true; $("#acct").innerHTML=""; CA.loginForm($("#main"),{title:"Kitchen HQ",lede:"Sign in with your phone number and staff PIN.",msg},s=>{TOK=s.t; boot2();}); }
+async function boot2(){ const s=CA.get(); $("#acct").innerHTML=CA.chip(s); $("#main").innerHTML=`<p class="hint">Loading…</p>`;
+  try{ INFO=await run("hqInfo",DATE||undefined); INFO_AT=Date.now(); DATE=DATE||INFO.today; await loadPhs(); render(); }catch(e){ if(TOK) $("#main").innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p><button class="btn" type="button" data-act="reload">Try again</button></div>`; } }
+async function reload(date){ if(date&&date!==DATE){ Object.keys(P2).forEach(k=>delete P2[k]); DATE=date; HIST=null; await loadPhs(); } try{ INFO=await run("hqInfo",DATE); INFO_AT=Date.now(); if(LED&&!LED.dirty) LED=null; render(); }catch(e){ toast(e.message); } }
+async function freshen(){ if(!INFO||SENDING||!TOK) return; const t=todayISO(); if(t!==INFO.today&&DATE===INFO.today){ K.opening=K.closing=null; RESULT=null; await reload(t); } else if(Date.now()-INFO_AT>120000) await reload(); }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") freshen(); });
+window.addEventListener("pageshow",e=>{ if(e.persisted) freshen(); });
+function toast(m){ const s=$("#status"); if(s) s.textContent=m; if($("#bar").hidden){ const t=document.createElement("div"); t.className="card"; t.setAttribute("role","status"); t.style.cssText="position:fixed;left:16px;right:16px;bottom:80px;z-index:70;max-width:560px;margin:auto"; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),4000);} }
+
+/* ---------- layout ---------- */
+function render(){
+  if(!INFO) return;
+  $("#tabs").hidden=false;
+  $("#tabs").innerHTML=TABS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${TAB===k}" data-tab="${k}">${l}${k==="today"&&INFO.proposals.length&&SUP()?` (${INFO.proposals.length})`:""}</button>`).join("");
+  const v={today:vToday,opening:()=>vReport("opening"),closing:()=>vReport("closing"),plan:vPlan,lists:vLists,history:vHistory}[TAB];
+  $("#main").innerHTML=v();
+  $("#bar").hidden=!(TAB==="opening"||TAB==="closing")||!!(RESULT&&RESULT.kind===TAB);
+  if(TAB==="opening"||TAB==="closing") refresh();
+}
+function go(t){ if(SENDING){ toast("Please wait until the report is sent."); return; } TAB=t; RESULT=null; history.replaceState(null,"","#"+t); render(); window.scrollTo(0,0); if((t==="opening"||t==="closing")&&Date.now()-INFO_AT>60000) reload(); }
+
+/* ---------- TODAY ---------- */
+function repCard(kind){ const r=INFO.day[kind], due=kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=!r&&DATE===INFO.today&&INFO.now>due;
+  return `<div class="card"><div class="st"><h3>${kind==="opening"?"Opening report":"Closing report"} <span class="muted" style="font-weight:400">· due ${esc(due)}</span></h3>${r?`<span class="pill ok">✓ Sent by ${esc(r.by)} ${esc(hmOf(r.at))}</span>`:late?`<span class="pill bad">Late</span>`:`<span class="pill">Not sent yet</span>`}</div>
+    ${r&&(r.issues||[]).length?`<ul class="iss">${r.issues.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul>`:""}
+    <div class="row" style="border:0;display:flex;gap:8px;padding-top:8px;flex-wrap:wrap"><button class="btn sm ${r?"":"pri"}" type="button" data-tab="${kind}">${r?"Send again":"Open "+kind+" report"}</button>${!r&&SUP()&&DATE===INFO.today&&INFO.now>due?`<button class="btn sm" type="button" data-chase="${kind}">Remind the group on WhatsApp</button>`:""}</div></div>`; }
+function vToday(){
+  const t=INFO.today, rem=INFO.reminders||[], r0=rem.filter(r=>r.date===t), r1=rem.filter(r=>r.date===addD(t,1));
+  const out=INFO.dos.filter(d=>!d.internal);
+  const planDays=[]; for(let i=0;i<=INFO.conf.planDays;i++) planDays.push(addD(t,i));
+  const remL=a=>a.length?`<ul class="items">${a.map(r=>`<li>${esc(r.text)}${r.forItems&&r.forItems.length?` <span class="muted">(${esc(r.forItems.slice(0,3).join(", "))})</span>`:""}${r.ai?` <span class="muted">· AI</span>`:""}</li>`).join("")}</ul>`:`<p class="hint">Nothing.</p>`;
+  return `<div class="cards" style="margin-top:12px">
+    <div class="st"><h2 style="font-family:var(--display);margin:0;font-size:24px">${esc(niceD(DATE))}</h2>${DATE!==t?`<button class="btn sm" type="button" data-date="${t}">Back to today</button>`:`<button class="btn sm" type="button" data-date="${addD(t,-1)}">Yesterday</button>`}</div>
+    ${repCard("opening")}${repCard("closing")}
+    <div class="card"><h3>Prep reminders</h3><div class="grpt">Today</div>${remL(r0)}<div class="grpt">Tomorrow · ${esc(niceD(addD(t,1)))}</div>${remL(r1)}
+      <p class="hint" style="margin-top:6px">From the production plan and the reminders the team has approved (Plan › Reminders).</p></div>
+    <div class="card"><h3>Deliveries to outlets today</h3>${out.length?out.map(d=>`<div class="st" style="padding:6px 0;border-top:1px dashed var(--line)"><span><b>${esc(d.outlet)}</b> · <span class="sku">${esc(d.no)}</span> · ${d.lines.reduce((a,l)=>a+l.qty,0)} cakes</span>${d.status==="delivered"?`<span class="pill ok">Delivered</span>`:d.checked?`<span class="pill ok">Colours checked · ${esc(d.checkedBy)}</span>`:`<a class="btn sm" href="office.html#deliveries">Check colours ↗</a>`}</div>`).join(""):`<p class="hint">No delivery orders for today.</p>`}</div>
+    <div class="card"><h3>Production plan</h3>${planDays.map(d=>{const p=INFO.plan[d]; return `<div class="st" style="padding:5px 0"><span>${esc(niceD(d))}</span>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${p.items.length} item${p.items.length===1?"":"s"}${p.approvedBy?" · checked":" · not checked yet"}</span>`:`<button class="btn sm" type="button" data-plan="${d}">Add plan</button>`}</div>`;}).join("")}</div>
+    ${INFO.proposals.length?`<div class="card"><h3>Waiting for a supervisor (${INFO.proposals.length})</h3>${INFO.proposals.map(x=>`<div style="padding:8px 0;border-top:1px dashed var(--line)"><div>${esc(propText(x))}</div><div class="hint">${esc(x.by)} · ${esc(dtOf(x.at))}${x.why?` · “${esc(x.why)}”`:""}</div>${SUP()?`<div style="display:flex;gap:8px;margin-top:6px"><button class="btn sm pri" type="button" data-dec="${x.id}" data-ok="1">Approve</button><button class="btn sm" type="button" data-dec="${x.id}" data-ok="0">Reject</button></div>`:""}</div>`).join("")}</div>`:""}
+    ${INFO.brief&&(INFO.brief.warnings||[]).length?`<div class="card"><h3>AI notes</h3><ul class="iss">${INFO.brief.warnings.map(w=>`<li>${esc(w)}</li>`).join("")}</ul><p class="hint">Updated ${esc(dtOf(INFO.brief.generatedAt))}</p></div>`:""}
+    ${INFO.check&&INFO.check.items.length?`<div class="card"><h3>Latest check</h3><ul class="iss">${INFO.check.items.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul><p class="hint">${esc(INFO.check.by)} · ${esc(dtOf(INFO.check.at))}</p></div>`:""}
+  </div>`;
+}
+function propText(x){ const d=x.data||{};
+  if(x.kind==="plan") return `Production plan for ${niceD(d.date)}: ${(d.items||[]).map(i=>i.name+(i.qty?" x"+i.qty:"")).join(", ")}`;
+  if(x.kind==="rule") { const r=d.rule||{}; return r.remove?`Remove reminder: ${r.remind||""}`:`Reminder: when the plan has “${(Array.isArray(r.match)?r.match:String(r.match||"").split(",")).map(x=>String(x).trim()).filter(Boolean).join("” or “")}”, ${r.remind} (${+r.lead||0} day${+r.lead===1?"":"s"} before)`; }
+  if(x.kind==="carries") return `HQ display list: ${(d.carries||[]).length} cakes`;
+  if(x.kind==="equipment") return `Fridge/freezer list: ${(d.equipment||[]).map(e=>e.name+" "+e.max+"°C").join(", ")}`;
+  return x.kind; }
+
+/* ---------- OPENING / CLOSING ---------- */
+function st(kind){ const s0=K[kind]||st0(kind); INFO.conf.equipment.forEach(e=>{ if(!s0.equip[e.id]) s0.equip[e.id]={t:"",neg:e.type==="freezer",door:false}; }); return s0; }
+function st0(kind){
+  const d=loadDraft(kind)||{}; const s={equip:d.equip||{},note:d.note||""};
+  if(kind==="opening"){ s.setupOk=!!d.setupOk; s.later=d.later||{};
+    if(d.putOut) s.putOut=d.putOut; else { const hqdo=INFO.dos.find(x=>x.internal&&x.status!=="delivered"); s.putOut=hqdo?hqdo.lines.map(l=>({productId:l.productId,colour:okCols(DATE).includes(l.colour)?l.colour:colOf(DATE).name,qty:String(l.qty)})):[]; s.fromPlan=!!hqdo; } }
+  else { s.rows=d.rows||{}; s.extra=d.extra||[]; }
+  K[kind]=s; return s; }
+const pre=kind=>kind==="opening"?"op_":"cl_";
+function mini(k,label){ const has=!!P2[k]; return `<span class="mini" id="mi-${esc(k)}">${has?`<img src="${P2[k]}" alt="">`:""}<label class="btn ${has?"have":""}">📷 ${has?"Retake":esc(label||"Photo")}<input type="file" accept="image/&#42;" capture="environment" data-kshot="${esc(k)}" hidden></label><label class="btn" title="Choose from phone">🖼<span class="sr">Choose a photo from the phone</span><input type="file" accept="image/&#42;" data-kshot="${esc(k)}" hidden></label></span>`; }
+function shotBox(k,title,hint){ const has=!!P2[k]; return `<div class="shot ${has?"done":""}" id="sb-${esc(k)}"><div class="t"><b>Photo:</b> ${esc(title)}${hint?`<br><span class="hint">${esc(hint)}</span>`:""}</div><div class="pv">${mini(k)}</div></div>`; }
+function eqSection(kind){ const s=st(kind), p=pre(kind);
+  return `<section class="sec"><h2>Fridges and freezers</h2><p class="hint">For each one: read the temperature, check the door is closed properly, and take a photo of the thermometer or display.</p>
+    <div class="card">${INFO.conf.equipment.map(e=>{const x=s.equip[e.id]; return `<div class="eq"><div class="nm">${esc(e.name)}<small>${e.type==="freezer"?"Freezer":"Chiller"} · should be ${esc(e.max)}°C or colder</small></div><span id="ew-${esc(e.id)}"></span>
+      <div class="ctl"><div class="sign" role="group" aria-label="Plus or minus"><button type="button" aria-pressed="${x.neg}" data-sign="${kind}|${esc(e.id)}|1" aria-label="Minus">−</button><button type="button" aria-pressed="${!x.neg}" data-sign="${kind}|${esc(e.id)}|0" aria-label="Plus">+</button></div>
+        <input class="tin" id="t-${kind}-${esc(e.id)}" inputmode="decimal" data-temp="${kind}|${esc(e.id)}" value="${esc(x.t)}" aria-label="${esc(e.name)} temperature" placeholder="°C">
+        <label class="dchk"><input type="checkbox" data-door="${kind}|${esc(e.id)}" ${x.door?"checked":""}> Door closed</label>${mini(p+"eq_"+e.id)}</div></div>`;}).join("")}</div></section>`; }
+function vReport(kind){
+  if(RESULT&&RESULT.kind===kind) return vResult();
+  const s=st(kind), p=pre(kind), r=INFO.day[kind];
+  const head=`<div class="st" style="margin-top:12px"><h2 style="font-family:var(--display);margin:0;font-size:26px">${kind==="opening"?"Opening report":"Closing report"}</h2><label class="f" style="min-width:150px">Report date<input type="date" data-rdate="1" value="${esc(DATE)}" min="${esc(addD(INFO.today,-1))}" max="${esc(INFO.today)}"></label></div>
+    ${PHWARN?phWarn():""}${r?`<p class="hint">Already sent by ${esc(r.by)} at ${esc(hmOf(r.at))}. Sending again replaces it.</p>`:`<p class="hint">Due ${esc(kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy)}. Your answers are kept on this phone until you send.</p>`}`;
+  if(kind==="opening"){
+    const outs=INFO.dos.filter(d=>!d.internal);
+    const byCat=CATS.map(c=>[c,(INFO.products||[]).filter(x=>x.category===c&&(INFO.hq.carries.length?INFO.hq.carries.includes(x.id):true))]).filter(x=>x[1].length);
+    return head+eqSection(kind)+`
+    <section class="sec"><h2>Kitchen set-up</h2><label class="photo"><input type="checkbox" data-setup="1" ${s.setupOk?"checked":""}><span>Kitchen set-up is done (stations clean, tools and mise en place ready).</span></label>${shotBox(p+"setup","Kitchen set-up","One photo of the kitchen ready to work.")}</section>
+    <section class="sec"><h2>HQ display chiller</h2><p class="hint">Cakes put on the HQ display this morning, with the colour dot of the day they were made. ${s.fromPlan?"Filled in from today's plan: change it to what you really put out.":""}</p>
+      <div class="card" id="po-card">${s.putOut.length?s.putOut.map((l,i)=>`<div class="ln"><span>${esc(prodOf(l.productId).name)}</span><select data-pc="${i}" aria-label="Colour dot">${CONFIG.colours.map(c=>`<option value="${c.name}" ${c.name===l.colour?"selected":""}>${c.name} · ${WDL[CONFIG.colours.indexOf(c)]}</option>`).join("")}</select><input inputmode="numeric" data-pq="${i}" value="${esc(l.qty)}" aria-label="Quantity" placeholder="qty"><button type="button" class="x" data-prm="${i}" aria-label="Remove">✕</button></div>`).join(""):`<p class="hint">Nothing added yet.</p>`}
+        <label class="f" style="margin-top:8px">Add a cake<select data-padd="1"><option value="">Choose…</option>${byCat.map(([c,ps])=>`<optgroup label="${esc(CATL[c])}">${ps.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</optgroup>`).join("")}</select></label></div>
+      ${s.putOut.some(l=>+l.qty>0)?shotBox(p+"display","HQ display chiller","After putting the cakes out."):""}</section>
+    <section class="sec"><h2>Deliveries to outlets today</h2>${outs.length?outs.map(d=>`<div class="card"><div class="st"><b>${esc(d.outlet)} · <span class="sku">${esc(d.no)}</span></b>${d.checked?`<span class="pill ok">Colours checked · ${esc(d.checkedBy)}</span>`:`<a class="btn sm" href="office.html#deliveries">Check colours ↗</a>`}</div>
+        <p class="hint">${d.lines.map(l=>`${l.qty} × ${esc(prodOf(l.productId).name)} ${esc(l.colour||"")}`).join(", ")}</p>
+        ${s.later[d.id]?"":shotBox(p+"do_"+d.id,"Packed delivery for "+d.outlet,"All the boxes, with the delivery note.")}
+        <label class="photo" style="margin-top:6px"><input type="checkbox" data-later="${esc(d.id)}" ${s.later[d.id]?"checked":""}><span>Goes out later today (no photo yet)</span></label></div>`).join(""):`<p class="hint">No outlet deliveries today.</p>`}</section>
+    <section class="sec"><label class="f">Note (optional)<textarea rows="2" data-note="${kind}">${esc(s.note)}</textarea></label></section>`;
+  }
+  /* closing */
+  const stock=INFO.stock, keyOf=(a,c)=>a+"|"+c, shownKeys=clKeys();
+  const planMiss=[]; for(let i=1;i<=INFO.conf.planDays;i++){const d=addD(INFO.today,i); if(!INFO.plan[d]) planMiss.push(d);}
+  return head+eqSection(kind)+`
+    <section class="sec"><h2>HQ display chiller count</h2><p class="hint">For each cake and colour dot: <b>Waste</b> = thrown away or damaged, <b>Left</b> = still in the display now. Count every row (type 0 if none are left). Sold is worked out from what was put out.</p>
+      <div class="card">${shownKeys.length?shownKeys.map(k=>{const [pid,c]=k.split("|"), pr=prodOf(pid), age=ageOf(c,DATE), life=+pr.shelfDays||3, x=s.rows[k]||{}, q=(stock.find(l=>keyOf(l.productId,l.colour)===k)||{}).qty;
+        return `<div class="cnt"><span><b>${esc(pr.name)}</b><br>${dotH(c)}${q!=null?` <span class="muted small">· ${q} expected</span>`:""}${age>=life?`<span class="tag bad">Past shelf life: throw away</span>`:age===life-1?`<span class="tag warn">Last day</span>`:""}</span>
+          <label class="num">Waste<input inputmode="numeric" data-cw="${esc(k)}" value="${esc(x.w??"")}"></label><label class="num">Left<input inputmode="numeric" data-cb="${esc(k)}" value="${esc(x.b??"")}"></label></div>`;}).join(""):`<p class="hint">No cakes on the HQ display according to the opening report.</p>`}
+        ${shownKeys.length?`<button class="btn sm" type="button" data-act="zeroLeft" style="margin-top:8px">Set the empty “Left” boxes to 0</button>`:""}
+        <div class="grid" style="margin-top:10px"><label class="f">Add a cake<select id="xa-p"><option value="">Choose…</option>${CATS.map(c=>`<optgroup label="${esc(CATL[c])}">${(INFO.products||[]).filter(x=>x.category===c).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</optgroup>`).join("")}</select></label>
+          <label class="f">Colour dot<select id="xa-c">${CONFIG.colours.map(c=>`<option value="${c.name}">${c.name} · ${WDL[CONFIG.colours.indexOf(c)]}</option>`).join("")}</select></label></div><button class="btn sm" type="button" data-xadd="1" style="margin-top:8px">Add</button></div>
+      ${shotBox(p+"display","HQ display chiller now","")}${Object.values(s.rows).some(x=>+x.w>0)?shotBox(p+"waste","Cakes thrown away",""):""}</section>
+    <section class="sec"><h2>Mise en place</h2>${[1,2,3].map(i=>i===1||P2[p+"mep"+(i-1)]?shotBox(p+"mep"+i,i===1?"Today's mise en place / production list, showing what is done":"More of today's list",i===1?"Tick or cross each item on the paper first.":""):"").join("")}
+      ${[1,2,3].map(i=>i===1||P2[p+"next"+(i-1)]?shotBox(p+"next"+i,i===1?"Tomorrow's list":"More of tomorrow's list",i===1?"The list the next shift will work from.":""):"").join("")}
+      ${planMiss.length?`<div class="card"><b>Production plan missing for ${planMiss.map(niceD).join(", ")}.</b><p class="hint">The team needs the plan 3 days ahead. <button class="btn sm" type="button" data-plan="${planMiss[0]}">Add it now</button></p></div>`:""}</section>
+    <section class="sec"><label class="f">Note (optional)<textarea rows="2" data-note="${kind}">${esc(s.note)}</textarea></label></section>`;
+}
+function clKeys(){ return [...new Set(INFO.stock.map(l=>l.productId+"|"+l.colour).concat(st("closing").extra))]; }
+function missing(kind){ const s=st(kind), p=pre(kind), m=[];
+  INFO.conf.equipment.forEach(e=>{const x=s.equip[e.id]; if(String(x.t).trim()===""||!isFinite(+String(x.t).replace(",","."))) m.push(e.name+" temperature"); if(!P2[p+"eq_"+e.id]) m.push(e.name+" photo");});
+  if(kind==="opening"){ if(!s.setupOk) m.push("tick kitchen set-up"); if(!P2[p+"setup"]) m.push("set-up photo"); if(s.putOut.some(l=>+l.qty>0)&&!P2[p+"display"]) m.push("HQ display photo");
+    INFO.dos.filter(d=>!d.internal).forEach(d=>{ if(!s.later[d.id]&&!P2[p+"do_"+d.id]) m.push(d.outlet+" delivery photo"); }); }
+  else { const nl=clKeys().filter(k=>{const x=(s.rows[k]||{}); return x.b===undefined||x.b===""; }).length; if(nl) m.push(`“Left” for ${nl} cake${nl>1?"s":""}`);
+    if(!P2[p+"display"]) m.push("HQ display photo"); if(Object.values(s.rows).some(x=>+x.w>0)&&!P2[p+"waste"]) m.push("waste photo"); if(!P2[p+"mep1"]) m.push("today's mise en place photo"); if(!P2[p+"next1"]) m.push("tomorrow's list photo"); }
+  return m; }
+function refresh(){ if(SENDING) return; const kind=TAB, m=missing(kind), b=$("#send");
+  b.textContent=kind==="opening"?"Send opening report":"Send closing report"; b.disabled=!!m.length; b.setAttribute("aria-disabled",String(!!m.length));
+  $("#status").textContent=m.length?`Still needed (${m.length}): ${m.slice(0,6).join(", ")}${m.length>6?"…":""}.`:"Ready to send.";
+  INFO.conf.equipment.forEach(e=>{ const x=st(kind).equip[e.id], el=document.getElementById("ew-"+e.id); if(!el) return; const t=String(x.t).replace(",","."); if(t===""||!isFinite(+t)){el.innerHTML="";return;} const v=(x.neg?-1:1)*Math.abs(+t);
+    el.innerHTML=v>+e.max+3?`<span class="pill bad">${v}°C too warm</span>`:v>+e.max?`<span class="pill warn">${v}°C warm</span>`:`<span class="pill ok">${v}°C</span>`; }); }
+async function send(){ const kind=TAB; if(SENDING||missing(kind).length) return; const s=st(kind), p=pre(kind);
+  SENDING=true; const b=$("#send"); b.disabled=true; $("#status").textContent="Sending the report and photos… keep this page open (up to a minute).";
+  const equip=INFO.conf.equipment.map(e=>{const x=s.equip[e.id]; return {id:e.id,t:String((x.neg?-1:1)*Math.abs(+String(x.t).replace(",","."))),door:!!x.door,photo:P2[p+"eq_"+e.id]};});
+  const d={date:DATE,nonce:s.nonce||(s.nonce=nonce()),equip,note:s.note};
+  if(kind==="opening"){ d.setupOk=!!s.setupOk; d.photos={setup:P2[p+"setup"],display:P2[p+"display"]}; d.putOut=s.putOut.filter(l=>+l.qty>0); d.deliveries={};
+    INFO.dos.filter(x=>!x.internal).forEach(x=>{ d.deliveries[x.id]=s.later[x.id]?"later":P2[p+"do_"+x.id]; }); }
+  else { d.lines=clKeys().map(k=>{const [pid,c]=k.split("|"), x=s.rows[k]||{}; return {productId:pid,colour:c,w:x.w||0,b:x.b||0};}); d.photos={display:P2[p+"display"],waste:P2[p+"waste"]};
+    d.mep=[1,2,3].map(i=>P2[p+"mep"+i]).filter(Boolean); d.next=[1,2,3].map(i=>P2[p+"next"+i]).filter(Boolean); }
+  saveDraft(kind);
+  try{ const r=await run("hqSubmit",kind,d); RESULT={kind,r}; clearDraft(kind); SENDING=false; HIST=null; INFO=await run("hqInfo",DATE).catch(()=>INFO); render(); window.scrollTo(0,0); }
+  catch(e){ SENDING=false; b.disabled=false; $("#status").innerHTML=`<span class="err">${esc(e.message)}</span>`; }
+}
+function vResult(){ const {kind,r}=RESULT, bad=(r.issues||[]).filter(i=>i.sev==="bad");
+  return `<div class="done-card"><div class="ok">✓</div><h2 style="margin:0;font-family:var(--display);font-size:28px">${kind==="opening"?"Opening":"Closing"} report sent</h2><p class="hint">Reference <b class="sku">${esc(r.id)}</b></p>
+    ${(r.issues||[]).length?`<div class="card" style="text-align:left;${bad.length?"border-color:#a3262a":""}"><b>${bad.length?"Please act now":"Things to check"}</b><ul class="iss">${r.issues.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul>${bad.length?`<p class="hint">Alfred and the kitchen group have been told.</p>`:""}</div>`:`<p>Everything looks fine.</p>`}
+    ${r.mep&&(r.mep.today||[]).length?`<div class="card" style="text-align:left"><b>What the AI read from today's list</b><ul class="items">${r.mep.today.map(x=>`<li>${x.done===true?"✓":x.done===false?"✗":"?"} ${esc(x.item)}${x.qty?" · "+esc(x.qty):""}</li>`).join("")}</ul></div>`:""}
+    ${r.ai?"":`<p class="hint">The AI photo check is off (no AI key), so the office will look at the photos.</p>`}
+    <button class="btn pri" type="button" data-tab="today">Back to Today</button></div>`; }
+
+/* ---------- PLAN ---------- */
+function vPlan(){ const t=INFO.today, days=[]; for(let i=0;i<=Math.max(3,INFO.conf.planDays);i++) days.push(addD(t,i));
+  const ed=PLANED;
+  const edHtml=ed?`<div class="card" id="planed"><div class="st"><h3>${INFO.plan[ed.date]&&!SUP()?"Propose a change":"Production plan"} · ${esc(niceD(ed.date))}</h3><button class="btn sm" type="button" data-act="planCancel">Cancel</button></div>
+      <p class="hint">One line per item: what, how many, note (e.g. “Mango serai insert · 40 · for Fri”).</p>
+      ${ed.items.map((x,i)=>`<div class="pl"><input data-pi="${i}" data-k="name" value="${esc(x.name)}" placeholder="Item" aria-label="Item"><input data-pi="${i}" data-k="qty" value="${esc(x.qty)}" placeholder="Qty" aria-label="Quantity"><input data-pi="${i}" data-k="note" value="${esc(x.note)}" placeholder="Note" aria-label="Note"><button type="button" class="x btn sm" data-pirm="${i}" aria-label="Remove">✕</button></div>`).join("")}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" type="button" data-act="planAdd">+ Add line</button></div>
+      ${INFO.plan[ed.date]&&!SUP()?`<label class="f" style="margin-top:8px">Why the change?<input id="pl-why" data-plwhy="1" value="${esc(ed.why||"")}" placeholder="e.g. extra order for Saturday"></label>`:""}
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" type="button" data-act="planSave">${INFO.plan[ed.date]&&!SUP()?"Send to supervisor":"Save plan"}</button></div></div>`:"";
+  const rd=READ?`<div class="card"><h3>What the AI read</h3>${READ.days.length?READ.days.map((x,i)=>`<div style="padding:6px 0;border-top:1px dashed var(--line)"><b>${esc(niceD(x.date))}</b> · ${x.items.length} items<ul class="items">${x.items.map(it=>`<li>${esc(it.name)}${it.qty?" · "+esc(it.qty):""}${it.note?` <span class="muted">(${esc(it.note)})</span>`:""}</li>`).join("")}</ul><button class="btn sm" type="button" data-useread="${i}">Check and use for ${esc(niceD(x.date))}</button></div>`).join(""):`<p class="hint">Nothing could be read. Try a clearer photo or type it.</p>`}${(READ.unclear||[]).length?`<p class="hint">Couldn't read: ${READ.unclear.map(esc).join("; ")}</p>`:""}</div>`:"";
+  return `<div class="cards" style="margin-top:12px"><h2 style="font-family:var(--display);margin:0;font-size:26px">Production plan</h2>
+    <p class="hint">One shared plan for the whole team. It must cover the next ${INFO.conf.planDays} days. Anyone can add the plan for a day that has none; changing an existing plan needs a kitchen supervisor (others send it for approval).</p>
+    <div class="card"><h3>Add from a photo</h3><p class="hint">Take a photo of the written production list. The AI reads it; you check it before saving.</p><div class="pv" style="display:flex;gap:8px;flex-wrap:wrap">${mini("plan_read","Photo of the list")}<button class="btn sm pri" type="button" data-act="readPlan" ${P2.plan_read?"":"disabled"}>Read it</button></div></div>
+    ${rd}${edHtml}
+    ${days.map(d=>{const p=INFO.plan[d]; return `<div class="card"><div class="st"><h3>${esc(niceD(d))}${d===t?" · today":""}</h3>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${p.approvedBy?"Checked by "+esc(p.approvedBy):"Not checked yet"}</span>`:`<span class="pill bad">No plan</span>`}</div>
+      ${p?`<ul class="items">${p.items.map(it=>`<li>${esc(it.name)}${it.qty?" · <b>"+esc(it.qty)+"</b>":""}${it.note?` <span class="muted">(${esc(it.note)})</span>`:""}</li>`).join("")}</ul><p class="hint">By ${esc(p.by)} · ${esc(dtOf(p.at))}</p>`:""}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" type="button" data-plan="${d}">${p?(SUP()?"Edit":"Propose a change"):"Add plan"}</button>${p&&!p.approvedBy&&SUP()?`<button class="btn sm pri" type="button" data-pok="${d}">Mark as checked</button>`:""}</div></div>`;}).join("")}
+    ${vRules()}</div>`; }
+function vRules(){ const rs=INFO.rules||[];
+  return `<div class="card" id="rules"><h3>Prep reminders the system has learned</h3><p class="hint">When an item in the plan contains these words, everyone is reminded to do this, so many days before. The AI suggests new ones from the plans; a supervisor approves them.</p>
+    ${rs.length?rs.map(r=>`<div class="st" style="padding:6px 0;border-top:1px dashed var(--line)"><span>${r.active===false?`<s>`:""}“${esc((r.match||[]).join("” / “"))}” → ${esc(r.remind)} <span class="muted">(${+r.lead||0} day${+r.lead===1?"":"s"} before${r.src==="ai"?", AI":""})</span>${r.active===false?`</s>`:""}</span><span style="display:flex;gap:6px"><button class="btn sm" type="button" data-rtog="${esc(r.id)}">${r.active===false?"Turn on":"Turn off"}</button><button class="btn sm" type="button" data-rdel="${esc(r.id)}" aria-label="Delete reminder">✕</button></span></div>`).join(""):`<p class="hint">None yet.</p>`}
+    <div class="grid" style="margin-top:10px"><label class="f">Words in the item<input id="ru-m" data-ru="m" value="${esc(RU.m)}" placeholder="e.g. mango, mango serai"></label><label class="f">What to do<input id="ru-r" data-ru="r" value="${esc(RU.r)}" placeholder="e.g. Defrost mango puree"></label><label class="f">Days before<input id="ru-l" data-ru="l" inputmode="numeric" value="${esc(RU.l)}"></label></div>
+    <button class="btn sm" type="button" data-act="ruleAdd" style="margin-top:8px">${SUP()?"Add reminder":"Suggest reminder"}</button></div>`; }
+
+/* ---------- LISTS ---------- */
+let LED=null;
+function vLists(){ if(!LED) LED={carries:new Set(INFO.hq.carries.length?INFO.hq.carries:(INFO.products||[]).map(p=>p.id)),eq:INFO.conf.equipment.map(e=>({...e})),why:""};
+  return `<div class="cards" style="margin-top:12px"><h2 style="font-family:var(--display);margin:0;font-size:26px">Lists</h2>
+    <p class="hint">${SUP()?"You can change these lists.":"Changes you make here go to a kitchen supervisor to approve."}</p>
+    <div class="card"><h3>Cakes on the HQ display chiller</h3><p class="hint">Same as the Orderla menu. Used by the opening report and the Plan &amp; prep suggestion for HQ.</p>
+      ${CATS.map(c=>{const ps=(INFO.products||[]).filter(x=>x.category===c); return ps.length?`<div class="grpt">${esc(CATL[c])}</div><div>${ps.map(x=>`<label class="chk2"><input type="checkbox" data-car="${esc(x.id)}" ${LED.carries.has(x.id)?"checked":""}>${esc(x.name)}</label>`).join("")}</div>`:"";}).join("")}
+      <button class="btn sm pri" type="button" data-act="saveCarries" style="margin-top:8px">${SUP()?"Save":"Send for approval"}</button></div>
+    <div class="card"><h3>Fridges and freezers</h3><p class="hint">Checked in every opening and closing report. “Max” is the warmest allowed temperature.</p>
+      ${LED.eq.map((e,i)=>`<div class="pl" style="grid-template-columns:1fr 110px 70px 36px"><input data-eqi="${i}" data-k="name" value="${esc(e.name)}" aria-label="Name"><select data-eqi="${i}" data-k="type" aria-label="Type">${[["freezer","Freezer"],["chiller","Chiller"],["display","Display"]].map(([v,l])=>`<option value="${v}" ${e.type===v?"selected":""}>${l}</option>`).join("")}</select><input data-eqi="${i}" data-k="max" value="${esc(e.max)}" inputmode="text" aria-label="Max °C"><button type="button" class="btn sm" data-eqrm="${i}" aria-label="Remove">✕</button></div>`).join("")}
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" type="button" data-act="eqAdd">+ Add</button><button class="btn sm pri" type="button" data-act="saveEq">${SUP()?"Save":"Send for approval"}</button></div></div>
+    ${!SUP()?`<label class="f">Why the change? (for the supervisor)<input id="ls-why" value="${esc(LED.why)}"></label>`:""}
+    ${INFO.me.office?`<p class="hint">Report times, WhatsApp reminders and closed days are in the office desk › Setup › Kitchen HQ &amp; WhatsApp.</p>`:""}</div>`; }
+
+/* ---------- HISTORY ---------- */
+const thumb=id=>"https:\/\/drive.google.com/thumbnail?id="+encodeURIComponent(id)+"&sz=w300", view=id=>"https:\/\/drive.google.com/file/d/"+encodeURIComponent(id)+"/view";
+function vHistory(){ if(!HIST){ if(HISTERR){ const m=HISTERR; HISTERR=""; return `<div class="card" style="margin-top:12px"><p class="err">${esc(m)}</p><button class="btn sm" type="button" data-tab="history">Try again</button></div>`; } run("hqHistory",14).then(h=>{HIST=h; if(TAB==="history") render();}).catch(e=>{HIST=null; HISTERR=e.message; if(TAB==="history") render();}); return `<p class="hint" style="margin-top:12px">Loading…</p>`; }
+  const rep=(r,k)=>!r?`<p class="hint">${k==="opening"?"Opening":"Closing"}: not sent.</p>`:`<details><summary><b>${k==="opening"?"Opening":"Closing"}</b> · ${esc(r.by)} ${esc(hmOf(r.at))} · ${(r.issues||[]).length?`<span class="pill ${(r.issues||[]).some(i=>i.sev==="bad")?"bad":"warn"}">${r.issues.length} issue${r.issues.length>1?"s":""}</span>`:`<span class="pill ok">OK</span>`}</summary>
+    <table class="t"><tbody>${(r.equip||[]).map(e=>`<tr><td>${esc(e.name)}</td><td class="r">${esc(e.t)}°C</td><td>${e.door?"door closed":"<b>door open</b>"}</td><td>${e.photo?`<a href="${view(e.photo)}" target="_blank" rel="noopener">photo</a>`:""}</td></tr>`).join("")}</tbody></table>
+    ${(r.issues||[]).length?`<ul class="iss">${r.issues.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul>`:""}
+    <div class="ph-grid" style="margin-top:6px">${[].concat(r.photos.setup||[],r.photos.display||[],r.photos.waste||[],r.photos.mep||[],r.photos.next||[],(r.deliveries||[]).map(x=>x.photo).filter(Boolean)).map(id=>`<a href="${view(id)}" target="_blank" rel="noopener"><img src="${thumb(id)}" alt="Report photo" loading="lazy"></a>`).join("")}</div>
+    ${r.note?`<p class="hint">Note: ${esc(r.note)}</p>`:""}</details>`;
+  return `<div class="cards" style="margin-top:12px"><h2 style="font-family:var(--display);margin:0;font-size:26px">Last 14 days</h2>${HIST.length?HIST.map(h=>`<div class="card"><h3>${esc(niceD(h.date))}</h3>${rep(h.opening,"opening")}${rep(h.closing,"closing")}</div>`).join(""):`<p class="hint">No reports yet.</p>`}
+    <p class="hint">Every temperature is also logged in the Google Sheet (tab “HQ temps”).</p></div>`; }
+
+/* ---------- events ---------- */
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button"); if(!b||b.closest(".ca-hp,.ca-login")||b.id==="ca-hbtn") return; const d=b.dataset;
+  if(d.tab){ go(d.tab); return; }
+  if(d.act==="zeroLeft"){ const s=st("closing"); clKeys().forEach(k=>{ const x=s.rows[k]||(s.rows[k]={}); if(x.b===undefined||x.b==="") x.b="0"; }); saveDraft("closing"); render(); return; }
+  if(d.act==="reload"){ boot2(); return; }
+  if(d.chase){ b.disabled=true; try{ const r=await run("hqChaseNow",d.chase); toast(r.ok?"Reminder sent to the kitchen group.":"The WhatsApp message could not be sent. Check Setup › Kitchen HQ & WhatsApp."); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.date){ RESULT=null; K.opening=K.closing=null; await reload(d.date); return; }
+  if(d.sign){ const [k,id,neg]=d.sign.split("|"); st(k).equip[id].neg=neg==="1"; saveDraft(k); b.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); refresh(); return; }
+  if(d.prm!=null){ const s=st("opening"); s.putOut.splice(+d.prm,1); saveDraft("opening"); render(); return; }
+  if(d.xadd){ const pid=$("#xa-p").value, c=$("#xa-c").value; if(!pid) return; const s=st("closing"), k=pid+"|"+c; if(!s.extra.includes(k)) s.extra.push(k); saveDraft("closing"); render(); return; }
+  if(d.plan){ const p=INFO.plan[d.plan]; PLANED={date:d.plan,items:p?p.items.map(x=>({...x})):[{name:"",qty:"",note:""}],why:""}; if(TAB!=="plan") go("plan"); else render(); setTimeout(()=>{const x=$("#planed"); x&&x.scrollIntoView({behavior:"smooth"});},50); return; }
+  if(d.act==="planCancel"){ PLANED=null; render(); return; }
+  if(d.act==="planAdd"){ PLANED.items.push({name:"",qty:"",note:""}); render(); return; }
+  if(d.pirm!=null){ PLANED.items.splice(+d.pirm,1); render(); return; }
+  if(d.act==="planSave"){ const items=PLANED.items.filter(x=>String(x.name).trim()); if(!items.length&&!INFO.plan[PLANED.date]){ toast("Add at least one item"); return; }
+    b.disabled=true; try{ const r=await run("hqSave","plan",{date:PLANED.date,items},(($("#pl-why")||{}).value||"")); toast(r.msg); PLANED=null; READ=null; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.pok){ b.disabled=true; try{ const r=await run("hqSave","approvePlan",{date:d.pok}); toast(r.msg); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.act==="readPlan"){ if(!P2.plan_read) return; b.disabled=true; b.textContent="Reading… (up to 30 seconds)"; try{ READ=await run("hqReadPlan",[P2.plan_read]); }catch(err){ toast(err.message); } render(); return; }
+  if(d.useread!=null){ const x=READ.days[+d.useread]; PLANED={date:x.date,items:x.items.map(i=>({...i})),why:"From the photo"}; render(); setTimeout(()=>{const y=$("#planed"); y&&y.scrollIntoView({behavior:"smooth"});},50); return; }
+  if(d.act==="ruleAdd"){ const m=$("#ru-m").value, r=$("#ru-r").value, l=$("#ru-l").value; if(!m.trim()||!r.trim()){ toast("Fill in the words and what to do"); return; }
+    b.disabled=true; try{ const x=await run("hqSave","rule",{rule:{match:m,remind:r,lead:l}},""); toast(x.msg); RU={m:"",r:"",l:"1"}; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.rtog||d.rdel){ const r=(INFO.rules||[]).find(x=>x.id===(d.rtog||d.rdel)); if(!r) return; b.disabled=true;
+    try{ const x=await run("hqSave","rule",{rule:d.rdel?{id:r.id,remove:true,remind:r.remind,match:r.match}:{...r,active:r.active===false}},""); toast(x.msg); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.dec){ b.disabled=true; try{ const x=await run("hqDecide",d.dec,d.ok==="1",""); toast(x.msg); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.act==="saveCarries"){ b.disabled=true; try{ const x=await run("hqSave","carries",{carries:[...LED.carries]},(($("#ls-why")||{}).value||"")); toast(x.msg); LED=null; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.act==="eqAdd"){ LED.eq.push({id:"",name:"",type:"chiller",max:5}); LED.dirty=true; render(); return; }
+  if(d.eqrm!=null){ LED.eq.splice(+d.eqrm,1); LED.dirty=true; render(); return; }
+  if(d.act==="saveEq"){ b.disabled=true; try{ const x=await run("hqSave","equipment",{equipment:LED.eq.map(e=>({...e,max:String(e.max).replace("−","-")}))},(($("#ls-why")||{}).value||"")); toast(x.msg); LED=null; K.opening=K.closing=null; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+});
+document.addEventListener("input",e=>{ const t=e.target, d=t.dataset; if(t.closest&&t.closest(".ca-hp,.ca-login")) return;
+  if(d.temp){ const [k,id]=d.temp.split("|"); if(/[-−]/.test(t.value)){ st(k).equip[id].neg=true; document.querySelectorAll(`[data-sign^="${k}|${id}|"]`).forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.sign.endsWith("|1")))); } let v=t.value.replace(/[^0-9.,]/g,""); if(v!==t.value) t.value=v; st(k).equip[id].t=v; saveDraft(k); refresh(); return; }
+  if(d.pq!=null){ const v=t.value.replace(/[^0-9]/g,""); if(v!==t.value) t.value=v; const s=st("opening"); s.putOut[+d.pq].qty=v; saveDraft("opening");
+    const need=s.putOut.some(l=>+l.qty>0), box=document.getElementById("sb-op_display"); if(need&&!box){ const c=document.getElementById("po-card"); if(c) c.insertAdjacentHTML("afterend",shotBox("op_display","HQ display chiller","After putting the cakes out.")); } if(!need&&box) box.remove(); refresh(); return; }
+  if(d.cw!=null||d.cb!=null){ const v=t.value.replace(/[^0-9]/g,""); if(v!==t.value) t.value=v; const s=st("closing"), k=d.cw??d.cb; s.rows[k]=s.rows[k]||{}; s.rows[k][d.cw!=null?"w":"b"]=v; saveDraft("closing");
+    const needW=Object.values(s.rows).some(x=>+x.w>0), has=!!document.getElementById("sb-cl_waste"); if(needW!==has){ const box=document.getElementById("sb-cl_display"); if(needW&&box) box.insertAdjacentHTML("afterend",shotBox("cl_waste","Cakes thrown away","")); if(!needW&&has) document.getElementById("sb-cl_waste").remove(); } refresh(); return; }
+  if(d.note){ st(d.note).note=t.value; saveDraft(d.note); return; }
+  if(d.pi!=null&&PLANED){ PLANED.items[+d.pi][d.k]=t.value; return; }
+  if(d.plwhy&&PLANED){ PLANED.why=t.value; return; }
+  if(d.ru){ RU[d.ru]=t.value; return; }
+  if(d.eqi!=null&&LED){ LED.eq[+d.eqi][d.k]=t.value; LED.dirty=true; return; }
+  if(t.id==="ls-why"&&LED){ LED.why=t.value; LED.dirty=true; return; }
+});
+document.addEventListener("change",async e=>{ const t=e.target, d=t.dataset; if(t.closest&&t.closest(".ca-hp,.ca-login")) return;
+  if(d.kshot&&t.files&&t.files[0]){ const k=d.kshot, sp=document.getElementById("mi-"+k); if(sp) sp.insertAdjacentHTML("beforeend",' <span class="hint">processing…</span>'); if(TAB==="opening"||TAB==="closing"){ const b=$("#send"); b.disabled=true; }
+    let bad=false; try{ P2[k]=await shrink(t.files[0],1200); savePh(k); }catch(err){ bad=true; }
+    t.value=""; if(bad){ const el=document.getElementById("mi-"+k); if(el){ el.querySelectorAll(".hint").forEach(x=>x.remove()); el.insertAdjacentHTML("beforeend",' <span class="err">Photo not taken. Please try again.</span>'); } if(TAB==="opening"||TAB==="closing") refresh(); return; } if(/^(op|cl)_(mep|next)\d|^(op|cl)_display|^(op|cl)_waste|^op_(setup|do_)|^plan_read/.test(k)) render(); else { const el=document.getElementById("mi-"+k); if(el) el.outerHTML=mini(k); } if(TAB==="opening"||TAB==="closing") refresh(); return; }
+  if(d.door){ const [k,id]=d.door.split("|"); st(k).equip[id].door=t.checked; saveDraft(k); refresh(); return; }
+  if(d.setup){ st("opening").setupOk=t.checked; saveDraft("opening"); refresh(); return; }
+  if(d.later){ st("opening").later[d.later]=t.checked; saveDraft("opening"); render(); return; }
+  if(d.pc!=null){ st("opening").putOut[+d.pc].colour=t.value; saveDraft("opening"); return; }
+  if(d.padd){ if(!t.value) return; const s=st("opening"); s.putOut.push({productId:t.value,colour:colOf(DATE).name,qty:"1"}); saveDraft("opening"); render(); return; }
+  if(d.rdate&&t.value){ RESULT=null; K.opening=K.closing=null; await reload(t.value); return; }
+  if(d.car){ if(t.checked) LED.carries.add(d.car); else LED.carries.delete(d.car); LED.dirty=true; return; }
+  if(d.eqi!=null&&LED){ LED.eq[+d.eqi][d.k]=t.value; LED.dirty=true; return; }
+});
+$("#send").onclick=send;
+window.addEventListener("hashchange",()=>{ const h=(location.hash||"").slice(1); if(TABS.some(([k])=>k===h)&&h!==TAB&&INFO){ TAB=h; RESULT=null; render(); } });
+(function(){ CA.helper({auth:()=>TOK,page:()=>"Kitchen HQ › "+((TABS.find(([k])=>k===TAB)||["",""])[1])});
+  const s=CA.get(); if(!s) return signIn(); TOK=s.t; boot2(); })();
+</script>
+</body></html>

@@ -9,7 +9,97 @@ function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new A
  .catch(function(e){done();fail&&fail(new Error(e&&e.name==="AbortError"?"This is taking too long. Check your internet and try again.":(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again.")));});}
 function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
 window.google={script:{run:mk(null,null)}};})();
+</script><style>
+.ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
+.ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
+.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:32px}
+.ca-login{max-width:390px;margin:28px auto;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;padding:18px}
+.ca-login h2{font-family:var(--display,Georgia,serif);font-size:30px;line-height:1.1;margin:0 0 6px;font-weight:600}
+.ca-login p{margin:0;color:var(--muted,#6f5f62);font-size:14px}
+.ca-login label{display:flex;flex-direction:column;gap:4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#6f5f62);margin-top:12px}
+.ca-login input[type=tel],.ca-login input[type=password]{font:inherit;font-size:17px;padding:11px 12px;border:1px solid var(--line,#e8dcd6);border-radius:10px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);width:100%}
+.ca-login label.ca-rem{flex-direction:row;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--ink,#2b1b1e)}
+.ca-login label.ca-rem input{width:20px;height:20px;accent-color:var(--accent,#7b1c2b)}
+.ca-go{margin-top:16px;width:100%;padding:13px;border:0;border-radius:10px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 16px var(--body,system-ui,sans-serif);cursor:pointer}
+.ca-go:disabled{opacity:.6}
+.ca-err{color:#b3261e;font-size:14px;margin-top:10px;min-height:1.2em}
+.ca-hbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;border:0;border-radius:999px;padding:12px 18px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font:600 15px var(--body,system-ui,sans-serif);box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer}
+.ca-hp{position:fixed;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:61;width:min(400px,calc(100vw - 24px));height:min(72vh,580px,calc(100vh - 180px));display:flex;flex-direction:column;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.28)}
+.ca-hp .ca-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line,#e8dcd6)}
+.ca-hp .ca-hd button{border:0;background:transparent;color:var(--ink,#2b1b1e);font-size:18px;cursor:pointer;min-width:36px;min-height:36px}
+.ca-hp .ca-msgs{overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ca-hp .ca-m{padding:9px 11px;border-radius:12px;font-size:14.5px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere}
+.ca-hp .ca-q{align-self:flex-end;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);max-width:85%}
+.ca-hp .ca-a{align-self:flex-start;background:var(--soft,var(--accent-soft,#f3e4e5));max-width:95%}
+.ca-hp form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line,#e8dcd6)}
+.ca-hp textarea{flex:1;font:inherit;font-size:16px;resize:none;border:1px solid var(--line,#e8dcd6);border-radius:10px;padding:9px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);min-height:44px;max-height:120px}
+.ca-hp form button{border:0;border-radius:10px;padding:0 16px;background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);font-weight:600;cursor:pointer}
+body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bottom,0px))}body:has(.bar:not([hidden])) .ca-hp{bottom:calc(152px + env(safe-area-inset-bottom,0px))}
+@media print{.ca-hbtn,.ca-hp,.ca-chip button{display:none!important}}
+</style>
+<script>
+/* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
+const CA=(function(){
+  const K="chaleur.s", ROLE={owner:"Owner",manager:"Manager",office:"Office",supervisor:"Kitchen supervisor",kitchen:"Kitchen",auditor:"Team"};
+  const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const rd=st=>{try{const v=st.getItem(K);return v?JSON.parse(v):null}catch(e){return null}};
+  function clear(){try{localStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem("chaleur.pin")}catch(e){}}
+  function get(){const s=rd(sessionStorage)||rd(localStorage); if(s&&(!s.t||(s.exp&&Date.now()>s.exp))){clear();return null;} return s;}
+  function save(s){clear(); try{(s.remember?localStorage:sessionStorage).setItem(K,JSON.stringify(s));}catch(e){}}
+  const run=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(e instanceof Error?e:new Error((e&&e.message)||String(e))))[fn](...a));
+  const isAuthErr=e=>/sign in again|expired/i.test((e&&e.message)||"");
+  function loginForm(el,opt,done){
+    opt=opt||{}; let last=""; try{last=localStorage.getItem("chaleur.lastid")||"";}catch(e){}
+    el.innerHTML=`<div class="ca-login"><h2>${esc(opt.title||"Sign in")}</h2><p>${esc(opt.lede||"Use your phone number and your staff PIN.")}</p>
+      <label>Phone number (or name)<input id="ca-id" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="012-345 6789" value="${esc(last)}"></label>
+      <label>PIN<input id="ca-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6"></label>
+      <label class="ca-rem"><input id="ca-rem" type="checkbox"> Remember me on this phone for 30 days</label>
+      <button class="ca-go" id="ca-go" type="button">Sign in</button><div class="ca-err" id="ca-err" role="alert">${esc(opt.msg||"")}</div>
+      <p style="font-size:12.5px;margin-top:8px">No phone number set up yet? Type your name instead. Don't tick "Remember me" on a shared phone or computer.</p></div>`;
+    const q=s=>el.querySelector(s), btn=q("#ca-go"), err=q("#ca-err");
+    const go=async()=>{const id=q("#ca-id").value.trim(), pin=q("#ca-pin").value.trim(), rem=q("#ca-rem").checked;
+      if(!id||!pin){err.textContent="Enter your phone number and PIN.";return;}
+      btn.disabled=true; err.textContent="Signing in…";
+      try{const r=await run("login",id,pin,rem); const s={t:r.token,name:r.name,role:r.role,exp:r.exp,remember:!!r.remember}; save(s);
+        try{ if(rem) localStorage.setItem("chaleur.lastid",id); else localStorage.removeItem("chaleur.lastid"); }catch(e){}
+        el.innerHTML=""; done(s);}
+      catch(e){btn.disabled=false; err.textContent=(e&&e.message)||"Couldn't sign in."; q("#ca-pin").value=""; q("#ca-pin").focus();}};
+    btn.onclick=go; q("#ca-pin").addEventListener("keydown",e=>{if(e.key==="Enter")go();}); q("#ca-id").addEventListener("keydown",e=>{if(e.key==="Enter")q("#ca-pin").focus();});
+    setTimeout(()=>{const x=q(last?"#ca-pin":"#ca-id"); x&&x.focus();},50);
+  }
+  function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(location.pathname),150);}
+  const chip=s=>s?`<span class="ca-chip">Signed in as <b>${esc(s.name)}</b> · ${esc(ROLE[s.role]||s.role)} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  document.addEventListener("click",e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-ca-logout]"); if(b){e.preventDefault(); b.disabled=true; logout();}});
+  function helper(opt){
+    if(document.getElementById("ca-hbtn")) return;
+    const b=document.createElement("button"); b.id="ca-hbtn"; b.className="ca-hbtn"; b.type="button"; b.textContent="? Ask"; b.setAttribute("aria-label","Ask the helper a question"); b.setAttribute("aria-expanded","false");
+    document.body.appendChild(b);
+    let panel=null, H=[], busy=false;
+    const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
+    function draw(){ if(!panel) return; const m=panel.querySelector(".ca-msgs");
+      m.innerHTML=`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
+      m.scrollTop=m.scrollHeight; }
+    function close(){ if(panel){panel.remove();panel=null;} b.setAttribute("aria-expanded","false"); b.focus(); }
+    b.onclick=()=>{ if(panel){close();return;}
+      panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-label","Helper");
+      panel.innerHTML=`<div class="ca-hd"><b>Helper</b><button type="button" class="ca-x" aria-label="Close helper">✕</button></div><div class="ca-msgs" aria-live="polite"></div><form><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form>`;
+      document.body.appendChild(panel); b.setAttribute("aria-expanded","true"); draw();
+      const ta=panel.querySelector("textarea"); ta.focus();
+      panel.querySelector(".ca-x").onclick=close;
+      panel.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+      ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();panel.querySelector("form").dispatchEvent(new Event("submit",{cancelable:true}));}});
+      panel.querySelector("form").onsubmit=async e=>{e.preventDefault(); const q=ta.value.trim(); if(!q||busy) return;
+        const auth=opt.auth(); if(!auth){H.push({q},{a:"Please sign in first, then ask again."}); ta.value=""; draw(); return;}
+        H.push({q}); ta.value=""; busy=true; draw();
+        try{const r=await run("askHelp",auth,q,opt.page?opt.page():"",H.slice(-7,-1)); H.push({a:r.answer||"Sorry, I don't know. Please ask your supervisor."});}
+        catch(err){H.push({a:(err&&err.message)||"The helper is not available right now."});}
+        busy=false; draw(); };
+    };
+  }
+  return {get,save,clear,run,isAuthErr,loginForm,logout,chip,helper,ROLE,esc};
+})();
 </script>
+
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Jost:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 :root{
@@ -37,6 +127,7 @@ h1{font-family:var(--display);font-weight:600;font-size:34px;line-height:1.1;mar
 .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px}
 .grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+label.f input,label.f select,label.f textarea,.num input{font-size:16px;text-transform:none;letter-spacing:0}
 input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
 input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .sec{margin-top:18px;display:flex;flex-direction:column;gap:10px}
@@ -106,7 +197,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
   <div class="card grid" style="margin-top:14px">
     <label class="f">Outlet<select id="outlet"></select></label>
     <label class="f">Date<input id="date" type="date"></label>
-    <div class="f">Staff PIN (required)<div class="pinrow"><input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••"><button type="button" class="btn" id="pinok">Sign in</button></div><span id="pinmsg" class="hint"></span></div>
+    <div class="f" style="grid-column:1/-1">Signed in<div id="acct"><span class="hint">Checking…</span></div></div>
   </div>
   <section class="sec">
     <h2>Setup checklist</h2>
@@ -116,7 +207,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
     <div id="tempshot"></div>
     <h2>Sell price on display</h2>
     <p class="hint">Type the price on the tag (RM). Leave blank if the cake is not on display. Cakes the outlet should have are listed first.</p>
-    <div class="card" id="prices"><p class="hint">Sign in with your staff PIN to load the cakes.</p></div>
+    <div class="card" id="prices"><p class="hint">Sign in to load the cakes.</p></div>
     <button type="button" class="btn" id="showall" style="align-self:flex-start">Show all cakes</button>
     <h2>Spot count</h2>
     <p class="hint">Pick 2–3 cakes, tap the colour dots you see and count them. The office compares against the outlet's report.</p>
@@ -167,7 +258,7 @@ function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}
 <script>
 const chk={},cnt={},EX=[]; let staff=null, CAT=[], ONHAND=new Set(), SHOWALL=false, AI=[];
 const LIST=()=>{const on=CAT.filter(p=>ONHAND.has(p.id)); return SHOWALL||!on.length?CAT:on;};
-function loadCat(){ google.script.run.withSuccessHandler(r=>{ if(r.outlets&&r.outlets.length){r.outlets.forEach(o=>{OUTM[o.code]=o.menu||"";}); const cur=$("#outlet").value; $("#outlet").innerHTML=r.outlets.map(o=>`<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join(""); if(r.outlets.some(o=>o.code===cur)) $("#outlet").value=cur;} CAT=(r.products||[]).map(p=>({...p,img:p.photo})); ONHAND=new Set((r.stock||[]).map(s=>s.productId)); renderPrices(); render(); refresh();}).withFailureHandler(e=>{$("#prices").innerHTML=`<p class="err">${esc((e&&e.message)||"Could not load the cake list. Check your internet.")}</p>`;}).auditInfo(staff&&staff.pin,$("#outlet").value,$("#date").value); }
+function loadCat(){ google.script.run.withSuccessHandler(r=>{ if(r.outlets&&r.outlets.length){r.outlets.forEach(o=>{OUTM[o.code]=o.menu||"";}); const cur=$("#outlet").value; $("#outlet").innerHTML=r.outlets.map(o=>`<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join(""); if(r.outlets.some(o=>o.code===cur)) $("#outlet").value=cur;} CAT=(r.products||[]).map(p=>({...p,img:p.photo})); ONHAND=new Set((r.stock||[]).map(s=>s.productId)); renderPrices(); render(); refresh();}).withFailureHandler(e=>{ if(CA.isAuthErr(e)){CA.clear(); signIn(e.message); return;} $("#prices").innerHTML=`<p class="err">${esc((e&&e.message)||"Could not load the cake list. Check your internet.")}</p>`;}).auditInfo(staff&&staff.pin,$("#outlet").value,$("#date").value); }
 function renderPrices(){const keep={}; document.querySelectorAll("[id^=pr-]").forEach(i=>{if(i.value) keep[i.id]=i.value;}); $("#prices").innerHTML=LIST().map(p=>`<div class="pr"><span class="id">${pic(p)}<span>${esc(p.name)}${ONHAND.has(p.id)?"":` <span class="sku">${esc(p.category||"")}</span>`}</span></span><input id="pr-${esc(p.id)}" inputmode="decimal" placeholder="RM" value="${esc(keep["pr-"+p.id]||"")}"></div>`).join("")||`<p class="hint">No cakes found.</p>`; $("#showall").textContent=SHOWALL?"Only cakes on hand":`Show all cakes (${CAT.length})`; $("#showall").hidden=!ONHAND.size;}
 function applies(c){const m=$("#menu").value; return !c.menu||m==="both"||m===c.menu;}
 $("#outlet").innerHTML=CONFIG.outlets.map(o=>`<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join("");
@@ -187,26 +278,31 @@ function render(){
   $("#extras").innerHTML=EX.map((x,i)=>`<span style="position:relative"><img src="${x}" alt=""><button type="button" class="btn" data-rmx="${i}" style="position:absolute;top:-6px;right:-6px;padding:2px 7px;font-size:12px">×</button></span>`).join("");
 }
 $("#showall").onclick=()=>{SHOWALL=!SHOWALL;renderPrices();render();};
-$("#aigo").onclick=()=>{ if(!staff){$("#ailist").innerHTML=`<p class="err">Sign in with your staff PIN first.</p>`;return;}
+$("#aigo").onclick=()=>{ if(!staff){$("#ailist").innerHTML=`<p class="err">Sign in first.</p>`;return;}
   const photos=["display","setup","menu_physical","menu_qr"].map(k=>PH[k]).filter(Boolean).concat(EX).slice(0,4);
   if(!photos.length){$("#ailist").innerHTML=`<p class="err">Take the display photo first.</p>`;return;}
-  $("#aigo").disabled=true; $("#ailist").innerHTML=`<p class="hint">Looking at the photos… this takes a few seconds.</p>`;
-  google.script.run.withSuccessHandler(r=>{$("#aigo").disabled=false; if(r.ok){AI=r.suggestions||[]; render(); if(!AI.length) $("#ailist").innerHTML=`<p class="hint">Nothing to suggest. The display looks fine.</p>`;} else $("#ailist").innerHTML=`<p class="hint">${esc(r.note||"No suggestions right now.")}</p>`;}).withFailureHandler(e=>{$("#aigo").disabled=false;$("#ailist").innerHTML=`<p class="err">${esc((e&&e.message)||"Could not get suggestions.")}</p>`;}).auditSuggest(staff.pin,$("#outlet").value,photos);};
+  $("#aigo").disabled=true; $("#ailist").innerHTML=`<p class="hint">Looking at the photos… this takes a few seconds.</p>`; const sig=AISIG;
+  google.script.run.withSuccessHandler(r=>{$("#aigo").disabled=false; if(sig!==AISIG){$("#ailist").innerHTML=`<p class="hint">Photos changed: tap the button again for new suggestions.</p>`;return;} if(r.ok){AI=r.suggestions||[]; render(); if(!AI.length) $("#ailist").innerHTML=`<p class="hint">Nothing to suggest. The display looks fine.</p>`;} else $("#ailist").innerHTML=`<p class="hint">${esc(r.note||"No suggestions right now.")}</p>`;}).withFailureHandler(e=>{$("#aigo").disabled=false;$("#ailist").innerHTML=`<p class="err">${esc((e&&e.message)||"Could not get suggestions.")}</p>`;}).auditSuggest(staff.pin,$("#outlet").value,photos);};
 function missing(){const m=[];
-  if(!staff) m.push("sign in with your staff PIN");
+  if(!staff) m.push("sign in (top of the page)");
   if(!$("#menu").value) m.push("menu type");
   for(const c of CONFIG.checks.filter(c=>applies(c))){ if(!chk[c.k]) m.push(`result for "${c.l}"`); if(c.photo&&!PH[c.k]) m.push(`${c.l.toLowerCase()} photo`);}
   if(!/^-?\d+(\.\d+)?$/.test($("#temp").value.trim().replace(",","."))) m.push("chiller temperature");
   if(!PH.temp) m.push("thermometer photo");
   return m;}
 function refresh(){ if(SENDING) return; const m=missing();$("#send").disabled=!!m.length;$("#status").textContent=m.length?"Still needed: "+m.join(", ")+".":"Ready. Tap Submit to save the audit and photos.";}
-window.onShot=()=>{render();refresh();};
-$("#pinok").onclick=()=>{const p=$("#pin").value.trim(); if(!p) return; $("#pinmsg").textContent="Checking…";
-  google.script.run.withSuccessHandler(r=>{ if(r.ok){staff={pin:p,name:r.name};$("#pinmsg").innerHTML=`Signed in as <b>${esc(r.name)}</b>`; loadCat();} else {staff=null;$("#pinmsg").innerHTML=`<span class="err">${esc(r.error)}</span>`;} refresh();}).withFailureHandler(e=>{$("#pinmsg").innerHTML=`<span class="err">${esc((e&&e.message)||"No connection. Check your internet and try again.")}</span>`;}).checkPin(p);};
-$("#pin").addEventListener("input",()=>{staff=null;$("#pinmsg").textContent="";refresh();});
-document.addEventListener("change",async e=>{const t=e.target; if(t.id==="date"&&staff){loadCat();return;} if(!t.dataset||!t.dataset.extra) return; const f=t.files&&t.files[0]; if(!f) return; if(EX.length>=6){alert0("Up to 6 extra photos.");t.value="";return;} try{EX.push(await shrink(f));}catch(err){alert0("That photo could not be read. Please try another one.");} t.value=""; render(); refresh();});
+let AISIG=0; function aiStale(){ AISIG++; if(AI.length){AI=[]; setTimeout(()=>{$("#ailist").innerHTML=`<p class="hint">Photos changed: tap the button again for new suggestions.</p>`;},0);} }
+window.onShot=()=>{ aiStale(); render();refresh();};
+function signIn(msg){ staff=null; refresh(); CA.loginForm($("#acct"),{title:"Sign in",lede:"Phone number and staff PIN.",msg},s=>{ staff={pin:s.t,name:s.name}; showAcct(); loadCat(); refresh(); }); }
+function showAcct(){ const s=CA.get(); $("#acct").innerHTML=CA.chip(s||{name:staff.name,role:"auditor"}); }
+(function(){ const s=CA.get(); CA.helper({auth:()=>staff&&staff.pin,page:()=>"Spot audit form"});
+  if(!s) return signIn();
+  staff={pin:s.t,name:s.name}; showAcct();
+  CA.run("me",s.t).then(u=>{staff.name=u.name; showAcct(); loadCat(); refresh();}).catch(e=>{ if(CA.isAuthErr(e)){CA.clear(); signIn(e.message);} else {$("#prices").innerHTML=`<p class="err">${esc(e.message)}</p>`; loadCat();} });
+})();
+document.addEventListener("change",async e=>{const t=e.target; if(t.id==="date"&&staff){loadCat();return;} if(!t.dataset||!t.dataset.extra) return; const f=t.files&&t.files[0]; if(!f) return; if(EX.length>=6){alert0("Up to 6 extra photos.");t.value="";return;} try{EX.push(await shrink(f)); aiStale();}catch(err){alert0("That photo could not be read. Please try another one.");} t.value=""; render(); refresh();});
 document.addEventListener("click",e=>{
-  const x=e.target.closest("[data-rmx]"); if(x){EX.splice(+x.dataset.rmx,1);render();return;}
+  const x=e.target.closest("[data-rmx]"); if(x){EX.splice(+x.dataset.rmx,1);aiStale();render();refresh();return;}
   const ch=e.target.closest(".chip"); if(ch){const {sku,col}=ch.dataset; cnt[sku]=cnt[sku]||{}; if(cnt[sku][col]!==undefined) delete cnt[sku][col]; else cnt[sku][col]=""; render(); refresh(); return;}
   const b=e.target.closest("[data-chk]"); if(b){chk[b.dataset.chk]=b.dataset.v; render(); refresh();}
 });
@@ -219,7 +315,7 @@ $("#send").onclick=()=>{ if(SENDING) return; if(missing().length){refresh();retu
   const d={menu:$("#menu").value,pin:staff.pin,outlet:$("#outlet").value,date:$("#date").value,checks:chk,temp:$("#temp").value.trim().replace(",","."),prices,counts,note:$("#anote").value.trim(),photos,extra:EX,ai:AI};
   google.script.run.withSuccessHandler(r=>{ $("#bar").hidden=true;
     $("#app").innerHTML=`<div class="done-card"><div class="ok">✓</div><h1 style="font-size:28px">Audit saved</h1><p>Thank you, ${esc(r.auditor)}. Reference <b style="font-family:var(--mono)">${esc(r.id)}</b>.</p><p class="hint">All photos are stored with this audit and it shows in the office desk under Audits.</p>${(r.photoIssues||[]).length?`<div class="card" style="text-align:left;border-color:var(--bad)"><b>Photo check</b><ul style="margin:6px 0 0;padding-left:18px">${r.photoIssues.map(x=>`<li>${esc(x.label)}: ${esc(x.why)}</li>`).join("")}</ul><p class="hint" style="margin:6px 0 0">The office will see this. If a photo was wrong, send it to Chaleur on WhatsApp.</p></div>`:""}${AI.length?`<div class="card" style="text-align:left"><b>Suggestions</b><ul style="margin:6px 0 0;padding-left:18px">${AI.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}<a class="btn primary" style="flex:none" target="_blank" rel="noopener" href="https:\/\/wa.me/${String(r.wa||"").replace(/\D/g,"")}?text=${encodeURIComponent(r.summary)}">Send PDF report to WhatsApp</a><a class="btn" target="_blank" rel="noopener" href="${esc(r.pdf)}">Open PDF</a><button class="btn" onclick="location.reload()">Start a new audit</button></div>`;
-  }).withFailureHandler(err=>{SENDING=false; $("#send").disabled=false; alert0((err&&err.message)||"Upload failed. Check your internet and try again.");}).submitAudit(d);
+  }).withFailureHandler(err=>{SENDING=false; $("#send").disabled=false; if(CA.isAuthErr(err)){CA.clear(); signIn(err.message); window.scrollTo(0,0);} alert0((err&&err.message)||"Upload failed. Check your internet and try again.");}).submitAudit(d);
 };
 render(); refresh();
 </script>
