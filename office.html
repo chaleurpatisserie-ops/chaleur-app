@@ -1842,10 +1842,10 @@ function gamePanel(){
   if(!g) return `<div class="panel"><h2>Team points & treat</h2><div class="empty">Loading…</div></div>`;
   if(g.err) return `<div class="panel"><h2>Team points & treat</h2><p class="neg small">${esc(g.err)}</p></div>`;
   const lad=d.ladder||g.ladder;
-  return `<div class="panel"><h2>Team points & treat</h2><p class="small muted" style="margin:0">The kitchen fills one Team treat jar each month (on the home page). Points: report part on time +${g.pts.part} (late +${g.pts.late}), Random QC +${g.pts.qc}, good catch +${g.pts.catch}, to-do by its time +${g.pts.todo}, each fridge reading +${g.pts.unit}. The team gets the month's treat when the jar reaches the unlock %. Personal points only show on each person's own Me page.</p>
+  return `<div class="panel"><h2>Team points & treat</h2><p class="small muted" style="margin:0">The kitchen fills one Team treat jar each month (on the home page). Points: report part on time +${g.pts.part} (late +${g.pts.late}), Random QC +${g.pts.qc}, good catch +${g.pts.catch}, to-do by its time +${g.pts.todo}, each fridge reading +${g.pts.unit}. The team gets the month's treat when the jar reaches the unlock %. Everyone's points this month and last month show on the leaderboard (home page › Team).</p>
     <div class="fgrid">
-      <label class="f">Jar target per month (0 = automatic)<input id="gm-t" data-gm="target" inputmode="numeric" value="${esc(v("target"))}"></label>
-      <div class="f"><span>Automatic target this month</span><div class="mono" style="padding-top:8px">${Number(g.auto).toLocaleString("en-MY")} points (a perfect month)</div></div>
+      <label class="f">Jar size per month (points)<input id="gm-t" data-gm="target" inputmode="numeric" value="${esc(v("target"))}"></label>
+      <div class="f"><span>For comparison</span><div class="small" style="padding-top:8px">A perfect month (every part on time, every reading, to-do and QC) is about <b class="mono">${Number(g.perfect).toLocaleString("en-MY")}</b> points. Empty the box to go back to ${Number(g.def).toLocaleString("en-MY")}.</div></div>
       <label class="f">Treat unlocks at (%)<input id="gm-u" data-gm="unlock" inputmode="numeric" value="${esc(v("unlock"))}"></label>
       <label class="f">Random QC<select id="gm-q" data-gm="qcOn">${opt("true","On (every 1–2 days)",String(v("qcOn")))}${opt("false","Off",String(v("qcOn")))}</select></label>
       <label class="f">QC due by<input type="time" id="gm-b" data-gm="qcBy" value="${esc(v("qcBy"))}"></label></div>

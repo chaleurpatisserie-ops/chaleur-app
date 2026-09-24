@@ -350,6 +350,12 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 .hero{border-radius:22px;background:var(--deep);color:#fff;padding:16px}.hero .eb{color:var(--gold)}.hero .big{font:700 38px/1 var(--body);color:var(--gold)}
 .bar{height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden;position:relative}.bar i{display:block;height:100%;border-radius:4px;background:var(--gold);transition:width .5s}
 .bar.lt{background:var(--seg)}
+.lb{padding:0;overflow:hidden}.lb .lr{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--cline)}.lb .lr:last-child{border-bottom:0}
+.lb .pl{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 13px var(--body);background:var(--seg);color:var(--muted)}
+.lb .p1 .pl{background:#e3c466;color:#4a3708}.lb .p2 .pl{background:#d5d8dc;color:#34393f}.lb .p3 .pl{background:#e0b08a;color:#5a3313}
+.lb .nm{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb .nm small{font-weight:700;color:var(--accent);font-size:11.5px;margin-left:6px;letter-spacing:.04em}
+.lb .bar{display:block;margin-top:6px;height:6px}.lb .pt{font:700 16px var(--body);text-align:right}.lb .pt small{display:block;font:500 11px var(--body);color:var(--muted)}
+.lb .me{background:var(--soft)}.lb .zero{color:var(--muted)}.lb .zero .nm{font-weight:500}
 .shout{padding:12px 14px;font-size:14px}.shout .tag{color:var(--warn-tx);font-weight:700}
 .badges{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 6px;padding:14px 8px}.badges div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;text-align:center;color:var(--muted)}
 .badges span{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:700 14px var(--body)}.badges .got span{background:var(--deep);color:var(--gold);border:2px solid var(--gold)}.badges .got{color:var(--ink);font-weight:600}.badges .no span{border:2px dashed #d9c9c1}
@@ -439,7 +445,7 @@ const TABI={
  team:`<svg viewBox="0 0 28 26"><circle cx="9" cy="8" r="4.5" fill="currentColor"/><circle cx="19.5" cy="9" r="4" fill="currentColor" opacity=".6"/><path d="M1.5 23c0-5 3.5-8 7.5-8s7.5 3 7.5 8z" fill="currentColor"/><path d="M14 23c.5-4 3-7 5.5-7s5.8 3 6 7z" fill="currentColor" opacity=".6"/></svg>`,
  me:`<svg viewBox="0 0 28 26"><circle cx="14" cy="8" r="6" fill="currentColor"/><path d="M3 25c0-6.5 5-10 11-10s11 3.5 11 10z" fill="currentColor"/></svg>`};
 const DOTS=["#b5b5b5","#f39c4a","#f2c230","#3c9a50","#2f6fd0","#e0707a","#a98bd6"];
-let S=null, VIEW="", TODAY=null, NX=null, ME=null, TEAMI=null, RW=null, MINE=null, MENU=false, OPEN=(()=>{ try{ return localStorage.getItem("chaleur.menu")||""; }catch(e){ return ""; } })();
+let LBM="now", S=null, VIEW="", TODAY=null, NX=null, ME=null, TEAMI=null, RW=null, MINE=null, MENU=false, OPEN=(()=>{ try{ return localStorage.getItem("chaleur.menu")||""; }catch(e){ return ""; } })();
 let TEAM=(()=>{ try{ return localStorage.getItem("kh2.team")||""; }catch(e){ return ""; } })();
 const cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1).toLowerCase():"";
 const first=()=>cap(String((S&&S.name)||"").split(" ")[0].replace(/[()]/g,""));
@@ -542,6 +548,11 @@ function vHome(){
   return html; }
 function nxItem(x){ const inner=`<span class="sev ${esc(x.sev)}"></span><span>${esc(x.text)}</span>${x.go?`<span class="cb sm" style="${x.sev==="info"?"background:var(--soft);color:var(--accent);box-shadow:0 3px 0 var(--line)":""}">${esc(x.btn||"Open")}</span>`:""}`;
   return x.go?`<a href="${esc(CA.nextHref(x.go))}">${inner}</a>`:`<div class="it">${inner}</div>`; }
+function lbHtml(B){ if(!B||!B.rows.length) return `<div class="card shout hint">No one on the board yet.</div>`;
+  if(!B.top&&LBM==="last") return `<div class="card shout hint">No points in ${esc(B.label)}.</div>`;
+  return `<div class="card lb" role="list" aria-label="Leaderboard ${esc(B.label)}">${B.rows.map(r=>`<div role="listitem" class="lr ${r.place&&r.place<=3?"p"+r.place:""} ${r.me?"me":""} ${r.pts?"":"zero"}"><span class="pl" aria-label="${r.place?"Place "+r.place:"No points yet"}">${r.place||"–"}</span>
+    <span style="min-width:0"><span class="nm" style="display:block">${esc(r.name)}${r.me?"<small>YOU</small>":""}</span><span class="bar lt"><i style="width:${B.top?Math.max(r.pts?4:0,Math.round(r.pts*100/B.top)):0}%"></i></span></span>
+    <span class="pt">${nf(r.pts)}<small>points</small></span></div>`).join("")}</div>`; }
 function vTeam(){ const T=TEAMI; if(!T) return subHead("The brigade")+`<p class="hint">Loading…</p>`;
   const bar=(l,x)=>`<div><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px"><span>${l}</span><span>${x.done} / ${x.total}</span></div><div class="bar"><i style="width:${x.total?Math.round(x.done*100/x.total):0}%"></i></div></div>`;
   const got=T.badges.filter(b=>b.got).length;
@@ -549,19 +560,23 @@ function vTeam(){ const T=TEAMI; if(!T) return subHead("The brigade")+`<p class=
     <div class="hero"><div class="eb">This month, together</div><div class="big" style="margin:6px 0 2px">${T.jar.pct}%</div><div style="font-size:13px;color:var(--gold-lt)">of the Team treat jar · ${T.jar.unlocked?"treat unlocked":"needs "+T.jar.unlock+"%"}${T.treat?" → "+esc(T.treat):""}</div>
       <div class="bar" style="margin-top:10px;height:10px"><i style="width:${T.jar.pct}%"></i><span style="position:absolute;top:-3px;bottom:-3px;left:${T.jar.unlock}%;border-left:2px dashed #fff"></span></div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">${bar("Morning team · on time",T.teams.am)}${bar("Production team · on time",T.teams.pm)}</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 0"><div class="eb">Leaderboard · ${esc((T.board&&T.board[LBM]||{}).label||"")}</div></div>
+    <div class="seg" role="group" aria-label="Which month"><button type="button" data-lb="now" aria-pressed="${LBM==="now"}">This month</button><button type="button" data-lb="last" aria-pressed="${LBM==="last"}">Last month</button></div>
+    ${lbHtml(T.board&&T.board[LBM])}
+    <p class="hint" style="margin:-2px 2px 0;font-size:12px">Points for on-time report parts, fridge readings, to-dos, taste checks and good catches. The board starts again on the 1st.</p>
     <a class="card lrow" href="#treat"><span><b>Team treat</b><span class="hint" style="display:block;font-size:12.5px">${T.treat?esc(T.treat):"Not chosen yet"} · how the jar fills</span></span><span style="color:var(--accent);font-size:22px">›</span></a>
     <div class="eb" style="margin:4px 2px 0">Shout-outs</div>
     ${T.shout.length?T.shout.map(s=>`<div class="card shout"><b>${esc(s.who)}</b> ${esc(s.text)} ${s.tag?`<span class="tag">${esc(s.tag)}</span>`:""}</div>`).join(""):`<div class="card shout hint">Good catches and outlet streaks show here.</div>`}
     <div class="eb" style="margin:4px 2px 0">Your badges · ${got} of ${T.badges.length}</div>
     <div class="card badges">${T.badges.map(b=>`<div class="${b.got?"got":"no"}"><span aria-hidden="true">${b.got?esc(b.icon):""}</span>${esc(b.name)}</div>`).join("")}</div>
-    <p class="hint" style="margin:0 2px">No ranking of people: the whole brigade fills one jar.</p></div>`; }
-function vMe(){ const M=ME; const sub=`<div style="display:flex;align-items:center;gap:14px;padding:10px 0 2px"><div class="av" aria-hidden="true">${esc(first().charAt(0)||"?")}</div><div><div style="font:700 26px/1 var(--display)">Good ${hi().toLowerCase()}, ${esc(first())}</div><div class="hint">Only you can see this page</div></div></div>`;
+    <p class="hint" style="margin:0 2px">Everyone's points also fill the one Team treat jar.</p></div>`; }
+function vMe(){ const M=ME; const sub=`<div style="display:flex;align-items:center;gap:14px;padding:10px 0 2px"><div class="av" aria-hidden="true">${esc(first().charAt(0)||"?")}</div><div><div style="font:700 26px/1 var(--display)">Good ${hi().toLowerCase()}, ${esc(first())}</div><div class="hint">Your path to chef (only you see this page)</div></div></div>`;
   if(!M) return sub+`<p class="hint">Loading…</p>`;
   const showPath=isKit()||S.role==="auditor"||M.points>0||S.as;
   const next=M.next, pct=next?Math.min(100,Math.round((M.points-M.from)*100/Math.max(1,next-M.from))):100;
   return `<div class="stack">${sub}
     ${showPath?`<div class="path"><div class="eb">Your path to chef</div><div class="hello">${esc(M.hello)}</div><div class="msg">${esc(M.msg)}</div>
-      <div class="bar" style="margin-top:12px"><i style="width:${pct}%"></i></div><div class="pts">${nf(M.points)}${next?" / "+nf(next):""} points · ${nf(M.month)} this month</div></div>
+      <div class="bar" style="margin-top:12px"><i style="width:${pct}%"></i></div><div class="pts">${nf(M.points)}${next?" / "+nf(next):""} points · ${nf(M.month)} this month${M.place?` · <a href="#team" style="color:var(--gold);font-weight:700">#${M.place.n} on the leaderboard</a>`:""}</div></div>
     <div class="card lad">${M.ladder.map((l,i)=>`<div class="${i<M.rank?"past":i===M.rank?"me":""}"><span class="d"></span><span><b>${esc(l.name)}</b> · ${esc(l.desc)}</span><small>${i<M.rank?"✓":i===M.rank?"you":nf(l.min)}</small></div>`).join("")}</div>`:""}
     ${showPath&&M.recent.length?`<div class="eb" style="margin:2px">Recent points</div><div class="card fills">${M.recent.map(r=>`<div><span>${esc(r.why)}</span><b>+${nf(r.pts)}</b></div>`).join("")}</div>`:""}
     <div class="seg" style="--n:3" role="group" aria-label="Language"><button type="button" aria-pressed="true">English</button><button type="button" disabled title="Coming soon" style="opacity:.55">Melayu</button><button type="button" disabled title="Coming soon" style="opacity:.55">中文</button></div>
@@ -652,6 +667,7 @@ document.addEventListener("click",async e=>{ const t=e.target&&e.target.closest?
   if(g("[data-mgo]")&&/^#/.test(g("[data-mgo]").getAttribute("href"))){ setMenu(false); return; }
   const sb=g("[data-msec]"); if(sb){ const n=sb.dataset.msec; OPEN=OPEN===n?"":n; try{ localStorage.setItem("chaleur.menu",OPEN); }catch(x){} drawMenu(); return; }
   const h=g("[data-help]"); if(h){ setMenu(false); CA.openHelp(h.dataset.help); return; }
+  { const lb=g("[data-lb]"); if(lb){ LBM=lb.dataset.lb==="last"?"last":"now"; render(); return; } }
   if(g("[data-team]")||g("[data-setteam]")){ const b=g("[data-setteam]"); TEAM=b?b.dataset.setteam:(myTeam()==="am"?"pm":"am"); try{ localStorage.setItem("kh2.team",TEAM); }catch(x){} render(); return; }
   const rm=g("[data-rmode]"); if(rm&&!rm.disabled){ try{ RW=await CA.run("rewardSet",S.t,{mode:rm.dataset.rmode}); render(); }catch(x){ toast(x.message); } return; }
   const rp=g("[data-rpick]"); if(rp){ try{ RW=await CA.run("rewardSet",S.t,{pick:rp.dataset.rpick}); render(); toast("Locked in. The team sees it."); }catch(x){ toast(x.message); } return; }
