@@ -223,7 +223,9 @@ input,select,textarea{font-size:16px}
 .cnt .num input{padding:9px 4px}
 .tag{font-size:11.5px;font-weight:600;border-radius:6px;padding:1px 6px;margin-left:6px}
 .tag.bad{background:#f8e1e0;color:#a3262a}.tag.warn{background:#f8ecd9;color:#9a5a12}
-.pl{display:grid;grid-template-columns:1fr 70px 1fr 36px;gap:6px;align-items:center;padding:4px 0}
+.pl1{display:grid;grid-template-columns:1fr 40px;gap:6px;align-items:center;padding:3px 0}.pl1 input{width:100%}
+.plist{border-top:1px dashed var(--line);padding:8px 0 4px}.plbody{display:flex;gap:10px;align-items:flex-start}.plbody .items{flex:1;min-width:0}
+.plph{display:block;flex:none;border-radius:10px;overflow:hidden;border:1px solid var(--line);max-width:220px;margin:6px 0}.plph img{display:block;width:100%;height:auto}.plph.sm{width:72px;margin:2px 0}
 .items{margin:4px 0 0;padding-left:18px}.items li{margin:2px 0}
 .iss{margin:6px 0 0;padding-left:18px}.iss li{margin:3px 0}
 .iss li.bad{color:#a3262a;font-weight:600}
@@ -279,7 +281,7 @@ function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}
 
 <script>
 const TABS=[["today","Today"],["opening","Opening"],["closing","Closing"],["plan","Plan"],["lists","Lists"],["history","History"]];
-let TOK=null, INFO=null, INFO_AT=0, TAB=(location.hash||"#today").slice(1), DATE=null, SENDING=false, RESULT=null, HIST=null, HISTERR="", PLANED=null, READ=null, PHWARN=false, RU={m:"",r:"",l:"1"};
+let TOK=null, INFO=null, INFO_AT=0, TAB=(location.hash||"#today").slice(1), DATE=null, SENDING=false, RESULT=null, HIST=null, HISTERR="", PLE=null, NEWD=null, PHWARN=false, RU={m:"",r:"",l:"1"};
 if(!TABS.some(([k])=>k===TAB)) TAB="today";
 const K={opening:null,closing:null}, P2={};
 const WDL=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -349,7 +351,7 @@ function vToday(){
     <div class="card"><h3>Prep reminders</h3><div class="grpt">Today</div>${remL(r0)}<div class="grpt">Tomorrow · ${esc(niceD(addD(t,1)))}</div>${remL(r1)}
       <p class="hint" style="margin-top:6px">From the production plan and the reminders the team has approved (Plan › Reminders).</p></div>
     <div class="card"><h3>Deliveries to outlets today</h3>${out.length?out.map(d=>`<div class="st" style="padding:6px 0;border-top:1px dashed var(--line)"><span><b>${esc(d.outlet)}</b> · <span class="sku">${esc(d.no)}</span> · ${d.lines.reduce((a,l)=>a+l.qty,0)} cakes</span>${d.status==="delivered"?`<span class="pill ok">Delivered</span>`:d.checked?`<span class="pill ok">Colours checked · ${esc(d.checkedBy)}</span>`:`<a class="btn sm" href="office.html#deliveries">Check colours ↗</a>`}</div>`).join(""):`<p class="hint">No delivery orders for today.</p>`}</div>
-    <div class="card"><h3>Production plan</h3>${planDays.map(d=>{const p=INFO.plan[d]; return `<div class="st" style="padding:5px 0"><span>${esc(niceD(d))}</span>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${p.items.length} item${p.items.length===1?"":"s"}${p.approvedBy?" · checked":" · not checked yet"}</span>`:`<button class="btn sm" type="button" data-plan="${d}">Add plan</button>`}</div>`;}).join("")}</div>
+    <div class="card"><h3>Production plan</h3>${planDays.map(d=>{const p=INFO.plan[d]; return `<div class="st" style="padding:5px 0"><span>${esc(niceD(d))}</span>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${(p.lists||[]).length} list${(p.lists||[]).length===1?"":"s"}${p.approvedBy?" · checked":" · not checked yet"}</span>`:`<button class="btn sm" type="button" data-plan="${d}">Add a list</button>`}</div>`;}).join("")}</div>
     ${INFO.proposals.length?`<div class="card"><h3>Waiting for a supervisor (${INFO.proposals.length})</h3>${INFO.proposals.map(x=>`<div style="padding:8px 0;border-top:1px dashed var(--line)"><div>${esc(propText(x))}</div><div class="hint">${esc(x.by)} · ${esc(dtOf(x.at))}${x.why?` · “${esc(x.why)}”`:""}</div>${SUP()?`<div style="display:flex;gap:8px;margin-top:6px"><button class="btn sm pri" type="button" data-dec="${x.id}" data-ok="1">Approve</button><button class="btn sm" type="button" data-dec="${x.id}" data-ok="0">Reject</button></div>`:""}</div>`).join("")}</div>`:""}
     ${INFO.brief&&(INFO.brief.warnings||[]).length?`<div class="card"><h3>AI notes</h3><ul class="iss">${INFO.brief.warnings.map(w=>`<li>${esc(w)}</li>`).join("")}</ul><p class="hint">Updated ${esc(dtOf(INFO.brief.generatedAt))}</p></div>`:""}
     ${INFO.check&&INFO.check.items.length?`<div class="card"><h3>Latest check</h3><ul class="iss">${INFO.check.items.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul><p class="hint">${esc(INFO.check.by)} · ${esc(dtOf(INFO.check.at))}</p></div>`:""}
@@ -357,6 +359,7 @@ function vToday(){
 }
 function propText(x){ const d=x.data||{};
   if(x.kind==="plan") return `Production plan for ${niceD(d.date)}: ${(d.items||[]).map(i=>i.name+(i.qty?" x"+i.qty:"")).join(", ")}`;
+  if(x.kind==="planList") return d.remove?`Remove a list from ${niceD(d.date)}`:`Change a list for ${niceD(d.date)}: ${(d.items||[]).map(i=>i.name).join(" · ")}`;
   if(x.kind==="rule") { const r=d.rule||{}; return r.remove?`Remove reminder: ${r.remind||""}`:`Reminder: when the plan has “${(Array.isArray(r.match)?r.match:String(r.match||"").split(",")).map(x=>String(x).trim()).filter(Boolean).join("” or “")}”, ${r.remind} (${+r.lead||0} day${+r.lead===1?"":"s"} before)`; }
   if(x.kind==="carries") return `HQ display list: ${(d.carries||[]).length} cakes`;
   if(x.kind==="equipment") return `Fridge/freezer list: ${(d.equipment||[]).map(e=>e.name+" "+e.max+"°C").join(", ")}`;
@@ -449,22 +452,31 @@ function vResult(){ const {kind,r}=RESULT, bad=(r.issues||[]).filter(i=>i.sev===
     <button class="btn pri" type="button" data-tab="today">Back to Today</button></div>`; }
 
 /* ---------- PLAN ---------- */
-function vPlan(){ const t=INFO.today, days=[]; for(let i=0;i<=Math.max(3,INFO.conf.planDays);i++) days.push(addD(t,i));
-  const ed=PLANED;
-  const edHtml=ed?`<div class="card" id="planed"><div class="st"><h3>${INFO.plan[ed.date]&&!SUP()?"Propose a change":"Production plan"} · ${esc(niceD(ed.date))}</h3><button class="btn sm" type="button" data-act="planCancel">Cancel</button></div>
-      <p class="hint">One line per item: what, how many, note (e.g. “Mango serai insert · 40 · for Fri”).</p>
-      ${ed.items.map((x,i)=>`<div class="pl"><input data-pi="${i}" data-k="name" value="${esc(x.name)}" placeholder="Item" aria-label="Item"><input data-pi="${i}" data-k="qty" value="${esc(x.qty)}" placeholder="Qty" aria-label="Quantity"><input data-pi="${i}" data-k="note" value="${esc(x.note)}" placeholder="Note" aria-label="Note"><button type="button" class="x btn sm" data-pirm="${i}" aria-label="Remove">✕</button></div>`).join("")}
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" type="button" data-act="planAdd">+ Add line</button></div>
-      ${INFO.plan[ed.date]&&!SUP()?`<label class="f" style="margin-top:8px">Why the change?<input id="pl-why" data-plwhy="1" value="${esc(ed.why||"")}" placeholder="e.g. extra order for Saturday"></label>`:""}
-      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" type="button" data-act="planSave">${INFO.plan[ed.date]&&!SUP()?"Send to supervisor":"Save plan"}</button></div></div>`:"";
-  const rd=READ?`<div class="card"><h3>What the AI read</h3>${READ.days.length?READ.days.map((x,i)=>`<div style="padding:6px 0;border-top:1px dashed var(--line)"><b>${esc(niceD(x.date))}</b> · ${x.items.length} items<ul class="items">${x.items.map(it=>`<li>${esc(it.name)}${it.qty?" · "+esc(it.qty):""}${it.note?` <span class="muted">(${esc(it.note)})</span>`:""}</li>`).join("")}</ul><button class="btn sm" type="button" data-useread="${i}">Check and use for ${esc(niceD(x.date))}</button></div>`).join(""):`<p class="hint">Nothing could be read. Try a clearer photo or type it.</p>`}${(READ.unclear||[]).length?`<p class="hint">Couldn't read: ${READ.unclear.map(esc).join("; ")}</p>`:""}</div>`:"";
+const thumbOf=id=>"https:\/\/drive.google.com/thumbnail?id="+encodeURIComponent(id)+"&sz=w600", viewOf=id=>"https:\/\/drive.google.com/file/d/"+encodeURIComponent(id)+"/view";
+function planDaysList(){ const t=INFO.today, out=[]; for(let i=0;i<=Math.max(7,INFO.conf.planDays);i++) out.push(addD(t,i)); return out; }
+function vPlanEd(){ const e=PLE; if(!e) return "";
+  const cur=e.listId?((INFO.plan[e.date]||{}).lists||[]).find(l=>l.id===e.listId):null, prop=e.listId&&!SUP();
+  return `<div class="card" id="planed"><div class="st"><h3>${e.listId?(prop?"Propose a change":"Edit list"):"New list"} · ${esc(niceD(e.date))}</h3><button class="btn sm" type="button" data-act="pleCancel">Cancel</button></div>
+    ${e.photoId?`<a href="${viewOf(e.photoId)}" target="_blank" rel="noopener" class="plph"><img src="${thumbOf(e.photoId)}" alt="Photo of the list"></a>`:""}
+    ${e.aiError?`<p class="err">${esc(e.aiError)}</p>`:e.fromAi?`<p class="hint">The AI wrote the list out as it is on the paper. Fix a line if it read something wrong, then save.</p>`:`<p class="hint">One line per item, written the way you like.</p>`}
+    ${e.lines.map((x,i)=>`<div class="pl1"><input data-pli="${i}" value="${esc(x)}" aria-label="Line ${i+1}" placeholder="e.g. Mango serai 40"><button type="button" class="x btn sm" data-plirm="${i}" aria-label="Remove line">✕</button></div>`).join("")}
+    ${(e.unclear||[]).length?`<p class="hint">Couldn't read: ${e.unclear.map(esc).join("; ")}</p>`:""}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" type="button" data-act="pleAdd">+ Add line</button></div>
+    ${prop?`<label class="f" style="margin-top:8px">Why the change?<input data-plewhy="1" value="${esc(e.why||"")}" placeholder="e.g. extra order for Saturday"></label>`:""}
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" type="button" data-act="pleSave">${prop?"Send to supervisor":"Save list"}</button></div></div>`; }
+function vPlan(){ const t=INFO.today, days=planDaysList(), nd=NEWD&&days.includes(NEWD)?NEWD:addD(t,1);
   return `<div class="cards" style="margin-top:12px"><h2 style="font-family:var(--display);margin:0;font-size:26px">Production plan</h2>
-    <p class="hint">One shared plan for the whole team. It must cover the next ${INFO.conf.planDays} days. Anyone can add the plan for a day that has none; changing an existing plan needs a kitchen supervisor (others send it for approval).</p>
-    <div class="card"><h3>Add from a photo</h3><p class="hint">Take a photo of the written production list. The AI reads it; you check it before saving.</p><div class="pv" style="display:flex;gap:8px;flex-wrap:wrap">${mini("plan_read","Photo of the list")}<button class="btn sm pri" type="button" data-act="readPlan" ${P2.plan_read?"":"disabled"}>Read it</button></div></div>
-    ${rd}${edHtml}
-    ${days.map(d=>{const p=INFO.plan[d]; return `<div class="card"><div class="st"><h3>${esc(niceD(d))}${d===t?" · today":""}</h3>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${p.approvedBy?"Checked by "+esc(p.approvedBy):"Not checked yet"}</span>`:`<span class="pill bad">No plan</span>`}</div>
-      ${p?`<ul class="items">${p.items.map(it=>`<li>${esc(it.name)}${it.qty?" · <b>"+esc(it.qty)+"</b>":""}${it.note?` <span class="muted">(${esc(it.note)})</span>`:""}</li>`).join("")}</ul><p class="hint">By ${esc(p.by)} · ${esc(dtOf(p.at))}</p>`:""}
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" type="button" data-plan="${d}">${p?(SUP()?"Edit":"Propose a change"):"Add plan"}</button>${p&&!p.approvedBy&&SUP()?`<button class="btn sm pri" type="button" data-pok="${d}">Mark as checked</button>`:""}</div></div>`;}).join("")}
+    <p class="hint">One shared plan for the whole team. It must cover the next ${INFO.conf.planDays} days. Add each written list as a photo: one photo = one list. Anyone can add a list; changing or removing a list needs a kitchen supervisor.</p>
+    <div class="card" id="pladd"><h3>Add a list</h3>
+      <label class="f">For which day?<select data-newd="1">${days.map(d=>`<option value="${d}" ${d===nd?"selected":""}>${esc(niceD(d))}${d===t?" · today":d===addD(t,1)?" · tomorrow":""}${INFO.plan[d]?" · has "+(INFO.plan[d].lists||[]).length+" list"+((INFO.plan[d].lists||[]).length===1?"":"s"):""}</option>`).join("")}</select></label>
+      <div class="pv" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${mini("plan_read","Photo of the list")}<button class="btn sm pri" type="button" data-act="readPlan" ${P2.plan_read?"":"disabled"}>Read it</button><button class="btn sm" type="button" data-act="typePlan">Type it instead</button></div>
+      <p class="hint" style="margin-top:6px">The photo is saved, and the AI writes the list out line by line, the way it is written.</p></div>
+    ${vPlanEd()}
+    ${days.slice(0,Math.max(3,INFO.conf.planDays)+1).map(d=>{const p=INFO.plan[d], ls=(p&&p.lists)||[]; return `<div class="card"><div class="st"><h3>${esc(niceD(d))}${d===t?" · today":""}</h3>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${p.approvedBy?"Checked by "+esc(p.approvedBy):"Not checked yet"}</span>`:`<span class="pill bad">No plan</span>`}</div>
+      ${ls.map((l,n)=>`<div class="plist"><div class="st"><b>List ${n+1}</b><span class="hint">${esc(l.by||"")} · ${esc(dtOf(l.editedAt||l.at))}</span></div>
+        <div class="plbody">${l.photo&&l.photo.id?`<a href="${viewOf(l.photo.id)}" target="_blank" rel="noopener" class="plph sm"><img src="${thumbOf(l.photo.id)}" alt="Photo of list ${n+1}" loading="lazy"></a>`:""}<ul class="items">${(l.items||[]).map(it=>`<li>${esc(it.name)}${it.qty?" · <b>"+esc(it.qty)+"</b>":""}${it.note?` <span class="muted">(${esc(it.note)})</span>`:""}</li>`).join("")||`<li class="muted">Photo only</li>`}</ul></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"><button class="btn sm" type="button" data-ple="${d}|${esc(l.id)}">${SUP()?"Edit":"Propose a change"}</button>${SUP()?`<button class="btn sm" type="button" data-plrm="${d}|${esc(l.id)}">Remove</button>`:""}</div></div>`).join("")}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" type="button" data-plan="${d}">+ Add a list for this day</button>${p&&!p.approvedBy&&SUP()?`<button class="btn sm pri" type="button" data-pok="${d}">Mark as checked</button>`:""}</div></div>`;}).join("")}
     ${vRules()}</div>`; }
 function vRules(){ const rs=INFO.rules||[];
   return `<div class="card" id="rules"><h3>Prep reminders the system has learned</h3><p class="hint">When an item in the plan contains these words, everyone is reminded to do this, so many days before. The AI suggests new ones from the plans; a supervisor approves them.</p>
@@ -508,15 +520,20 @@ document.addEventListener("click",async e=>{
   if(d.sign){ const [k,id,neg]=d.sign.split("|"); st(k).equip[id].neg=neg==="1"; saveDraft(k); b.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); refresh(); return; }
   if(d.prm!=null){ const s=st("opening"); s.putOut.splice(+d.prm,1); saveDraft("opening"); render(); return; }
   if(d.xadd){ const pid=$("#xa-p").value, c=$("#xa-c").value; if(!pid) return; const s=st("closing"), k=pid+"|"+c; if(!s.extra.includes(k)) s.extra.push(k); saveDraft("closing"); render(); return; }
-  if(d.plan){ const p=INFO.plan[d.plan]; PLANED={date:d.plan,items:p?p.items.map(x=>({...x})):[{name:"",qty:"",note:""}],why:""}; if(TAB!=="plan") go("plan"); else render(); setTimeout(()=>{const x=$("#planed"); x&&x.scrollIntoView({behavior:"smooth"});},50); return; }
-  if(d.act==="planCancel"){ PLANED=null; render(); return; }
-  if(d.act==="planAdd"){ PLANED.items.push({name:"",qty:"",note:""}); render(); return; }
-  if(d.pirm!=null){ PLANED.items.splice(+d.pirm,1); render(); return; }
-  if(d.act==="planSave"){ const items=PLANED.items.filter(x=>String(x.name).trim()); if(!items.length&&!INFO.plan[PLANED.date]){ toast("Add at least one item"); return; }
-    b.disabled=true; try{ const r=await run("hqSave","plan",{date:PLANED.date,items},(($("#pl-why")||{}).value||"")); toast(r.msg); PLANED=null; READ=null; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.plan){ NEWD=d.plan; if(TAB!=="plan") go("plan"); else render(); setTimeout(()=>{const x=$("#pladd"); x&&x.scrollIntoView({behavior:"smooth"});},50); return; }
+  if(d.act==="pleCancel"){ PLE=null; render(); return; }
+  if(d.act==="pleAdd"){ PLE.lines.push(""); render(); setTimeout(()=>{const x=document.querySelector(`[data-pli="${PLE.lines.length-1}"]`); x&&x.focus();},30); return; }
+  if(d.plirm!=null){ PLE.lines.splice(+d.plirm,1); render(); return; }
+  if(d.act==="typePlan"){ const nd=($("[data-newd]")||{}).value||addD(INFO.today,1); PLE={date:nd,listId:"",token:"",photoId:"",lines:["","",""],why:"",fromAi:false}; render(); setTimeout(()=>{const y=$("#planed"); y&&y.scrollIntoView({behavior:"smooth"});},50); return; }
+  if(d.ple){ const [dt,id]=d.ple.split("|"), l=(((INFO.plan[dt]||{}).lists)||[]).find(x=>x.id===id); if(!l) return; PLE={date:dt,listId:id,token:"",photoId:(l.photo&&l.photo.id)||"",lines:(l.items||[]).map(x=>[x.name,x.qty,x.note].filter(Boolean).join(" ")),why:"",fromAi:false}; render(); setTimeout(()=>{const y=$("#planed"); y&&y.scrollIntoView({behavior:"smooth"});},50); return; }
+  if(d.plrm){ if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Tap again to remove"; setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="Remove"; } },4000); return; }
+    const [dt,id]=d.plrm.split("|"); b.disabled=true; try{ const r=await run("hqSave","planList",{date:dt,listId:id,remove:true},""); toast(r.msg); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.act==="pleSave"){ const lines=PLE.lines.map(x=>String(x).trim()).filter(Boolean); if(!lines.length&&!PLE.photoId){ toast("Add at least one line"); return; } if(!lines.length&&PLE.listId){ toast("Keep at least one line, or remove the list"); return; }
+    b.disabled=true; try{ const r=await run("hqSave","planList",{date:PLE.date,listId:PLE.listId,token:PLE.token,lines},PLE.why||""); toast(r.msg); PLE=null; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.pok){ b.disabled=true; try{ const r=await run("hqSave","approvePlan",{date:d.pok}); toast(r.msg); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
-  if(d.act==="readPlan"){ if(!P2.plan_read) return; b.disabled=true; b.textContent="Reading… (up to 30 seconds)"; try{ READ=await run("hqReadPlan",[P2.plan_read]); }catch(err){ toast(err.message); } render(); return; }
-  if(d.useread!=null){ const x=READ.days[+d.useread]; PLANED={date:x.date,items:x.items.map(i=>({...i})),why:"From the photo"}; render(); setTimeout(()=>{const y=$("#planed"); y&&y.scrollIntoView({behavior:"smooth"});},50); return; }
+  if(d.act==="readPlan"){ if(!P2.plan_read) return; const nd=($("[data-newd]")||{}).value||addD(INFO.today,1); b.disabled=true; b.textContent="Saving and reading… (up to 30 seconds)";
+    try{ const r=await run("hqReadPlan",nd,P2.plan_read); delete P2.plan_read; savePh("plan_read"); PLE={date:r.date,listId:"",token:r.token,photoId:(r.photo&&r.photo.id)||"",lines:r.lines.length?r.lines.slice():[""],why:"",fromAi:!!r.lines.length,aiError:r.aiError||"",unclear:r.unclear||[]}; render(); setTimeout(()=>{const y=$("#planed"); y&&y.scrollIntoView({behavior:"smooth"});},50); }
+    catch(err){ toast(err.message); render(); } return; }
   if(d.act==="ruleAdd"){ const m=$("#ru-m").value, r=$("#ru-r").value, l=$("#ru-l").value; if(!m.trim()||!r.trim()){ toast("Fill in the words and what to do"); return; }
     b.disabled=true; try{ const x=await run("hqSave","rule",{rule:{match:m,remind:r,lead:l}},""); toast(x.msg); RU={m:"",r:"",l:"1"}; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.rtog||d.rdel){ const r=(INFO.rules||[]).find(x=>x.id===(d.rtog||d.rdel)); if(!r) return; b.disabled=true;
@@ -534,21 +551,22 @@ document.addEventListener("input",e=>{ const t=e.target, d=t.dataset; if(t.close
   if(d.cw!=null||d.cb!=null){ const v=t.value.replace(/[^0-9]/g,""); if(v!==t.value) t.value=v; const s=st("closing"), k=d.cw??d.cb; s.rows[k]=s.rows[k]||{}; s.rows[k][d.cw!=null?"w":"b"]=v; saveDraft("closing");
     const needW=Object.values(s.rows).some(x=>+x.w>0), has=!!document.getElementById("sb-cl_waste"); if(needW!==has){ const box=document.getElementById("sb-cl_display"); if(needW&&box) box.insertAdjacentHTML("afterend",shotBox("cl_waste","Cakes thrown away","")); if(!needW&&has) document.getElementById("sb-cl_waste").remove(); } refresh(); return; }
   if(d.note){ st(d.note).note=t.value; saveDraft(d.note); return; }
-  if(d.pi!=null&&PLANED){ PLANED.items[+d.pi][d.k]=t.value; return; }
-  if(d.plwhy&&PLANED){ PLANED.why=t.value; return; }
+  if(d.pli!=null&&PLE){ PLE.lines[+d.pli]=t.value; return; }
+  if(d.plewhy&&PLE){ PLE.why=t.value; return; }
   if(d.ru){ RU[d.ru]=t.value; return; }
   if(d.eqi!=null&&LED){ LED.eq[+d.eqi][d.k]=t.value; LED.dirty=true; return; }
   if(t.id==="ls-why"&&LED){ LED.why=t.value; LED.dirty=true; return; }
 });
 document.addEventListener("change",async e=>{ const t=e.target, d=t.dataset; if(t.closest&&t.closest(".ca-hp,.ca-login")) return;
   if(d.kshot&&t.files&&t.files[0]){ const k=d.kshot, sp=document.getElementById("mi-"+k); if(sp) sp.insertAdjacentHTML("beforeend",' <span class="hint">processing…</span>'); if(TAB==="opening"||TAB==="closing"){ const b=$("#send"); b.disabled=true; }
-    let bad=false; try{ P2[k]=await shrink(t.files[0],1200); savePh(k); }catch(err){ bad=true; }
+    let bad=false; try{ P2[k]=await shrink(t.files[0],k==="plan_read"?1600:1200); savePh(k); }catch(err){ bad=true; }
     t.value=""; if(bad){ const el=document.getElementById("mi-"+k); if(el){ el.querySelectorAll(".hint").forEach(x=>x.remove()); el.insertAdjacentHTML("beforeend",' <span class="err">Photo not taken. Please try again.</span>'); } if(TAB==="opening"||TAB==="closing") refresh(); return; } if(/^(op|cl)_(mep|next)\d|^(op|cl)_display|^(op|cl)_waste|^op_(setup|do_)|^plan_read/.test(k)) render(); else { const el=document.getElementById("mi-"+k); if(el) el.outerHTML=mini(k); } if(TAB==="opening"||TAB==="closing") refresh(); return; }
   if(d.door){ const [k,id]=d.door.split("|"); st(k).equip[id].door=t.checked; saveDraft(k); refresh(); return; }
   if(d.setup){ st("opening").setupOk=t.checked; saveDraft("opening"); refresh(); return; }
   if(d.later){ st("opening").later[d.later]=t.checked; saveDraft("opening"); render(); return; }
   if(d.pc!=null){ st("opening").putOut[+d.pc].colour=t.value; saveDraft("opening"); return; }
   if(d.padd){ if(!t.value) return; const s=st("opening"); s.putOut.push({productId:t.value,colour:colOf(DATE).name,qty:"1"}); saveDraft("opening"); render(); return; }
+  if(d.newd){ NEWD=t.value; return; }
   if(d.rdate&&t.value){ RESULT=null; K.opening=K.closing=null; await reload(t.value); return; }
   if(d.car){ if(t.checked) LED.carries.add(d.car); else LED.carries.delete(d.car); LED.dirty=true; return; }
   if(d.eqi!=null&&LED){ LED.eq[+d.eqi][d.k]=t.value; LED.dirty=true; return; }
