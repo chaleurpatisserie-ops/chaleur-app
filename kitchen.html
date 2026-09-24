@@ -272,6 +272,26 @@ img.thumb{width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px s
 .sheet{position:fixed;inset:0;background:rgba(20,10,12,.5);z-index:60;display:flex;align-items:flex-end;justify-content:center}
 .sheet .box{background:var(--paper);width:100%;max-width:640px;max-height:85vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
 .pick{display:flex;align-items:center;gap:10px;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 2px;color:var(--ink);font:500 15px var(--body);cursor:pointer;text-align:left}.pick .pic{width:40px;height:40px}
+.teamsw{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper)}
+.teamsw button{flex:1;border:0;background:var(--paper);color:var(--ink);padding:10px 8px;font:600 15px var(--body);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
+.teamsw button small{font-weight:500;font-size:12px;color:var(--muted)}
+.teamsw button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}.teamsw button[aria-pressed="true"] small{color:inherit;opacity:.85}
+.teamsw.sm button{padding:9px 6px;font-size:14px}
+.todo{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:start;padding:9px 0;border-top:1px dashed var(--line);cursor:pointer}
+.todo input[type=checkbox]{width:22px;height:22px;accent-color:var(--ok);margin:1px 0 0}
+.todo .tt{font-weight:600;line-height:1.3}.todo.done .tt{text-decoration:line-through;color:var(--muted)}
+.todo small{display:block;color:var(--muted);font-size:13px;margin-top:2px}.todo small.okt{color:var(--ok);font-weight:600}
+.rdy{font-weight:500;color:var(--accent)}
+.tchip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:6px;padding:1px 6px;background:var(--soft);color:var(--muted);vertical-align:1px;text-decoration:none}
+.tchip.order{background:#f8ecd9;color:#9a5a12}.tchip.grab{background:#e2f2e6;color:#1e6b3a}
+@media (prefers-color-scheme:dark){.tchip.order{background:#3a2a17;color:#f0b46a}.tchip.grab{background:#18331f;color:#8fd6a5}}
+.tadd{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tall{margin-top:10px}.tall summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px}
+table.deco td{vertical-align:middle}.madein{width:64px;text-align:right;font-family:var(--mono);padding:6px}.madein.short{border-color:#9a5a12;background:#fbf1e2}
+.dlv{padding:8px 0;border-top:1px dashed var(--line)}.steps3{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.fl{display:flex;flex-direction:column;gap:4px;margin:8px 0;font-size:14px;font-weight:600}.fl input,.fl select,.fl textarea{font-weight:400}
+.wdays{display:flex;flex-wrap:wrap;margin-top:6px}
+.plph.sm{max-width:120px}
 </style>
 </head><body>
 <div class="wrap" id="app">
@@ -280,6 +300,7 @@ img.thumb{width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px s
   <nav class="tabs" id="tabs" role="tablist" hidden></nav>
   <main id="main"><p class="hint">Loading…</p></main>
 </div>
+<div id="tksheet"></div>
 <div class="bar" id="bar" hidden><div class="in"><div id="eqnav" class="eqnav" hidden><button class="btn" type="button" data-eqstep="-1">‹ Back</button><button class="btn primary" type="button" data-eqstep="1">Next ›</button></div><button id="send" class="btn primary" type="button">Send</button><div class="status" id="status" aria-live="polite"></div></div></div>
 <script>const CONFIG={"chaleurWhatsApp": "60146650928", "outlets": [{"code": "KNK", "name": "Knocknock", "menu": "", "legalName": "Knocknock F&B Sdn Bhd"}, {"code": "JRN", "name": "Jiran Cafe", "menu": "", "legalName": "THE JIRAN MARKETING SDN. BHD."}], "colours": [{"name": "BLACK", "hex": "#1e1e1e"}, {"name": "ORANGE", "hex": "#f08a24"}, {"name": "YELLOW", "hex": "#f2c53d"}, {"name": "GREEN", "hex": "#3c9a52"}, {"name": "BLUE", "hex": "#2f6fd0"}, {"name": "RED", "hex": "#d63333"}, {"name": "PURPLE", "hex": "#8b4fc6"}], "products": [{"sku": "NOIR", "name": "Noir"}, {"sku": "KUNAFA", "name": "Kunafa"}, {"sku": "ONDEH", "name": "Ondeh"}, {"sku": "PANDAN", "name": "Pandan"}, {"sku": "POIRE", "name": "Poire"}, {"sku": "ISPAHAN", "name": "Ispahan"}], "checks": [{"k": "display", "l": "Display clean and tidy", "photo": true}, {"k": "fifo", "l": "Oldest colour at the front (FIFO)"}, {"k": "labels", "l": "Every cake has its colour dot / label"}, {"k": "expired", "l": "No overdue colour on display"}, {"k": "tags", "l": "Price tags present on every cake"}, {"k": "setup", "l": "Signage & setup as agreed", "photo": true}, {"k": "menu_physical", "l": "Physical menu: correct items, prices and current photos", "photo": true, "menu": "physical"}, {"k": "menu_qr", "l": "QR ordering system: correct items, prices and current photos (screenshot)", "photo": true, "menu": "qr"}, {"k": "packaging", "l": "Boxes, sporks, bags stocked"}, {"k": "chiller", "l": "Chiller closed, running, light on"}]}; const PRESET=(new URLSearchParams(location.search).get('o')||'').toUpperCase();</script>
 <script>
@@ -376,23 +397,88 @@ function repCard(kind){ const s0=INFO.state[kind], r=INFO.day[kind], due=kind===
     ${r&&r.legacy?`<p class="hint">Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}.</p>`:`<ul class="plist2">${parts.map(([p,l])=>{const x=r&&r.parts&&r.parts[p]; return `<li class="${x?"ok":""}">${x?"✓":"○"} ${esc(l)}${x?` <span class="muted">· ${esc(x.by)} ${esc(hmOf(x.at))}</span>`:""}</li>`;}).join("")}</ul>`}
     ${r&&(r.issues||[]).length?`<ul class="iss">${r.issues.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul>`:""}
     <div class="row" style="border:0;display:flex;gap:8px;padding-top:8px;flex-wrap:wrap"><button class="btn sm ${s0.done?"":"pri"}" type="button" data-tab="${kind}">${s0.done?"Open":"Open "+kind+" report"}</button>${!s0.done&&SUP()&&DATE===INFO.today&&INFO.now>due?`<button class="btn sm" type="button" data-chase="${kind}">Remind the group on WhatsApp</button>`:""}</div></div>`; }
-function vToday(){
-  const t=INFO.today, rem=INFO.reminders||[], r0=rem.filter(r=>r.date===t), r1=rem.filter(r=>r.date===addD(t,1));
-  const out=INFO.dos.filter(d=>!d.internal);
-  const planDays=[]; for(let i=0;i<=INFO.conf.planDays;i++) planDays.push(addD(t,i));
+/* ---------- TODAY: two teams, each with its own to-do list ---------- */
+let TEAM=null, TK=null;
+const teamGet=()=>{ try{ return localStorage.getItem("kh2.team"); }catch(e){ return null; } };
+const teamSet=v=>{ TEAM=v; try{ localStorage.setItem("kh2.team",v); }catch(e){} };
+const TEAMS=()=>INFO.teams||{am:"Morning / Decoration",pm:"Noon / Production"};
+const TTYPE=()=>INFO.ttypes||{order:"Custom order",grab:"Grab pre-pack",task:"To-do"};
+const TD=()=>INFO.todo||{tasks:[],done:{},made:{}};
+const canTick=()=>!!INFO&&(DATE===INFO.today||DATE===addD(INFO.today,-1));
+const doneOf=id=>(TD().done||{})[id]||null;
+const dayList=days=>{ const d=(days||[]).map(Number).sort(); return d.length===7?"every day":d.join(",")==="1,2,3,4,5"?"Mon–Fri":d.map(i=>WDL[i]).join(", "); };
+function tickRow(id,label,dn){ return `<label class="todo ${dn?"done":""}"><input type="checkbox" data-tdone="${esc(id)}" ${dn?"checked":""} ${canTick()?"":"disabled"}><div><div class="tt">${label}</div>${dn?`<small class="okt">✓ ${esc(dn.by)} ${esc(hmOf(dn.at))}</small>`:""}</div><span></span></label>`; }
+function cTasks(team){ const ts=TD().tasks.filter(x=>x.team===team), can=!!(INFO.me&&INFO.me.canTask), all=can?(INFO.tasks||[]).filter(x=>x.team===team):[];
+  const rows=ts.map(x=>`<label class="todo ${x.done?"done":""}"><input type="checkbox" data-tdone="${esc(x.id)}" ${x.done?"checked":""} ${canTick()?"":"disabled"}><div><div class="tt"><span class="tchip ${esc(x.type)}">${esc(TTYPE()[x.type]||"To-do")}</span> ${esc(x.title)}${x.ready?` <span class="rdy">· ready by ${esc(x.ready)}</span>`:""}</div>${x.detail?`<small>${esc(x.detail)}</small>`:""}${x.done?`<small class="okt">✓ ${esc(x.done.by)} ${esc(hmOf(x.done.at))}</small>`:""}</div>${can?`<button class="link" type="button" data-tedit="${esc(x.id)}">Edit</button>`:"<span></span>"}</label>`).join("");
+  const add=can?`<div class="tadd">${team==="am"?`<button class="btn sm" type="button" data-tadd="order|am">+ Custom order</button><button class="btn sm" type="button" data-tadd="grab|am">+ Grab pre-pack</button>`:""}<button class="btn sm" type="button" data-tadd="task|${team}">+ Other to-do</button></div>`:"";
+  const mng=can&&all.length?`<details class="tall"><summary>All to-dos for this team (${all.length})</summary>${all.map(x=>`<div class="st" style="padding:6px 0;border-top:1px dashed var(--line)"><span><span class="tchip ${esc(x.type)}">${esc(TTYPE()[x.type]||"To-do")}</span> ${esc(x.title)} <span class="muted">· ${esc(x.date?niceD(x.date):dayList(x.days))}${x.ready?" · "+esc(x.ready):""}</span></span><button class="link" type="button" data-tedit="${esc(x.id)}">Edit</button></div>`).join("")}</details>`:"";
+  return `<div class="card"><div class="st"><h3>To-dos</h3>${ts.length?`<span class="pill ${ts.every(x=>x.done)?"ok":""}">${ts.filter(x=>x.done).length} of ${ts.length} done</span>`:""}</div>
+    ${rows||`<p class="hint" style="margin:0">${team==="am"?"No custom orders or Grab pre-packs for this day.":"No extra to-dos for this day."}${can?"":" The supervisor or the office adds them."}</p>`}${add}${mng}</div>`; }
+function decoRows(){ const m={}; INFO.dos.forEach(d=>(d.lines||[]).forEach(l=>{ const r=m[l.productId]||(m[l.productId]={pid:l.productId,qty:0,by:{}}); r.qty+=l.qty; const k=d.internal?"HQ":(d.code||d.outlet); r.by[k]=(r.by[k]||0)+l.qty; }));
+  return Object.values(m).sort((a,b)=>b.qty-a.qty||String(prodOf(a.pid).name).localeCompare(String(prodOf(b.pid).name))); }
+function cDecorate(){ const rows=decoRows(), c=colOf(DATE), made=TD().made||{}, tot=rows.reduce((a,r)=>a+r.qty,0);
+  return `<div class="card"><div class="st"><h3>Finish &amp; decorate</h3>${rows.length?`<span class="pill">${tot} cakes</span>`:""}</div>
+    <p class="hint" style="margin:0 0 6px">Today's colour dot: <span class="dot" style="display:inline-flex;padding:0;vertical-align:middle"><i style="background:${hex(c.name)}"></i>${esc(c.name)} · ${esc(WDL[dw(DATE)])}</span></p>
+    ${rows.length?`<table class="t deco"><thead><tr><th>Cake</th><th class="r">To make</th><th>For</th><th class="r">Made</th></tr></thead><tbody>${rows.map(r=>{ const mv=made[r.pid], short=mv!=null&&mv!==""&&+mv<r.qty; return `<tr><td>${esc(prodOf(r.pid).name)}</td><td class="r"><b>${r.qty}</b></td><td class="muted">${Object.entries(r.by).map(([k,v])=>esc(k)+" "+v).join(" · ")}</td><td class="r"><input class="madein ${short?"short":""}" type="number" inputmode="numeric" min="0" step="1" data-made="${esc(r.pid)}" value="${mv==null?"":esc(String(mv))}" aria-label="Made: ${esc(prodOf(r.pid).name)}" ${canTick()?"":"disabled"}></td></tr>`; }).join("")}</tbody></table>
+    <p class="hint">From today's delivery orders. Type <b>Made</b> only when you made a different number; the office sees it in Plan &amp; prep.</p>
+    ${tickRow("auto_decorate","All cakes finished and decorated",doneOf("auto_decorate"))}`:`<p class="hint" style="margin:0">No delivery orders for this day yet. The office makes them the day before (office desk › Plan &amp; prep › Create draft DOs).</p>`}</div>`; }
+function cPack(){ const out=INFO.dos.filter(d=>!d.internal), op=INFO.day.opening, dl=(op&&op.deliveries)||[];
+  return `<div class="card"><div class="st"><h3>Pack deliveries</h3>${out.length?`<span class="pill ${out.every(d=>d.status==="delivered")?"ok":""}">${out.filter(d=>d.status==="delivered").length} of ${out.length} delivered</span>`:""}</div>
+    ${out.length?out.map(d=>{ const x=dl.find(y=>y.id===d.id), n=(d.lines||[]).reduce((a,l)=>a+l.qty,0);
+      const s1=d.checked||d.status==="delivered"?`<span class="pill ok">✓ Colours${d.checkedBy?" · "+esc(d.checkedBy):""}</span>`:`<a class="btn sm" href="office.html#deliveries">1 Check colours ↗</a>`;
+      const s2=x&&x.photo?`<span class="pill ok">✓ Packed with DO</span>`:x&&x.later?`<span class="pill warn">Goes out later</span>`:`<button class="btn sm" type="button" data-gopart="opening|deliveries">2 Photo with DO</button>`;
+      const s3=d.status==="delivered"?`<span class="pill ok">✓ Delivered</span>`:`<a class="btn sm" href="office.html#deliveries">3 Mark delivered ↗</a>`;
+      return `<div class="dlv"><div><b>${esc(d.outlet)}</b> · <span class="sku">${esc(d.no)}</span> · ${n} cakes</div><div class="steps3">${s1}${s2}${s3}</div></div>`; }).join("")+`<p class="hint">Check the colour dot on every cake, pack, attach the DO and take the photo (opening report › Outlet deliveries), then mark it delivered with what the outlet accepted.</p>`:`<p class="hint" style="margin:0">No outlet deliveries for this day.</p>`}</div>`; }
+function cDisplay(){ const op=INFO.day.opening, disp=op&&op.parts&&op.parts.display, plan=INFO.dos.find(d=>d.internal&&!d.hqAuto&&d.status!=="delivered");
+  if(disp){ const n=(((op.display&&op.display.counts)||op.putOut||[])).reduce((a,x)=>a+(+x.qty||0),0);
+    return `<div class="card"><div class="st"><h3>HQ display</h3><span class="pill ok">✓ Counted</span></div><p class="hint" style="margin:0">${n} cakes counted by ${esc(disp.by)} at ${esc(hmOf(disp.at))}. What was added is worked out from last night's count.</p></div>`; }
+  return `<div class="card"><div class="st"><h3>HQ display</h3><span class="pill">To do</span></div>
+    ${plan?`<p style="margin:0 0 2px">Put out today:</p><p class="muted" style="margin:0">${(plan.lines||[]).map(l=>esc(prodOf(l.productId).name)+" "+l.qty).join(" · ")}</p>`:`<p class="hint" style="margin:0">No plan for the HQ display today. Fill the gaps, oldest colour at the front.</p>`}
+    <button class="btn sm pri" type="button" data-gopart="opening|display" style="margin-top:8px">Count the display</button></div>`; }
+function cProdList(){ const p=INFO.plan[DATE], lists=(p&&p.lists)||[];
+  return `<div class="card"><div class="st"><h3>Production list · ${esc(niceD(DATE))}</h3>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${p.approvedBy?"✓ Checked":"Not checked yet"}</span>`:""}</div>
+    ${lists.length?lists.map(l=>`<div class="plist"><div class="hint" style="margin:0">${l.src==="closing"?"From the closing report":"Added by "+esc(l.by||"")}</div><div class="plbody"><ul class="items">${(l.items||[]).map(i=>`<li>${esc(i.name)}${i.qty?" · "+esc(i.qty):""}</li>`).join("")}</ul>${l.photo&&l.photo.id?`<a class="plph sm" href="${viewOf(l.photo.id)}" target="_blank" rel="noopener"><img src="${thumbOf(l.photo.id)}" alt="Photo of the list" loading="lazy"></a>`:""}</div></div>`).join(""):`<p class="hint" style="margin:0">No production list for this day yet.</p>`}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" type="button" data-tab="plan">Open the plan</button><button class="btn sm" type="button" data-plan="${DATE}">Add a list</button></div>
+    <p class="hint">Tick the paper list as you go. The closing report takes its photo tonight.</p></div>`; }
+function cPrep(){ const t=INFO.today, rem=INFO.reminders||[], r0=rem.filter(r=>r.date===t), r1=rem.filter(r=>r.date===addD(t,1));
   const remL=a=>a.length?`<ul class="items">${a.map(r=>`<li>${esc(r.text)}${r.forItems&&r.forItems.length?` <span class="muted">(${esc(r.forItems.slice(0,3).join(", "))})</span>`:""}${r.ai?` <span class="muted">· AI</span>`:""}</li>`).join("")}</ul>`:`<p class="hint">Nothing.</p>`;
-  return `<div class="cards" style="margin-top:12px">
-    <div class="st"><h2 style="font-family:var(--display);margin:0;font-size:24px">${esc(niceD(DATE))}</h2>${DATE!==t?`<button class="btn sm" type="button" data-date="${t}">Back to today</button>`:`<button class="btn sm" type="button" data-date="${addD(t,-1)}">Yesterday</button>`}</div>
-    ${repCard("opening")}${repCard("closing")}
-    <div class="card"><h3>Prep reminders</h3><div class="grpt">Today</div>${remL(r0)}<div class="grpt">Tomorrow · ${esc(niceD(addD(t,1)))}</div>${remL(r1)}
-      <p class="hint" style="margin-top:6px">From the production plan and the reminders the team has approved (Plan › Reminders).</p></div>
-    <div class="card"><h3>Deliveries to outlets today</h3>${out.length?out.map(d=>`<div class="st" style="padding:6px 0;border-top:1px dashed var(--line)"><span><b>${esc(d.outlet)}</b> · <span class="sku">${esc(d.no)}</span> · ${d.lines.reduce((a,l)=>a+l.qty,0)} cakes</span>${d.status==="delivered"?`<span class="pill ok">Delivered</span>`:d.checked?`<span class="pill ok">Colours checked · ${esc(d.checkedBy)}</span>`:`<a class="btn sm" href="office.html#deliveries">Check colours ↗</a>`}</div>`).join(""):`<p class="hint">No delivery orders for today.</p>`}</div>
-    <div class="card"><h3>Production plan</h3>${planDays.map(d=>{const p=INFO.plan[d]; return `<div class="st" style="padding:5px 0"><span>${esc(niceD(d))}</span>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${(p.lists||[]).length} list${(p.lists||[]).length===1?"":"s"}${p.approvedBy?" · checked":" · not checked yet"}</span>`:`<button class="btn sm" type="button" data-plan="${d}">Add a list</button>`}</div>`;}).join("")}</div>
-    ${INFO.proposals.length?`<div class="card"><h3>Waiting for a supervisor (${INFO.proposals.length})</h3>${INFO.proposals.map(x=>`<div style="padding:8px 0;border-top:1px dashed var(--line)"><div>${esc(propText(x))}</div><div class="hint">${esc(x.by)} · ${esc(dtOf(x.at))}${x.why?` · “${esc(x.why)}”`:""}</div>${SUP()?`<div style="display:flex;gap:8px;margin-top:6px"><button class="btn sm pri" type="button" data-dec="${x.id}" data-ok="1">Approve</button><button class="btn sm" type="button" data-dec="${x.id}" data-ok="0">Reject</button></div>`:""}</div>`).join("")}</div>`:""}
+  return `<div class="card"><h3>Prep reminders</h3><div class="grpt">Today</div>${remL(r0)}<div class="grpt">Tomorrow · ${esc(niceD(addD(t,1)))}</div>${remL(r1)}
+    <p class="hint" style="margin-top:6px">From the production plan and the reminders the team has approved (Plan › Reminders).</p></div>`; }
+function cPlanDays(){ const t=INFO.today, planDays=[]; for(let i=1;i<=INFO.conf.planDays;i++) planDays.push(addD(t,i));
+  return `<div class="card"><h3>Plan for the next days</h3>${planDays.map(d=>{const p=INFO.plan[d]; return `<div class="st" style="padding:5px 0"><span>${esc(niceD(d))}</span>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${(p.lists||[]).length} list${(p.lists||[]).length===1?"":"s"}${p.approvedBy?" · checked":" · not checked yet"}</span>`:`<button class="btn sm" type="button" data-plan="${d}">Add a list</button>`}</div>`;}).join("")}
+    <p class="hint">Tonight's closing report adds the lists for the next 3 days.</p></div>`; }
+function teamProgress(){ const op=INFO.state.opening, cl=INFO.state.closing, ts=TD().tasks.filter(x=>x.team===TEAM), a=[];
+  if(TEAM==="am"){ a.push(op.done); ts.forEach(x=>a.push(!!x.done)); if(decoRows().length) a.push(!!doneOf("auto_decorate")); INFO.dos.filter(d=>!d.internal).forEach(d=>a.push(d.status==="delivered")); a.push(!!(INFO.day.opening&&INFO.day.opening.parts&&INFO.day.opening.parts.display)); }
+  else { a.push(cl.done); ts.forEach(x=>a.push(!!x.done)); }
+  return {done:a.filter(Boolean).length,n:a.length}; }
+function vToday(){
+  const t=INFO.today; if(!TEAM||!TEAMS()[TEAM]) TEAM=teamGet()||(INFO.now<"13:00"?"am":"pm"); if(!TEAMS()[TEAM]) TEAM="am";
+  const pg=teamProgress();
+  const head=`<div class="st"><h2 style="font-family:var(--display);margin:0;font-size:24px">${esc(niceD(DATE))}</h2>${DATE!==t?`<button class="btn sm" type="button" data-date="${t}">Back to today</button>`:`<button class="btn sm" type="button" data-date="${addD(t,-1)}">Yesterday</button>`}</div>
+    <div class="teamsw" role="group" aria-label="Team">${Object.entries(TEAMS()).map(([k,l])=>{ const [a,b]=String(l).split(" / "); return `<button type="button" data-team="${k}" aria-pressed="${TEAM===k}"><b>${esc(a)}</b><small>${esc(b||"")}</small></button>`; }).join("")}</div>
+    <div class="st" style="margin:-2px 2px 0"><span class="muted">${TEAM==="am"?"Opening report, cakes, deliveries, HQ display and orders":"Production list, prep, closing report and the plan"}</span><span class="pill ${pg.n&&pg.done===pg.n?"ok":""}">${pg.done} of ${pg.n} done</span></div>`;
+  const body=TEAM==="am"?[repCard("opening"),cTasks("am"),cDecorate(),cPack(),cDisplay()]:[cProdList(),cPrep(),cTasks("pm"),repCard("closing"),cPlanDays()];
+  const shared=`${INFO.proposals.length?`<div class="card"><h3>Waiting for a supervisor (${INFO.proposals.length})</h3>${INFO.proposals.map(x=>`<div style="padding:8px 0;border-top:1px dashed var(--line)"><div>${esc(propText(x))}</div><div class="hint">${esc(x.by)} · ${esc(dtOf(x.at))}${x.why?` · “${esc(x.why)}”`:""}</div>${SUP()?`<div style="display:flex;gap:8px;margin-top:6px"><button class="btn sm pri" type="button" data-dec="${x.id}" data-ok="1">Approve</button><button class="btn sm" type="button" data-dec="${x.id}" data-ok="0">Reject</button></div>`:""}</div>`).join("")}</div>`:""}
     ${INFO.brief&&(INFO.brief.warnings||[]).length?`<div class="card"><h3>AI notes</h3><ul class="iss">${INFO.brief.warnings.map(w=>`<li>${esc(w)}</li>`).join("")}</ul><p class="hint">Updated ${esc(dtOf(INFO.brief.generatedAt))}</p></div>`:""}
-    ${INFO.check&&INFO.check.items.length?`<div class="card"><h3>Latest check</h3><ul class="iss">${INFO.check.items.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul><p class="hint">${esc(INFO.check.by)} · ${esc(dtOf(INFO.check.at))}</p></div>`:""}
-  </div>`;
+    ${INFO.check&&INFO.check.items.length?`<div class="card"><h3>Latest check</h3><ul class="iss">${INFO.check.items.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul><p class="hint">${esc(INFO.check.by)} · ${esc(dtOf(INFO.check.at))}</p></div>`:""}`;
+  return `<div class="cards" style="margin-top:12px">${head}${body.join("")}${shared}</div>`;
 }
+/* the to-do form (supervisors and the office) */
+function openTask(type,team,id){ let x=null; if(id){ x=(INFO.tasks||[]).find(y=>y.id===id); if(!x){ toast("Reload the page to edit this to-do."); return; } }
+  TK=x?{id:x.id,team:x.team,type:x.type||"task",title:x.title,detail:x.detail||"",ready:x.ready||"",mode:x.date?"once":"repeat",date:x.date||INFO.today,days:(x.days||[]).map(Number)}
+    :{id:"",team:team||TEAM||"am",type:type||"task",title:type==="grab"?"Pre-pack Grab orders":"",detail:"",ready:"",mode:type==="grab"?"repeat":"once",date:DATE>=INFO.today?DATE:INFO.today,days:type==="grab"?[0,1,2,3,4,5,6]:[]};
+  drawTask(); setTimeout(()=>{ const i=document.querySelector('[data-tk="title"]'); if(i&&!TK.title) i.focus(); },50); }
+function drawTask(){ const x=TK; if(!x){ $("#tksheet").innerHTML=""; return; }
+  const ph={order:"e.g. Whole Noir 6 inch for Mrs Tan",grab:"Pre-pack Grab orders",task:"e.g. Clean the display chiller"}[x.type]||"";
+  $("#tksheet").innerHTML=`<div class="sheet"><div class="box" role="dialog" aria-label="To-do"><h2 style="margin:0 0 8px;font-family:var(--display)">${x.id?"Edit to-do":"New to-do"}</h2>
+    <label class="fl">Type<select data-tk="type">${Object.entries(TTYPE()).map(([k,l])=>`<option value="${k}" ${x.type===k?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
+    <label class="fl">What needs to be done<input data-tk="title" maxlength="100" value="${esc(x.title)}" placeholder="${esc(ph)}"></label>
+    <label class="fl">Details <span class="muted">(how many, writing on the cake, pick-up…)</span><textarea data-tk="detail" rows="2" maxlength="300">${esc(x.detail)}</textarea></label>
+    <div class="fl">Team<div class="teamsw sm">${Object.entries(TEAMS()).map(([k,l])=>`<button type="button" data-tkteam="${k}" aria-pressed="${x.team===k}">${esc(l)}</button>`).join("")}</div></div>
+    <div class="fl">When<div class="teamsw sm"><button type="button" data-tkmode="once" aria-pressed="${x.mode==="once"}">Once</button><button type="button" data-tkmode="repeat" aria-pressed="${x.mode==="repeat"}">Repeats</button></div>
+      ${x.mode==="once"?`<input type="date" data-tk="date" value="${esc(x.date)}" min="${esc(INFO.today)}" style="margin-top:6px">`:`<div class="wdays">${[1,2,3,4,5,6,0].map(i=>`<label class="chk2"><input type="checkbox" data-tkday="${i}" ${x.days.includes(i)?"checked":""}> ${WDL[i]}</label>`).join("")}</div>`}</div>
+    <label class="fl">Ready by <span class="muted">(optional)</span><input type="time" data-tk="ready" value="${esc(x.ready)}"></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn pri" type="button" data-act="tkSave">Save</button><button class="btn" type="button" data-act="tkCancel">Cancel</button>${x.id?`<button class="btn" type="button" data-act="tkDel" style="margin-left:auto">Remove</button>`:""}</div></div></div>`; }
 function propText(x){ const d=x.data||{};
   if(x.kind==="plan") return `Production plan for ${niceD(d.date)}: ${(d.items||[]).map(i=>i.name+(i.qty?" x"+i.qty:"")).join(", ")}`;
   if(x.kind==="planList") return d.remove?`Remove a list from ${niceD(d.date)}`:`Change a list for ${niceD(d.date)}: ${(d.items||[]).map(i=>i.name).join(" · ")}`;
@@ -613,6 +699,17 @@ function vHistory(){ if(!HIST){ if(HISTERR){ const m=HISTERR; HISTERR=""; return
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button"); if(!b||b.closest(".ca-hp,.ca-login")||b.id==="ca-hbtn") return; const d=b.dataset;
   if(d.tab){ go(d.tab); return; }
+  if(d.team){ teamSet(d.team); render(); window.scrollTo(0,0); return; }
+  if(d.gopart){ const [k,p]=d.gopart.split("|"); TAB=k; PART=p; RESULT=null; history.replaceState(null,"","#"+k); if(Date.now()-INFO_AT>60000) await reload(); render(); window.scrollTo(0,0); return; }
+  if(d.tadd){ const [ty,tm]=d.tadd.split("|"); openTask(ty,tm); return; }
+  if(d.tedit){ openTask(null,null,d.tedit); return; }
+  if(d.tkteam&&TK){ TK.team=d.tkteam; drawTask(); return; }
+  if(d.tkmode&&TK){ TK.mode=d.tkmode; drawTask(); return; }
+  if(d.act==="tkCancel"){ TK=null; drawTask(); return; }
+  if(d.act==="tkSave"&&TK){ const x=TK; if(!String(x.title).trim()){ toast("Type what needs to be done"); return; } if(x.mode==="repeat"&&!x.days.length){ toast("Tick the days it repeats"); return; }
+    b.disabled=true; try{ const r=await run("hqSave","task",{task:{id:x.id,team:x.team,type:x.type,title:x.title,detail:x.detail,ready:x.ready,date:x.mode==="once"?x.date:"",days:x.mode==="repeat"?x.days:[]}},""); toast(r.msg); TK=null; drawTask(); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.act==="tkDel"&&TK){ if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Tap again to remove"; setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="Remove"; } },4000); return; }
+    b.disabled=true; try{ const r=await run("hqSave","task",{task:{id:TK.id,remove:true}},""); toast(r.msg); TK=null; drawTask(); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.act==="reload"){ boot2(); return; }
   if(d.chase){ b.disabled=true; try{ const r=await run("hqChaseNow",d.chase); toast(r.ok?"Reminder sent to the kitchen group.":"The WhatsApp message could not be sent. Check Setup › Kitchen HQ & WhatsApp."); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.date){ RESULT=null; PART=null; K.opening=K.closing=null; await reload(d.date); return; }
@@ -656,12 +753,13 @@ document.addEventListener("click",async e=>{
   if(d.eqrm!=null){ LED.eq.splice(+d.eqrm,1); LED.dirty=true; render(); return; }
   if(d.act==="saveEq"){ b.disabled=true; try{ const x=await run("hqSave","equipment",{equipment:LED.eq.map(e=>({...e,max:String(e.max).replace("−","-")}))},(($("#ls-why")||{}).value||"")); toast(x.msg); LED=null; K.opening=K.closing=null; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
 });
-document.addEventListener("click",e=>{ if(e.target.classList&&e.target.classList.contains("sheet")) $("#sheet").innerHTML=""; });
+document.addEventListener("click",e=>{ if(e.target.classList&&e.target.classList.contains("sheet")){ const h=e.target.parentElement; if(h) h.innerHTML=""; if(h&&h.id==="tksheet") TK=null; } });
 document.addEventListener("input",e=>{ const t=e.target, d=t.dataset; if(t.closest&&t.closest(".ca-hp,.ca-login")) return;
   if(d.temp){ const [k,id]=d.temp.split("|"); if(/[-−]/.test(t.value)){ st(k).equip[id].neg=true; document.querySelectorAll(`[data-sign^="${k}|${id}|"]`).forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.sign.endsWith("|1")))); } let v=t.value.replace(/[^0-9.,]/g,""); if(v!==t.value) t.value=v; st(k).equip[id].t=v; saveDraft(k); refresh(); return; }
   if(d.kv){ const a=d.kv.split("|"), f=a.pop(), k=a.shift(), key=a.join("|"), s=st(k), r=key.indexOf("ev")===0&&key.indexOf("|")<0?s.ev[+key.slice(2)]:s.rows[key]; if(!r) return; const v=t.value.replace(/[^0-9]/g,"").slice(0,3); if(v!==t.value) t.value=v; r[f]=v; saveDraft(k); if(f==="w") wasteBox(k); refresh(); return; }
   if(d.evn){ const [k,i]=d.evn.split("|"), s=st(k); if(s.ev[+i]){ s.ev[+i].name=t.value.slice(0,40); saveDraft(k); refresh(); } return; }
   if(d.pnote){ const [k,p]=d.pnote.split("|"); st(k).notes[p]=t.value; saveDraft(k); return; }
+  if(d.tk&&TK){ TK[d.tk]=t.value; return; }
   if(d.pli!=null&&PLE){ PLE.lines[+d.pli]=t.value; return; }
   if(d.plewhy&&PLE){ PLE.why=t.value; return; }
   if(d.ru){ RU[d.ru]=t.value; return; }
@@ -672,6 +770,14 @@ document.addEventListener("change",async e=>{ const t=e.target, d=t.dataset; if(
   if(d.kshot&&t.files&&t.files[0]){ const k=d.kshot, sp=document.getElementById("mi-"+k); if(sp) sp.insertAdjacentHTML("beforeend",' <span class="hint">processing…</span>'); if(TAB==="opening"||TAB==="closing"){ const b=$("#send"); b.disabled=true; }
     let bad=false; try{ P2[k]=await shrink(t.files[0],k==="plan_read"?1600:1200); savePh(k); }catch(err){ bad=true; }
     t.value=""; if(bad){ const el=document.getElementById("mi-"+k); if(el){ el.querySelectorAll(".hint").forEach(x=>x.remove()); el.insertAdjacentHTML("beforeend",' <span class="err">Photo not taken. Please try again.</span>'); } if(TAB==="opening"||TAB==="closing") refresh(); return; } if(/^(op|cl)_|^plan_read/.test(k)){ const y=window.scrollY; render(); window.scrollTo(0,y); } else { const el=document.getElementById("mi-"+k); if(el) el.outerHTML=mini(k); } if(TAB==="opening"||TAB==="closing") refresh(); return; }
+  if(d.tk&&TK){ TK[d.tk]=t.value; if(d.tk==="type"){ if(TK.type==="grab"&&!TK.title) TK.title="Pre-pack Grab orders"; if(TK.type==="grab"&&!TK.id&&TK.mode==="once"&&!TK.days.length){ TK.mode="repeat"; TK.days=[0,1,2,3,4,5,6]; } drawTask(); } return; }
+  if(d.tkday!=null&&TK){ const i=+d.tkday; TK.days=TK.days.filter(x=>x!==i); if(t.checked) TK.days.push(i); return; }
+  if(d.tdone){ const id=d.tdone, on=t.checked; t.disabled=true;
+    try{ const r=await run("hqSave","taskDone",{date:DATE,id,done:on}); const td=INFO.todo; const rec=on?{by:(INFO.me||{}).name||"",at:new Date().toISOString()}:null; if(rec) td.done[id]=rec; else delete td.done[id]; const x=td.tasks.find(y=>y.id===id); if(x) x.done=rec; toast(r.msg); render(); }
+    catch(err){ t.checked=!on; t.disabled=false; toast(err.message); } return; }
+  if(d.made){ const pid=d.made, v=String(t.value).replace(/[^0-9]/g,"").slice(0,4);
+    try{ const r=await run("hqSave","made",{date:DATE,productId:pid,made:v}); if(v==="") delete INFO.todo.made[pid]; else INFO.todo.made[pid]=+v; toast(r.msg); const row=decoRows().find(x=>x.pid===pid); t.classList.toggle("short",v!==""&&row&&+v<row.qty); }
+    catch(err){ toast(err.message); } return; }
   if(d.door){ const [k,id]=d.door.split("|"); st(k).equip[id].door=t.checked; saveDraft(k); refresh(); return; }
   if(d.later){ st("opening").later[d.later]=t.checked; saveDraft("opening"); render(); return; }
   if(d.newd){ NEWD=t.value; return; }
