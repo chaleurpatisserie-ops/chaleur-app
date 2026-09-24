@@ -1,5 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Chaleur Brigade</title>
-<meta name="theme-color" content="#780a13"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Chaleur Atelier · Back office</title>
+<meta name="theme-color" content="#780a13"><meta name="apple-mobile-web-app-title" content="Chaleur Atelier"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
 function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new AbortController():null,tm=ac?setTimeout(function(){ac.abort();},150000):null,done=function(){if(tm)clearTimeout(tm);};
@@ -400,7 +400,7 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 .si{position:fixed;inset:0;z-index:70;background:var(--deep);color:#fff;overflow:auto}
 .si .in{max-width:420px;margin:0 auto;padding:28px 18px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
 .si .lg{width:64px;height:64px;border-radius:16px;border:1.5px solid var(--gold);display:grid;place-items:center;margin:8px auto 0;color:var(--gold)}.si .lg svg{width:48px}
-.si h1{font:700 30px/1.1 var(--display);text-align:center;margin:0}.si .tag{color:var(--gold-lt);text-align:center;margin-top:-8px;font-size:15px}
+.si h1{font:700 30px/1.1 var(--display);text-align:center;margin:0}.si .bo{font:600 12px var(--body);letter-spacing:.22em;text-transform:uppercase;color:var(--gold);text-align:center;margin-top:-6px}.si .tag{color:var(--gold-lt);text-align:center;margin-top:6px;font-size:15px}
 .si .ph{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border-radius:14px;padding:0 14px;min-height:56px}
 .si .ph input{flex:1;min-width:0;background:transparent;border:0;color:#fff;font:500 18px var(--body);outline:none;height:54px}.si .ph input::placeholder{color:rgba(255,255,255,.55)}
 .si .ph button{border:0;background:none;color:var(--gold);font-size:14px;font-weight:600;min-height:44px}
@@ -479,7 +479,7 @@ let PIN="", SIBUSY=false;
 function signIn(msg){ S=null; $("#tabs").innerHTML=""; $("#menu").innerHTML=""; $("#app").innerHTML="";
   let last=""; try{ last=localStorage.getItem("chaleur.lastid")||""; }catch(e){}
   PIN=""; $("#si").innerHTML=`<div class="si" role="dialog" aria-label="Sign in"><div class="in">
-    <div class="lg" aria-hidden="true">${LOGO()}</div><h1>Chaleur Brigade</h1><div class="tag">Ready for your shift?</div>
+    <div class="lg" aria-hidden="true">${LOGO()}</div><h1>Chaleur Atelier</h1><div class="bo">Back office</div><div class="tag">Ready for your shift?</div>
     <div class="ph">${last?`<span style="flex:1;font:500 18px var(--body)" id="si-show">${esc(last)}</span><input id="ca-id" type="hidden" value="${esc(last)}"><button type="button" data-sichange="1">Change</button>`:`<input id="ca-id" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="Phone number (or name)" aria-label="Phone number or name">`}</div>
     <div class="dots" aria-hidden="true">${[0,1,2,3,4,5].map(i=>`<i data-d="${i}"></i>`).join("")}</div>
     <input id="ca-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" aria-label="PIN" style="position:absolute;opacity:0;width:1px;height:1px;left:-99px">
