@@ -12,6 +12,8 @@ window.google={script:{run:mk(null,null)}};})();
 </script><style>
 .ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
 .ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
+@media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:30px;padding:4px 10px}}
+.ca-next{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.ca-next li{display:flex;gap:8px;align-items:flex-start}.ca-next i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:#9a8f91}.ca-next i.bad{background:#c0392b}.ca-next i.warn{background:#d68910}.ca-next i.ok{background:#1e8449}.ca-next a{color:inherit;font-weight:600}
 .ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:32px}
 .ca-login{max-width:390px;margin:28px auto;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;padding:18px}
 .ca-login h2{font-family:var(--display,Georgia,serif);font-size:30px;line-height:1.1;margin:0 0 6px;font-weight:600}
@@ -67,8 +69,14 @@ const CA=(function(){
     btn.onclick=go; q("#ca-pin").addEventListener("keydown",e=>{if(e.key==="Enter")go();}); q("#ca-id").addEventListener("keydown",e=>{if(e.key==="Enter")q("#ca-pin").focus();});
     setTimeout(()=>{const x=q(last?"#ca-pin":"#ca-id"); x&&x.focus();},50);
   }
-  function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(location.pathname),150);}
-  const chip=s=>s?`<span class="ca-chip">Signed in as <b>${esc(s.name)}</b> · ${esc(ROLE[s.role]||s.role)} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  const HOME="index.html";
+  /* One sign-in page for everything: other pages send you to the home page and it brings you back. */
+  function toLogin(msg){ const here=(location.pathname.split("/").pop()||HOME)+location.search+location.hash; location.replace(HOME+"?next="+encodeURIComponent(here)+(msg?"&msg="+encodeURIComponent(msg):"")); }
+  function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(HOME),150);}
+  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(ROLE[s.role]||s.role)}</span> <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  /* Where a "what to do next" item goes: page + tab (#hash) + kitchen team */
+  const nextHref=g=>g?(g.page+(g.team?"?team="+encodeURIComponent(g.team):"")+(g.hash?"#"+g.hash:"")):"";
+  const nextList=(items,links)=>`<ul class="ca-next">${(items||[]).map(x=>`<li><i class="${esc(x.sev)}"></i><span>${links&&x.go?`<a href="${esc(nextHref(x.go))}">${esc(x.text)}</a>`:esc(x.text)}</span></li>`).join("")}</ul>`;
   document.addEventListener("click",e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-ca-logout]"); if(b){e.preventDefault(); b.disabled=true; logout();}});
   function helper(opt){
     if(document.getElementById("ca-hbtn")) return;
@@ -76,14 +84,17 @@ const CA=(function(){
     document.body.appendChild(b);
     let panel=null, H=[], busy=false;
     const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
+    let NX=null, NXB=false;
     function draw(){ if(!panel) return; const m=panel.querySelector(".ca-msgs");
-      m.innerHTML=`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
+      const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(String(NX.name||"").split(" ")[0])}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
+      m.innerHTML=nx+`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
       m.scrollTop=m.scrollHeight; }
     function close(){ if(panel){panel.remove();panel=null;} b.setAttribute("aria-expanded","false"); b.focus(); }
     b.onclick=()=>{ if(panel){close();return;}
       panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-label","Helper");
       panel.innerHTML=`<div class="ca-hd"><b>Helper</b><button type="button" class="ca-x" aria-label="Close helper">✕</button></div><div class="ca-msgs" aria-live="polite"></div><form><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form>`;
       document.body.appendChild(panel); b.setAttribute("aria-expanded","true"); draw();
+      const au=opt.auth&&opt.auth(); if(au&&/^s1\./.test(String(au))&&!NX&&!NXB){ NXB=true; draw(); run("myNext",au).then(r=>{NX=r;}).catch(()=>{}).then(()=>{NXB=false; draw();}); }
       const ta=panel.querySelector("textarea"); ta.focus();
       panel.querySelector(".ca-x").onclick=close;
       panel.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
@@ -96,7 +107,7 @@ const CA=(function(){
         busy=false; draw(); };
     };
   }
-  return {get,save,clear,run,isAuthErr,loginForm,logout,chip,helper,ROLE,esc};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,ROLE,esc,nextHref,nextList,HOME};
 })();
 </script>
 
@@ -237,12 +248,39 @@ details.help summary{cursor:pointer;color:var(--muted);font-size:13px}
 input.made{width:70px;text-align:right}
 .who{margin-left:auto}.menu a.mlink{display:flex;justify-content:space-between;gap:10px;text-decoration:none;color:inherit}
 @media print{.top,#testbar,.testbar,#toast,.btn,button,.fbar,details.help,.noprint,.ign{display:none!important}body{background:#fff!important;color:#000}.panel,.claude{border:0!important;box-shadow:none!important;padding:0!important}.tw{overflow:visible!important;border:0!important}table{font-size:11px}main{padding:0!important;max-width:none!important}.cols{display:block!important}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:12mm}}
+.btn.home{margin-left:auto;padding:9px 12px}.top .in nav{margin-left:0}
+.mwho{border-top:1px solid var(--line);margin-top:6px;padding:10px 12px 6px;display:none}
+@media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:420px){.logo b{display:none}}
+@media (max-width:640px){
+  .top .in{gap:8px;padding-block:8px;flex-wrap:nowrap}.logo b{font-size:17px}.logo small{display:none}.logo .mono-ca{transform:scale(.85)}
+  .mbtn{padding:8px 10px}.btn.home{padding:8px 10px}
+  .who{display:none}.mwho{display:block}
+  main{padding-inline:12px;padding-block:14px 90px;gap:14px}
+  h1{font-size:28px}.head{align-items:flex-start}
+  .lede{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;font-size:14px}.lede.open{display:block}
+  .lede:not(.open)::after{content:""}
+  .testbar{font-size:11.5px;padding:4px 12px}
+  .panel{padding:12px}
+  .item{grid-template-columns:6px minmax(0,1fr);gap:4px 10px}.item>:nth-child(n+3){grid-column:2;justify-content:flex-start}
+  .matrix{min-width:0!important}
+  .tw{border:0;overflow:visible}
+  table.cf thead{display:none}
+  table.cf,table.cf tbody,table.cf tfoot,table.cf tr{display:block;width:100%}
+  table.cf tr{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0 0 8px;background:var(--paper)}
+  table.cf td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;padding:3px 0;text-align:right;min-height:0}
+  table.cf td::before{content:attr(data-l);flex:none;max-width:48%;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+  table.cf td:first-child{font-weight:600;font-size:15px;text-align:left;justify-content:flex-start}table.cf td:first-child::before{content:none}
+  table.cf td[data-l=""]::before{content:none}table.cf td.cfe{display:none}
+  table.cf td[data-l=""]{justify-content:flex-start;flex-wrap:wrap;padding-top:6px}table.cf td .row{flex-wrap:wrap}
+  table.cf td.r{text-align:right}
+}
 </style>
 </head><body>
 
 <div id="testbar"></div><div class="top"><div class="in">
   <div class="logo"><span class="mono-ca" aria-hidden="true"><svg class="mark" viewBox="0 0 800 523" aria-hidden="true" focusable="false"><g transform="translate(0,523) scale(0.1,-0.1)" fill="currentColor"><path d="M2260 5159c-180 -12 -420 -57 -615 -114 -577 -169 -1068 -529 -1396 -1025 -52 -77 -179 -298 -179 -310 0 -3 62 -5 137 -5 117 0 147 -4 196 -22 42 -16 59 -19 62 -10 3 7 23 66 45 132 199 586 592 1002 1107 1174 606 202 1172 99 1673 -304 263 -212 512 -516 681 -831 23 -44 46 -83 50 -89 5 -5 9 153 9 358l0 368 -102 103c-336 337 -787 537 -1303 576 -142 11 -207 11 -365 -1zM5723 5053c-3 -10 -12 -34 -20 -53 -15 -37 -169 -444 -358 -945 -62 -165 -152 -403 -200 -530 -201 -531 -195 -513 -195 -577 0 -133 87 -178 227 -118 56 25 128 93 226 215 112 140 174 203 229 231 153 78 248 -54 159 -220 -61 -115 -219 -241 -606 -486 -596 -377 -867 -603 -1047 -875 -153 -231 -203 -396 -196 -656l3 -145 -64 -90c-440 -609 -1262 -830 -1968 -528 -445 190 -881 602 -1162 1097 -33 59 -49 68 -71 42 -19 -23 -109 -72 -186 -101 -59 -23 -85 -27 -181 -28 -70 -1 -113 -5 -113 -11 0 -18 108 -175 189 -274 623 -771 1595 -1100 2543 -860 371 93 716 259 989 475l83 64 40 -78c165 -315 447 -469 826 -449 456 25 819 236 1073 627 274 422 386 995 337 1724 -6 82 -9 151 -7 153 4 4 27 -53 233 -597 67 -179 157 -415 199 -525 135 -354 197 -528 221 -625 95 -378 -31 -572 -398 -610 -55 -5 -109 -10 -119 -10 -12 0 -19 -7 -19 -20 0 -20 7 -20 775 -20 688 0 775 2 775 15 0 18 -39 35 -78 35 -46 0 -150 57 -212 116 -79 76 -138 167 -225 347 -86 181 -106 231 -280 692 -48 127 -148 390 -222 585 -74 195 -179 472 -233 615 -54 143 -142 375 -195 515 -53 140 -102 271 -110 290 -8 19 -57 150 -110 290 -53 140 -109 289 -125 330 -16 41 -72 190 -125 330 -53 140 -102 271 -110 290 -8 19 -39 102 -70 184 -31 82 -60 157 -66 168 -12 23 -48 24 -56 1zm-49 -803c53 -140 103 -271 111 -290 8 -19 75 -197 150 -395 75 -198 147 -387 160 -420 59 -151 85 -248 117 -430 34 -199 34 -819 0 -1005 -132 -715 -444 -1168 -898 -1301 -122 -36 -366 -34 -479 4 -232 77 -392 250 -466 502 -37 124 -34 408 5 550 99 363 333 626 896 1010 299 203 480 361 547 475 129 221 42 444 -150 386 -69 -21 -143 -81 -243 -198 -227 -266 -320 -329 -398 -267 -52 41 -42 86 112 494 27 72 133 355 236 630 189 502 195 519 201 513 2 -2 47 -118 99 -258zM298 3456c-31 -12 -60 -25 -64 -29 -12 -12 -21 -8 -27 11 -6 25 -41 33 -66 15 -27 -18 -27 -37 -1 -21 17 11 25 10 49 -3 27 -16 111 -12 141 6 9 5 35 47 28 44 -2 -1 -29 -11 -60 -23zM100 3341c0 -13 18 -17 127 -32 83 -11 117 -9 101 6 -6 6 -173 35 -205 35 -13 0 -23 -4 -23 -9zM80 3180c0 -12 17 -12 45 0 17 7 15 9 -12 9 -18 1 -33 -3 -33 -9zM281 3052c-22 -24 -26 -25 -117 -18 -76 5 -94 4 -94 -7 0 -10 23 -16 86 -21 94 -7 121 2 144 45 16 29 9 29 -19 1zM280 2855c7 -9 15 -13 17 -11 7 7 -7 26 -19 26 -6 0 -6 -6 2 -15zM177 2823c-4 -3 -7 -13 -7 -22 1 -13 3 -13 11 2 11 19 8 33 -4 20zM60 2750c0 -6 33 -10 78 -10 42 0 94 -3 115 -6 30 -5 37 -4 37 10 0 14 -15 16 -115 16 -70 0 -115 -4 -115 -10zM163 2493c-77 -3 -93 -6 -93 -20 0 -14 10 -15 77 -9 42 3 93 6 115 6 27 0 38 4 38 15 0 10 -8 14 -22 13 -13 -1 -65 -4 -115 -5zM221 2291c-57 -36 -99 -67 -92 -69 6 -2 48 19 94 47 45 28 90 51 100 51 18 0 21 8 9 25 -4 7 -46 -13 -111 -54zM345 2218c-10 -24 -40 -29 -80 -14 -11 5 -5 -2 13 -14 42 -28 82 -16 82 25 0 31 -3 31 -15 3zM223 2008c-71 -14 -103 -24 -103 -34 0 -9 8 -12 28 -8 158 31 196 41 200 52 5 15 2 15 -125 -10zM242 1878c-74 -15 -101 -23 -93 -31 14 -14 213 23 219 41 5 15 2 15 -126 -10zM210 1685c-6 -8 -10 -21 -8 -29 2 -11 8 -7 20 14 18 31 10 41 -12 15zM422 1652c-5 -69 -116 -132 -172 -97 -8 5 -11 4 -6 -3 3 -6 22 -16 41 -22 67 -22 151 43 142 111 -2 19 -4 24 -5 11z"/></g></svg></span><span><b>Chaleur Brigade</b><small>Office desk</small></span></div>
-  <nav id="nav"></nav><div id="who" class="who"></div>
+  <a class="btn home" href="index.html" aria-label="Home">‹ Home</a><nav id="nav"></nav><div id="who" class="who"></div>
 </div></div>
 <main id="main"><div class="empty">Loading consignment data…</div></main>
 <div id="modal"></div>
@@ -432,7 +470,7 @@ function chaseText(p,dates){
 }
 /* ---------- rendering ---------- */
 const MGR=()=>["owner","manager"].includes(AUTH.role), RO=()=>!["owner","manager","office"].includes(AUTH.role), KIT=()=>["kitchen","supervisor"].includes(AUTH.role), SUP=()=>["owner","manager","supervisor"].includes(AUTH.role), SUPK=()=>AUTH.role==="supervisor";
-const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Daily reports"],["log","Change log"],["billing","Weekly billing"],["audits","Audits"],["setup","Setup"],["staff","Staff"]];
+const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Outlet reports"],["log","Change log"],["billing","Weekly billing"],["audits","Spot audits"],["setup","Setup"],["staff","Staff"]];
 const NCOL=8;
 let rq=false, MENU=false;
 const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null)) return true; return d.made!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
@@ -443,7 +481,7 @@ function doRender(){
   const a=document.activeElement, aid=a&&a.id, sel=a&&("selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const att=KIT()&&!SUPK()?[]:attention();
   { const tabs=KIT()?TABS.filter(([k])=>k==="plan"||k==="deliveries"||(SUPK()&&k==="today")):TABS.filter(([k])=>k!=="staff"||MGR()); if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=KIT()&&!SUPK()?0:att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
-    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}<button role="menuitem" data-go="kitchen.html"><span>Kitchen HQ</span><span aria-hidden="true">↗</span></button></div>`:""}`; }
+    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}<button role="menuitem" data-go="kitchen.html"><span>Kitchen HQ</span><span aria-hidden="true">↗</span></button><button role="menuitem" data-go="index.html"><span>‹ Home</span><span></span></button><div class="mwho">${CA.chip({name:AUTH.name,role:AUTH.role})}</div></div>`:""}`; }
   $("#who").innerHTML=AUTH.pin?CA.chip({name:AUTH.name,role:AUTH.role}):"";
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
@@ -452,7 +490,8 @@ function doRender(){
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
-  if(RO()){ $("#testbar").innerHTML=`<div class="testbar">${KIT()?`${AUTH.role==="supervisor"?"Kitchen supervisor":"Kitchen"} login — ${esc(AUTH.name)}. ${SUPK()?"Chase reports (Today), delivery orders, prep and colour checks.":"Prep, colour checks and deliveries."} Reports and the production plan are in <a href="kitchen.html">Kitchen HQ</a>.`:`View only — signed in as ${esc(AUTH.name)}. Ask Alfred or Joscelyn to make changes.`}</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!(KIT()&&kitOK(el))) el.disabled=true; }); }
+  cardify(document.getElementById("main")); cardify(document.getElementById("modal"));
+  if(RO()){ $("#testbar").innerHTML=`<div class="testbar">${KIT()?`${SUPK()?"Kitchen supervisor view: chase outlets, delivery orders, prep and colour checks.":"Kitchen view: colour checks and deliveries."} Kitchen reports are in <a href="kitchen.html">Kitchen HQ</a>.`:`View only — signed in as ${esc(AUTH.name)}. Ask Alfred or Joscelyn to make changes.`}</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!(KIT()&&kitOK(el))) el.disabled=true; }); }
   if(aid){const e=document.getElementById(aid); if(e){e.focus({preventScroll:true}); if(sel&&"setSelectionRange" in e){try{e.setSelectionRange(sel[0],sel[1])}catch(_){}}}}
 }
 const F=(k,d="")=>S.f[k]??d;
@@ -667,7 +706,7 @@ function vDaily(){
         <td class="r mono">${l.close??(l.unreported?`<span class="pill warn">not counted</span>`:"—")}</td><td class="r mono">${rep&&l.close!=null?l.sold:""}</td><td class="r mono muted">${l.pos??""}</td>
         <td class="r mono ${l.var<0?"neg":l.var>0?"pos":""}">${l.close!=null&&l.var?(l.var>0?"+":"")+l.var:""}</td></tr>`}).join("")}
     </tbody></table></div>`:`<div class="empty">No stock recorded at ${esc(p.name)} on this day.</div>`;
-  return `<div class="head"><div><h1>Daily reports</h1><p class="lede">Outlets send <b>waste and balance</b> for each colour dot. Sold is worked out: opening + delivered − waste − balance. Key in the <b>POS sold</b> figure from their own closing report to cross-check. Any difference shows as a variance (missing or unrecorded cakes).</p></div></div>
+  return `<div class="head"><div><h1>Outlet reports</h1><p class="lede">Outlets send <b>waste and balance</b> for each colour dot. Sold is worked out: opening + delivered − waste − balance. Key in the <b>POS sold</b> figure from their own closing report to cross-check. Any difference shows as a variance (missing or unrecorded cakes).</p></div></div>
     ${pasteBox}
     <div class="panel">
       <div class="spread"><div class="row">${partnerSelect("d-p",pid)}<button class="btn sm" data-day="-1" aria-label="Previous day">‹</button><input type="date" id="d-d" data-ui="date" value="${date}"><button class="btn sm" data-day="1" aria-label="Next day">›</button></div>
@@ -1327,7 +1366,7 @@ document.addEventListener("click",async e=>{
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
   if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null))&&!(KIT()&&(d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
-  if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;render();window.scrollTo(0,0);return;}
+  if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;try{history.replaceState(null,"","#"+d.tab);}catch(_){ } render();window.scrollTo(0,0);return;}
   if(d.stnew){S.ui.stEdit={row:0,name:"",phone:"",code:"",role:"kitchen",notes:""};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
   if(d.stedit){const x=(S.team||[]).find(r=>String(r.row)===d.stedit); if(x){S.ui.stEdit={...x,phone:x.phone&&/^60\d{8,10}$/.test(x.phone)?"0"+x.phone.slice(2):(x.phone||"")};render();window.scrollTo(0,0);} return;}
@@ -1589,9 +1628,14 @@ function vStaff(){
 async function stSave(rec){ try{ S.team=await GS("teamSave",rec); S.ui.stEdit=null; toast("Staff saved"); render(); }catch(e){ toast(e.message); } }
 document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.st; if(k&&S.ui.stEdit) S.ui.stEdit[k]=e.target.value;});
 async function reload(){try{DBX.cache=await GS("dbLoadAll");fire();}catch(e){toast("Couldn't refresh — "+e.message);}}
+/* Phones: wide tables become one card per row, each value with its column name (CSS below 640px). */
+function cardify(root){ if(!root) return; root.querySelectorAll("table").forEach(tb=>{ if(tb.dataset.cf||tb.closest(".nocard")) return; const hs=[...tb.querySelectorAll("thead th")]; if(hs.length<3) return;
+  const lab=hs.map(h=>h.textContent.trim()); tb.classList.add("cf"); tb.dataset.cf="1";
+  tb.querySelectorAll("tbody tr, tfoot tr").forEach(tr=>{ let c=0; [...tr.children].forEach(td=>{ const l=lab[c]||""; if(!td.hasAttribute("data-l")) td.setAttribute("data-l",l); if(!td.textContent.trim()&&!td.querySelector("input,select,button,a,img")) td.classList.add("cfe"); c+=+(td.getAttribute("colspan")||1); }); }); }); }
+document.addEventListener("click",e=>{ const l=e.target&&e.target.closest&&e.target.closest(".lede"); if(l&&matchMedia("(max-width:640px)").matches) l.classList.toggle("open"); });
 function showLogin(msg){
   MENU=false; S.ui.modal=null; $("#nav").innerHTML=""; $("#who").innerHTML=""; $("#testbar").innerHTML=""; $("#modal").innerHTML="";
-  CA.loginForm($("#main"),{title:"Office desk",lede:"Sign in with your phone number and staff PIN.",msg},s=>{AUTH.pin=s.t;AUTH.name=s.name;AUTH.role=s.role; if(STARTED) location.reload(); else start();});
+  CA.toLogin(msg);
 }
 async function start(){
   $("#main").innerHTML=`<div class="empty">Loading consignment data…</div>`;
@@ -1608,6 +1652,7 @@ async function start(){
   setInterval(()=>{ if(!AUTH.pin) return; const a=document.activeElement; if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; reload();},90000);
   render();
 }
+window.addEventListener("hashchange",()=>{ const h=(location.hash||"").slice(1); if(STARTED&&TABS.some(([k])=>k===h)&&S.tab!==h){ S.tab=h; MENU=false; S.ui.confirm=null; if(h==="staff") S.team=null; render(); window.scrollTo(0,0); } });
 (function boot(){
   CA.helper({auth:()=>AUTH.pin,page:()=>"Office desk › "+((TABS.find(([k])=>k===S.tab)||["",""])[1])});
   const s=CA.get(); if(!s) return showLogin();

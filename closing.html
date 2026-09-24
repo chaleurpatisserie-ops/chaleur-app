@@ -12,6 +12,8 @@ window.google={script:{run:mk(null,null)}};})();
 </script><style>
 .ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
 .ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
+@media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:30px;padding:4px 10px}}
+.ca-next{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.ca-next li{display:flex;gap:8px;align-items:flex-start}.ca-next i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:#9a8f91}.ca-next i.bad{background:#c0392b}.ca-next i.warn{background:#d68910}.ca-next i.ok{background:#1e8449}.ca-next a{color:inherit;font-weight:600}
 .ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:32px}
 .ca-login{max-width:390px;margin:28px auto;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;padding:18px}
 .ca-login h2{font-family:var(--display,Georgia,serif);font-size:30px;line-height:1.1;margin:0 0 6px;font-weight:600}
@@ -67,8 +69,14 @@ const CA=(function(){
     btn.onclick=go; q("#ca-pin").addEventListener("keydown",e=>{if(e.key==="Enter")go();}); q("#ca-id").addEventListener("keydown",e=>{if(e.key==="Enter")q("#ca-pin").focus();});
     setTimeout(()=>{const x=q(last?"#ca-pin":"#ca-id"); x&&x.focus();},50);
   }
-  function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(location.pathname),150);}
-  const chip=s=>s?`<span class="ca-chip">Signed in as <b>${esc(s.name)}</b> · ${esc(ROLE[s.role]||s.role)} <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  const HOME="index.html";
+  /* One sign-in page for everything: other pages send you to the home page and it brings you back. */
+  function toLogin(msg){ const here=(location.pathname.split("/").pop()||HOME)+location.search+location.hash; location.replace(HOME+"?next="+encodeURIComponent(here)+(msg?"&msg="+encodeURIComponent(msg):"")); }
+  function logout(){const s=get(); clear(); if(s){try{run("logout",s.t).catch(()=>{});}catch(e){}} setTimeout(()=>location.replace(HOME),150);}
+  const chip=s=>s?`<span class="ca-chip"><span class="ca-si">Signed in as </span><b>${esc(s.name)}</b><span class="ca-rl"> · ${esc(ROLE[s.role]||s.role)}</span> <button type="button" data-ca-logout="1">Log out</button></span>`:"";
+  /* Where a "what to do next" item goes: page + tab (#hash) + kitchen team */
+  const nextHref=g=>g?(g.page+(g.team?"?team="+encodeURIComponent(g.team):"")+(g.hash?"#"+g.hash:"")):"";
+  const nextList=(items,links)=>`<ul class="ca-next">${(items||[]).map(x=>`<li><i class="${esc(x.sev)}"></i><span>${links&&x.go?`<a href="${esc(nextHref(x.go))}">${esc(x.text)}</a>`:esc(x.text)}</span></li>`).join("")}</ul>`;
   document.addEventListener("click",e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-ca-logout]"); if(b){e.preventDefault(); b.disabled=true; logout();}});
   function helper(opt){
     if(document.getElementById("ca-hbtn")) return;
@@ -76,14 +84,17 @@ const CA=(function(){
     document.body.appendChild(b);
     let panel=null, H=[], busy=false;
     const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
+    let NX=null, NXB=false;
     function draw(){ if(!panel) return; const m=panel.querySelector(".ca-msgs");
-      m.innerHTML=`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
+      const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(String(NX.name||"").split(" ")[0])}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
+      m.innerHTML=nx+`<div class="ca-m ca-a">${esc(hi)}</div>`+H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")+(busy?`<div class="ca-m ca-a">Thinking…</div>`:"");
       m.scrollTop=m.scrollHeight; }
     function close(){ if(panel){panel.remove();panel=null;} b.setAttribute("aria-expanded","false"); b.focus(); }
     b.onclick=()=>{ if(panel){close();return;}
       panel=document.createElement("div"); panel.className="ca-hp"; panel.setAttribute("role","dialog"); panel.setAttribute("aria-label","Helper");
       panel.innerHTML=`<div class="ca-hd"><b>Helper</b><button type="button" class="ca-x" aria-label="Close helper">✕</button></div><div class="ca-msgs" aria-live="polite"></div><form><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form>`;
       document.body.appendChild(panel); b.setAttribute("aria-expanded","true"); draw();
+      const au=opt.auth&&opt.auth(); if(au&&/^s1\./.test(String(au))&&!NX&&!NXB){ NXB=true; draw(); run("myNext",au).then(r=>{NX=r;}).catch(()=>{}).then(()=>{NXB=false; draw();}); }
       const ta=panel.querySelector("textarea"); ta.focus();
       panel.querySelector(".ca-x").onclick=close;
       panel.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
@@ -96,7 +107,7 @@ const CA=(function(){
         busy=false; draw(); };
     };
   }
-  return {get,save,clear,run,isAuthErr,loginForm,logout,chip,helper,ROLE,esc};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,ROLE,esc,nextHref,nextList,HOME};
 })();
 </script>
 
