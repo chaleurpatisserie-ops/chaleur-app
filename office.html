@@ -313,11 +313,15 @@ body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size
 .testbar{background:var(--accent);color:var(--accent-ink);text-align:center;font-size:12.5px;padding:5px 16px;letter-spacing:.02em}
 nav{position:relative;margin-left:auto}
 .mbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:600 14.5px var(--body);padding:9px 14px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.mbtn{max-width:min(320px,calc(100vw - 140px));min-width:0}.mbtn .mcur{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}.mbtn .bars,.mbtn .car{flex:none}
 .mbtn .bars{font-size:16px;line-height:1;color:var(--muted);position:relative;margin-right:8px}.mbtn .bars .n{position:absolute;top:-9px;right:-11px;margin:0;font-size:10px;min-width:16px;line-height:16px}.mbtn .car{color:var(--muted);font-size:11px}
 .menu{position:absolute;right:0;top:calc(100% + 6px);min-width:230px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(20,10,12,.18);padding:6px;display:flex;flex-direction:column;z-index:30}
 .menu button{border:0;background:transparent;color:var(--ink);font:500 15px var(--body);padding:11px 12px;border-radius:8px;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .menu button:hover{background:var(--soft)}
 .menu button[aria-current="page"]{background:var(--soft);color:var(--accent);font-weight:600}
+.dprev{border:2px solid var(--accent);margin-bottom:14px}.dprev.ok{border-color:#2e7d4f}.dcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}.dlines{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 4px;font-size:14px}
+.menu .mgl{font:700 10.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:10px 12px 2px}.menu .mgl:first-child{padding-top:4px}
+.menu .mgo{display:grid;grid-template-columns:1fr 1fr;gap:4px;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}.menu .mgo button{justify-content:center;background:var(--soft);font-weight:600;font-size:13.5px;padding:10px 6px;white-space:nowrap}
 nav .n{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;margin-left:5px;text-align:center}
 main{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 80px;display:flex;flex-direction:column;gap:18px}
 h1{font-family:var(--display);font-weight:600;font-size:36px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
@@ -447,7 +451,7 @@ input.made{width:70px;text-align:right}
 @media (max-width:420px){.logo b{display:none}}
 @media (max-width:640px){
   .top .in{gap:8px;padding-block:8px;flex-wrap:nowrap}.logo b{font-size:17px}.logo small{display:none}.logo .mono-ca{transform:scale(.85)}
-  .mbtn{padding:8px 10px}.btn.home{padding:8px 10px}
+  .mbtn{padding:8px 10px;max-width:calc(100vw - 206px)}.btn.home{padding:8px 10px}
   .who{display:none}.mwho{display:block}
   main{padding-inline:12px;padding-block:14px 90px;gap:14px}
   h1{font-size:28px}.head{align-items:flex-start}
@@ -467,7 +471,7 @@ input.made{width:70px;text-align:right}
   table.cf td::before{content:attr(data-l);flex:none;max-width:48%;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
   table.cf td:first-child{font-weight:600;font-size:15px;text-align:left;justify-content:flex-start}table.cf td:first-child::before{content:none}
   table.cf td[data-l=""]::before{content:none}table.cf td.cfe{display:none}
-  table.cf td[data-l=""]{justify-content:flex-start;flex-wrap:wrap;padding-top:6px}table.cf td .row{flex-wrap:wrap}
+  table.cf td[data-l=""]{justify-content:flex-start;flex-wrap:wrap;padding-top:6px}table.cf td .row{flex-wrap:wrap}table.cf td>.row{flex:1 1 100%;min-width:0;max-width:100%}
   table.cf td.r{text-align:right}
 }
 </style>
@@ -713,7 +717,8 @@ const MGR=()=>can("admin"), KIT=()=>!can("money"), SUPK=()=>can("doedit"), DELIV
 const RO=()=>{ const t=S.tab; if(t==="setup") return !can("setup"); if(t==="staff") return !can("staff"); if(t==="feedback") return !can("problems"); if(t==="audits") return !(can("reports")||can("audit")); return !can("reports"); };
 const TABOK={today:()=>can("chase")||can("reports")||can("view"),plan:()=>DELIV()||can("reports")||can("view"),deliveries:()=>DELIV()||can("reports")||can("view"),daily:()=>can("reports")||can("view"),log:()=>can("reports")||can("view"),
   billing:()=>can("money")&&(can("reports")||can("view")||can("bills")),audits:()=>can("audit")||can("kapprove"),feedback:()=>can("problems"),setup:()=>can("setup")||can("view"),staff:()=>can("staff")};
-const TABS=[["today","Today"],["plan","Plan & prep"],["deliveries","Deliveries"],["daily","Outlet reports"],["log","Change log"],["billing","Weekly billing"],["audits","Spot audits"],["feedback","Problem reports"],["setup","Setup"],["staff","Staff"]];
+const TABS=[["today","To clear today"],["plan","Plan & prep"],["deliveries","Delivery orders"],["daily","Outlet closing reports"],["billing","Weekly bills"],["audits","Spot audits & taste checks"],["feedback","Problem reports"],["log","Corrections log"],["setup","Setup"],["staff","Staff & access"]];
+const TABGRP={today:"Every day",plan:"Every day",deliveries:"Every day",daily:"Every day",billing:"Each week",audits:"Each week",feedback:"Each week",log:"Records & settings",setup:"Records & settings",staff:"Records & settings"};
 const NCOL=8;
 let rq=false, MENU=false;
 const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null)) return true; if(!can("deliv")) return false; return d.made!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
@@ -724,7 +729,7 @@ function doRender(){
   const a=document.activeElement, aid=a&&a.id, sel=a&&("selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const att=(can("chase")||can("reports")||can("view"))?attention():[];
   { let tabs=TABS.filter(([k])=>TABOK[k]()); if(!tabs.length) tabs=[["none","No office pages"]]; if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
-    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span>${cur}<span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l])=>`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}<button role="menuitem" data-go="kitchen.html"><span>Kitchen HQ</span><span aria-hidden="true">↗</span></button><button role="menuitem" data-go="index.html"><span>‹ Home</span><span></span></button><div class="mwho">${CA.chip({name:AUTH.name,role:AUTH.role,label:AUTH.label})}</div></div>`:""}`; }
+    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span><span class="mcur">${cur}</span><span class="car" aria-hidden="true">▾</span></button>${MENU?`<div class="menu" role="menu">${tabs.map(([k,l],i)=>`${TABGRP[k]&&(i===0||TABGRP[tabs[i-1][0]]!==TABGRP[k])?`<div class="mgl" role="presentation">${TABGRP[k]}</div>`:""}<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>`).join("")}<div class="mgo"><button role="menuitem" data-go="index.html"><span>‹ Home</span></button><button role="menuitem" data-go="kitchen.html"><span>Kitchen HQ ↗</span></button></div><div class="mwho">${CA.chip({name:AUTH.name,role:AUTH.role,label:AUTH.label})}</div></div>`:""}`; }
   $("#who").innerHTML=AUTH.pin?CA.chip({name:AUTH.name,role:AUTH.role,label:AUTH.label}):"";
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
@@ -846,7 +851,7 @@ function attFocus(att){
   const t=today(), H=S.handled||{}, cleared=Object.values(H).filter(h=>String(h.at||"").slice(0,10)===t).length, n=att.length, tot=n+cleared;
   const deg=tot?Math.round(cleared/tot*360):360;
   const al=S.alerts, alT=al?new Date(al.generatedAt).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"";
-  const head=`<div class="ringrow"><div class="ring" style="--deg:${deg}deg" role="img" aria-label="${n} to clear"><i>${n}</i></div><div><h1>${n?`${n} to clear today`:"All clear"}</h1><div class="sub">${al?`Daily check ran ${esc(alT)}${cleared?` · ${cleared} cleared today`:""}`:"The daily check runs after every report and at 4am and 4pm."}</div></div></div>`;
+  const head=`<div class="ringrow"><div class="ring" style="--deg:${deg}deg" role="img" aria-label="${n} to clear"><i>${n}</i></div><div><h1>${n?`${n} item${n===1?"":"s"} left`:"All clear"}</h1><div class="sub">${al?`Daily check ran ${esc(alT)}${cleared?` · ${cleared} cleared today`:""}`:"The daily check runs after every report and at 4am and 4pm."}</div></div></div>`;
   if(!n) return head+`<div class="clear"><h2>Board clear</h2><p style="margin:0">Nothing urgent. Reports and stock look in order.</p>${Object.keys(H).length?`<button class="btn sm" data-act="showHandled">${S.ui.showHandled?"Hide handled":"Show handled"}</button>`:""}</div>${S.ui.showHandled?handledList():""}`;
   const i=Math.max(0,Math.min(n-1,S.ui.attIdx||0)), a=att[i], idx=attention().findIndex(x=>x.key===a.key), sevL={bad:"Urgent",warn:"Today",info:"Note"}[a.sev]||"";
   const primary=a.action?a.action.replace(/class="btn sm wa"/,'class="big wa"'):a.fix&&!RO()?`<div class="g3">${a.fix.opts.map(o=>`<button class="btn" data-fix="${esc(a.key)}" data-as="${o}">${({sold:"Sold",wasted:"Wasted",remaining:"Remaining"})[o]}</button>`).join("")}</div>`:a.go?`<button class="big" data-att="${idx}">Open</button>`:"";
@@ -876,7 +881,7 @@ function vToday(att){
   const wk=weekStartOf(t);
   let wkSold=0,wkWaste=0,wkVal=0;
   for(const p of ps){if(p.internal) continue; const c=calcWeek(p.id,wk);for(const k of Object.values(c.keys)){wkSold+=k.sold;wkWaste+=k.waste;wkVal+=k.sold*k.rate}}
-  return `<div class="head"><div><p class="small muted" style="margin:0">Office · ${nice(t)}</p><h1>Today</h1></div></div>
+  return `<div class="head"><div><p class="small muted" style="margin:0">Office · ${nice(t)}</p><h1>To clear today</h1></div></div>
     ${S.ui.attAll?`<div class="ringrow" style="margin-bottom:4px"><div class="ring" style="--deg:0deg"><i>${att.length}</i></div><div><h1>${att.length?`${att.length} to clear today`:"All clear"}</h1><div class="sub"><button class="btn sm" data-act="attAll">One at a time</button></div></div></div>${attList(att)}`:attFocus(att)}
     <div class="qa"><button class="btn" data-act="goNewDO">New delivery order</button>${can("reports")?`<button class="btn" data-act="goPaste">Paste WhatsApp report</button>`:""}${can("audit")?`<button class="btn pri" data-act="goAudit">Start spot audit</button>`:""}</div>
     <div class="cols">
@@ -929,7 +934,7 @@ function vDeliveries(){
   const allF=allDOs().filter(d=>(!F.p||d.partnerId===F.p)&&(!F.from||d.date>=F.from)&&(!F.to||d.date<=F.to)&&(!F.st||(F.st==="delivered"?d.status==="delivered":d.status!=="delivered")));
   const list=allF.slice(0,150);
   const fbar=`<div class="fbar"><label class="f">Outlet<select data-flt="dF.p">${opt("","All outlets",F.p||"")}${partners(true).map(p=>opt(p.id,p.name,F.p||"")).join("")}</select></label><label class="f">From<input type="date" data-flt="dF.from" value="${esc(F.from||"")}"></label><label class="f">To<input type="date" data-flt="dF.to" value="${esc(F.to||"")}"></label><label class="f">Status<select data-flt="dF.st">${[["","All"],["planned","Planned"],["delivered","Delivered"]].map(([v,l])=>opt(v,l,F.st||"")).join("")}</select></label>${fl?`<button class="btn sm" data-act="clearDF">Clear filters</button>`:""}<span class="small muted">${allF.length} DO${allF.length===1?"":"s"}</span></div>`;
-  return `<div class="head"><div><h1>Deliveries</h1><p class="lede">Before a delivery goes out, the team checks the colour dot on every cake (<b>Check colours</b>). Only cakes made on the delivery day or the day before can be sent. Stock only counts at the outlet once the DO is confirmed delivered, with accepted quantities.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button>${!SUPK()?"":`<button class="btn pri" data-act="newDO">New delivery order</button>`}</div></div>
+  return `<div class="head"><div><h1>Delivery orders</h1><p class="lede">Before a delivery goes out, the team checks the colour dot on every cake (<b>Check colours</b>). Only cakes made on the delivery day or the day before can be sent. Stock only counts at the outlet once the DO is confirmed delivered, with accepted quantities.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button>${!SUPK()?"":`<button class="btn pri" data-act="newDO">New delivery order</button>`}</div></div>
     ${form}
     <div class="panel"><h2>Delivery orders</h2>${fbar}${list.length?`<div class="tw"><table><thead><tr><th>DO</th><th>Date</th><th>Outlet</th><th>Batch</th><th class="r">Units</th>${KIT()?"":`<th class="r">Value</th>`}<th>Status</th><th></th></tr></thead><tbody>
       ${list.map(d=>{const u=(d.lines||[]).reduce((s,l)=>s+(+(d.status==="delivered"?(l.accepted??l.qty):l.qty)||0),0);const v=(d.lines||[]).reduce((s,l)=>s+(+(l.accepted??l.qty)||0)*priceFor(d.partnerId,l.productId,d.date).net,0);
@@ -969,7 +974,7 @@ function vDaily(){
         <td class="r mono">${l.close??(l.unreported?`<span class="pill warn">not counted</span>`:"—")}</td><td class="r mono">${rep&&l.close!=null?l.sold:""}</td><td class="r mono muted">${l.pos??""}</td>
         <td class="r mono ${l.var<0?"neg":l.var>0?"pos":""}">${l.close!=null&&l.var?(l.var>0?"+":"")+l.var:""}</td></tr>`}).join("")}
     </tbody></table></div>`:`<div class="empty">No stock recorded at ${esc(p.name)} on this day.</div>`;
-  return `<div class="head"><div><h1>Outlet reports</h1><p class="lede">Outlets send <b>waste and balance</b> for each colour dot. Sold is worked out: opening + delivered − waste − balance. Key in the <b>POS sold</b> figure from their own closing report to cross-check. Any difference shows as a variance (missing or unrecorded cakes).</p></div></div>
+  return `<div class="head"><div><h1>Outlet closing reports</h1><p class="lede">Outlets send <b>waste and balance</b> for each colour dot. Sold is worked out: opening + delivered − waste − balance. Key in the <b>POS sold</b> figure from their own closing report to cross-check. Any difference shows as a variance (missing or unrecorded cakes).</p></div></div>
     ${pasteBox}
     <div class="panel">
       <div class="spread"><div class="row">${partnerSelect("d-p",pid)}<button class="btn sm" data-day="-1" aria-label="Previous day">‹</button><input type="date" id="d-d" data-ui="date" value="${date}"><button class="btn sm" data-day="1" aria-label="Next day">›</button></div>
@@ -1015,7 +1020,7 @@ function editRows(){const out=[]; for(const w of Object.values(S.weeks)) for(con
 function vLog(){ const F=S.ui.lF||{}, fl=!!(F.p||F.from||F.to||F.by), all=editRows(), people=[...new Set(all.map(x=>x.by).filter(Boolean))].sort();
   const rows=all.filter(x=>(!F.p||x.pid===F.p)&&(!F.from||locDay(x.at)>=F.from)&&(!F.to||locDay(x.at)<=F.to)&&(!F.by||x.by===F.by));
   const fbar=`<div class="fbar"><label class="f">Outlet<select data-flt="lF.p">${opt("","All outlets",F.p||"")}${partners(true).map(p=>opt(p.id,p.name,F.p||"")).join("")}</select></label><label class="f">Changed from<input type="date" data-flt="lF.from" value="${esc(F.from||"")}"></label><label class="f">To<input type="date" data-flt="lF.to" value="${esc(F.to||"")}"></label><label class="f">By<select data-flt="lF.by">${opt("","Everyone",F.by||"")}${people.map(n=>opt(n,n,F.by||"")).join("")}</select></label>${fl?`<button class="btn sm" data-act="clearLF">Clear filters</button>`:""}<span class="small muted">${rows.length} change${rows.length===1?"":"s"}</span></div>`;
-  return `<div class="head"><div><h1>Change log</h1><p class="lede">Every change the office makes to an outlet's stock count (waste, left, sold) is recorded here automatically, with the name of the person signed in, the time and the reason. Only office staff and managers can make changes, and nobody can edit or delete this log. A copy of each line also goes to the <b>Edit log</b> tab in the Google Sheet.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button></div></div>
+  return `<div class="head"><div><h1>Corrections log</h1><p class="lede">Every change the office makes to an outlet's stock count (waste, left, sold) is recorded here automatically, with the name of the person signed in, the time and the reason. Only office staff and managers can make changes, and nobody can edit or delete this log. A copy of each line also goes to the <b>Edit log</b> tab in the Google Sheet.</p></div><div class="row"><button class="btn" data-act="printPage">Print</button></div></div>
     <div class="panel">${fbar}
     ${rows.length?`<div class="tw"><table><thead><tr><th>When</th><th>By</th><th>Outlet · report day</th><th>What changed</th><th>Why</th><th></th></tr></thead><tbody>${rows.slice(0,300).map(x=>`<tr><td class="small">${esc(fmtTs(x.at))}</td><td><b>${esc(x.by||"")}</b><div class="small muted">${esc(roleName(x.role))}</div></td><td>${esc(partner(x.pid).name)}<div class="small muted">${nice(x.date)}</div></td><td class="small">${(x.changes||[]).map(chgTxt).join("<br>")||"—"}</td><td class="small">${esc(x.reason||"")}${x.afterBill?` <span class="pill info">after billing</span>`:""}</td><td class="r"><button class="btn sm" data-go-daily="${esc(x.pid)}|${esc(x.date)}">Open</button></td></tr>`).join("")}</tbody></table></div>${rows.length>300?`<p class="small muted" style="margin:0">Showing the latest 300. Use the filters to narrow it down.</p>`:""}`:`<div class="empty">${fl?"No changes match these filters.":"No changes yet. When the office corrects a closing report, it shows here."}</div>`}</div>`;
 }
@@ -1106,7 +1111,7 @@ function vBilling(){
       `;
   }
   const cards3r=billCards(ws,pid);
-  return `<div class="head"><div><h1>Weekly billing</h1><p class="lede">Each Monday last week's bill is drafted automatically from the reports. A manager checks it and taps <b>Approve & issue</b>; edit only if something is wrong. Invoice all stock held (carried-forward + new deliveries) → credit the unsold balance on a CF note → credit wastage on a CN per the outlet's terms. The net equals what was actually sold at the agreed rate.</p></div></div>
+  return `<div class="head"><div><h1>Weekly bills</h1><p class="lede">Each Monday last week's bill is drafted automatically from the reports. A manager checks it and taps <b>Approve & issue</b>; edit only if something is wrong. Invoice all stock held (carried-forward + new deliveries) → credit the unsold balance on a CF note → credit wastage on a CN per the outlet's terms. The net equals what was actually sold at the agreed rate.</p></div></div>
     ${cards3r}
     <div class="panel" id="billdetail">
       <div class="spread"><div class="row">${partnerSelect("b-p",pid,false,true)}<button class="btn sm" data-wk="-7" aria-label="Previous week">‹</button><span class="mono" style="font-weight:600">${nice(ws)} – ${nice(add(ws,6))}</span><input type="date" data-ui="bweek" value="${ws}" aria-label="Jump to week" title="Jump to the week of a date" style="width:auto"><button class="btn sm" data-wk="7" aria-label="Next week">›</button></div>
@@ -1208,7 +1213,7 @@ function vAudits(){
   }
   const list=Object.values(S.audits).sort((a,b)=>b.date.localeCompare(a.date)||(b.time||"").localeCompare(a.time||""));
   const sug=S.ui.suggest;
-  return `<div class="head"><div><h1>Spot audits</h1><p class="lede">Unannounced checks of display setup, sell prices and stock by colour. Outlets that haven't been audited recently are more likely to be picked. Your team can also audit on their phone with the staff spot-audit form (separate from the outlet link) and send it by WhatsApp — paste it in Daily reports.</p></div>
+  return `<div class="head"><div><h1>Spot audits &amp; taste checks</h1><p class="lede">Unannounced checks of display setup, sell prices and stock by colour. Outlets that haven't been audited recently are more likely to be picked. Your team can also audit on their phone with the staff spot-audit form (separate from the outlet link) and send it by WhatsApp — paste it in Daily reports.</p></div>
     <div class="row"><button class="btn" data-act="pickAudit">Pick random audit</button><button class="btn pri" data-act="newAudit">Start audit</button></div></div>
     ${sug?`<div class="claude"><h2>Next audit: ${esc(partner(sug.partnerId).name)}</h2><p style="margin:0">Last audited ${sug.lastDate==="2000-01-01"?"never":nice(sug.lastDate)}. Check sell prices and count: ${sug.products.map(id=>esc(prod(id).name)).join(", ")}.</p><div class="row"><button class="btn pri" data-act="startSuggested">Start this audit</button><a class="btn wa" target="_blank" rel="noopener" href="${esc(wa("",`Spot audit today: ${partner(sug.partnerId).name}. Check prices + count ${sug.products.map(id=>prod(id).name).join(", ")}. Form: ${(SITE_BASE?SITE_BASE+"audit.html":(cfg().auditFormUrl||"(set the staff audit form link in Setup)"))}`))}">Send to staff</a></div></div>`:""}
     ${form}
@@ -1497,6 +1502,29 @@ function printDN(d){const {plans}=planAll(), co=cfg().company, pages=[];
     ${chk.length?`<p class="sm">Colour dots checked by ${esc([...new Set(chk.map(o=>o.checkedBy).filter(Boolean))].join(", "))}.</p>`:`<p class="sm"><b>Before sending:</b> check the colour dot on every cake. On this day only cakes made ${esc(okColours(pl.d1).map(c=>dayOfColour(c)).join(" or "))} can go out. Colours checked by: ____________________</p>`}<p class="sm">Please count with the driver. Write any shortfall or damage in Remarks and on tonight's closing report.</p>
     <div class="sig"><div>Delivered by: ____________________</div><div>Received by: ____________________</div><div>Time: __________</div></div></section>`);}
   if(!pages.length){toast("No deliveries planned for this prep day");return;} printDoc(`Delivery notes ${d}`,pages.join(""));}
+function draftPlan(){ const PA=planAll(), out=[], skip=[];
+  for(const pl of PA.plans){ const p=partner(pl.pid); if(!pl.d1) continue;
+    if(pl.planned&&pl.planned.length){ skip.push({name:p.name,d1:pl.d1,why:"already has "+pl.planned.map(o=>o.no).join(", ")}); continue; }
+    const lines=pl.lines.filter(l=>l.send>0).map(l=>({productId:l.productId,qty:l.send}));
+    if(!lines.length){ skip.push({name:p.name,d1:pl.d1,why:"nothing suggested"}); continue; }
+    if(weekDoc(p.id,weekStartOf(pl.d1)).settlement){ skip.push({name:p.name,d1:pl.d1,why:"that week is already billed"}); continue; }
+    lines.sort((a,b)=>b.qty-a.qty||prod(a.productId).name.localeCompare(prod(b.productId).name));
+    out.push({pid:p.id,p,d1:pl.d1,prep:pl.prepDate,colour:colourOf(pl.prepDate).name,lines,qty:lines.reduce((a,l)=>a+l.qty,0)}); }
+  return {out,skip}; }
+function draftPanel(){ const P=S.ui.doPrev, D=S.ui.doDone;
+  if(P){ const n=P.out.length, tot=P.out.reduce((a,x)=>a+x.qty,0);
+    return `<div class="panel dprev" id="doprev"><div class="spread"><h2>${n?`Draft ${n} delivery order${n>1?"s":""}?`:"Nothing new to draft"}</h2>${n?`<span class="small muted">${tot} cakes in total</span>`:""}</div>
+      ${n?`<p class="small muted" style="margin:4px 0 10px">Check them here first. They are created as <b>planned</b> drafts: you can still edit or delete them in Deliveries before they go out.</p>`:`<p class="small muted" style="margin:4px 0 10px">Every outlet delivering next already has a delivery order, or nothing is suggested.</p>`}
+      ${P.out.map(x=>`<div class="dcard"><div class="spread"><b>${esc(x.p.name)} <span class="muted small">${esc(x.p.code)}</span></b><span class="small">${nice(x.d1)} · ${dot(x.colour)}</span></div>
+        <div class="dlines">${x.lines.map(l=>`<span><b>${l.qty}</b> ${esc(prod(l.productId).name)}</span>`).join("")}</div><div class="small muted">${x.qty} cakes · prepared ${nice(x.prep)}</div></div>`).join("")}
+      ${P.skip.length?`<div class="small muted" style="margin-top:8px"><b>Not drafted:</b> ${P.skip.map(k=>`${esc(k.name)} (${nice(k.d1)}): ${esc(k.why)}`).join(" · ")}</div>`:""}
+      <div class="row" style="margin-top:12px">${n&&(!RO()||DELIV())?`<button class="btn pri" data-act="makeDOsGo">Create ${n} draft DO${n>1?"s":""}</button>`:""}<button class="btn" data-act="makeDOsNo">${n?"Cancel":"Close"}</button></div></div>`; }
+  if(D){ const n=D.made.length;
+    return `<div class="panel dprev ok" id="doprev"><div class="spread"><h2>${n?`✓ ${n} draft DO${n>1?"s":""} created`:"Nothing new drafted"}</h2><button class="btn sm" data-act="makeDOsNo">Close</button></div>
+      ${D.made.map(x=>`<div class="dcard"><div class="spread"><b>${esc(x.no)} · ${esc(x.name)}</b><span class="small">${nice(x.d1)} · ${dot(x.colour)}</span></div><div class="small muted">${x.qty} cakes · status Planned · the kitchen sees it on today's to-do</div></div>`).join("")}
+      ${D.skip.length?`<div class="small muted" style="margin-top:8px"><b>Not drafted:</b> ${D.skip.map(k=>`${esc(k.name)} (${nice(k.d1)}): ${esc(k.why)}`).join(" · ")}</div>`:""}
+      ${n?`<div class="row" style="margin-top:12px"><a class="btn pri" href="#deliveries">Open Delivery orders</a></div>`:""}</div>`; }
+  return ""; }
 function vPlan(){
   const t=today(), ps=partners(), PA=planAll(), plans=PA.plans, prepX=PA.prep;
   const prep={}; for(const [d,m] of Object.entries(prepX)){prep[d]={}; for(const [id,pm] of Object.entries(m)) prep[d][id]=Object.values(pm).reduce((a,b)=>a+b,0);}
@@ -1505,8 +1533,8 @@ function vPlan(){
   const up=evList().filter(e=>(e.end||e.date)>=t&&e.date<=add(t,75));
   const regionPill=r=>`<span class="pill ${r==="SG"?"info":"mute"}">${r==="SG"?"Singapore":r==="MY-JHR"?"Johor":esc(r||"")}</span>`;
   return `<div class="head"><div><h1>Plan & prep</h1><p class="lede noprint">Suggested next delivery for each outlet, based on the last 28 days of closing reports. Sold is worked out from balance and waste. Weekdays and Fri–Sun are averaged separately, adjusted for Johor and Singapore holidays, and nothing is planned past a cake's shelf life. Stock that will still be sellable is subtracted.</p></div>
-    <div class="row"><button class="btn" data-act="printPage">Print</button><button class="btn pri" data-act="makeDOs">Create draft DOs from suggestions</button></div></div>
-    <div class="cols">
+    <div class="row"><button class="btn" data-act="printPage">Print</button><button class="btn pri" data-act="makeDOs">Draft DOs from suggestions…</button></div></div>
+    ${draftPanel()}<div class="cols">
       <div class="panel"><div class="spread"><h2>Kitchen prep list</h2><span class="small muted">all outlets combined</span></div>
         ${prepDays.length?prepDays.map(d=>{const mk=(S.prep||{})[d]||{}; const rows=Object.entries(prepX[d]).sort((a,b)=>prep[d][b[0]]-prep[d][a[0]]);
           const madeTot=rows.reduce((a,[id])=>a+((mk.made||{})[id]!=null?+mk.made[id]:prep[d][id]),0);
@@ -1662,7 +1690,7 @@ document.addEventListener("click",async e=>{
   if(d.menu){MENU=!MENU;render();return;}
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
-  if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null))&&!(DELIV()&&(d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.attnav||d.act==="attAll"||d.billsel||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
+  if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null))&&!(DELIV()&&(d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"||d.act==="makeDOsGo"||d.act==="makeDOsNo"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.attnav||d.act==="attAll"||d.billsel||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
   if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;if(d.tab==="feedback")S.fb=null;try{history.replaceState(null,"","#"+d.tab);}catch(_){ } render();window.scrollTo(0,0);return;}
   if(d.stnew){const C=S.stCat||{presets:{kitchen:{staff:[]}}}; S.ui.stEdit={row:0,name:"",phone:"",code:"",role:"kitchen",notes:"",area:"kitchen",level:"staff",perms:(C.presets.kitchen.staff||[]).slice()};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
@@ -1807,12 +1835,14 @@ async function act(a,b){
   case "closeModal": S.ui.modal=null; render(); return;
   case "addEvent":{const e=S.ui.ev||{}; if(!e.name||!e.date){toast("Name and date are required");return;} const id=newId();
     await put(`calendar/${id}`,{id,name:e.name,date:e.date,end:e.end||"",region:e.region||"MY-JHR",type:e.type||"event",uplift:+e.uplift||0,source:"added by office"}); S.ui.ev=null; toast("Added to calendar"); return;}
-  case "makeDOs":{b.disabled=true; let n=0; const PA=planAll();
-    for(const pl of PA.plans){const p=partner(pl.pid); if(!pl.d1||pl.planned.length) continue; const lines=pl.lines.filter(l=>l.send>0).map(l=>({productId:l.productId,qty:l.send})); if(!lines.length) continue;
-      const ws=weekStartOf(pl.d1), w=clone(weekDoc(p.id,ws)); if(w.settlement) continue; w.dos=w.dos||{}; w.days=w.days||{};
-      const id=newId(), no=await nextNo("DO",pl.d1); w.dos[id]={id,no,date:pl.d1,batchDate:pl.prepDate,colour:colourOf(pl.prepDate).name,lines,status:"planned",note:"Drafted from Plan & prep suggestion — check before sending",createdAt:new Date().toISOString()};
-      await saveWeek(w); n++;}
-    toast(n?`${n} draft DO(s) created — review them in Deliveries`:"Nothing new to draft (DOs already planned or no suggestions)"); if(n){S.tab="deliveries";render();} return;}
+  case "makeDOs":{S.ui.doDone=null; S.ui.doPrev=draftPlan(); render(); setTimeout(()=>{const e=document.getElementById("doprev"); if(e) e.scrollIntoView({behavior:"smooth",block:"start"});},60); return;}
+  case "makeDOsNo":{S.ui.doPrev=null; S.ui.doDone=null; render(); return;}
+  case "makeDOsGo":{b.disabled=true; b.textContent="Creating…"; const D=draftPlan(), made=[];
+    try{ for(const x of D.out){ const ws=weekStartOf(x.d1), w=clone(weekDoc(x.pid,ws)); if(w.settlement) continue; w.dos=w.dos||{}; w.days=w.days||{};
+        const id=newId(), no=await nextNo("DO",x.d1); w.dos[id]={id,no,date:x.d1,batchDate:x.prep,colour:x.colour,lines:x.lines,status:"planned",note:"Drafted from Plan & prep suggestion — check before sending",createdAt:new Date().toISOString()};
+        await saveWeek(w); made.push({no,name:x.p.name,code:x.p.code,d1:x.d1,colour:x.colour,qty:x.qty}); } }
+    catch(e){ toast((e&&e.message)||"Couldn't create every DO"); }
+    S.ui.doPrev=null; S.ui.doDone={made,skip:D.skip}; toast(made.length?`${made.length} draft DO${made.length>1?"s":""} created`:"Nothing new to draft"); render(); return;}
   case "fileModal":{const m=S.ui.modal; b.disabled=true; toast("Filing to Google Drive…");
     try{const kind=m.kind, pid=m.pid, iso=kind==="do"?m.doc.date:m.st.issuedAt.slice(0,10), no=kind==="do"?m.doc.no:m.st[kind+"No"];
       const url=await driveUploadHtml(pid,iso,kind,`${no} — ${partner(pid).name}`,m.html); toast("Filed in Drive"); m.drive=url; render();}
@@ -1952,7 +1982,7 @@ function vStaff(){
     <div class="tw"><table class="stmx"><thead><tr><th></th>${cols.map(([a,l])=>`<th class="c small">${esc(stLabel(C,a,l,(C.presets[a]||{})[l]))}</th>`).join("")}</tr></thead>
       <tbody>${C.perms.map(p=>`<tr><td class="small">${esc(p.name)}</td>${cols.map(([a,l])=>`<td class="c">${((C.presets[a]||{})[l]||[]).includes(p.key)?"✓":""}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
     <p class="small muted">The owner (Alfred) always has everything. Someone with "Staff and access" can only give access they have themselves, and can't change people who have more access than them.</p></div>`;
-  return `<h1>Staff</h1><p class="lede">Who can sign in and what they can do. Staff sign in with their <b>phone number and PIN</b> (or their name if no phone is set). Changing someone's PIN or phone, or deactivating them, signs them out on every phone. Their past records stay.</p>
+  return `<h1>Staff &amp; access</h1><p class="lede">Who can sign in and what they can do. Staff sign in with their <b>phone number and PIN</b> (or their name if no phone is set). Changing someone's PIN or phone, or deactivating them, signs them out on every phone. Their past records stay.</p>
     ${form}<div class="panel"><div class="spread"><h2>Team</h2>${ed?"":`<button class="btn pri sm" data-stnew="1">+ Add staff</button>`}</div>
     <div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>PIN</th><th>Access</th><th>Status</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="small">No staff yet.</td></tr>`}</tbody></table></div></div>${ref}`;
 }

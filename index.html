@@ -363,6 +363,14 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 .grp .its a,.grp .its button{min-height:54px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:8px 12px;border:0;border-radius:12px;background:var(--ground);text-align:left;color:var(--ink);text-decoration:none;width:100%;font:inherit}
 .grp .its a:active,.grp .its button:active{background:var(--soft)}.grp .its b{display:block;font-weight:600;font-size:15px}.grp .its small{display:block;font-size:12px;color:var(--muted)}.grp .its .go{color:var(--accent);font-size:22px}
 .mf{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px}
+.msearch{display:flex;align-items:center;gap:8px;min-height:50px;padding:0 14px;border-radius:14px;background:var(--paper);border:1.5px solid var(--cline);color:var(--muted)}.msearch svg{width:20px;height:20px;flex:none}.msearch input{flex:1;border:0;background:transparent;font:500 16px var(--body);color:var(--ink);min-height:46px;outline:none;min-width:0}
+.mlab{font:700 11.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:8px 6px 0}
+.mlist{padding:6px;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.mrow{min-height:58px;display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:left;color:var(--ink);text-decoration:none;width:100%;font:inherit}
+.mrow:active{background:var(--soft)}.mrow .mi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}.mrow .mi svg{width:24px;height:24px}.mrow b{display:block;font-weight:700;font-size:15.5px}.mrow small{display:block;font-size:12.5px;color:var(--muted);line-height:1.3}.mrow .go{color:var(--accent);font-size:22px}
+.mnone{padding:16px;font-size:14px;color:var(--muted)}
+.mlinks{display:flex;justify-content:center;gap:22px;padding:2px 0 4px}.mlinks .lnk{min-height:40px;font-size:14px;border:0;background:none;box-shadow:none;padding:0 4px;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.grp>button{min-height:60px}
 .mva{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:var(--paper);border:1.5px solid var(--cline);font-size:13px;color:var(--muted);font-weight:600}
 .mva .ca-va{min-height:44px;font-size:14px;max-width:210px}
 /* team / me / treat */
@@ -430,27 +438,26 @@ const QS=new URLSearchParams(location.search);
 /* where to go back to after signing in (only our own pages) */
 const NEXT=(()=>{ const n=QS.get("next")||""; return /^(office|kitchen|audit)\.html(\?[A-Za-z0-9_=&%.-]*)?(#[A-Za-z0-9_-]*)?$/.test(n)?n:""; })();
 /* Every page, by access (Staff tab). Pages still check access on the server. [group, title, description, link, roles] */
-const SECD={"Kitchen":"Reports, to-dos, plan","Quality checks":"Taste checks","Outlets & deliveries":"Outlet stock, DOs, audits","Office desk":"Back office: bills, setup, staff","Help":"Ask, report, guides"};
+const SECD={"Kitchen":"To-do lists, prep list, plan, taste check","Outlets & deliveries":"Deliveries, outlet reports, spot audit","Office desk":"Bills, audits, problems, setup, staff"};
+/* [group, title, description, link, access, search words, daily for (areas)] */
 const TILES=[
- ["Kitchen","Morning / Decoration","Opening report, finish & decorate, orders","kitchen.html?team=am#today",["kitchen","kapprove","todo"]],
- ["Kitchen","Noon / Production","Production list, prep, closing report","kitchen.html?team=pm#today",["kitchen","kapprove","todo"]],
- ["Kitchen","Production plan","Lists for coming days, add from a photo","kitchen.html#plan",["kitchen","kapprove","todo"]],
- ["Kitchen","Kitchen history","Past reports, temps and photos","kitchen.html#history",["kapprove","view"]],
- ["Kitchen","Kitchen setup","Display cakes, fridges, reminders","kitchen.html#lists",["kapprove"]],
- ["Quality checks","Random QC","Today's taste check, picked by the app","#qc",["qc"]],
- ["Quality checks","QC history","Every taste check with photos","office.html#audits",["audit","kapprove"]],
- ["Outlets & deliveries","Deliveries","Check colours, mark delivered","office.html#deliveries",["deliv","doedit"]],
- ["Kitchen","Plan & prep · all outlets","What to prepare and deliver, prep sheet, delivery notes","office.html#plan",["kitchen","deliv"]],
- ["Outlets & deliveries","Plan & prep","Deliveries to prepare, prep sheet, draft DOs","office.html#plan",["doedit","reports"]],
- ["Outlets & deliveries","Outlets today","Missing reports, cakes to take off, chase","office.html#today",["chase","view"]],
- ["Outlets & deliveries","Outlet reports","Nightly closing reports and corrections","office.html#daily",["reports","view"]],
- ["Outlets & deliveries","Spot audit","Check an outlet: display, prices, chiller","audit.html",["audit"]],
- ["Office desk","Weekly billing","Invoice, carry forward, credit note","office.html#billing",()=>can("money")&&(can("reports")||can("bills"))],
- ["Office desk","Spot audit results","Every audit with photos and the PDF","office.html#audits",["audit"]],
- ["Office desk","Change log","Every correction: who, when and why","office.html#log",["reports"]],
- ["Office desk","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems"]],
- ["Office desk","Setup","Outlets, cakes, prices, WhatsApp, points","office.html#setup",["setup"]],
- ["Office desk","Staff","Who can sign in, PINs and access","office.html#staff",["staff"]],
+ ["Kitchen","Morning to-do","Plan & prep, opening report, decorate, deliveries","kitchen.html?team=am#today",["kitchen","kapprove","todo"],"morning decoration opening fridge display count pack",["kitchen:am"]],
+ ["Kitchen","Noon to-do","Production list, closing report, plan","kitchen.html?team=pm#today",["kitchen","kapprove","todo"],"noon production closing waste lists",["kitchen:pm"]],
+ ["Kitchen","Plan & prep","Today's prep list for every outlet, Made numbers, draft DOs","office.html#plan",["kitchen","deliv","doedit","reports"],"prep list planned made delivery order do print sheet suggestion",["kitchen","office","outlets"]],
+ ["Kitchen","Production plan","Mise en place lists for the coming days","kitchen.html#plan",["kitchen","kapprove","todo"],"mise en place list photo",["kitchen"]],
+ ["Kitchen","Taste check (Random QC)","Today's taste check, cakes picked by the app","#qc",["qc"],"quality taste check",["kitchen"]],
+ ["Kitchen","Kitchen history","Past reports, temperatures and photos","kitchen.html#history",["kapprove","view"],"temperature fridge freezer streak calendar",[]],
+ ["Kitchen","Kitchen setup","Display cakes, fridges and freezers, reminders","kitchen.html#lists",["kapprove"],"fridge freezer limit reminder display list",[]],
+ ["Outlets & deliveries","Delivery orders","Check colours, mark delivered, edit before it goes out","office.html#deliveries",["deliv","doedit"],"do delivery order colour dot",["kitchen","office"]],
+ ["Outlets & deliveries","To clear today","Missing reports, chase outlets, bills to approve","office.html#today",["chase","view"],"attention chase whatsapp missing report board",["office","outlets"]],
+ ["Outlets & deliveries","Outlet closing reports","Each outlet's nightly count, and corrections","office.html#daily",["reports","view"],"closing report correction paste waste balance sold",["office","outlets"]],
+ ["Outlets & deliveries","Do a spot audit","Visit an outlet: display, prices, chiller","audit.html",["audit"],"audit visit outlet check",["outlets"]],
+ ["Office desk","Weekly bills","Invoice, carry forward and credit note per outlet","office.html#billing",()=>can("money")&&(can("reports")||can("bills")),"invoice bill cf cn credit bukku payment",["office"]],
+ ["Office desk","Spot audits & taste checks","Every audit and taste check, with photos and PDF","office.html#audits",["audit","kapprove"],"spot audit results qc history pdf score",[]],
+ ["Office desk","Corrections log","Every change to a report: who, when and why","office.html#log",["reports"],"edit log correction history",[]],
+ ["Office desk","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems"],"feedback problem report reply urgent",[]],
+ ["Office desk","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup"],"outlet cake product price shelf life whatsapp wasapbot key go-live fresh start holiday",[]],
+ ["Office desk","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
 ];
 const HELP=[["? Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat","This month's treat and the jar","#treat"]];
 const ICON={
@@ -521,18 +528,32 @@ function tabs(){ const second=CA.areaOf(S)!=="office"?["kitchen","Kitchen","kitc
   const T=[["today","Today","#"],second,["team","Team","#team"],["me","Me","#me"]];
   $("#tabs").innerHTML=`<div class="tabs"><nav aria-label="Main">${T.map(([k,l,h])=>`<a href="${h}" ${((VIEW||"today")===k)?'aria-current="page"':""}>${TABI[k]}<span>${l}</span></a>`).join("")}</nav></div>`; }
 function sections(){ const tiles=TILES.filter(tileOK), secs=[...new Set(tiles.map(x=>x[0]))];
-  const mc=MINE&&MINE.length?[MINE.filter(x=>x.status==="doing").length?MINE.filter(x=>x.status==="doing").length+" being fixed":"",MINE.filter(x=>x.status==="open").length?MINE.filter(x=>x.status==="open").length+" new":""].filter(Boolean).join(" · "):"";
-  return secs.map(sec=>({name:sec,items:tiles.filter(x=>x[0]===sec).map(x=>({t:x[1],d:x[2],href:x[3]}))}))
-    .concat([{name:"Help",items:HELP.map(([t,d,v])=>/^#/.test(v)?{t,d,href:v}:{t,d:v==="mine"&&mc?mc:d,help:v})}]); }
+  return secs.map(sec=>({name:sec,items:tiles.filter(x=>x[0]===sec).map(x=>({t:x[1],d:x[2],href:x[3],k:x[5]||"",sec}))})); }
+function dailyPages(){ const a=CA.areaOf(S)||"office", tm=myTeam(); const out=[];
+  TILES.filter(tileOK).forEach(x=>{ if((x[6]||[]).some(z=>z===a||z===a+":"+tm)) out.push({t:x[1],d:x[2],href:x[3],sec:x[0]}); });
+  return out.slice(0,5); }
+function menuRow(it){ const ic=ICON[it.sec]||ICON.Help, inner=`<span class="mi" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="mt"><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span>`;
+  return it.help?`<button type="button" class="mrow" data-help="${it.help}">${inner}</button>`:`<a class="mrow" href="${esc(it.href)}" data-mgo="1">${inner}</a>`; }
+let MQ="";
+function menuBody(){ const q=MQ.trim().toLowerCase();
+  if(q){ const words=q.split(/\s+/), all=sections().flatMap(x=>x.items).concat(HELP.map(([t,d,v])=>/^#/.test(v)?{t,d,href:v,sec:"Help",k:""}:{t,d,help:v,sec:"Help",k:""}));
+    const hit=all.filter(it=>{ const hay=(it.t+" "+it.d+" "+it.k+" "+it.sec).toLowerCase(); return words.every(w=>hay.includes(w)); });
+    return hit.length?`<div class="mlab">${hit.length} page${hit.length===1?"":"s"}</div><div class="card mlist">${hit.map(menuRow).join("")}</div>`:`<div class="card mnone">Nothing found for “${esc(MQ.trim())}”. Try another word, or tap <b>? Ask</b>.</div>`; }
+  const daily=dailyPages(), secs=sections(); if(OPEN&&!secs.some(x=>x.name===OPEN)) OPEN="";
+  return (daily.length?`<div class="mlab">Your daily pages</div><div class="card mlist">${daily.map(menuRow).join("")}</div>`:"")
+    +`<div class="mlab">All pages</div>`+secs.map(sec=>{ const op=OPEN===sec.name, ic=ICON[sec.name]||ICON.Help;
+      return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${SECD[sec.name]?esc(SECD[sec.name]):""}</small></span><span class="chev" aria-hidden="true">${op?"▲":"▼"}</span></button>
+        ${op?`<div class="its">${sec.items.map(it=>`<a href="${esc(it.href)}" data-mgo="1"><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join(""); }
 function drawMenu(){ const m=$("#menu"); if(!MENU||!S){ m.innerHTML=""; document.body.style.overflow=""; return; } document.body.style.overflow="hidden";
-  const secs=sections(); if(OPEN&&!secs.some(x=>x.name===OPEN)) OPEN="";
+  const mc=MINE&&MINE.length?MINE.filter(x=>x.status!=="done").length:0;
   m.innerHTML=`<div class="menu" role="dialog" aria-modal="true" aria-label="Menu"><div class="in"><div class="mh"><div>Menu</div><button class="hbtn" type="button" data-mclose="1">✕ Close</button></div>
-    ${secs.map(sec=>{ const op=OPEN===sec.name, ic=ICON[sec.name]||ICON.Help;
-      return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${SECD[sec.name]?esc(SECD[sec.name])+" · ":""}${sec.items.length} ${sec.items.length===1?"page":"pages"}</small></span><span class="chev" aria-hidden="true">${op?"▲":"▼"}</span></button>
-        ${op?`<div class="its">${sec.items.map(it=>it.help?`<button type="button" data-help="${it.help}"><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></button>`:`<a href="${esc(it.href)}" data-mgo="1"><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join("")}
-    <div class="mf"><button type="button" class="cb ink" data-help="fb">? Ask / Report</button><button type="button" class="cb ghost" data-ca-logout="1" style="color:var(--muted)">Log out</button></div>
+    <label class="msearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><input id="msq" type="search" autocomplete="off" placeholder="Find a page: billing, fridge, audit…" value="${esc(MQ)}" aria-label="Find a page"></label>
+    <div id="mres">${menuBody()}</div>
+    <div class="mf"><button type="button" class="cb ink" data-help="ask">? Ask / Report</button><button type="button" class="cb ghost" data-ca-logout="1" style="color:var(--muted)">Log out</button></div>
+    <div class="mlinks"><button type="button" class="lnk" data-help="mine">My reports${mc?` (${mc} open)`:""}</button><a class="lnk" href="#treat" data-mgo="1">Team treat</a></div>
     ${CA.canView()?`<label class="mva"><span>Owner: see the app as</span>${CA.vaSelect()}</label>`:""}</div></div>`; }
-function setMenu(on){ MENU=!!on; drawMenu(); if(MENU&&!MINE) loadMine(); }
+document.addEventListener("input",e=>{ if(e.target&&e.target.id==="msq"){ MQ=e.target.value; const r=$("#mres"); if(r) r.innerHTML=menuBody(); } });
+function setMenu(on){ MENU=!!on; if(!MENU) MQ=""; drawMenu(); if(MENU&&!MINE) loadMine(); }
 async function loadMine(){ try{ MINE=await CA.run("feedbackMine",S.t); }catch(e){ MINE=[]; } if(MENU) drawMenu(); }
 /* ---------- views ---------- */
 function jarCard(j,treat,link){ if(!j) return ""; const pct=j.pct||0, fill=Math.max(4,Math.min(100,pct));
