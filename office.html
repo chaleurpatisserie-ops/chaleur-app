@@ -339,6 +339,7 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--mute
 .btn:hover{border-color:var(--faint)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.wa{background:#1f8f55;border-color:#1f8f55;color:#fff}
+ul.bkt{list-style:none;margin:0;padding:0}ul.bkt li{padding:7px 10px;border-radius:8px;margin:4px 0;background:var(--card2,rgba(127,127,127,.08))}ul.bkt li.ok b{color:var(--ok)}ul.bkt li.bad b{color:var(--bad)}#bktest .box2{margin-top:10px;padding:10px 12px;border:1px dashed var(--line,rgba(127,127,127,.4));border-radius:10px}#bktest .box2 ul{margin:6px 0 8px;padding-left:18px}
 .btn.danger{color:var(--bad)}
 .btn.sm{padding:5px 9px;font-size:12px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -1397,7 +1398,16 @@ function vSetup(){
         <h3 style="margin-top:14px">Outlets · ${nO} of ${M.outlets.length} matched <span class="small muted">(${M.counts.bukkuContacts} customers in Bukku)</span></h3>
         <div class="tw"><table class="bkm"><thead><tr><th>Outlet in the app</th><th>Bukku customer</th><th></th></tr></thead><tbody>${M.outlets.map(x=>{const cur=(SEL.outlets[x.id]||{}).id||""; return `<tr class="${cur?"":"miss"}"><td><b>${esc(x.name)}</b><br><span class="small muted">${esc(x.legalName||x.code)}</span></td><td><select data-bkc="${esc(x.id)}" aria-label="Bukku customer for ${esc(x.name)}">${opts(M.bukkuContacts,cur,b=>b.name+(b.code?" · "+b.code:""))}</select></td><td class="small">${cur?(x.match&&String(x.match.id)===String(cur)?`<span class="pill ok">${esc(x.match.how)}</span>`:`<span class="pill info">picked</span>`):`<span class="pill warn">missing</span>`}</td></tr>`;}).join("")}</tbody></table></div>
         <div class="row" style="margin-top:12px"><button class="btn pri" data-act="bkSaveMatch">Save matches</button><span class="small muted">A cake with no Bukku product yet? Create it in Bukku with the same name, then tap Match again.</span></div>`:""}
-    </div>`:""}`;
+    </div>`:""}
+    ${B.linked&&B.owner?(()=>{const T=B.test||{}, R=T.report, docs=T.docs||[], KN={do:"Delivery order",inv:"Invoice",cn:"Credit note"};
+      return `<div class="panel" id="bktest"><div class="spread"><h2>Safe test</h2><button class="btn ${R?"":"pri"}" data-act="bkSelf">${R?"Run the test again":"Run a safe test"}</button></div>
+      <p class="small muted" style="margin:4px 0 10px">Makes one test customer, <b>ZZ TEST Chaleur app (delete me)</b>, and 3 drafts for that customer only (delivery order, invoice, credit note) numbered <b>TEST-…</b>. Then it reads them back from Bukku and checks them. Your real invoices, delivery orders, cakes and customers are not changed.</p>
+      ${R?`<p class="small" style="margin:0 0 6px">Last run ${esc(R.at||"")}${R.by?" · "+esc(R.by):""} · ${R.steps.every(x=>x.ok)?`<span class="pill ok">All checks passed</span>`:`<span class="pill warn">${R.steps.filter(x=>!x.ok).length} to look at</span>`}</p>
+        <ul class="bkt">${R.steps.map(x=>`<li class="${x.ok?"ok":"bad"}"><b>${x.ok?"✓":"✗"} ${esc(x.name)}</b><br><span class="small muted">${esc(x.detail)}</span></li>`).join("")}</ul>`:""}
+      ${docs.length||T.contact?`<div class="box2"><b>Test items in Bukku now</b><ul class="small">${docs.map(d=>`<li>${esc(KN[d.k]||d.k)} <span class="mono">${esc(d.no)}</span> · draft</li>`).join("")}${T.contact?`<li>Customer <b>${esc(T.contact)}</b></li>`:""}</ul>
+        <div class="row">${S.ui.bkCleanArm?`<button class="btn danger" data-act="bkClean">Yes, delete these ${docs.length+(T.contact?1:0)} test items</button><button class="btn" data-act="bkCleanNo">Keep them</button>`:`<button class="btn danger" data-act="bkCleanAsk">Delete the test items in Bukku</button>`}</div>
+        <p class="small muted" style="margin:6px 0 0">Only deletes what this test made: drafts numbered TEST-… for the test customer, then the test customer. Anything else is left alone.</p></div>`:""}
+    </div>`;})():""}`;
   }
   return `<div class="head"><div><h1>Setup</h1><p class="lede">Outlets, terms, products, approved prices and document settings.</p></div></div>
     <div class="sub">${subs.map(([k,l])=>`<button aria-pressed="${sec===k}" data-setup="${k}">${l}</button>`).join("")}</div>${body}`;
@@ -1866,6 +1876,10 @@ async function act(a,b){
   case "bkMatch":{b.disabled=true; b.textContent="Reading Bukku…"; try{const r=await GS("bukkuMatch"); const sel={products:{},outlets:{}}; r.products.forEach(x=>{ if(x.match) sel.products[x.id]={id:x.match.id,name:x.match.name,sku:x.match.sku}; }); r.outlets.forEach(x=>{ if(x.match) sel.outlets[x.id]={id:x.match.id,name:x.match.name}; }); S.ui.bkMatch=r; S.ui.bkSel=sel;}catch(e){toast((e&&e.message)||"Couldn't read Bukku");} render(); return;}
   case "bkSaveMatch":{const M=S.ui.bkMatch, SEL=S.ui.bkSel; if(!M) return; b.disabled=true; const products={}, outlets={}; M.products.forEach(x=>{ products[x.id]=SEL.products[x.id]||{}; }); M.outlets.forEach(x=>{ outlets[x.id]=SEL.outlets[x.id]||{}; });
     try{const r=await GS("bukkuSaveMatch",{products,outlets}); toast(r.msg); await reload();}catch(e){toast((e&&e.message)||"Couldn't save");} render(); return;}
+  case "bkSelf":{b.disabled=true; b.textContent="Testing… (up to a minute)"; try{const r=await GS("bukkuSelfTest"); S.bk=Object.assign({},S.bk,{test:r.test}); toast(r.ok?"Bukku test passed. Check the drafts in Bukku, then delete them here.":"Bukku test finished with something to look at");}catch(e){toast((e&&e.message)||"Couldn't run the test"); S.bk=undefined;} render(); return;}
+  case "bkCleanAsk":{S.ui.bkCleanArm=true; render(); return;}
+  case "bkCleanNo":{S.ui.bkCleanArm=false; render(); return;}
+  case "bkClean":{b.disabled=true; b.textContent="Deleting…"; try{const r=await GS("bukkuTestCleanup"); S.bk=Object.assign({},S.bk,{test:r.test}); toast(r.msg);}catch(e){toast((e&&e.message)||"Couldn't delete");} S.ui.bkCleanArm=false; render(); return;}
   case "bkBill":{const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); b.disabled=true; b.textContent="Sending…"; try{const r=await GS("bukkuSendBill",pid,ws); toast(r.msg); await reload();}catch(e){toast((e&&e.message)||"Couldn't send to Bukku"); b.disabled=false; b.textContent="Send to Bukku (draft)";} render(); return;}
   case "bkDO":{const m=S.ui.modal; if(!m) return; b.disabled=true; b.textContent="Sending…"; try{const r=await GS("bukkuSendDO",wid(m.pid,m.ws),m.doc.id); toast(r.msg); await reload(); m.doc=clone((weekDoc(m.pid,m.ws).dos||{})[m.doc.id]||m.doc);}catch(e){toast((e&&e.message)||"Couldn't send to Bukku"); b.disabled=false; b.textContent="Send to Bukku (draft)";} render(); return;}
   case "makeDOs":{S.ui.doDone=null; S.ui.doPrev=draftPlan(); render(); setTimeout(()=>{const e=document.getElementById("doprev"); if(e) e.scrollIntoView({behavior:"smooth",block:"start"});},60); return;}
