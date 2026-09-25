@@ -411,6 +411,7 @@ th:first-child,td:first-child{text-align:left}td{padding:8px 4px;border-bottom:1
 .tourbub{position:fixed;z-index:76;width:min(290px,calc(100vw - 28px));background:#2b1b1e;color:#fdf6ee;border-radius:14px;padding:12px 14px;font:500 14px var(--body);box-shadow:0 10px 30px rgba(0,0,0,.35);transition:top .35s ease,left .35s ease,opacity .25s ease}
 .tourbub .tn{font:600 10.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:#e3c466;margin-bottom:4px}
 .tourbub .tx{line-height:1.35}.tourbub .tx b{color:#fff}
+.tourbub .tp{margin-top:6px;font:600 12px var(--body);color:#e3c466}
 .tourbub .tb{display:flex;justify-content:space-between;gap:14px;margin-top:10px;align-items:center}
 .tourbub .tsk{font:600 12.5px var(--body);color:#e3c466;background:none;border:0;cursor:pointer;padding:4px 0;text-decoration:underline;touch-action:manipulation}
 .tourbub .tsk.go{background:#e3c466;color:#2b1b1e;text-decoration:none;border-radius:999px;padding:6px 14px}
@@ -639,12 +640,15 @@ document.addEventListener("change",async e=>{const t=e.target;
 const TOUR_AUTO_TIMES=3;
 const tourKey=()=>"chaleur.tour."+(KEY||"x");
 const tourSeenN=()=>+(store.get(tourKey())||0)||0;
-let tourI=-1, tourHi=null, tourBub=null, tourBtn=null, tourIv=null, tourMo=null, tourTyped=0, tourManual=false;
-const nameOk=()=>{const el=$("#who"); const v=((el&&el.value)||WHO||"").trim(); return v.length>=2&&(!el||document.activeElement!==el||Date.now()-tourTyped>1500);};
+let tourI=-1, tourHi=null, tourBub=null, tourBtn=null, tourIv=null, tourMo=null, tourTyped=0, tourManual=false, tourNamed=false, tourDate="", tourProg="";
+const tourDone=new Set();
+const nameOk=()=>{const el=$("#who"); const v=((el&&el.value)||WHO||"").trim(); return tourNamed&&v.length>=2&&(!el||document.activeElement!==el||Date.now()-tourTyped>1500);};
+const rowDone=k=>tourDone.has(k)||ROWS[k].w!==""||ROWS[k].b!=="";
+const rowsProg=()=>{const n=ORDER.filter(rowDone).length; return ORDER.length?`${n} of ${ORDER.length} row${ORDER.length>1?"s":""} filled`:"";};
 const tourSteps=[
-  {sel:"#who",title:"Step 1 of 4 · Your name",text:"Type your name here, so Chaleur knows who counted tonight.",done:nameOk},
-  {sel:"#app .cake, #app [data-act=add]",title:"Step 2 of 4 · Count the cakes",text:"For each cake and colour dot, type <b>Waste</b> (thrown away or damaged) and <b>Left</b> (still in the chiller). Empty box = 0. Missing a colour? Tap its dot on the cake.",done:()=>ORDER.some(k=>ROWS[k].w!==""||ROWS[k].b!=="")},
-  {sel:"#ptiles",title:"Step 3 of 4 · Photos",text:"Tap each box to take a photo: today's <b>sales report</b> from the POS, the <b>chiller</b>, and the <b>waste</b> if there is any.",done:()=>PH.sales.length>0&&!!PH.display&&(!hasWaste()||!!PH.waste)},
+  {sel:"#who",title:"Step 1 of 4 · Your name",text:"Type your name here, so Chaleur knows who counted tonight. Is it already showing your name? Tap Next.",done:nameOk},
+  {sel:"#app .cake, #app [data-act=add]",title:"Step 2 of 4 · Count the cakes",text:"Fill in <b>every row</b>: <b>Waste</b> (thrown away or damaged) and <b>Left</b> (still in the chiller) for each colour dot. Tap + / − or type; 0 if none. Missing a colour? Tap its dot on the cake.",done:()=>ORDER.length>0&&ORDER.every(rowDone),prog:rowsProg,next:false},
+  {sel:"#ptiles",title:"Step 3 of 4 · Photos",text:"Tap each box to take a photo: today's <b>sales report</b> from the POS, the <b>chiller</b>, and the <b>waste</b> if there is any.",done:()=>PH.sales.length>0&&!!PH.display&&(!hasWaste()||!!PH.waste),next:false},
   {sel:"#next",title:"Step 4 of 4 · Send",text:"Tap <b>Send tonight's count</b>. Check the numbers on the next screen, then <b>Confirm &amp; send</b>. You're done when you see “Sent. Thank you!”",done:()=>false,last:true}
 ];
 function tourBuild(){
@@ -653,7 +657,8 @@ function tourBuild(){
   tourBub=document.createElement("div"); tourBub.className="tourbub off"; tourBub.setAttribute("role","status"); document.body.appendChild(tourBub);
   tourBtn=document.createElement("button"); tourBtn.type="button"; tourBtn.className="tourshow"; tourBtn.textContent="❔ Show me how"; tourBtn.onclick=()=>tourStart(true); document.body.appendChild(tourBtn);
   tourBub.addEventListener("click",e=>{const b=e.target.closest("[data-tour]"); if(!b) return; if(b.dataset.tour==="skip") tourSkip(); else tourNext();});
-  document.addEventListener("input",e=>{if(e.target.id==="who") tourTyped=Date.now();});
+  document.addEventListener("input",e=>{const t=e.target; if(t.id==="who"){tourTyped=Date.now(); if(t.value.trim().length>=2) tourNamed=true;} if(t.dataset&&t.dataset.k) tourDone.add(t.dataset.k);},true);
+  document.addEventListener("click",e=>{const b=e.target.closest("[data-step]"); if(b) tourDone.add(b.dataset.step);},true);
   const re=()=>{if(tourI>=0) requestAnimationFrame(tourPlace);};
   window.addEventListener("scroll",re,{passive:true}); window.addEventListener("resize",re);
   tourMo=new MutationObserver(()=>{tourShowBtn(); if(tourI>=0) requestAnimationFrame(tourPlace);}); tourMo.observe($("#app"),{childList:true,subtree:true});
@@ -676,25 +681,27 @@ function tourPlace(){
 }
 function tourShow(i){
   tourI=i; const st=tourSteps[i]; if(!st) return tourFinish();
-  tourBub.innerHTML=`<div class="tn">${st.title}</div><div class="tx">${st.text}</div><div class="tb"><button class="tsk" type="button" data-tour="skip">Skip, I know this</button><button class="tsk go" type="button" data-tour="next">${st.last?"Got it":"Next →"}</button></div>`;
+  tourProg=st.prog?st.prog():""; tourBub.innerHTML=`<div class="tn">${st.title}</div><div class="tx">${st.text}</div>${st.prog?`<div class="tp">${tourProg}</div>`:""}<div class="tb"><button class="tsk" type="button" data-tour="skip">Skip, I know this</button>${st.next===false&&!tourManual?"":`<button class="tsk go" type="button" data-tour="next">${st.last?"Got it":"Next →"}</button>`}</div>`;
   const el=document.querySelector(st.sel);
   if(el&&!st.last) el.scrollIntoView({block:"center",behavior:"smooth"});
   tourShowBtn(); setTimeout(tourPlace,60); setTimeout(tourPlace,420);
 }
 function tourTick(){
-  if(tourI<0) return;
+  if(tourI<0) return; if(DATE!==tourDate){tourDate=DATE; tourDone.clear();}
   if(!tourOnForm()){ if(document.querySelector("#app .spin")){tourPlace();return;} /* reloading: just wait */
     if(tourSteps[tourI].last||tourI>=2) return tourFinish(); /* review or done screen: they made it to the end */ tourPlace(); return; }
-  let i=tourI; while(i<tourSteps.length-1&&tourSteps[i].done()) i++;
-  if(i!==tourI) tourShow(i); else tourPlace();
+  let i=tourI; if(!tourManual) while(i<tourSteps.length-1&&tourSteps[i].done()) i++;
+  if(i!==tourI) return tourShow(i);
+  const st=tourSteps[tourI]; if(st.prog){const pr=st.prog(); if(pr!==tourProg){tourProg=pr; const el=tourBub.querySelector(".tp"); if(el) el.textContent=pr;}}
+  tourPlace();
 }
-function tourNext(){ if(tourSteps[tourI]&&tourSteps[tourI].last) return tourFinish(); tourShow(tourI+1); }
+function tourNext(){ if(tourI===0) tourNamed=true; if(tourSteps[tourI]&&tourSteps[tourI].last) return tourFinish(); tourShow(tourI+1); }
 function tourStop(){ tourI=-1; if(tourIv){clearInterval(tourIv); tourIv=null;} if(tourHi){tourHi.classList.add("off"); tourBub.classList.add("off");} tourShowBtn(); }
 function tourFinish(){ if(!tourManual) store.set(tourKey(),String(tourSeenN()+1)); tourStop(); }
 function tourSkip(){ store.set(tourKey(),String(Math.max(tourSeenN()+1,TOUR_AUTO_TIMES))); tourStop(); }
 function tourStart(manual){
-  if(!tourOnForm()) return; tourBuild(); tourManual=!!manual; tourTyped=0;
-  let i=0; while(i<tourSteps.length-1&&tourSteps[i].done()) i++;
+  if(!tourOnForm()) return; tourBuild(); tourManual=!!manual; tourTyped=0; tourDate=DATE;
+  let i=0; if(!manual) while(i<tourSteps.length-1&&tourSteps[i].done()) i++;
   tourShow(i); if(!tourIv) tourIv=setInterval(tourTick,400);
 }
 function tourMaybeStart(){ tourBuild(); tourShowBtn(); if(tourOnForm()&&tourSeenN()<TOUR_AUTO_TIMES) tourStart(false); }
