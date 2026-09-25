@@ -12,9 +12,9 @@ window.google={script:{run:mk(null,null)}};})();
 </script><style>
 .ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
 .ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
-@media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:30px;padding:4px 10px}}
+@media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:40px;padding:4px 14px}}
 .ca-next{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.ca-next li{display:flex;gap:8px;align-items:flex-start}.ca-next i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:#9a8f91}.ca-next i.bad{background:#c0392b}.ca-next i.warn{background:#d68910}.ca-next i.ok{background:#1e8449}.ca-next a{color:inherit;font-weight:600}
-.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:32px}
+.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 14px;cursor:pointer;min-height:40px}
 .ca-login{max-width:390px;margin:28px auto;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;padding:18px}
 .ca-login h2{font-family:var(--display,Georgia,serif);font-size:30px;line-height:1.1;margin:0 0 6px;font-weight:600}
 .ca-login p{margin:0;color:var(--muted,#6f5f62);font-size:14px}
@@ -26,7 +26,7 @@ window.google={script:{run:mk(null,null)}};})();
 .ca-go:disabled{opacity:.6}
 .ca-err{color:#b3261e;font-size:14px;margin-top:10px;min-height:1.2em}
 .ca-va{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 8px;min-height:32px;max-width:180px}
-.ca-vabar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;background:#2b1b1e;color:#fff;padding:8px 14px;font:500 13.5px/1.35 var(--body,Jost,system-ui,sans-serif);position:relative;z-index:70}
+.ca-vabar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;background:#2b1b1e;color:#fff;padding:8px 14px;font:500 13.5px/1.35 var(--body,Jost,system-ui,sans-serif);position:fixed;top:0;left:0;right:0;z-index:50}body{padding-top:var(--vah,0px)}
 .ca-vabar b{color:#e3c466}.ca-vabar .ca-vact{display:flex;gap:8px;align-items:center}
 .ca-vabar button{font:600 13px var(--body,Jost,system-ui,sans-serif);border:0;border-radius:999px;padding:7px 14px;background:#e3c466;color:#2b1b1e;cursor:pointer;min-height:34px}
 .ca-vabar .ca-va{background:#fff;color:#2b1b1e}
@@ -152,7 +152,8 @@ const CA=(function(){
   document.addEventListener("click",e=>{ const b=e.target&&e.target.closest&&e.target.closest("[data-ca-viewback]"); if(b){ e.preventDefault(); switchView("owner"); } });
   /* While viewing as another role, a strip at the top of every page says so */
   function vaStrip(){ const c=get(); if(!c||!c.as||document.getElementById("ca-vastrip")) return; const d=document.createElement("div"); d.id="ca-vastrip"; d.className="ca-vabar";
-    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(c.as)}</b> (${esc(labelOf(c))}). Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d); }
+    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(c.as)}</b> (${esc(labelOf(c))}). Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d);
+    const fit=()=>document.documentElement.style.setProperty("--vah",d.offsetHeight+"px"); fit(); if(window.ResizeObserver) new ResizeObserver(fit).observe(d); window.addEventListener("resize",fit); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",vaStrip); else setTimeout(vaStrip,0);
   /* Where a "what to do next" item goes: page + tab (#hash) + kitchen team */
   const nextHref=g=>g?(g.page+(g.team?"?team="+encodeURIComponent(g.team):"")+(g.hash?"#"+g.hash:"")):"";
@@ -191,16 +192,17 @@ const CA=(function(){
     const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
     let NX=null, NXB=false;
     const tok=()=>{ const au=opt.auth&&opt.auth(); return au&&/^s1\./.test(String(au))?au:(au||""); };
+    const plain=t=>String(t||"").replace(/\*\*(.+?)\*\*/g,"$1").replace(/^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• ").replace(/\n{3,}/g,"\n\n").trim();
     const first=()=>{ const s0=get(); return cap(String((s0&&s0.name)||(NX&&NX.name)||"").split(" ")[0]); };
     const pageName=()=>opt.page?opt.page():document.title;
     function loadMine(force){ const au=tok(); if(!au||MINEB||(MINE&&!force)) return; MINEB=true; run("feedbackMine",au).then(r=>{MINE=r||[];}).catch(()=>{MINE=MINE||[];}).then(()=>{MINEB=false; paint();}); }
     function mineCount(){ if(!MINE||!MINE.length) return ""; const d=MINE.filter(x=>x.status==="doing").length, n=MINE.filter(x=>x.status==="open").length; return [d?d+" being fixed":"",n?n+" new":""].filter(Boolean).join(" · ")||MINE.length+" done"; }
     function head(){ if(VIEW==="mine") return `<div class="ca-hd" style="justify-content:flex-start;gap:12px"><button type="button" class="ca-back" data-hv="fb" aria-label="Back">‹</button><div class="ca-ttl" style="flex:1"><small>Helper</small>My reports</div><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>`;
       return `<div class="ca-hd"><span class="ca-ttl">Helper</span><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>
-        <div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`; }
+        ${opt.noReport?"":`<div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`}`; }
     function askHtml(){
       const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
         <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
     function fbHtml(){
       if(FB.sent){ const x=FB.sent;
@@ -259,7 +261,7 @@ const CA=(function(){
         FB.sent={ref:r.ref||r.id,type:FB.type,text:FB.text.trim(),photo:!!FB.photo,urgent:FB.urgent,page:pg,at:r.at||new Date().toISOString()}; FB.busy=false; MINE=null; loadMine(true); }
       catch(x){ FB.busy=false; FB.err=(x&&x.message)||"Couldn't send. Please try again."; }
       paint(); }
-    function setView(v){ VIEW=v==="mine"?"mine":v==="fb"?"fb":"ask"; if(VIEW==="mine") loadMine(true); else if(VIEW==="fb") loadMine(); paint();
+    function setView(v){ VIEW=opt.noReport?"ask":(v==="mine"?"mine":v==="fb"?"fb":"ask"); if(VIEW==="mine") loadMine(true); else if(VIEW==="fb") loadMine(); paint();
       const f=panel&&panel.querySelector(VIEW==="ask"?".ca-askf textarea":VIEW==="fb"?".ca-types button":".ca-back"); if(f&&VIEW!=="fb") f.focus(); }
     function close(){ if(panel){panel.remove();panel=null;} if(bd){bd.remove();bd=null;} document.removeEventListener("keydown",esc_); b.setAttribute("aria-expanded","false"); b.focus(); }
     function esc_(e){ if(e.key==="Escape") close(); }
@@ -301,10 +303,14 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 .card{background:var(--paper);border:1.5px solid var(--cline);border-radius:20px;box-shadow:0 3px 0 var(--cline)}
 .stack{display:flex;flex-direction:column;gap:12px}
 /* header */
-.hd{position:sticky;top:0;z-index:20;background:var(--ground);display:flex;align-items:center;gap:8px;padding:10px 0}
+.hd{position:fixed;top:var(--vah,0px);left:0;right:0;z-index:20;background:var(--ground);display:flex;align-items:center;gap:8px;padding:10px 16px;margin:0 auto;max-width:560px;box-shadow:0 6px 12px -8px rgba(43,27,30,.18)}
+.w{padding-top:66px}.hd .logo{text-decoration:none;cursor:pointer}.hd .logo:active{transform:scale(.94)}
+.asheet{position:fixed;inset:0;z-index:65;background:rgba(20,10,12,.5);display:flex;align-items:flex-end;justify-content:center}.asheet .box{background:var(--paper);width:100%;max-width:560px;max-height:90vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.asheet label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}.asheet input,.asheet select,.asheet textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;text-transform:none;letter-spacing:0;font-weight:400}
+.row .circ.tk{cursor:pointer;position:relative}.row .circ.tk input{position:absolute;inset:0;opacity:0;margin:0;width:100%;height:100%;cursor:pointer}.asgbtn{margin-top:6px}
 .logo{width:36px;height:36px;border-radius:9px;background:var(--deep);color:var(--gold);display:grid;place-items:center;flex:none}.logo svg{width:28px;height:auto;display:block}
 .hd .tt{flex:1;min-width:0}.hd h1{font:700 20px/1.05 var(--display);margin:0}.hd .sub{font-size:12px;color:var(--muted)}
-.hd .sub button{border:0;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline dotted;min-height:24px}
+.hd .sub button{border:0;background:none;padding:6px 0;margin:-6px 0;font:inherit;color:inherit;text-decoration:underline dotted;min-height:36px}
 .hbtn{height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-weight:600;font-size:14px;color:var(--ink);box-shadow:0 3px 0 var(--line);flex:none}
 .qbtn{width:44px;height:44px;border-radius:50%;border:0;background:var(--ink);color:var(--paper);font-weight:700;font-size:17px;flex:none}
 .back{width:44px;height:44px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-size:20px;color:var(--ink);flex:none;display:grid;place-items:center;text-decoration:none}
@@ -377,7 +383,7 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 .lad{padding:6px 14px}.lad div{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0}.lad .d{width:12px;height:12px;border-radius:50%;border:2px solid #d9c9c1}
 .lad .past{color:#9a8f91}.lad .past .d{background:var(--ok);border-color:var(--ok)}.lad .past b{color:var(--muted)}.lad .me{background:var(--soft);margin:0 -14px;padding:10px 14px}.lad .me .d{background:var(--accent);border-color:var(--accent)}.lad small{font-size:12px;color:var(--muted)}.lad .me small{font-weight:700;color:var(--accent)}
 .av{width:56px;height:56px;border-radius:50%;background:var(--deep);border:3px solid var(--gold);color:var(--gold);display:grid;place-items:center;font:700 24px var(--display);flex:none}
-.lrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--cline);font-size:14.5px;text-decoration:none;color:inherit;background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left}.lrow:last-child{border-bottom:0}
+.lrow .ca-va{min-height:44px;font-size:14px}.lrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--cline);font-size:14.5px;text-decoration:none;color:inherit;background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left}.lrow:last-child{border-bottom:0}
 .fills{padding:4px 14px;font-size:14px}.fills div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--cline)}.fills div:last-child{border-bottom:0}
 .opt{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 14px;border-radius:16px;border:2px solid var(--line);background:var(--paper);text-align:left;color:var(--ink);font-weight:700;font-size:14.5px;width:100%}
 .opt i{width:22px;height:22px;border-radius:50%;border:2px solid #d9c9c1;flex:none}.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--soft)}.opt[aria-pressed="true"] i{background:var(--accent);border-color:var(--accent)}
@@ -424,6 +430,7 @@ const QS=new URLSearchParams(location.search);
 /* where to go back to after signing in (only our own pages) */
 const NEXT=(()=>{ const n=QS.get("next")||""; return /^(office|kitchen|audit)\.html(\?[A-Za-z0-9_=&%.-]*)?(#[A-Za-z0-9_-]*)?$/.test(n)?n:""; })();
 /* Every page, by access (Staff tab). Pages still check access on the server. [group, title, description, link, roles] */
+const SECD={"Kitchen":"Reports, to-dos, plan","Quality checks":"Taste checks","Outlets & deliveries":"Outlet stock, DOs, audits","Office desk":"Back office: bills, setup, staff","Help":"Ask, report, guides"};
 const TILES=[
  ["Kitchen","Morning / Decoration","Opening report, finish & decorate, orders","kitchen.html?team=am#today",["kitchen","kapprove","todo"]],
  ["Kitchen","Noon / Production","Production list, prep, closing report","kitchen.html?team=pm#today",["kitchen","kapprove","todo"]],
@@ -433,23 +440,24 @@ const TILES=[
  ["Quality checks","Random QC","Today's taste check, picked by the app","#qc",["qc"]],
  ["Quality checks","QC history","Every taste check with photos","office.html#audits",["audit","kapprove"]],
  ["Outlets & deliveries","Deliveries","Check colours, mark delivered","office.html#deliveries",["deliv","doedit"]],
- ["Outlets & deliveries","Plan & prep","Tomorrow's deliveries, prep sheet, draft DOs","office.html#plan",["doedit","reports"]],
+ ["Kitchen","Plan & prep · all outlets","What to prepare and deliver, prep sheet, delivery notes","office.html#plan",["kitchen","deliv"]],
+ ["Outlets & deliveries","Plan & prep","Deliveries to prepare, prep sheet, draft DOs","office.html#plan",["doedit","reports"]],
  ["Outlets & deliveries","Outlets today","Missing reports, cakes to take off, chase","office.html#today",["chase","view"]],
  ["Outlets & deliveries","Outlet reports","Nightly closing reports and corrections","office.html#daily",["reports","view"]],
  ["Outlets & deliveries","Spot audit","Check an outlet: display, prices, chiller","audit.html",["audit"]],
- ["Office","Weekly billing","Invoice, carry forward, credit note","office.html#billing",()=>can("money")&&(can("reports")||can("bills"))],
- ["Office","Spot audit results","Every audit with photos and the PDF","office.html#audits",["audit"]],
- ["Office","Change log","Every correction: who, when and why","office.html#log",["reports"]],
- ["Office","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems"]],
- ["Office","Setup","Outlets, cakes, prices, WhatsApp, points","office.html#setup",["setup"]],
- ["Office","Staff","Who can sign in, PINs and access","office.html#staff",["staff"]],
+ ["Office desk","Weekly billing","Invoice, carry forward, credit note","office.html#billing",()=>can("money")&&(can("reports")||can("bills"))],
+ ["Office desk","Spot audit results","Every audit with photos and the PDF","office.html#audits",["audit"]],
+ ["Office desk","Change log","Every correction: who, when and why","office.html#log",["reports"]],
+ ["Office desk","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems"]],
+ ["Office desk","Setup","Outlets, cakes, prices, WhatsApp, points","office.html#setup",["setup"]],
+ ["Office desk","Staff","Who can sign in, PINs and access","office.html#staff",["staff"]],
 ];
 const HELP=[["? Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat","This month's treat and the jar","#treat"]];
 const ICON={
  Kitchen:["#f3e4e5",`<svg viewBox="0 0 30 30"><circle cx="15" cy="5" r="3" fill="#c0392b"/><path d="M7 12h16v4H7z" fill="#e0707a"/><path d="M5 16h20v9H5z" fill="#7b1c2b"/><path d="M5 19h20v2H5z" fill="#e3c466"/></svg>`],
  "Quality checks":["#fbecd2",`<svg viewBox="0 0 30 30"><circle cx="12" cy="12" r="7" fill="none" stroke="#a0620a" stroke-width="3"/><circle cx="10" cy="10" r="2.5" fill="#f2c230"/><path d="M17 17l8 8" stroke="#a0620a" stroke-width="4" stroke-linecap="round"/></svg>`],
  "Outlets & deliveries":["#dde8f8",`<svg viewBox="0 0 30 30"><path d="M4 9h22v4H4z" fill="#b07c44"/><path d="M6 13h18v12H6z" fill="#c9955b"/><path d="M13 13h4v12h-4z" fill="#ecc98f"/><circle cx="23" cy="22" r="4" fill="#2f6fd0" stroke="#fff" stroke-width="1.5"/></svg>`],
- Office:["#fbf1d3",`<svg viewBox="0 0 30 30"><rect x="6" y="5" width="18" height="22" rx="3" fill="#fff" stroke="#2b1b1e" stroke-width="2"/><rect x="11" y="3" width="8" height="5" rx="2" fill="#2b1b1e"/><path d="M10 13h10M10 17h7M10 21h9" stroke="#a0620a" stroke-width="2"/></svg>`],
+ "Office desk":["#fbf1d3",`<svg viewBox="0 0 30 30"><rect x="6" y="5" width="18" height="22" rx="3" fill="#fff" stroke="#2b1b1e" stroke-width="2"/><rect x="11" y="3" width="8" height="5" rx="2" fill="#2b1b1e"/><path d="M10 13h10M10 17h7M10 21h9" stroke="#a0620a" stroke-width="2"/></svg>`],
  Help:["#dcefe2",`<svg viewBox="0 0 30 30"><path d="M4 6h22v14H13l-6 5v-5H4z" fill="#1e8449"/><text x="15" y="17" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Jost,sans-serif">?</text></svg>`]};
 const TABI={
  today:`<svg viewBox="0 0 28 26"><path d="M8 2v22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M9 3h13l-3 5 3 5H9z" fill="currentColor"/></svg>`,
@@ -467,7 +475,7 @@ const can=p=>CA.permsOf(S).includes(p), isKit=()=>S&&CA.areaOf(S)==="kitchen", t
 const nf=n=>Number(n||0).toLocaleString("en-MY");
 function hi(){ const h=+new Date().toLocaleString("en-GB",{hour:"2-digit",hour12:false,timeZone:"Asia/Kuala_Lumpur"}); return h<12?"Morning":h<17?"Afternoon":"Evening"; }
 function dateTxt(){ try{ return new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Asia/Kuala_Lumpur"}).replace(",",""); }catch(e){ return ""; } }
-function hmOf(iso){ try{ return new Date(iso).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"}); }catch(e){ return ""; } }
+function hmOf(iso){ try{ if(!iso) return ""; const d=new Date(iso); if(isNaN(d.getTime())) return ""; return d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"}); }catch(e){ return ""; } }
 function myTeam(){ if(TEAM==="am"||TEAM==="pm") return TEAM; const h=+new Date().toLocaleString("en-GB",{hour:"2-digit",hour12:false,timeZone:"Asia/Kuala_Lumpur"}); return h<13?"am":"pm"; }
 function toast(m){ const d=document.createElement("div"); d.className="xp"; d.style.background="var(--ink)"; d.style.color="var(--paper)"; d.style.fontWeight="600"; d.textContent=m; document.body.appendChild(d); setTimeout(()=>d.remove(),1500); }
 function xp(n){ if(!(n>0)) return; const d=document.createElement("div"); d.className="xp"; d.textContent="+"+n+" to the team jar"; document.body.appendChild(d); setTimeout(()=>d.remove(),1500); }
@@ -505,11 +513,11 @@ document.addEventListener("input",e=>{ if(e.target&&e.target.id==="ca-pin"){ PIN
 document.addEventListener("keydown",e=>{ if(!$(".si")) return; const a=document.activeElement; if(a&&a.id==="ca-id"&&a.type!=="hidden"){ if(e.key==="Enter"){ e.preventDefault(); a.blur(); } return; }
   if(/^[0-9]$/.test(e.key)){ if(PIN.length<6){ PIN+=e.key; drawPin(); } e.preventDefault(); } else if(e.key==="Backspace"){ PIN=PIN.slice(0,-1); drawPin(); e.preventDefault(); } else if(e.key==="Enter"){ doSignIn(); } });
 /* ---------- header, tab bar, menu ---------- */
-function header(){ return `<div class="hd"><div class="logo" aria-hidden="true">${LOGO()}</div><div class="tt"><h1>${esc(hi())}, ${esc(first())}</h1>
+function header(){ return `<div class="hd"><a class="logo" href="index.html" aria-label="Home" title="Home">${LOGO()}</a><div class="tt"><h1>${esc(hi())}, ${esc(first())}</h1>
     <div class="sub">${esc(dateTxt())} · ${isKit()?`<button type="button" data-team="1" aria-label="Switch team">${myTeam()==="am"?"Morning team":"Production team"}</button>`:esc(CA.labelOf(S))}</div></div>
     <button class="hbtn" type="button" data-menu="1" aria-haspopup="true">☰ Menu</button><button class="qbtn" type="button" data-help="ask" aria-label="Ask the helper or report a problem">?</button></div>`; }
-function subHead(title,back){ return `<div class="hd">${back?`<a class="back" href="#${back==="home"?"":back}" aria-label="Back">‹</a>`:""}<div class="tt"><div class="ptitle">${esc(title)}</div></div><button class="hbtn" type="button" data-menu="1">☰ Menu</button><button class="qbtn" type="button" data-help="ask" aria-label="Ask the helper or report a problem">?</button></div>`; }
-function tabs(){ const second=CA.areaOf(S)!=="office"?["kitchen","Kitchen","kitchen.html"]:["office","Office","office.html"];
+function subHead(title,back){ return `<div class="hd"><a class="logo" href="index.html" aria-label="Home" title="Home">${LOGO()}</a>${back?`<a class="back" href="#${back==="home"?"":back}" aria-label="Back">‹</a>`:""}<div class="tt"><div class="ptitle">${esc(title)}</div></div><button class="hbtn" type="button" data-menu="1">☰ Menu</button><button class="qbtn" type="button" data-help="ask" aria-label="Ask the helper or report a problem">?</button></div>`; }
+function tabs(){ const second=CA.areaOf(S)!=="office"?["kitchen","Kitchen","kitchen.html"]:["office","Desk","office.html"];
   const T=[["today","Today","#"],second,["team","Team","#team"],["me","Me","#me"]];
   $("#tabs").innerHTML=`<div class="tabs"><nav aria-label="Main">${T.map(([k,l,h])=>`<a href="${h}" ${((VIEW||"today")===k)?'aria-current="page"':""}>${TABI[k]}<span>${l}</span></a>`).join("")}</nav></div>`; }
 function sections(){ const tiles=TILES.filter(tileOK), secs=[...new Set(tiles.map(x=>x[0]))];
@@ -520,7 +528,7 @@ function drawMenu(){ const m=$("#menu"); if(!MENU||!S){ m.innerHTML=""; document
   const secs=sections(); if(OPEN&&!secs.some(x=>x.name===OPEN)) OPEN="";
   m.innerHTML=`<div class="menu" role="dialog" aria-modal="true" aria-label="Menu"><div class="in"><div class="mh"><div>Menu</div><button class="hbtn" type="button" data-mclose="1">✕ Close</button></div>
     ${secs.map(sec=>{ const op=OPEN===sec.name, ic=ICON[sec.name]||ICON.Help;
-      return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${sec.items.length} ${sec.items.length===1?"page":"pages"}</small></span><span class="chev" aria-hidden="true">${op?"▲":"▼"}</span></button>
+      return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${SECD[sec.name]?esc(SECD[sec.name])+" · ":""}${sec.items.length} ${sec.items.length===1?"page":"pages"}</small></span><span class="chev" aria-hidden="true">${op?"▲":"▼"}</span></button>
         ${op?`<div class="its">${sec.items.map(it=>it.help?`<button type="button" data-help="${it.help}"><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></button>`:`<a href="${esc(it.href)}" data-mgo="1"><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join("")}
     <div class="mf"><button type="button" class="cb ink" data-help="fb">? Ask / Report</button><button type="button" class="cb ghost" data-ca-logout="1" style="color:var(--muted)">Log out</button></div>
     ${CA.canView()?`<label class="mva"><span>Owner: see the app as</span>${CA.vaSelect()}</label>`:""}</div></div>`; }
@@ -536,9 +544,9 @@ function qcCard(q){ if(!q||q.done) return ""; const late=TODAY&&TODAY.now>q.by;
   return `<div class="qcc"><div class="top"><span class="ico" style="background:var(--warn-bg)" aria-hidden="true">${ICON["Quality checks"][1]}</span><div style="flex:1"><div class="eb">New · Random QC</div><div class="ttl">Taste-check ${q.items.length} cake${q.items.length>1?"s":""}</div><div class="hint" style="font-size:12.5px;${late?"color:var(--bad-tx);font-weight:600":""}">${late?"Was due "+esc(q.by):"Before "+esc(q.by)} · picked by the app</div></div></div>
     <div class="chips">${q.items.map(x=>`<span class="chip"><i style="background:${esc(x.hex)}"></i>${esc(x.name)}</span>`).join("")}</div>
     <a class="cb full" href="#qc">Start QC</a></div>`; }
-function rowHtml(r){ const right=r.done?`<span class="r">${esc(hmOf(r.at))}</span>`:r.cur&&r.go?`<a class="cb sm" href="${esc(CA.nextHref(r.go))}">${esc(r.btn||"Start")}</a>`:r.dot?`<span class="dotr" style="background:${esc(r.dot)}"></span>`:r.due?`<span class="r">${esc(r.due)}</span>`:"";
+function rowHtml(r){ const right=r.done?`<span class="r">${esc(hmOf(r.at)||"Done")}</span>`:r.cur&&r.go?`<a class="cb sm" href="${esc(CA.nextHref(r.go))}">${esc(r.btn||"Start")}</a>`:r.dot?`<span class="dotr" style="background:${esc(r.dot)}"></span>`:r.due?`<span class="r">${esc(r.due)}</span>`:"";
   const sub=r.done?(r.by?"✓ "+esc(cap(String(r.by).split(" ")[0]))+(r.sub?" · "+esc(r.sub):""):esc(r.sub||"")):esc(r.sub||"");
-  const inner=`<span class="circ" aria-hidden="true">${r.done?"✓":""}</span><span><span class="t">${esc(r.title)}</span>${sub?`<span class="s ${!r.done&&r.late?"late":""}">${sub}</span>`:""}</span>${right}`;
+  const inner=`<span class="circ ${r.tick?"tk":""}" ${r.tick?`aria-label="${r.done?"Done":"Tick when done"}"`:'aria-hidden="true"'}>${r.tick?`<input type="checkbox" data-asdone="${esc(r.tid)}" data-asdate="${esc(r.tdate)}" ${r.done?"checked":""}>`:""}${r.done?"✓":""}</span><span><span class="t">${esc(r.title)}</span>${sub?`<span class="s ${!r.done&&r.late?"late":""}">${sub}</span>`:""}</span>${right}`;
   return r.go&&!r.cur?`<a class="row ${r.done?"done":""}" href="${esc(CA.nextHref(r.go))}">${inner}</a>`:`<div class="row ${r.done?"done":""} ${r.cur?"cur":""}">${inner}</div>`; }
 function vHome(){
   const T=TODAY, kit=isKit();
@@ -549,17 +557,44 @@ function vHome(){
     html+=`<div class="lh"><b>Today</b><span>${T?`${dn} of ${rows.length} done`:""}</span></div>
       <div class="teamsw" role="group" aria-label="Team"><button type="button" data-setteam="am" aria-pressed="${tm==="am"}">Morning</button><button type="button" data-setteam="pm" aria-pressed="${tm==="pm"}">Production</button></div>
       <div class="card rows">${!T?`<div class="row"><span class="hint">Loading today's list…</span></div>`:T.closed?`<div class="row"><span class="circ"></span><span class="t">The kitchen is closed today.</span></div>`:rows.length?rows.map(rowHtml).join(""):`<div class="row"><span class="circ"></span><span class="t">Nothing on the list for this team today.</span></div>`}</div>`;
-    const also=(NX&&NX.items||[]).filter(i=>i.sev!=="ok"&&!/^(Opening report|Closing report|Morning team|Production team|Finish & decorate|Production today|Random QC)/.test(i.text));
+    const also=(NX&&NX.items||[]).filter(i=>i.sev!=="ok"&&!/^(Opening report|Closing report|Morning team|Production team|Finish & decorate|Production today|Random QC|Task from)/.test(i.text));
     if(also.length) html+=`<div class="lh"><b>Also for you</b><span></span></div><div class="card also">${also.map(nxItem).join("")}</div>`;
+    if(can("todo")) html+=`<button class="cb ghost full asgbtn" type="button" data-assign="1">＋ Assign a task to someone</button>`;
   } else {
+    const ar=T&&T.rows?T.rows:[];
+    if(ar.length) html+=`<div class="lh"><b>Tasks for you</b><span>${ar.filter(r=>r.done).length} of ${ar.length} done</span></div><div class="card rows">${ar.map(rowHtml).join("")}</div>`;
     const items=(NX&&NX.items||[]).filter(i=>i.sev!=="ok"), n=items.length, done=NX&&NX.items&&NX.items.some(i=>i.sev==="ok");
     const deg=n?Math.max(20,360-n*40):360;
     html+=`<div class="card board"><div class="ring" style="background:conic-gradient(var(--ok) ${360-deg}deg,var(--line) 0)"><div style="position:absolute;inset:8px;border-radius:50%;background:var(--paper)"></div><b style="position:relative">${NX?n:"…"}</b><small style="position:relative">to clear</small></div>
       <div><div style="font:700 22px/1.1 var(--display)">${!NX?"Checking…":n?"Clear the board":"All clear"}</div><div class="hint">${!NX?"":n?"One at a time. Tap an item to go there.":"Nothing is waiting for you right now."}</div></div></div>
-      ${n?`<div class="card also">${items.map(nxItem).join("")}</div>`:""}`;
+      ${n?`<div class="card also">${items.filter(i=>!/^Task from/.test(i.text)).map(nxItem).join("")}</div>`:""}
+      ${can("todo")?`<button class="cb ghost full asgbtn" type="button" data-assign="1">＋ Assign a task to someone</button>`:""}`;
   }
   html+=`<p class="hint" style="margin:6px 2px 0">Everything else is in <b>☰ Menu</b>. Stuck? Tap <b>?</b> (English, Malay or Chinese). Urgent: WhatsApp Alfred 014-665 0928.</p></div>`;
   return html; }
+/* Assign a task (people with "Add and edit to-dos"): anyone, everyone with an access, or one person; date, due time, page to open */
+let ASG=null, ASGD=null;
+function openAssign(){ ASG={title:"",detail:"",who:"all",date:TODAY?TODAY.date:new Date().toISOString().slice(0,10),ready:"",team:"",link:""}; drawAssign(); if(!ASGD) CA.run("assignees",S.t).then(r=>{ASGD=r; drawAssign();}).catch(x=>toast(x.message)); }
+function closeAssign(){ ASG=null; const el=$("#asg"); if(el) el.remove(); }
+function drawAssign(){ if(!ASG) return; let el=$("#asg"); if(!el){ el=document.createElement("div"); el.id="asg"; document.body.appendChild(el); }
+  const D=ASGD, who=D?`<option value="all" ${ASG.who==="all"?"selected":""}>Anyone in the team</option><optgroup label="Everyone with this access">${D.perms.map(p=>`<option value="perm:${esc(p.key)}" ${ASG.who==="perm:"+p.key?"selected":""}>${esc(p.name)}</option>`).join("")}</optgroup><optgroup label="One person">${D.people.map(p=>`<option value="person:${esc(p.name)}" ${ASG.who==="person:"+p.name?"selected":""}>${esc(cap(p.name))} · ${esc(p.label)}</option>`).join("")}</optgroup>`:`<option>Loading the team…</option>`;
+  const per=/^person:/.test(ASG.who)?(D&&D.people.find(p=>"person:"+p.name===ASG.who)):null, kitchenJob=per?per.area==="kitchen":true;
+  el.innerHTML=`<div class="asheet" data-aclose="1"><div class="box" role="dialog" aria-label="Assign a task"><div style="display:flex;justify-content:space-between;align-items:center"><div class="ptitle">Assign a task</div><button class="cb sm ghost" type="button" data-aclose="1">Cancel</button></div>
+    <label class="f">What needs to be done<input data-as="title" maxlength="100" value="${esc(ASG.title)}" placeholder="e.g. Spot audit at Knocknock"></label>
+    <label class="f">Details (optional)<textarea data-as="detail" rows="2" maxlength="300">${esc(ASG.detail)}</textarea></label>
+    <label class="f">Who<select data-as="who">${who}</select></label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="f">By when<input type="date" data-as="date" value="${esc(ASG.date)}" min="${esc(TODAY?TODAY.date:"")}"></label><label class="f">Time (optional)<input type="time" data-as="ready" value="${esc(ASG.ready)}"></label></div>
+    ${kitchenJob?`<label class="f">Kitchen list<select data-as="team"><option value="" ${!ASG.team?"selected":""}>Not on a kitchen list (Home only)</option><option value="am" ${ASG.team==="am"?"selected":""}>Morning / Decoration to-do</option><option value="pm" ${ASG.team==="pm"?"selected":""}>Noon / Production to-do</option></select></label>`:""}
+    <label class="f">Page to open<select data-as="link">${(D?D.links:[["","No page"]]).map(([k,l])=>`<option value="${esc(k)}" ${ASG.link===k?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
+    <p class="hint" style="margin:0">They see it on their Home (Tasks for you / Next for you) and tick it when done. With WasapBot set up they also get a WhatsApp message.</p>
+    <button class="cb full" type="button" data-asave="1">Assign</button></div></div>`;
+  setTimeout(()=>{ const i=el.querySelector('[data-as="title"]'); if(i&&!ASG.title&&document.activeElement!==i&&!el.contains(document.activeElement)) i.focus(); },30); }
+document.addEventListener("input",e=>{ const t=e.target; if(t.dataset&&t.dataset.as&&ASG){ ASG[t.dataset.as]=t.value; if(t.dataset.as==="who") drawAssign(); } });
+async function saveAssign(b){ if(!ASG) return; if(ASG.title.trim().length<2){ toast("Type what needs to be done."); return; }
+  const w=ASG.who, to=w==="all"?{kind:"all"}:/^perm:/.test(w)?{kind:"perm",v:w.slice(5)}:{kind:"person",v:w.slice(7)};
+  b.disabled=true; b.textContent="Assigning…";
+  try{ const r=await CA.run("taskAssign",S.t,{title:ASG.title,detail:ASG.detail,to,date:ASG.date,ready:ASG.ready,team:ASG.team,link:ASG.link}); closeAssign(); toast(r.msg||"Assigned."); TODAY=null; NX=null; await load(); }
+  catch(x){ toast(x.message); b.disabled=false; b.textContent="Assign"; } }
 function nxItem(x){ const inner=`<span class="sev ${esc(x.sev)}"></span><span>${esc(x.text)}</span>${x.go?`<span class="cb sm" style="${x.sev==="info"?"background:var(--soft);color:var(--accent);box-shadow:0 3px 0 var(--line)":""}">${esc(x.btn||"Open")}</span>`:""}`;
   return x.go?`<a href="${esc(CA.nextHref(x.go))}">${inner}</a>`:`<div class="it">${inner}</div>`; }
 function lbHtml(B){ if(!B||!B.rows.length) return `<div class="card shout hint">No one on the board yet.</div>`;
@@ -567,10 +602,10 @@ function lbHtml(B){ if(!B||!B.rows.length) return `<div class="card shout hint">
   return `<div class="card lb" role="list" aria-label="Leaderboard ${esc(B.label)}">${B.rows.map(r=>`<div role="listitem" class="lr ${r.place&&r.place<=3?"p"+r.place:""} ${r.me?"me":""} ${r.pts?"":"zero"}"><span class="pl" aria-label="${r.place?"Place "+r.place:"No points yet"}">${r.place||"–"}</span>
     <span style="min-width:0"><span class="nm" style="display:block">${esc(r.name)}${r.me?"<small>YOU</small>":""}</span><span class="bar lt"><i style="width:${B.top?Math.max(r.pts?4:0,Math.round(r.pts*100/B.top)):0}%"></i></span></span>
     <span class="pt">${nf(r.pts)}<small>points</small></span></div>`).join("")}</div>`; }
-function vTeam(){ const T=TEAMI; if(!T) return subHead("The brigade")+`<p class="hint">Loading…</p>`;
+function vTeam(){ const T=TEAMI; if(!T) return subHead("The team")+`<p class="hint">Loading…</p>`;
   const bar=(l,x)=>`<div><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px"><span>${l}</span><span>${x.done} / ${x.total}</span></div><div class="bar"><i style="width:${x.total?Math.round(x.done*100/x.total):0}%"></i></div></div>`;
   const got=T.badges.filter(b=>b.got).length;
-  return subHead("The brigade")+`<div class="stack">
+  return subHead("The team")+`<div class="stack">
     <div class="hero"><div class="eb">This month, together</div><div class="big" style="margin:6px 0 2px">${T.jar.pct}%</div><div style="font-size:13px;color:var(--gold-lt)">of the Team treat jar · ${T.jar.unlocked?"treat unlocked":"needs "+T.jar.unlock+"%"}${T.treat?" → "+esc(T.treat):""}</div>
       <div class="bar" style="margin-top:10px;height:10px"><i style="width:${T.jar.pct}%"></i><span style="position:absolute;top:-3px;bottom:-3px;left:${T.jar.unlock}%;border-left:2px dashed #fff"></span></div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">${bar("Morning team · on time",T.teams.am)}${bar("Production team · on time",T.teams.pm)}</div></div>
@@ -684,6 +719,9 @@ document.addEventListener("click",async e=>{ const t=e.target&&e.target.closest?
   if(g("[data-mgo]")&&/^#/.test(g("[data-mgo]").getAttribute("href"))){ setMenu(false); return; }
   const sb=g("[data-msec]"); if(sb){ const n=sb.dataset.msec; OPEN=OPEN===n?"":n; try{ localStorage.setItem("chaleur.menu",OPEN); }catch(x){} drawMenu(); return; }
   const h=g("[data-help]"); if(h){ setMenu(false); CA.openHelp(h.dataset.help); return; }
+  if(g("[data-assign]")){ openAssign(); return; }
+  if(g("[data-asave]")){ await saveAssign(g("[data-asave]")); return; }
+  { const ac=g("[data-aclose]"), cb=t.closest("button"); if(ac&&(t===ac||(cb&&cb.dataset.aclose))){ closeAssign(); return; } }
   { const lb=g("[data-lb]"); if(lb){ LBM=lb.dataset.lb==="last"?"last":"now"; render(); return; } }
   if(g("[data-team]")||g("[data-setteam]")){ const b=g("[data-setteam]"); TEAM=b?b.dataset.setteam:(myTeam()==="am"?"pm":"am"); try{ localStorage.setItem("kh2.team",TEAM); }catch(x){} render(); return; }
   const rm=g("[data-rmode]"); if(rm&&!rm.disabled){ try{ RW=await CA.run("rewardSet",S.t,{mode:rm.dataset.rmode}); render(); }catch(x){ toast(x.message); } return; }
@@ -695,6 +733,8 @@ document.addEventListener("click",async e=>{ const t=e.target&&e.target.closest?
   if(g("[data-qcprev]")){ QCI--; render(); window.scrollTo(0,0); return; }
   const qn=g("[data-qcnext]"); if(qn&&!qn.disabled){ const n=QC.today.items.length; if(QCI<n-1){ QCI++; render(); window.scrollTo(0,0); } else qcSend(); return; }
 });
+document.addEventListener("change",async e=>{ const t=e.target; if(!t.matches||!t.matches("[data-asdone]")) return; const on=t.checked; t.disabled=true;
+  try{ const r=await CA.run("hqSave",S.t,"taskDone",{date:t.dataset.asdate,id:t.dataset.asdone,done:on},""); toast(r.msg||(on?"Done ✓":"Marked as not done")); if(on&&r.pts) xp(r.pts); TODAY=null; NX=null; await load(); }catch(x){ toast(x.message); t.checked=!on; t.disabled=false; } });
 document.addEventListener("input",e=>{ if(e.target.id==="qc-note"&&QCD){ (QCD.items[QCI]||(QCD.items[QCI]={})).note=e.target.value; qcSaveDraft(); } });
 document.addEventListener("change",async e=>{ if(e.target.matches&&e.target.matches("[data-qcphoto]")){ const f=e.target.files&&e.target.files[0]; if(!f) return;
   try{ const u=await shrink(f); (QCD.items[QCI]||(QCD.items[QCI]={})).photo=u; qcSaveDraft(); render(); }catch(x){ toast(x.message); } } });

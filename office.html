@@ -12,9 +12,9 @@ window.google={script:{run:mk(null,null)}};})();
 </script><style>
 .ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
 .ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
-@media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:30px;padding:4px 10px}}
+@media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:40px;padding:4px 14px}}
 .ca-next{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.ca-next li{display:flex;gap:8px;align-items:flex-start}.ca-next i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:#9a8f91}.ca-next i.bad{background:#c0392b}.ca-next i.warn{background:#d68910}.ca-next i.ok{background:#1e8449}.ca-next a{color:inherit;font-weight:600}
-.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:32px}
+.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 14px;cursor:pointer;min-height:40px}
 .ca-login{max-width:390px;margin:28px auto;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;padding:18px}
 .ca-login h2{font-family:var(--display,Georgia,serif);font-size:30px;line-height:1.1;margin:0 0 6px;font-weight:600}
 .ca-login p{margin:0;color:var(--muted,#6f5f62);font-size:14px}
@@ -26,7 +26,7 @@ window.google={script:{run:mk(null,null)}};})();
 .ca-go:disabled{opacity:.6}
 .ca-err{color:#b3261e;font-size:14px;margin-top:10px;min-height:1.2em}
 .ca-va{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 8px;min-height:32px;max-width:180px}
-.ca-vabar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;background:#2b1b1e;color:#fff;padding:8px 14px;font:500 13.5px/1.35 var(--body,Jost,system-ui,sans-serif);position:relative;z-index:70}
+.ca-vabar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;background:#2b1b1e;color:#fff;padding:8px 14px;font:500 13.5px/1.35 var(--body,Jost,system-ui,sans-serif);position:fixed;top:0;left:0;right:0;z-index:50}body{padding-top:var(--vah,0px)}
 .ca-vabar b{color:#e3c466}.ca-vabar .ca-vact{display:flex;gap:8px;align-items:center}
 .ca-vabar button{font:600 13px var(--body,Jost,system-ui,sans-serif);border:0;border-radius:999px;padding:7px 14px;background:#e3c466;color:#2b1b1e;cursor:pointer;min-height:34px}
 .ca-vabar .ca-va{background:#fff;color:#2b1b1e}
@@ -152,7 +152,8 @@ const CA=(function(){
   document.addEventListener("click",e=>{ const b=e.target&&e.target.closest&&e.target.closest("[data-ca-viewback]"); if(b){ e.preventDefault(); switchView("owner"); } });
   /* While viewing as another role, a strip at the top of every page says so */
   function vaStrip(){ const c=get(); if(!c||!c.as||document.getElementById("ca-vastrip")) return; const d=document.createElement("div"); d.id="ca-vastrip"; d.className="ca-vabar";
-    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(c.as)}</b> (${esc(labelOf(c))}). Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d); }
+    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(c.as)}</b> (${esc(labelOf(c))}). Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d);
+    const fit=()=>document.documentElement.style.setProperty("--vah",d.offsetHeight+"px"); fit(); if(window.ResizeObserver) new ResizeObserver(fit).observe(d); window.addEventListener("resize",fit); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",vaStrip); else setTimeout(vaStrip,0);
   /* Where a "what to do next" item goes: page + tab (#hash) + kitchen team */
   const nextHref=g=>g?(g.page+(g.team?"?team="+encodeURIComponent(g.team):"")+(g.hash?"#"+g.hash:"")):"";
@@ -191,16 +192,17 @@ const CA=(function(){
     const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
     let NX=null, NXB=false;
     const tok=()=>{ const au=opt.auth&&opt.auth(); return au&&/^s1\./.test(String(au))?au:(au||""); };
+    const plain=t=>String(t||"").replace(/\*\*(.+?)\*\*/g,"$1").replace(/^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• ").replace(/\n{3,}/g,"\n\n").trim();
     const first=()=>{ const s0=get(); return cap(String((s0&&s0.name)||(NX&&NX.name)||"").split(" ")[0]); };
     const pageName=()=>opt.page?opt.page():document.title;
     function loadMine(force){ const au=tok(); if(!au||MINEB||(MINE&&!force)) return; MINEB=true; run("feedbackMine",au).then(r=>{MINE=r||[];}).catch(()=>{MINE=MINE||[];}).then(()=>{MINEB=false; paint();}); }
     function mineCount(){ if(!MINE||!MINE.length) return ""; const d=MINE.filter(x=>x.status==="doing").length, n=MINE.filter(x=>x.status==="open").length; return [d?d+" being fixed":"",n?n+" new":""].filter(Boolean).join(" · ")||MINE.length+" done"; }
     function head(){ if(VIEW==="mine") return `<div class="ca-hd" style="justify-content:flex-start;gap:12px"><button type="button" class="ca-back" data-hv="fb" aria-label="Back">‹</button><div class="ca-ttl" style="flex:1"><small>Helper</small>My reports</div><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>`;
       return `<div class="ca-hd"><span class="ca-ttl">Helper</span><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>
-        <div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`; }
+        ${opt.noReport?"":`<div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`}`; }
     function askHtml(){
       const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
         <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
     function fbHtml(){
       if(FB.sent){ const x=FB.sent;
@@ -259,7 +261,7 @@ const CA=(function(){
         FB.sent={ref:r.ref||r.id,type:FB.type,text:FB.text.trim(),photo:!!FB.photo,urgent:FB.urgent,page:pg,at:r.at||new Date().toISOString()}; FB.busy=false; MINE=null; loadMine(true); }
       catch(x){ FB.busy=false; FB.err=(x&&x.message)||"Couldn't send. Please try again."; }
       paint(); }
-    function setView(v){ VIEW=v==="mine"?"mine":v==="fb"?"fb":"ask"; if(VIEW==="mine") loadMine(true); else if(VIEW==="fb") loadMine(); paint();
+    function setView(v){ VIEW=opt.noReport?"ask":(v==="mine"?"mine":v==="fb"?"fb":"ask"); if(VIEW==="mine") loadMine(true); else if(VIEW==="fb") loadMine(); paint();
       const f=panel&&panel.querySelector(VIEW==="ask"?".ca-askf textarea":VIEW==="fb"?".ca-types button":".ca-back"); if(f&&VIEW!=="fb") f.focus(); }
     function close(){ if(panel){panel.remove();panel=null;} if(bd){bd.remove();bd=null;} document.removeEventListener("keydown",esc_); b.setAttribute("aria-expanded","false"); b.focus(); }
     function esc_(e){ if(e.key==="Escape") close(); }
@@ -453,6 +455,8 @@ input.made{width:70px;text-align:right}
   .lede:not(.open)::after{content:""}
   .testbar{font-size:11.5px;padding:4px 12px}
   .panel{padding:12px}
+  .btn{min-height:40px}.btn.sm{min-height:36px;padding:6px 12px}.stabs button,.setup-tabs button,[data-setup]{min-height:36px}.cell{height:34px}
+  .focus .nav button{min-height:40px;padding:4px 8px}.pill button,.chip{min-height:32px}
   .item{grid-template-columns:6px minmax(0,1fr);gap:4px 10px}.item>:nth-child(n+3){grid-column:2;justify-content:flex-start}
   .matrix{min-width:0!important}
   .tw{border:0;overflow:visible}
@@ -834,6 +838,8 @@ async function resolveAtt(a,as){
   await saveWeek(w); return true;}
 
 /* ---- TODAY ---- */
+const FRESH_NAMES={weeks:"outlet weeks (DOs, daily reports, bills)",audits:"spot audits",alerts:"daily checks",feedback:"problem reports",hq:"kitchen days (to-do ticks, QC, temps)",game:"points",reward:"treat votes",handled:"handled items",partners:"outlets and terms",products:"cakes and shelf life",prices:"prices",calendar:"holidays","config/settings":"settings","config/counters":"numbering","config/general":"company details","config/kitchen":"kitchen setup","config/game":"points setup","config/wa":"WhatsApp setup","config/reader":"photo check setup","config/drive":"Drive folder links","config/prep":"Plan & prep numbers",prep:"Plan & prep numbers","hq/config":"fridge list and rules","hq/tasks":"to-dos and reminders","hq/rules":"kitchen rules","hq/carries":"what each outlet carries",config:"other records"};
+function freshName(k){return FRESH_NAMES[k]||k.replace(/^config\//,"").replace(/^hq\//,"kitchen ")}
 function handledList(){const H=S.handled||{}; const ks=Object.keys(H).sort((a,b)=>String(H[b].at).localeCompare(String(H[a].at))).slice(0,40);
   return `<div class="items" style="opacity:.85">${ks.map(k=>{const h=H[k];return `<div class="item"><span class="sev info"></span><div>${esc(h.text||k)}<div class="small muted">${h.as==="ignored"?"Ignored":"Booked as "+esc(h.as)}${h.note?` · “${esc(h.note)}”`:""} · ${esc(h.by||"")} · ${esc(new Date(h.at).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}))}</div></div><div class="row">${RO()?"":`<button class="btn sm" data-unign="${esc(k)}">Undo</button>`}</div></div>`}).join("")}</div><p class="small muted" style="margin:0">Undo puts the item back on the list. It doesn't reverse a Sold / Wasted / Remaining change; fix that on the daily report.</p>`;}
 function attFocus(att){
@@ -1331,7 +1337,11 @@ function vSetup(){
         <div class="row"><button class="btn pri" data-act="saveReader">${S.ui.readerOn?"Replace key":"Switch on"}</button>${S.ui.readerOn?`<button class="btn sm" data-act="readerOff">Switch off</button>`:""}</div></div>`:""}
       <div class="panel"><h2>Sample & test data</h2><p class="small muted" style="margin:0">Removes the sample outlet and anything marked sample, reports and audits entered as "Testing" or "Test", and the "Example Staff" login. You see the full list first. A backup of everything removed is saved to Drive (Backups folder).</p>
       ${S.ui.sampleDone?`<p class="small" style="margin:0">Done. Backup: <a href="${esc(S.ui.sampleDone)}" target="_blank" rel="noopener">open in Drive</a></p>`:""}${S.ui.sampleScan?sampleList(S.ui.sampleScan):""}
-      <div class="row">${MGR()?(S.ui.sampleScan?(sampleCount(S.ui.sampleScan)?`<button class="btn danger" data-act="clearSample2">Remove these (backup first)</button>`:"")+`<button class="btn" data-act="noSample">Close</button>`:`<button class="btn" data-act="scanSample">Show sample & test data</button>`):`<span class="pill info">Only Alfred or Joscelyn can do this</span>`}</div></div>`;
+      <div class="row">${MGR()?(S.ui.sampleScan?(sampleCount(S.ui.sampleScan)?`<button class="btn danger" data-act="clearSample2">Remove these (backup first)</button>`:"")+`<button class="btn" data-act="noSample">Close</button>`:`<button class="btn" data-act="scanSample">Show sample & test data</button>`):`<span class="pill info">Only Alfred or Joscelyn can do this</span>`}</div></div>
+      ${AUTH.role==="owner"&&!(CA.get()||{}).as?`<div class="panel" style="border-color:var(--bad)"><h2>Fresh start</h2><p class="small muted" style="margin:0">Start again from zero with the real team: deletes <b>every</b> closing report, delivery order, weekly bill, spot audit, Random QC, kitchen opening/closing report, production plan and list photo record, points, treat votes, problem report, handled item and daily check. <b>Keeps</b> outlets and terms, cakes, prices, shelf life, holidays, all settings, the fridge list, to-dos, prep reminders and the Team (everyone's PIN and access). A backup of everything deleted is saved to Drive › Backups first. Photos stay in Drive.</p>
+        ${S.ui.freshDone?`<p class="small" style="margin:0"><b>Done.</b> Removed: ${esc(Object.entries(S.ui.freshDone.removed||{}).map(([k,v])=>freshName(k)+" "+v).join(", ")||"nothing")}. Backup: <a href="${esc(S.ui.freshDone.backup)}" target="_blank" rel="noopener">open in Drive</a></p>`:S.ui.freshPrev?`<p class="small" style="margin:0">Will delete: ${esc(Object.entries(S.ui.freshPrev.counts||{}).map(([k,v])=>freshName(k)+" "+v).join(", ")||"nothing")}; sheet rows in ${esc((S.ui.freshPrev.sheets||[]).join(", "))}. Keeps: ${esc(Object.keys(S.ui.freshPrev.keep||{}).map(freshName).join(", "))} and the Team sheet.</p>
+        <div class="fgrid"><label class="f">Type FRESH START to confirm<input id="fresh-ok" autocomplete="off" placeholder="FRESH START"></label></div>
+        <div class="row"><button class="btn danger" data-act="freshGo">Delete everything above and start fresh</button><button class="btn" data-act="freshNo">Cancel</button></div>`:`<div class="row"><button class="btn" data-act="freshPrev">Show what a fresh start would delete</button></div>`}</div>`:""}`;
   }
   if(sec==="kitchen"){
     if(!S.ui.hqs&&!S.ui.hqsAsk){S.ui.hqsAsk=GS("hqSettings").then(r=>{S.ui.hqs=r;render();}).catch(e=>{S.ui.hqs={err:e.message};render();});}
@@ -1737,6 +1747,10 @@ async function act(a,b){
     b.disabled=true; try{ for(const p of ch) await put(`products/${p.id}`,{...S.products[p.id],shelfDays:Math.round(+D[p.id])}); S.ui.shelfDraft={}; toast(`${ch.length} shelf life change${ch.length===1?"":"s"} saved`); }catch(e){ toast((e&&e.message)||"Couldn't save"); } b.disabled=false; render(); return;}
   case "scanSample":{b.disabled=true; try{S.ui.sampleScan=await GS("sampleData"); S.ui.sampleDone=null;}catch(e){toast((e&&e.message)||"Couldn't check");} render(); return;}
   case "noSample": S.ui.sampleScan=null; render(); return;
+  case "freshPrev":{b.disabled=true; try{S.ui.freshPrev=await GS("freshStartPreview"); S.ui.freshDone=null;}catch(e){toast((e&&e.message)||"Couldn't check");} render(); return;}
+  case "freshNo":{S.ui.freshPrev=null; render(); return;}
+  case "freshGo":{const ok=(($("#fresh-ok")||{}).value||"").trim(); if(ok.toUpperCase()!=="FRESH START"){toast("Type FRESH START in the box to confirm");return;} b.disabled=true; b.textContent="Deleting… keep this page open";
+    try{const r=await GS("freshStart",ok); S.ui.freshPrev=null; S.ui.freshDone=r; S.ui.attIdx=0; toast("Fresh start done. A backup is in Drive › Backups."); await reload();}catch(e){toast((e&&e.message)||"Couldn't do the fresh start");} render(); return;}
   case "clearSample2":{b.disabled=true; try{const r=await GS("clearSampleData"); S.ui.sampleScan=null; S.ui.sampleDone=r.backup; toast("Removed. A backup is saved in Drive › Backups."); await reload();}catch(e){toast((e&&e.message)||"Couldn't remove");} render(); return;}
   case "saveDO":{const e=S.ui.doEdit; const lines=Object.entries(e.lines).filter(([k,v])=>Math.round(+v.qty)>0).map(([k,v])=>({productId:k,qty:Math.round(+v.qty)}));
     if(!e.partnerId||!e.date){toast("Choose outlet and date");return;} if(!lines.length){toast("Enter at least one quantity");return;}
@@ -1915,7 +1929,7 @@ function vStaff(){
   const form=ed?`<div class="panel"><div class="spread"><h2>${ed.row?"Edit staff":"Add staff"}</h2><button class="btn sm" data-stcancel="1">Cancel</button></div>
     <div class="fgrid"><label class="f">Name<input id="st-name" data-st="name" value="${esc(ed.name||"")}" autocomplete="off"></label>
       <label class="f">Phone number (for signing in)<input id="st-phone" data-st="phone" type="tel" inputmode="tel" value="${esc(ed.phone||"")}" placeholder="012-345 6789" autocomplete="off"></label>
-      <label class="f">PIN (4–6 digits, e.g. FeedMe staff code)<input id="st-code" data-st="code" inputmode="numeric" maxlength="6" value="${esc(ed.code||"")}" autocomplete="off"></label>
+      <label class="f">PIN (4–6 digits)<input id="st-code" data-st="code" inputmode="numeric" maxlength="6" value="${esc(ed.code==="••••"?"":(ed.code||""))}" placeholder="${ed.row?"Leave blank to keep the current PIN":"e.g. 4821"}" autocomplete="off"></label>
       <label class="f">Notes<input id="st-notes" data-st="notes" value="${esc(ed.notes||"")}"></label></div>
     ${ed.role==="owner"?`<p class="small"><b>Owner</b> — has every access, always, and can view the app as anyone.</p>`:`
     <h3 style="margin:14px 0 4px">Access</h3>
@@ -1926,7 +1940,7 @@ function vStaff(){
     <div class="stticks">${ticks}</div>`}
     <div class="row"><button class="btn pri" data-stsave="1">Save</button><span class="small">They can sign in as soon as you save.</span></div></div>`:"";
   const fph=p=>{p=String(p||""); return /^60\d{8,10}$/.test(p)?"0"+p.slice(2):p;};
-  const rows=S.team.map(x=>`<tr><td><b>${esc(x.name)}</b>${x.notes?`<div class="small">${esc(x.notes)}</div>`:""}</td><td class="mono small">${x.phone?esc(fph(x.phone)):`<span class="pill warn">not set</span>`}</td><td>${esc(x.code)}</td>
+  const rows=S.team.map(x=>`<tr><td><b>${esc(x.name)}</b>${x.notes?`<div class="small">${esc(x.notes)}</div>`:""}</td><td class="mono small">${x.phone?esc(fph(x.phone)):`<span class="pill warn">not set</span>`}</td><td class="mono small" title="${x.code&&x.code!=="••••"?"Tap Edit to see or change the PIN":"Set in Edit"}">••••</td>
     <td>${esc(x.role==="owner"?"Owner":String(x.label||"").replace(/ \(custom\)$/,""))}${x.custom?` <span class="pill info">custom</span>`:""}<div class="small muted">${x.role==="owner"?"Everything":(x.perms||[]).map(k=>esc((C.perms.find(p=>p.key===k)||{}).name||k)).join(" · ")||"No access"}</div></td>
     <td>${x.active?`<span class="pill ok">Active</span>`:`<span class="pill mute">Inactive</span>`}</td>
     <td class="r">${x.role==="owner"?(C.owner?`<button class="btn sm" data-stedit="${x.row}">Edit</button>`:`<span class="small">Owner</span>`):`<button class="btn sm" data-stedit="${x.row}">Edit</button> <button class="btn sm" data-sttog="${x.row}">${x.active?"Deactivate":"Activate"}</button>`}</td></tr>`).join("");

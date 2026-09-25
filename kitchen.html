@@ -12,9 +12,9 @@ window.google={script:{run:mk(null,null)}};})();
 </script><style>
 .ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
 .ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
-@media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:30px;padding:4px 10px}}
+@media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:40px;padding:4px 14px}}
 .ca-next{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.ca-next li{display:flex;gap:8px;align-items:flex-start}.ca-next i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:#9a8f91}.ca-next i.bad{background:#c0392b}.ca-next i.warn{background:#d68910}.ca-next i.ok{background:#1e8449}.ca-next a{color:inherit;font-weight:600}
-.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:32px}
+.ca-chip button{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 14px;cursor:pointer;min-height:40px}
 .ca-login{max-width:390px;margin:28px auto;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border:1px solid var(--line,#e8dcd6);border-radius:14px;padding:18px}
 .ca-login h2{font-family:var(--display,Georgia,serif);font-size:30px;line-height:1.1;margin:0 0 6px;font-weight:600}
 .ca-login p{margin:0;color:var(--muted,#6f5f62);font-size:14px}
@@ -26,7 +26,7 @@ window.google={script:{run:mk(null,null)}};})();
 .ca-go:disabled{opacity:.6}
 .ca-err{color:#b3261e;font-size:14px;margin-top:10px;min-height:1.2em}
 .ca-va{font:inherit;font-size:12.5px;border:1px solid var(--line,#e8dcd6);background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:999px;padding:5px 8px;min-height:32px;max-width:180px}
-.ca-vabar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;background:#2b1b1e;color:#fff;padding:8px 14px;font:500 13.5px/1.35 var(--body,Jost,system-ui,sans-serif);position:relative;z-index:70}
+.ca-vabar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;background:#2b1b1e;color:#fff;padding:8px 14px;font:500 13.5px/1.35 var(--body,Jost,system-ui,sans-serif);position:fixed;top:0;left:0;right:0;z-index:50}body{padding-top:var(--vah,0px)}
 .ca-vabar b{color:#e3c466}.ca-vabar .ca-vact{display:flex;gap:8px;align-items:center}
 .ca-vabar button{font:600 13px var(--body,Jost,system-ui,sans-serif);border:0;border-radius:999px;padding:7px 14px;background:#e3c466;color:#2b1b1e;cursor:pointer;min-height:34px}
 .ca-vabar .ca-va{background:#fff;color:#2b1b1e}
@@ -152,7 +152,8 @@ const CA=(function(){
   document.addEventListener("click",e=>{ const b=e.target&&e.target.closest&&e.target.closest("[data-ca-viewback]"); if(b){ e.preventDefault(); switchView("owner"); } });
   /* While viewing as another role, a strip at the top of every page says so */
   function vaStrip(){ const c=get(); if(!c||!c.as||document.getElementById("ca-vastrip")) return; const d=document.createElement("div"); d.id="ca-vastrip"; d.className="ca-vabar";
-    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(c.as)}</b> (${esc(labelOf(c))}). Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d); }
+    d.innerHTML=`<span>👁 You're seeing the app as <b>${esc(c.as)}</b> (${esc(labelOf(c))}). Changes you make are recorded as ${esc(c.name)}.</span><span class="ca-vact">${vaSelect()}<button type="button" data-ca-viewback="1">Back to Owner</button></span>`; document.body.prepend(d);
+    const fit=()=>document.documentElement.style.setProperty("--vah",d.offsetHeight+"px"); fit(); if(window.ResizeObserver) new ResizeObserver(fit).observe(d); window.addEventListener("resize",fit); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",vaStrip); else setTimeout(vaStrip,0);
   /* Where a "what to do next" item goes: page + tab (#hash) + kitchen team */
   const nextHref=g=>g?(g.page+(g.team?"?team="+encodeURIComponent(g.team):"")+(g.hash?"#"+g.hash:"")):"";
@@ -191,16 +192,17 @@ const CA=(function(){
     const hi=opt.hello||"Hi! Ask me how to do anything in this app. For example: “How do I send the closing report?” or “Why can't I mark the delivery as delivered?” You can write in English, Malay or Chinese.";
     let NX=null, NXB=false;
     const tok=()=>{ const au=opt.auth&&opt.auth(); return au&&/^s1\./.test(String(au))?au:(au||""); };
+    const plain=t=>String(t||"").replace(/\*\*(.+?)\*\*/g,"$1").replace(/^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• ").replace(/\n{3,}/g,"\n\n").trim();
     const first=()=>{ const s0=get(); return cap(String((s0&&s0.name)||(NX&&NX.name)||"").split(" ")[0]); };
     const pageName=()=>opt.page?opt.page():document.title;
     function loadMine(force){ const au=tok(); if(!au||MINEB||(MINE&&!force)) return; MINEB=true; run("feedbackMine",au).then(r=>{MINE=r||[];}).catch(()=>{MINE=MINE||[];}).then(()=>{MINEB=false; paint();}); }
     function mineCount(){ if(!MINE||!MINE.length) return ""; const d=MINE.filter(x=>x.status==="doing").length, n=MINE.filter(x=>x.status==="open").length; return [d?d+" being fixed":"",n?n+" new":""].filter(Boolean).join(" · ")||MINE.length+" done"; }
     function head(){ if(VIEW==="mine") return `<div class="ca-hd" style="justify-content:flex-start;gap:12px"><button type="button" class="ca-back" data-hv="fb" aria-label="Back">‹</button><div class="ca-ttl" style="flex:1"><small>Helper</small>My reports</div><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>`;
       return `<div class="ca-hd"><span class="ca-ttl">Helper</span><button type="button" class="ca-x" aria-label="Close helper">✕</button></div>
-        <div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`; }
+        ${opt.noReport?"":`<div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`}`; }
     function askHtml(){
       const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a">${esc(x.a)}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
         <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
     function fbHtml(){
       if(FB.sent){ const x=FB.sent;
@@ -259,7 +261,7 @@ const CA=(function(){
         FB.sent={ref:r.ref||r.id,type:FB.type,text:FB.text.trim(),photo:!!FB.photo,urgent:FB.urgent,page:pg,at:r.at||new Date().toISOString()}; FB.busy=false; MINE=null; loadMine(true); }
       catch(x){ FB.busy=false; FB.err=(x&&x.message)||"Couldn't send. Please try again."; }
       paint(); }
-    function setView(v){ VIEW=v==="mine"?"mine":v==="fb"?"fb":"ask"; if(VIEW==="mine") loadMine(true); else if(VIEW==="fb") loadMine(); paint();
+    function setView(v){ VIEW=opt.noReport?"ask":(v==="mine"?"mine":v==="fb"?"fb":"ask"); if(VIEW==="mine") loadMine(true); else if(VIEW==="fb") loadMine(); paint();
       const f=panel&&panel.querySelector(VIEW==="ask"?".ca-askf textarea":VIEW==="fb"?".ca-types button":".ca-back"); if(f&&VIEW!=="fb") f.focus(); }
     function close(){ if(panel){panel.remove();panel=null;} if(bd){bd.remove();bd=null;} document.removeEventListener("keydown",esc_); b.setAttribute("aria-expanded","false"); b.focus(); }
     function esc_(e){ if(e.key==="Escape") close(); }
@@ -443,6 +445,7 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;width:100%}
 label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 label.f input,label.f select,label.f textarea{text-transform:none;letter-spacing:0;font-weight:400}
+.cb:disabled,.cb.gold:disabled,.cb.ok:disabled,.cb.ink:disabled{background:var(--line)!important;color:#9a8f91!important;box-shadow:0 4px 0 var(--cline)!important;transform:none}
 </style>
 
 <style>
@@ -451,8 +454,10 @@ label.f input,label.f select,label.f textarea{text-transform:none;letter-spacing
 [hidden]{display:none!important}
 .wrap{max-width:560px}
 body.flow .ca-hbtn{display:none!important}
+@media print{#tabs,#ktabs,#bar,.ca-hbtn,#acct,.foot,.hd .back,.hd .pill,button.cb,.cb.dash{display:none!important}.w{padding:0;max-width:none}.card{box-shadow:none;break-inside:avoid}body{background:#fff}}
 .ca-hbtn{bottom:calc(84px + env(safe-area-inset-bottom,0px))!important;min-height:44px!important;padding:0 14px!important;font-size:14px!important}
 body:not(.flow) .foot{bottom:calc(72px + env(safe-area-inset-bottom,0px));padding-bottom:12px}body:not(.flow) #main:has(.foot){padding-bottom:90px}
+body:not(.flow):has(#main .foot) .ca-hbtn{bottom:calc(170px + env(safe-area-inset-bottom,0px))!important}body.flow:has(#main .foot) .ca-hbtn{display:none!important}
 .kchips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;margin:0 -16px;padding-inline:16px;scrollbar-width:none}.kchips::-webkit-scrollbar{display:none}
 .kchips button{flex:none;min-height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);font:700 14px var(--body);color:var(--ink);white-space:nowrap}
 .kchips button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
@@ -464,7 +469,7 @@ body:not(.flow) .foot{bottom:calc(72px + env(safe-area-inset-bottom,0px));paddin
 .tk .tb{min-width:0;display:flex;flex-direction:column;gap:3px}.tk .tt{font-weight:700;font-size:17px;line-height:1.2}.tk.done .tt{text-decoration:line-through;color:var(--muted)}
 .tk .ts{font-size:13px;color:var(--muted);line-height:1.35}.tk .due{font-size:13px;font-weight:700;color:var(--accent)}.tk .due.late{color:var(--bad-tx)}
 .tk .tby{font-size:13px;font-weight:700;color:var(--ok-tx)}.tk .act{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-.tk .lines{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;color:var(--muted)}.tk .lines li.ok{color:var(--ok-tx)}
+.tk .lines{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;color:var(--muted)}.tk .lines li.ok{color:var(--ok-tx)}.tk .lines li.mute{opacity:.6}.tk .act a.cb{text-decoration:none}
 .iss{margin:6px 0 0;padding-left:18px;font-size:13px}.iss li{margin:3px 0}.iss li.bad{color:var(--bad-tx);font-weight:600}.iss li.warn{color:var(--warn-tx)}
 .info h3{font:700 18px var(--display);margin:0 0 4px}
 .items{margin:4px 0 0;padding-left:18px}.items li{margin:2px 0}
@@ -696,7 +701,7 @@ async function reload(date){ if(date&&date!==DATE){ Object.keys(P2).forEach(k=>d
 async function freshen(){ if(!INFO||SENDING||!TOK) return; const t=todayISO(); if(t!==INFO.today&&DATE===INFO.today){ K.opening=K.closing=null; RESULT=null; await reload(t); } else if(Date.now()-INFO_AT>120000&&!CK&&!RCV) await reload(); }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") freshen(); });
 window.addEventListener("pageshow",e=>{ if(e.persisted) freshen(); });
-function toast(m){ const s=$("#status"); if(s) s.textContent=m; if($("#bar").hidden){ const t=document.createElement("div"); t.className="card"; t.setAttribute("role","status"); t.style.cssText="position:fixed;left:16px;right:16px;bottom:96px;z-index:70;max-width:528px;margin:auto;font-weight:600"; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),4000);} }
+function toast(m){ const s=$("#status"); if(s) s.textContent=m; if($("#bar").hidden){ const t=document.createElement("div"); t.className="card"; t.setAttribute("role","status"); t.style.cssText="position:fixed;left:16px;right:16px;bottom:96px;z-index:70;max-width:528px;margin:auto;font-weight:600;color:var(--ink);background:var(--paper)"; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),4000);} }
 function xp(n){ if(!(n>0)) return; const d=document.createElement("div"); d.className="xp"; d.textContent="+"+n+" to the team jar"; document.body.appendChild(d); setTimeout(()=>d.remove(),1500); }
 const DOTC=["#b5b5b5","#f39c4a","#f2c230","#3c9a50","#2f6fd0","#e0707a","#a98bd6"];
 function confetti(){ if(matchMedia("(prefers-reduced-motion: reduce)").matches) return; for(let i=0;i<34;i++){ const d=document.createElement("i"); d.className="cf"; d.style.background=DOTC[i%7]; document.body.appendChild(d);
@@ -751,6 +756,7 @@ const doneOf=id=>(TD().done||{})[id]||null;
 const dId=pid=>("auto_d_"+String(pid).replace(/[^A-Za-z0-9]/g,"")).slice(0,30);
 const dayList=days=>{ const d=(days||[]).map(Number).sort(); return d.length===7?"every day":d.join(",")==="1,2,3,4,5"?"Mon–Fri":d.map(i=>WDL[i]).join(", "); };
 const autoTick=on=>`<span class="tick auto ${on?"on":""}" aria-hidden="true">${on?"✓":""}</span>`;
+const niceName=n=>String(n||"").toLowerCase().replace(/\b[a-z]/g,c=>c.toUpperCase());
 const boxTick=(id,on,label)=>`<label class="tick ${on?"on":""}" aria-label="${esc((on?"Done: ":"Tick when done: ")+label)}"><input type="checkbox" data-tdone="${esc(id)}" ${on?"checked":""} ${canTick()?"":"disabled"}>${on?"✓":""}</label>`;
 function tkCard(o){ return `<div class="card tk ${o.done?"done":""} ${o.cur?"cur":""}">${o.circle}<div class="tb">${o.tag?`<div><span class="tag ${o.tagc||""}">${o.tag}</span></div>`:""}${o.due?`<div class="due ${o.late?"late":""}">${o.due}</div>`:""}<div class="tt">${o.title}</div>${o.sub?`<div class="ts">${o.sub}</div>`:""}${o.by?`<div class="tby">✓ ${o.by}</div>`:""}${o.extra||""}</div>${o.act?`<div class="act">${o.act}</div>`:"<span></span>"}</div>`; }
 function repItem(kind){ const s0=INFO.state[kind], r=INFO.day[kind], due=kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=!s0.done&&DATE===INFO.today&&INFO.now>due;
@@ -758,10 +764,10 @@ function repItem(kind){ const s0=INFO.state[kind], r=INFO.day[kind], due=kind===
   const lines=r&&r.legacy?`<ul class="lines"><li class="ok">Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}</li></ul>`:`<ul class="lines">${parts.map(([p,l])=>{const x=r&&r.parts&&r.parts[p]; return `<li class="${x?"ok":""}">${x?"✓":"○"} ${esc(l)}${x?` · ${esc(x.by)} ${esc(hmOf(x.at))}`:""}</li>`;}).join("")}</ul>`;
   const iss=r&&(r.issues||[]).length?`<ul class="iss">${r.issues.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul>`:"";
   const chase=!s0.done&&SUP()&&DATE===INFO.today&&INFO.now>due?`<button class="cb sm ghost" type="button" data-chase="${kind}">Remind the group</button>`:"";
-  return {count:true,done:s0.done,html:tkCard({circle:autoTick(s0.done),tag:s0.done?"✓ Complete":"Report",tagc:s0.done?"ok":"",due:s0.done?"":(late?"Late · was due "+esc(due):"due "+esc(due)),late,title:kind==="opening"?"Opening report":"Closing report",sub:`${sent} of ${s0.need.length} parts sent`,extra:lines+iss,
-    act:(s0.done?`<button class="cb sm ghost" type="button" data-tab="${kind}">Open</button>`:`<button class="cb sm" type="button" data-tab="${kind}">${sent?"Continue":"Start"}</button>`)+chase})}; }
+  return {count:true,done:s0.done,html:tkCard({circle:autoTick(s0.done),tag:s0.done?"✓ Complete":"Report",tagc:s0.done?"ok":"",due:s0.done?"":(late?"Late · was due "+esc(due):"due "+esc(due)),late,title:kind==="opening"?"Opening report":"Closing report",sub:`${sent} of ${s0.need.length} parts sent`,extra:lines+iss+(chase?`<div style="margin-top:8px">${chase}</div>`:""),
+    act:(s0.done?`<button class="cb sm ghost" type="button" data-tab="${kind}">Open</button>`:`<button class="cb sm" type="button" data-tab="${kind}">${sent?"Continue":"Start"}</button>`)})}; }
 function taskItems(team){ const ts=TD().tasks.filter(x=>x.team===team), can=!!(INFO.me&&INFO.me.canTask);
-  return ts.map(x=>({count:true,done:!!x.done,html:tkCard({circle:boxTick(x.id,!!x.done,x.title),tag:esc(TTYPE()[x.type]||"To-do"),tagc:x.type,due:x.ready&&!x.done?"ready by "+esc(x.ready):"",title:esc(x.title),sub:x.detail?esc(x.detail):"",by:x.done?esc(x.done.by)+" "+esc(hmOf(x.done.at)):"",act:can?`<button class="lnk" type="button" data-tedit="${esc(x.id)}">Edit</button>`:""})})); }
+  return ts.map(x=>({count:true,done:!!x.done,html:tkCard({circle:boxTick(x.id,!!x.done,x.title),tag:esc(TTYPE()[x.type]||"To-do"),tagc:x.type,due:x.ready&&!x.done?"ready by "+esc(x.ready):"",title:esc(x.title),sub:[x.assigned?"From "+esc(niceName(x.by||""))+(x.forLabel&&x.forLabel!=="Anyone"?" · for "+esc(x.forLabel):""):"",x.detail?esc(x.detail):""].filter(Boolean).join(" · "),by:x.done?esc(x.done.by)+" "+esc(hmOf(x.done.at)):"",act:can?`<button class="lnk" type="button" data-tedit="${esc(x.id)}">Edit</button>`:""})})); }
 function decoRows(){ const m={}; INFO.dos.forEach(d=>(d.lines||[]).forEach(l=>{ const r=m[l.productId]||(m[l.productId]={pid:l.productId,qty:0,by:{}}); r.qty+=l.qty; const k=d.internal?"HQ":(d.outlet||d.code); r.by[k]=(r.by[k]||0)+l.qty; }));
   return Object.values(m).sort((a,b)=>b.qty-a.qty||String(prodOf(a.pid).name).localeCompare(String(prodOf(b.pid).name))); }
 function decoItem(){ const rows=decoRows(); if(!rows.length) return {count:false,html:`<div class="card info"><h3>Finish &amp; decorate</h3><p class="hint">No delivery orders for this day yet. The office makes them the day before (office desk › Plan &amp; prep › Create draft DOs).</p></div>`};
@@ -784,7 +790,13 @@ function prepCard(){ const t=INFO.today, rem=INFO.reminders||[], r0=rem.filter(r
 function planDaysCard(){ const t=INFO.today, ds=[]; for(let i=1;i<=INFO.conf.planDays;i++) ds.push(addD(t,i));
   return `<div class="card info"><h3>Plan for the next days</h3><div class="dtiles" style="--n:${ds.length};grid-template-columns:repeat(${ds.length},1fr);margin-top:8px">${ds.map(d=>{const p=INFO.plan[d]; return `<button type="button" class="dtile ${!p?"miss":!p.approvedBy?"unc":""}" data-plan="${d}"><small>${WDL[dw(d)]}</small><b>${+d.slice(8)}</b><span>${p?(p.approvedBy?"✓ list":"not checked"):"missing"}</span></button>`;}).join("")}</div>
     <p class="hint" style="margin-top:8px">Tonight's closing report adds the lists for the next 3 days.</p></div>`; }
-function teamItems(team){ return team==="am"?[repItem("opening")].concat(taskItems("am"),[decoItem()],packItems(),[displayItem()]):[repItem("closing")].concat(taskItems("pm")); }
+/* Plan & prep (07:00, first Morning job): tomorrow's outlet deliveries and whether each has a delivery order; the office desk › Plan & prep page does the work. */
+function planItem(){ const tm=INFO.tomorrow; if(!tm||DATE!==INFO.today) return null;
+  const late=!tm.done&&!tm.none&&INFO.now>tm.due, outs=tm.outlets||[];
+  const lines=outs.length?`<ul class="lines">${outs.map(o=>`<li class="${o.hasDo?"ok":o.expected?"":"mute"}">${o.hasDo?"✓":o.expected?"○":"–"} ${esc(o.name)}${o.hasDo?` · ${esc(o.no)} · ${o.qty} cake${o.qty===1?"":"s"}${o.status==="delivered"?" · delivered":""}`:o.expected?" · no DO yet":" · no delivery planned"}</li>`).join("")}</ul>`:"";
+  const sub=tm.none?`No outlet deliveries scheduled for ${esc(tm.day)}. Check the plan for what to prep.`:tm.done?`${esc(tm.day)} · ${tm.qty} cakes on ${tm.ready} DO${tm.ready>1?"s":""} · prep and decorate ${tm.today?"this morning":"today"}`:`${esc(tm.day)} · ${tm.ready} of ${tm.expected} outlet${tm.expected>1?"s have":" has"} a DO`;
+  return {count:!tm.none,done:tm.done,html:tkCard({circle:autoTick(tm.done),tag:"Plan &amp; prep",due:tm.done?"":(late?"Late · was due "+esc(tm.due):"due "+esc(tm.due)),late,title:`Plan &amp; prep for ${tm.today?"today":"tomorrow"}`,sub,extra:lines+`<div class="ts" style="margin-top:6px">Suggested quantities, Made numbers and draft DOs are in Plan &amp; prep.</div>`,act:`<a class="cb sm ${tm.done?"ghost":""}" href="office.html#plan">${tm.done?"Open":"Start"}</a>`})}; }
+function teamItems(team){ return team==="am"?[planItem(),repItem("opening")].filter(Boolean).concat(taskItems("am"),[decoItem()],packItems(),[displayItem()]):[repItem("closing")].concat(taskItems("pm")); }
 function propText(x){ const d=x.data||{};
   if(x.kind==="plan") return `Production plan for ${niceD(d.date)}: ${(d.items||[]).map(i=>i.name+(i.qty?" x"+i.qty:"")).join(", ")}`;
   if(x.kind==="planList") return d.remove?`Remove a list from ${niceD(d.date)}`:`Change a list for ${niceD(d.date)}: ${(d.items||[]).map(i=>i.name).join(" · ")}`;
@@ -799,9 +811,9 @@ function vToday(){
   let firstOpen=true; const cards=it[TEAM].map(x=>{ if(x.count&&!x.done&&firstOpen){ firstOpen=false; return x.html.replace('class="card tk ','class="card tk cur '); } return x.html; });
   const head=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">${DATE!==t?`<span class="pill warn">${esc(niceD(DATE))}</span><button class="cb sm ghost" type="button" data-date="${t}">Back to today</button>`:`<span class="hint">${esc(niceD(DATE))}</span><button class="lnk" type="button" data-date="${addD(t,-1)}">Yesterday ›</button>`}</div>
     <div class="kseg" role="group" aria-label="Team">${Object.entries(TEAMS()).map(([k,l])=>`<button type="button" data-team="${k}" aria-pressed="${TEAM===k}">${esc(String(l).split(" / ")[0])} · ${left(k)?left(k)+" left":"all done"}</button>`).join("")}</div>
-    <div><div class="pbar"><i style="width:${cur.length?Math.round(dn*100/cur.length):0}%"></i></div><div class="lh"><span>${dn} of ${cur.length} done</span><span>${TEAM==="am"?"Opening, orders, decorate, deliveries":"Production, closing report, plan"}</span></div></div>`;
+    <div><div class="pbar"><i style="width:${cur.length?Math.round(dn*100/cur.length):0}%"></i></div><div class="lh"><span>${dn} of ${cur.length} done</span><span>${TEAM==="am"?"Plan, opening, orders, decorate, deliveries":"Production, closing report, plan"}</span></div></div>`;
   const extra=TEAM==="am"?"":prodListCard()+prepCard()+planDaysCard();
-  const add=can?`<button class="cb dash full" type="button" data-tadd="${TEAM==="am"?"order":"task"}|${TEAM}">+ Add a to-do</button>`:"";
+  const add=(can?`<button class="cb dash full" type="button" data-tadd="${TEAM==="am"?"order":"task"}|${TEAM}">+ Add a to-do</button>`:"")+`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px"><button class="lnk" type="button" data-act="printList">🖨 Print this list</button><a class="lnk" href="office.html#plan">Plan &amp; prep for all outlets ›</a></div>`;
   const mng=can&&all.length?`<details class="card"><summary style="font-weight:700;color:var(--accent);cursor:pointer">All to-dos for this team (${all.length})</summary>${all.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)"><span><span class="tag ${esc(x.type)}">${esc(TTYPE()[x.type]||"To-do")}</span> ${esc(x.title)} <span class="hint">· ${esc(x.date?niceD(x.date):dayList(x.days))}${x.ready?" · "+esc(x.ready):""}</span></span><button class="lnk" type="button" data-tedit="${esc(x.id)}">Edit</button></div>`).join("")}</details>`:"";
   const shared=`${INFO.proposals.length?`<div class="card info"><h3>Waiting for a supervisor (${INFO.proposals.length})</h3>${INFO.proposals.map(x=>`<div style="padding:8px 0;border-top:1px dashed var(--line)"><div>${esc(propText(x))}</div><div class="hint">${esc(x.by)} · ${esc(dtOf(x.at))}${x.why?` · “${esc(x.why)}”`:""}</div>${SUP()?`<div style="display:flex;gap:8px;margin-top:8px"><button class="cb sm ok" type="button" data-dec="${x.id}" data-ok="1">Approve</button><button class="cb sm ghost" type="button" data-dec="${x.id}" data-ok="0">Reject</button></div>`:""}</div>`).join("")}</div>`:""}
     ${INFO.brief&&(INFO.brief.warnings||[]).length?`<div class="card info"><h3>AI notes</h3><ul class="iss">${INFO.brief.warnings.map(w=>`<li>${esc(w)}</li>`).join("")}</ul><p class="hint">Updated ${esc(dtOf(INFO.brief.generatedAt))}</p></div>`:""}
@@ -1159,6 +1171,7 @@ document.addEventListener("click",async e=>{
     b.disabled=true; try{ const r=await run("hqSave","task",{task:{id:x.id,team:x.team,type:x.type,title:x.title,detail:x.detail,ready:x.ready,date:x.mode==="once"?x.date:"",days:x.mode==="repeat"?x.days:[]}},""); toast(r.msg); TK=null; drawTask(); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.act==="tkDel"&&TK){ if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Tap again to remove"; setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="Remove"; } },4000); return; }
     b.disabled=true; try{ const r=await run("hqSave","task",{task:{id:TK.id,remove:true}},""); toast(r.msg); TK=null; drawTask(); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.act==="printList"){ window.print(); return; }
   if(d.act==="reload"){ boot2(); return; }
   if(d.chase){ b.disabled=true; try{ const r=await run("hqChaseNow",d.chase); toast(r.ok?"Reminder sent to the kitchen group.":"The WhatsApp message could not be sent. Check Setup › Kitchen HQ & WhatsApp."); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.date){ RESULT=null; PART=null; V2=""; K.opening=K.closing=null; await reload(d.date); return; }
