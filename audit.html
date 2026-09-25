@@ -102,7 +102,12 @@ body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bot
 .tourbub .tsk.go{background:#e3c466;color:#2b1b1e;text-decoration:none;border-radius:999px;padding:6px 14px}
 .tourshow{display:none;position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:59;background:var(--paper,#fff);border:1.5px solid var(--line,#e8dcd6);border-radius:20px;padding:8px 14px;font:600 12.5px var(--body,Jost,system-ui,sans-serif);color:var(--muted,#6f5f62);box-shadow:0 4px 10px rgba(0,0,0,.12);cursor:pointer;touch-action:manipulation}
 .tourshow.on{display:block}
-@media print{.ca-hbtn,.ca-hp,.ca-chip button,.tourhi,.tourbub,.tourshow{display:none!important}}
+.tourhi.nt,.tourbub.nt{transition:none!important}
+.tourbub .tmin{position:absolute;top:6px;right:8px;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fdf6ee;font:700 15px/1 var(--body,Jost,system-ui,sans-serif);cursor:pointer;touch-action:manipulation}
+.tourbub .tn{padding-right:30px}
+.tourpill{display:none;position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:76;max-width:calc(100vw - 28px);background:#2b1b1e;color:#fdf6ee;border:1.5px solid #e3c466;border-radius:20px;padding:8px 14px;font:600 12.5px var(--body,Jost,system-ui,sans-serif);box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;touch-action:manipulation;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tourpill.on{display:block}.tourbub:not(.off)~.tourpill{display:none}.tourpill b{color:#e3c466}
+@media print{.ca-hbtn,.ca-hp,.ca-chip button,.tourhi,.tourbub,.tourshow,.tourpill{display:none!important}}
 </style>
 <script>
 /* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
@@ -291,10 +296,11 @@ const CA=(function(){
   }
   /* ---- Step-by-step guide (v21.7). Each page defines its steps; this draws the spotlight + bubble, moves on when a step is done,
      shows itself the first 3 visits (per person once signed in, else per phone) and after that as a small "❔ Show me how" button.
-     A step: {sel, title, text, done(), prog(), next:false (no Next button in the automatic guide), last, above, noScroll}.
+     A step: {sel, title, text, done(), prog(), next:false (no Next button in the automatic guide), last, above, at:"top", noScroll, revisit}.
+     The bubble shows while its target is on screen; scrolled away (or hidden with —) it becomes a small pill at the bottom left that brings it back.
      Config: {key, steps, ready(), busy(), finished(i), leaveDone(i), onTick(i), onStart(manual), onNext(i), btnBottom, auto, perPhone}. ---- */
   const TOUR=(function(){
-    let C=null, I=-1, HI=null, BUB=null, BTN=null, IV=null, MAN=false, PROG="", RAF=0;
+    let C=null, I=-1, HI=null, BUB=null, BTN=null, PILL=null, IV=null, MAN=false, PROG="", RAF=0, MIN=false, NT=0;
     const TRIED=new Set(); /* guides already started by themselves in this page load (one automatic start per guide per visit) */
     const PASSED=new Set(); /* steps confirmed with Next (steps that have no done() of their own) */
     const vis=el=>{ if(!el) return false; const r=el.getBoundingClientRect(); return r.width>0&&r.height>0; };
@@ -311,48 +317,59 @@ const CA=(function(){
     const fv=v=>typeof v==="function"?v():v;
     const busy=()=>!!(document.querySelector(".ca-hp")||(C&&C.busy&&C.busy()));
     const isDone=(S,i)=>PASSED.has(i)||!!(S[i]&&S[i].done&&S[i].done());
-    /* automatic mode: the first step that is not done yet (so undoing a step brings the guide back to it) */
-    const nextI=()=>{ const S=steps(); let i=0; while(i<S.length-1&&isDone(S,i)) i++; return i; };
+    /* automatic mode: carry on from the current step; a step marked revisit that is no longer done (they went back) shows again */
+    const nextI=()=>{ const S=steps(); let i=Math.max(0,I); for(let k=0;k<i;k++){ if(S[k]&&S[k].revisit&&!isDone(S,k)){ i=k; break; } } while(i<S.length-1&&isDone(S,i)) i++; return i; };
     const ready=()=>!!(C&&(!C.ready||C.ready()));
     function build(){ if(HI||!document.body) return;
       HI=document.createElement("div"); HI.className="tourhi off"; document.body.appendChild(HI);
       BUB=document.createElement("div"); BUB.className="tourbub off"; BUB.setAttribute("role","status"); document.body.appendChild(BUB);
       BTN=document.createElement("button"); BTN.type="button"; BTN.className="tourshow"; BTN.textContent="❔ Show me how"; BTN.onclick=()=>start(true); document.body.appendChild(BTN);
-      BUB.addEventListener("click",e=>{ const b=e.target.closest("[data-tour]"); if(!b) return; if(b.dataset.tour==="skip") skip(); else next(); });
+      PILL=document.createElement("button"); PILL.type="button"; PILL.className="tourpill"; PILL.onclick=()=>{ MIN=false; const el=q(fv((cur()||{}).sel)); if(el){ try{ el.scrollIntoView({block:"center",behavior:"smooth"}); }catch(e){} } place(); }; document.body.appendChild(PILL);
+      BUB.addEventListener("click",e=>{ const b=e.target.closest("[data-tour]"); if(!b) return; if(b.dataset.tour==="skip") skip(); else if(b.dataset.tour==="min"){ MIN=true; place(); } else next(); });
       const re=()=>{ if(I>=0&&!RAF) RAF=requestAnimationFrame(()=>{ RAF=0; place(); }); };
-      window.addEventListener("scroll",re,{passive:true}); window.addEventListener("resize",re);
+      /* while scrolling the spotlight must stick to its target, not glide after it */
+      const sc=()=>{ if(HI){ HI.classList.add("nt"); BUB.classList.add("nt"); } clearTimeout(NT); NT=setTimeout(()=>{ if(HI){ HI.classList.remove("nt"); BUB.classList.remove("nt"); } },160); re(); };
+      window.addEventListener("scroll",sc,{passive:true}); window.addEventListener("resize",re);
       try{ new MutationObserver(()=>{ showBtn(); re(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
       window.addEventListener("pagehide",()=>{ const st=cur(); if(st&&!MAN&&(st.last||(C.leaveDone&&C.leaveDone(I)))) finish(); });
     }
     function showBtn(){ if(!BTN) return; if(C&&C.btnBottom) BTN.style.bottom=fv(C.btnBottom)||""; BTN.classList.toggle("on",!!C&&I<0&&ready()&&!busy()); }
+    const pillTxt=()=>{ const st=cur(); if(!st) return ""; const t=String(fv(st.title)||"").split("·")[0].trim(); return `<b>❔</b> ${esc(t||"Guide")}${PROG?` · ${esc(PROG)}`:""} ▸`; };
+    function pill(on){ if(!PILL) return; if(on){ PILL.innerHTML=pillTxt(); if(C&&C.btnBottom) PILL.style.bottom=fv(C.btnBottom)||""; } PILL.classList.toggle("on",!!on); }
     function place(){ const st=cur(); if(!st||!HI) return;
       const el=q(fv(st.sel)), b=busy();
-      if(b||(!el&&!MAN)){ HI.classList.add("off"); BUB.classList.add("off"); return; }
+      if(b||(!el&&!MAN)){ HI.classList.add("off"); BUB.classList.add("off"); pill(false); return; }
       const p=8, vw=window.innerWidth, vh=window.innerHeight;
-      BUB.classList.remove("off"); const bw=BUB.offsetWidth||280, bh=BUB.offsetHeight||120;
-      if(!el){ HI.classList.add("off"); BUB.style.top=Math.max(8,Math.round((vh-bh)/2))+"px"; BUB.style.left=Math.max(14,Math.round((vw-bw)/2))+"px"; return; }
+      if(!el){ HI.classList.add("off"); if(MIN){ BUB.classList.add("off"); pill(true); return; } pill(false); BUB.classList.remove("off"); const bw=BUB.offsetWidth||280, bh=BUB.offsetHeight||120; BUB.style.top=Math.max(8,Math.round((vh-bh)/2))+"px"; BUB.style.left=Math.max(14,Math.round((vw-bw)/2))+"px"; return; }
       const r=el.getBoundingClientRect();
       Object.assign(HI.style,{top:(r.top-p)+"px",left:(r.left-p)+"px",width:(r.width+2*p)+"px",height:(r.height+2*p)+"px"}); HI.classList.remove("off");
-      /* below the target if it fits above the bottom bar, else above it; a target taller than the screen gets the bubble at the top (bottom bars hold the buttons) */
-      const below=r.bottom+p+10, above=r.top-p-10-bh; let top;
-      if(st.last||st.above) top=above>=8?above:(below+bh<=vh-150?below:8);
-      else top=below+bh<=vh-150?below:(above>=8?above:8);
+      /* target scrolled off the screen, or hidden with —: just a small pill, so the bubble never sits over something else */
+      const onScreen=r.bottom>40&&r.top<vh-40&&r.right>0&&r.left<vw;
+      if(MIN||!onScreen){ BUB.classList.add("off"); pill(true); return; }
+      pill(false); BUB.classList.remove("off"); const bw=BUB.offsetWidth||280, bh=BUB.offsetHeight||120;
+      /* below the target if it fits above the bottom bar, else above it; at:"top" (or a target taller than the screen) puts it at the top, under any header */
+      const tp=Math.max(8,+(C&&fv(C.topPad))||8), below=r.bottom+p+10, above=r.top-p-10-bh; let top;
+      if(st.at==="top") top=tp;
+      else if(st.last||st.above) top=above>=tp?above:(below+bh<=vh-150?below:tp);
+      else top=below+bh<=vh-150?below:(above>=tp?above:tp);
       top=Math.max(8,Math.min(top,vh-bh-8));
       let left=r.left+r.width/2-bw/2; left=Math.max(14,Math.min(left,vw-bw-14));
       BUB.style.top=top+"px"; BUB.style.left=left+"px"; }
     function show(i){ I=i; const st=cur(); if(!st) return finish();
       PROG=st.prog?st.prog():""; const n=steps().length, last=st.last||i===n-1;
-      BUB.innerHTML=`<div class="tn">${esc(fv(st.title)||("Step "+(i+1)+" of "+n))}</div><div class="tx">${fv(st.text)||""}</div>${st.prog?`<div class="tp">${esc(PROG)}</div>`:""}<div class="tb"><button class="tsk" type="button" data-tour="skip">Skip, I know this</button>${st.next===false&&!MAN?"":`<button class="tsk go" type="button" data-tour="next">${last?"Got it":"Next →"}</button>`}</div>`;
-      const el=q(fv(st.sel)); if(el&&!st.last&&!st.noScroll){ try{ el.scrollIntoView({block:"center",behavior:"smooth"}); }catch(e){} }
+      MIN=false;
+      BUB.innerHTML=`<button class="tmin" type="button" data-tour="min" aria-label="Hide this for now">—</button><div class="tn">${esc(fv(st.title)||("Step "+(i+1)+" of "+n))}</div><div class="tx">${fv(st.text)||""}</div>${st.prog?`<div class="tp">${esc(PROG)}</div>`:""}<div class="tb"><button class="tsk" type="button" data-tour="skip">Skip, I know this</button>${st.next===false&&!MAN?"":`<button class="tsk go" type="button" data-tour="next">${last?"Got it":"Next →"}</button>`}</div>`;
+      /* bring the target on screen only when it is not already (no jumping about) */
+      const el=q(fv(st.sel)); if(el&&!st.last&&!st.noScroll){ const r=el.getBoundingClientRect(), vh=window.innerHeight; if(r.top<8||r.bottom>vh-100){ try{ el.scrollIntoView({block:"center",behavior:"smooth"}); }catch(e){} } }
       showBtn(); setTimeout(place,60); setTimeout(place,420); }
     function tick(){ if(I<0||!C) return; if(C.onTick) C.onTick(I);
       if(C.finished&&C.finished(I)) return finish();
       if(!ready()){ place(); return; }
       if(!MAN){ const i=nextI(); if(i!==I) return show(i); }
-      const st=cur(); if(st&&st.prog){ const pr=st.prog(); if(pr!==PROG){ PROG=pr; const el=BUB.querySelector(".tp"); if(el) el.textContent=pr; } }
+      const st=cur(); if(st&&st.prog){ const pr=st.prog(); if(pr!==PROG){ PROG=pr; const el=BUB.querySelector(".tp"); if(el) el.textContent=pr; if(PILL&&PILL.classList.contains("on")) PILL.innerHTML=pillTxt(); } }
       place(); }
     function next(){ const st=cur(); if(!st) return; PASSED.add(I); if(C.onNext) C.onNext(I); if(st.last||I>=steps().length-1) return finish(); show(I+1); }
-    function stop(){ I=-1; if(IV){ clearInterval(IV); IV=null; } if(HI){ HI.classList.add("off"); BUB.classList.add("off"); } showBtn(); }
+    function stop(){ I=-1; MIN=false; if(IV){ clearInterval(IV); IV=null; } if(HI){ HI.classList.add("off"); BUB.classList.add("off"); pill(false); } showBtn(); }
     function finish(){ if(!MAN) bump(0); stop(); }
     function skip(){ bump(auto()); stop(); }
     function start(manual){ if(!C||!ready()) return; build(); MAN=!!manual; PASSED.clear(); if(C.onStart) C.onStart(MAN);
@@ -714,13 +731,13 @@ const tourSteps=[
   {sel:"#s0 .card",title:"Step 1 of 8 · Outlet and menu",text:"Pick the <b>outlet</b> you're at and how they show the menu (<b>physical</b>, <b>QR</b> or both). The date is today.",done:()=>!!$("#menu").value,next:false},
   {sel:()=>{ const c=tourChecks().find(c=>!(chk[c.k]&&(!c.photo||PH[c.k]))); const b=c&&document.querySelector(`#checks [data-chk="${c.k}"]`); return (b&&b.closest(".card"))||"#checks"; },title:"Step 2 of 8 · The checks",text:"Answer every check <b>Yes</b> or <b>No</b>. Some need a photo: tap the <b>Photo</b> box on that card. Not relevant at this outlet? Tap <b>Not applicable here</b>.",done:()=>tourChecks().length>0&&tourAns()===tourChecks().length,prog:()=>`${tourAns()} of ${tourChecks().length} checks done`,next:false},
   {sel:"#temp",title:"Step 3 of 8 · Chiller temperature",text:"Type what the thermometer shows (target 0–5°C) and snap a photo of it.",done:tourTemp,next:false},
-  {sel:"#nav",title:"Step 4 of 8 · Next stage",text:"Setup is done. Tap <b>Next: Sell prices ›</b> at the bottom (or tap a stage at the top) to move on.",done:()=>STG>=1,next:false,above:true,noScroll:true},
-  {sel:"#prices",title:"Step 5 of 8 · Sell prices",text:"Type the price on each tag (RM). Leave it blank if the cake isn't on display. Then tap <b>Next</b>.",done:()=>STG>=2,next:false},
-  {sel:"#counts",title:"Step 6 of 8 · Spot count",text:"Pick 2–3 cakes: tap the colour dots you see on them and count each one. Then tap <b>Next</b>.",done:()=>STG>=3,next:false},
-  {sel:"#reqsum",title:"Step 7 of 8 · Photos",text:"All required photos taken? Add extra photos of anything worth recording, then tap <b>Next</b>.",done:()=>STG>=4,next:false},
+  {sel:"#nav",title:"Step 4 of 8 · Next stage",text:"Setup is done. Tap <b>Next: Sell prices ›</b> at the bottom (or tap a stage at the top) to move on.",done:()=>STG>=1,next:false,above:true,noScroll:true,revisit:true},
+  {sel:"#prices",title:"Step 5 of 8 · Sell prices",text:"Type the price on each tag (RM). Leave it blank if the cake isn't on display. Then tap <b>Next</b>.",done:()=>STG>=2,next:false,revisit:true},
+  {sel:"#counts",title:"Step 6 of 8 · Spot count",text:"Pick 2–3 cakes: tap the colour dots you see on them and count each one. Then tap <b>Next</b>.",done:()=>STG>=3,next:false,revisit:true},
+  {sel:"#reqsum",title:"Step 7 of 8 · Photos",text:"All required photos taken? Add extra photos of anything worth recording, then tap <b>Next</b>.",done:()=>STG>=4,next:false,revisit:true},
   {sel:"#send",title:"Step 8 of 8 · Send",text:"Tap <b>Get suggestions</b> if you want the AI's view, add a note, then <b>Submit audit</b>. The score above is Yes ÷ (Yes + No).",last:true,above:true,noScroll:true}
 ];
-CA.tour.define({key:"audit",steps:tourSteps,ready:()=>!!staff&&CAT.length>0&&!$("#bar").hidden,finished:i=>i>=7&&!!$("#bar").hidden,btnBottom:"calc(142px + env(safe-area-inset-bottom,0px))"});
+CA.tour.define({key:"audit",steps:tourSteps,topPad:()=>{ const h=document.querySelector("#hdr .hd"); const b=h?h.getBoundingClientRect().bottom:0; return b>0&&b<200?b+6:8; },ready:()=>!!staff&&CAT.length>0&&!$("#bar").hidden,finished:i=>i>=7&&!!$("#bar").hidden,btnBottom:"calc(142px + env(safe-area-inset-bottom,0px))"});
 (function(){ const s=CA.get(); CA.helper({auth:()=>staff&&staff.pin,page:()=>"Spot audit form"});
   if(!s) return signIn();
   staff={pin:s.t,name:s.name}; showAcct();
