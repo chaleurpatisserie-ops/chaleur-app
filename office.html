@@ -319,6 +319,7 @@ nav{position:relative;margin-left:auto}
 .menu button{border:0;background:transparent;color:var(--ink);font:500 15px var(--body);padding:11px 12px;border-radius:8px;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .menu button:hover{background:var(--soft)}
 .menu button[aria-current="page"]{background:var(--soft);color:var(--accent);font-weight:600}
+table.bkm select{width:100%;max-width:340px;min-height:36px}table.bkm tr.miss td{background:#fff6ea}
 .dprev{border:2px solid var(--accent);margin-bottom:14px}.dprev.ok{border-color:#2e7d4f}.dcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}.dlines{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 4px;font-size:14px}
 .menu .mgl{font:700 10.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:10px 12px 2px}.menu .mgl:first-child{padding-top:4px}
 .menu .mgo{display:grid;grid-template-columns:1fr 1fr;gap:4px;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}.menu .mgo button{justify-content:center;background:var(--soft);font-weight:600;font-size:13.5px;padding:10px 6px;white-space:nowrap}
@@ -1105,7 +1106,8 @@ function vBilling(){
       <label class="f">Bukku CF / CN no.<input id="bk-cf" data-bk="cf" value="${esc(st.bukku?.cf||"")}"></label>
       <label class="f">Paid on<input id="pd-d" type="date" data-bk="paidDate" value="${esc(st.paid?.date||"")}"></label>
       <label class="f">Amount received (RM)<input id="pd-a" data-bk="paidAmt" inputmode="decimal" value="${esc(st.paid?.amount??"")}"></label></div>
-      <div class="row"><button class="btn pri" data-act="saveBk">Save Bukku refs & payment</button>${st.drive&&st.drive.inv?`${driveLink(st.drive.inv)}`:(S.mcp?`<button class="btn" data-act="fileWeek">File INV, CF${st.cnNo?", CN":""} + DOs to Drive</button>`:"")}
+      ${st.bukku&&st.bukku.invId?`<p class="small" style="margin:0 0 8px"><span class="pill ok">In Bukku as draft${[st.bukku.invNo,st.bukku.cfNo,st.bukku.cnNo].filter(Boolean).length?": "+esc([st.bukku.invNo,st.bukku.cfNo,st.bukku.cnNo].filter(Boolean).join(", ")):""}</span> <span class="muted">sent ${esc(st.bukku.sentAt||"")} by ${esc(st.bukku.sentBy||"")} · approve them in Bukku</span></p>`:""}
+      <div class="row">${can("bills")&&!(st.bukku&&st.bukku.invId&&(!st.cfNo||st.bukku.cfId)&&(!st.cnNo||st.bukku.cnId))?`<button class="btn pri" data-act="bkBill">Send to Bukku (draft)</button>`:""}<button class="btn ${can("bills")?"":"pri"}" data-act="saveBk">Save Bukku refs & payment</button>${st.drive&&st.drive.inv?`${driveLink(st.drive.inv)}`:(S.mcp?`<button class="btn" data-act="fileWeek">File INV, CF${st.cnNo?", CN":""} + DOs to Drive</button>`:"")}
       ${conf==="void"?`<span class="confirm">Void these documents? They are kept in history and the week reopens.<button class="btn sm danger" data-act="void">Void</button><button class="btn sm" data-act="noconfirm">Keep</button></span>`:(nextBilled?`<span class="small muted">Next week is billed, so this week can't be voided.</span>`:`<button class="btn danger" data-act="askVoid">Void & reopen week</button>`)}
       ${st.paid&&st.paid.amount!=null&&st.paid.amount!==""?(Math.abs(+st.paid.amount-st.totals.net)<0.005?`<span class="pill ok">Paid in full</span>`:`<span class="pill warn">Paid RM ${fm(st.paid.amount)} — difference RM ${fm(st.totals.net-(+st.paid.amount))}</span>`):""}</div>
       `;
@@ -1169,7 +1171,7 @@ function docHTML(kind,pid,ws,st){
 }
 function vModal(){
   const m=S.ui.modal;
-  return `<div class="modal" data-close="1"><div class="box" role="dialog" aria-label="Document"><div class="bar"><button class="btn" data-act="printModal">Print</button>${KIT()?"":`<button class="btn" data-act="copyLines">Copy lines for Bukku</button><button class="btn" data-act="saveFile">Save PDF to Drive</button>`}${m.drive?driveLink(m.drive):(S.mcp?`<button class="btn" data-act="fileModal">File to Drive</button>`:"")}<button class="btn pri" data-act="closeModal">Close</button></div>${m.html}</div></div>`;
+  return `<div class="modal" data-close="1"><div class="box" role="dialog" aria-label="Document"><div class="bar"><button class="btn" data-act="printModal">Print</button>${KIT()?"":`<button class="btn" data-act="copyLines">Copy lines for Bukku</button>${m.kind==="do"&&(can("bills")||can("reports"))&&!partner(m.pid).internal?(m.doc.bukku&&m.doc.bukku.id?`<span class="pill ok">In Bukku · ${esc(m.doc.bukku.no||m.doc.no)}</span>`:`<button class="btn" data-act="bkDO">Send to Bukku (draft)</button>`):""}<button class="btn" data-act="saveFile">Save PDF to Drive</button>`}${m.drive?driveLink(m.drive):(S.mcp?`<button class="btn" data-act="fileModal">File to Drive</button>`:"")}<button class="btn pri" data-act="closeModal">Close</button></div>${m.html}</div></div>`;
 }
 
 /* ---- AUDITS ---- */
@@ -1232,7 +1234,7 @@ const sampleCount=r=>sampleSecs(r).reduce((s,[,a])=>s+a.length,0);
 function sampleList(r){const sec=sampleSecs(r); return sec.length?`<div class="tw"><table><tbody>${sec.map(([k,a])=>`<tr><td><b>${esc(k)}</b> <span class="small muted">${a.length}</span></td><td class="small">${a.slice(0,60).map(esc).join(" · ")}${a.length>60?" …":""}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">Nothing to remove: no sample or test data found.</div>`;}
 function vSetup(){
   const sec=S.ui.setup;
-  const subs=[["partners","Outlets & terms"],["products","Products"],["shelf","Shelf life"],["prices","Price register"],["opening","Opening stock"],["general","Go-live & rules"],["kitchen","Kitchen HQ & WhatsApp"]];
+  const subs=[["partners","Outlets & terms"],["products","Products"],["shelf","Shelf life"],["prices","Price register"],["opening","Opening stock"],["general","Go-live & rules"],["kitchen","Kitchen HQ & WhatsApp"]].concat(can("admin")||can("bills")||can("setup")?[["bukku","Bukku"]]:[]);
   let body="";
   if(sec==="partners"){
     const e=S.ui.pEdit;
@@ -1374,6 +1376,28 @@ function vSetup(){
           <label class="f">Alert numbers (Alfred, Joscelyn)<input id="wa-al" value="${esc((w.alerts||[]).join(", "))}" placeholder="0146650928"></label></div>
         <div class="row"><button class="btn pri" data-act="saveWA">Save</button><button class="btn" data-act="testWA" ${w.set?"":"disabled"}>Send a test message</button>${w.set?(w.on?`<button class="btn sm" data-act="waOff">Switch off</button>`:`<button class="btn sm" data-act="waOn">Switch on</button>`):""}${w.groupSet?`<button class="btn sm" data-act="waNoGroup">Forget group</button>`:""}</div>
         ${(w.log||[]).length?`<details class="help"><summary>Last messages sent (${w.log.length})</summary><div class="small">${w.log.map(x=>`<div>${esc(x.at)} · ${x.ok?"✓":"✗"} ${esc(x.what)}<br><span class="muted">${(x.res||[]).map(esc).join(" · ")}</span></div>`).join("")}</div></details>`:""}</div>`:""}`;
+  }
+  if(sec==="bukku"){
+    if(S.bk===undefined){ S.bk=null; GS("bukkuStatus").then(r=>{S.bk=r;render();}).catch(e=>{S.bk={err:e.message};render();}); }
+    const B=S.bk||{}, M=S.ui.bkMatch, SEL=S.ui.bkSel||{products:{},outlets:{}};
+    const opts=(list,cur,lab)=>`<option value="">— not matched —</option>${list.map(x=>`<option value="${esc(x.id)}" ${String(cur)===String(x.id)?"selected":""}>${esc(lab(x))}</option>`).join("")}`;
+    const nP=M?M.products.filter(x=>(SEL.products[x.id]||{}).id).length:0, nO=M?M.outlets.filter(x=>(SEL.outlets[x.id]||{}).id).length:0;
+    body=`<div class="panel"><div class="spread"><h2>Bukku</h2>${S.bk===null?`<span class="small muted">Checking…</span>`:B.linked?`<span class="pill ok">Linked · ${esc(B.sub)}.bukku.my</span>`:`<span class="pill warn">Not linked</span>`}</div>
+      <p class="small muted" style="margin:4px 0 10px">Links the app to your Bukku account. Weekly bills (invoice, carry forward, credit note) and delivery orders can then be sent to Bukku as <b>drafts with the same numbers</b> as the app; you check and approve them in Bukku. Nothing is sent by itself.</p>
+      ${B.err?`<p class="pill warn">${esc(B.err)}</p>`:""}
+      ${B.owner?`<div class="fgrid"><label class="f">Bukku subdomain<input id="bk-sub" autocomplete="off" value="${esc(B.sub||"")}" placeholder="e.g. chaleur (from chaleur.bukku.my)"></label>
+        <label class="f">Access token<input id="bk-tok" type="password" autocomplete="off" placeholder="${B.linked?"(saved, leave empty to keep)":"paste it here"}"></label></div>
+        <div class="row"><button class="btn pri" data-act="bkSave">Save &amp; test</button>${B.linked?`<button class="btn" data-act="bkTest">Test connection</button><button class="btn sm" data-act="bkOff">Unlink</button>`:""}</div>
+        <details class="help"><summary>Where do I find the token?</summary><ol class="small"><li>Open Bukku on a computer and sign in.</li><li>Control Panel › Integrations › turn on <b>API Access</b> › Save.</li><li>Copy the <b>Access Token</b> it shows and paste it above. The subdomain is the first part of your Bukku address (for <i>chaleur</i>.bukku.my type <i>chaleur</i>).</li><li>Tap Save &amp; test. The token is kept in the Google backend and never shown again.</li></ol></details>`:`<p class="small">Only Alfred (Owner settings) can link Bukku.</p>`}
+    </div>
+    ${B.linked?`<div class="panel"><div class="spread"><h2>Match with Bukku</h2><button class="btn ${M?"":"pri"}" data-act="bkMatch">${M?"Match again":"Match cakes and outlets with Bukku"}</button></div>
+      <p class="small muted" style="margin:4px 0 10px">Every cake needs its Bukku product and every outlet its Bukku customer before anything can be sent. The app matches them by code first, then by name. Fix any that are wrong or missing, then Save.</p>
+      ${M?`<h3>Cakes · ${nP} of ${M.products.length} matched <span class="small muted">(${M.counts.bukkuProducts} products in Bukku)</span></h3>
+        <div class="tw"><table class="bkm"><thead><tr><th>Cake in the app</th><th>Bukku product</th><th></th></tr></thead><tbody>${M.products.map(x=>{const cur=(SEL.products[x.id]||{}).id||""; return `<tr class="${cur?"":"miss"}"><td><b>${esc(x.name)}</b><br><span class="mono small">${esc(x.sku)}</span></td><td><select data-bkp="${esc(x.id)}" aria-label="Bukku product for ${esc(x.name)}">${opts(M.bukkuProducts,cur,b=>b.name+(b.sku?" · "+b.sku:""))}</select></td><td class="small">${cur?(x.match&&String(x.match.id)===String(cur)?`<span class="pill ok">${esc(x.match.how)}</span>`:`<span class="pill info">picked</span>`):`<span class="pill warn">missing</span>`}</td></tr>`;}).join("")}</tbody></table></div>
+        <h3 style="margin-top:14px">Outlets · ${nO} of ${M.outlets.length} matched <span class="small muted">(${M.counts.bukkuContacts} customers in Bukku)</span></h3>
+        <div class="tw"><table class="bkm"><thead><tr><th>Outlet in the app</th><th>Bukku customer</th><th></th></tr></thead><tbody>${M.outlets.map(x=>{const cur=(SEL.outlets[x.id]||{}).id||""; return `<tr class="${cur?"":"miss"}"><td><b>${esc(x.name)}</b><br><span class="small muted">${esc(x.legalName||x.code)}</span></td><td><select data-bkc="${esc(x.id)}" aria-label="Bukku customer for ${esc(x.name)}">${opts(M.bukkuContacts,cur,b=>b.name+(b.code?" · "+b.code:""))}</select></td><td class="small">${cur?(x.match&&String(x.match.id)===String(cur)?`<span class="pill ok">${esc(x.match.how)}</span>`:`<span class="pill info">picked</span>`):`<span class="pill warn">missing</span>`}</td></tr>`;}).join("")}</tbody></table></div>
+        <div class="row" style="margin-top:12px"><button class="btn pri" data-act="bkSaveMatch">Save matches</button><span class="small muted">A cake with no Bukku product yet? Create it in Bukku with the same name, then tap Match again.</span></div>`:""}
+    </div>`:""}`;
   }
   return `<div class="head"><div><h1>Setup</h1><p class="lede">Outlets, terms, products, approved prices and document settings.</p></div></div>
     <div class="sub">${subs.map(([k,l])=>`<button aria-pressed="${sec===k}" data-setup="${k}">${l}</button>`).join("")}</div>${body}`;
@@ -1719,7 +1743,7 @@ document.addEventListener("click",async e=>{
   if(d.slapply){const v=Math.round(+((S.ui.slAll||{})[d.slapply]||0)); if(!(v>=1&&v<=6)){toast("Type 1 to 6 days first");return;} const D=S.ui.shelfDraft||(S.ui.shelfDraft={}); products().filter(p=>catOf(p)===d.slapply).forEach(p=>D[p.id]=String(v)); render(); return;}
   if(d.rcv||d.edo||d.vdo){const [pid,ws,id]=(d.rcv||d.edo||d.vdo).split("|");const w=weekDoc(pid,ws);const x=clone(w.dos[id]);
     if(d.rcv&&!x.checkedAt){toast("Check the colours first (Check colours)");return;}
-    if(d.vdo){S.ui.modal={kind:"do",html:docHTML("do",pid,ws,x),doc:x,pid};render();return;}
+    if(d.vdo){S.ui.modal={kind:"do",html:docHTML("do",pid,ws,x),doc:x,pid,ws};render();return;}
     const lines={};(x.lines||[]).forEach(l=>{const o=lines[l.productId]; lines[l.productId]={qty:(+(o&&o.qty)||0)+(+l.qty||0),accepted:l.accepted};});
     S.ui.doEdit={...x,partnerId:pid,weekStart:ws,origPid:pid,origWs:ws,lines,mode:d.rcv?"receive":"edit",rl:(x.lines||[]).filter(l=>+l.qty).map(l=>({...l,colour:l.colour||x.colour,accepted:l.accepted??l.qty})),batchTouched:true,receivedAt:x.receivedAt||new Date().toTimeString().slice(0,5)};render();window.scrollTo(0,0);return;}
   if(d.doc){const pid=curPartner(); if(partner(pid).internal) return; const _x=0,ws=S.ui.week||weekStartOf(add(today(),-7));const st=weekDoc(pid,ws).settlement;S.ui.modal={kind:d.doc,html:docHTML(d.doc,pid,ws,st),st,pid};render();return;}
@@ -1835,6 +1859,15 @@ async function act(a,b){
   case "closeModal": S.ui.modal=null; render(); return;
   case "addEvent":{const e=S.ui.ev||{}; if(!e.name||!e.date){toast("Name and date are required");return;} const id=newId();
     await put(`calendar/${id}`,{id,name:e.name,date:e.date,end:e.end||"",region:e.region||"MY-JHR",type:e.type||"event",uplift:+e.uplift||0,source:"added by office"}); S.ui.ev=null; toast("Added to calendar"); return;}
+  case "bkSave":{const sub=(document.getElementById("bk-sub")||{}).value||"", token=(document.getElementById("bk-tok")||{}).value||""; b.disabled=true; b.textContent="Checking…";
+    try{const r=await GS("bukkuSave",{sub,token}); S.bk={linked:!!r.linked,sub:r.sub,owner:true}; toast(r.msg||"Saved");}catch(e){toast((e&&e.message)||"Couldn't save"); S.bk=undefined;} render(); return;}
+  case "bkTest":{b.disabled=true; try{const r=await GS("bukkuTest"); toast(r.msg+(r.products!=null?` ${r.products} products found.`:""));}catch(e){toast((e&&e.message)||"Couldn't reach Bukku");} b.disabled=false; return;}
+  case "bkOff":{b.disabled=true; try{await GS("bukkuSave",{off:true}); S.bk=undefined; S.ui.bkMatch=null; toast("Bukku unlinked");}catch(e){toast(e.message);} render(); return;}
+  case "bkMatch":{b.disabled=true; b.textContent="Reading Bukku…"; try{const r=await GS("bukkuMatch"); const sel={products:{},outlets:{}}; r.products.forEach(x=>{ if(x.match) sel.products[x.id]={id:x.match.id,name:x.match.name,sku:x.match.sku}; }); r.outlets.forEach(x=>{ if(x.match) sel.outlets[x.id]={id:x.match.id,name:x.match.name}; }); S.ui.bkMatch=r; S.ui.bkSel=sel;}catch(e){toast((e&&e.message)||"Couldn't read Bukku");} render(); return;}
+  case "bkSaveMatch":{const M=S.ui.bkMatch, SEL=S.ui.bkSel; if(!M) return; b.disabled=true; const products={}, outlets={}; M.products.forEach(x=>{ products[x.id]=SEL.products[x.id]||{}; }); M.outlets.forEach(x=>{ outlets[x.id]=SEL.outlets[x.id]||{}; });
+    try{const r=await GS("bukkuSaveMatch",{products,outlets}); toast(r.msg); await reload();}catch(e){toast((e&&e.message)||"Couldn't save");} render(); return;}
+  case "bkBill":{const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); b.disabled=true; b.textContent="Sending…"; try{const r=await GS("bukkuSendBill",pid,ws); toast(r.msg); await reload();}catch(e){toast((e&&e.message)||"Couldn't send to Bukku"); b.disabled=false; b.textContent="Send to Bukku (draft)";} render(); return;}
+  case "bkDO":{const m=S.ui.modal; if(!m) return; b.disabled=true; b.textContent="Sending…"; try{const r=await GS("bukkuSendDO",wid(m.pid,m.ws),m.doc.id); toast(r.msg); await reload(); m.doc=clone((weekDoc(m.pid,m.ws).dos||{})[m.doc.id]||m.doc);}catch(e){toast((e&&e.message)||"Couldn't send to Bukku"); b.disabled=false; b.textContent="Send to Bukku (draft)";} render(); return;}
   case "makeDOs":{S.ui.doDone=null; S.ui.doPrev=draftPlan(); render(); setTimeout(()=>{const e=document.getElementById("doprev"); if(e) e.scrollIntoView({behavior:"smooth",block:"start"});},60); return;}
   case "makeDOsNo":{S.ui.doPrev=null; S.ui.doDone=null; render(); return;}
   case "makeDOsGo":{b.disabled=true; b.textContent="Creating…"; const D=draftPlan(), made=[];
@@ -2044,6 +2077,9 @@ document.addEventListener("click",async e=>{const b=e.target&&e.target.closest&&
 async function stSave(rec){ try{ S.team=await GS("teamSave",rec); S.ui.stEdit=null; toast("Staff saved"); render(); }catch(e){ toast(e.message); } }
 document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.st; if(k&&S.ui.stEdit){ S.ui.stEdit[k]=e.target.value;
   if(k==="area"||k==="level"){ const C=S.stCat; if(C) S.ui.stEdit.perms=(((C.presets||{})[S.ui.stEdit.area]||{})[S.ui.stEdit.level]||[]).slice(); render(); } }});
+document.addEventListener("change",e=>{const t0=e.target, ds=t0&&t0.dataset; if(!ds||!S.ui.bkMatch) return; const M=S.ui.bkMatch, SEL=S.ui.bkSel||(S.ui.bkSel={products:{},outlets:{}});
+  if(ds.bkp!=null){ const b0=M.bukkuProducts.find(x=>String(x.id)===t0.value); SEL.products[ds.bkp]=b0?{id:b0.id,name:b0.name,sku:b0.sku}:{}; render(); }
+  if(ds.bkc!=null){ const c0=M.bukkuContacts.find(x=>String(x.id)===t0.value); SEL.outlets[ds.bkc]=c0?{id:c0.id,name:c0.name}:{}; render(); } });
 document.addEventListener("change",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.stp; if(k&&S.ui.stEdit&&S.stCat){ stTick(S.ui.stEdit,S.stCat,k,e.target.checked); render(); }});
 async function reload(){try{DBX.cache=await GS("dbLoadAll");fire();}catch(e){toast("Couldn't refresh — "+e.message);}}
 /* Phones: wide tables become one card per row, each value with its column name (CSS below 640px). */
