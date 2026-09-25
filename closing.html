@@ -552,6 +552,8 @@ async function load(){
   const ex=INFO.existing;
   const add=(p,c)=>{const k=K(p,c); if(!SHOWN.includes(p)) SHOWN.push(p); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} };
   INFO.stock.forEach(s=>add(s.productId,s.colour));
+  /* v21.8: nothing expected yet (fresh start, first night)? one card per cake the outlet carries — they tap the colour dot(s) they actually have */
+  if(!INFO.stock.length&&!(ex&&(ex.lines||[]).length)) (INFO.carries||[]).forEach(p=>{ if(!SHOWN.includes(p)) SHOWN.push(p); });
   if(ex){ ex.lines.forEach(l=>{add(l.productId,l.colour); const r=ROWS[K(l.productId,l.colour)]; r.w=l.w?String(l.w):""; r.b=l.b?String(l.b):"";}); if(!NOTE) NOTE=ex.note||""; }
   DRAFTED=loadDraft(ex);
   render();
@@ -735,11 +737,11 @@ let tourTyped=0, tourNamed=false, tourDate="";
 const tourDone=new Set();
 const nameOk=()=>{const el=$("#who"); const v=((el&&el.value)||WHO||"").trim(); return tourNamed&&v.length>=2&&(!el||document.activeElement!==el||Date.now()-tourTyped>1500);};
 const rowDone=k=>tourDone.has(k)||ROWS[k].w!==""||ROWS[k].b!=="";
-const rowsProg=()=>{const n=ORDER.filter(rowDone).length; return ORDER.length?`${n} of ${ORDER.length} row${ORDER.length>1?"s":""} filled`:"";};
+const rowsProg=()=>{const n=ORDER.filter(rowDone).length; return ORDER.length?`${n} of ${ORDER.length} row${ORDER.length>1?"s":""} filled`:(SHOWN.length?"No rows yet: tap the colour dot on each cake you have":"");};
 const tourOnForm=()=>!!$("#who")&&!!(INFO&&INFO.outlet);
 const tourSteps=[
   {sel:"#who",title:"Step 1 of 4 · Your name",text:"Type your name here, so Chaleur knows who counted tonight. Is it already showing your name? Tap Next.",done:nameOk},
-  {sel:"#app .cake, #app [data-act=add]",title:"Step 2 of 4 · Count the cakes",text:"Fill in <b>every row</b>: <b>Waste</b> (thrown away or damaged) and <b>Left</b> (still in the chiller) for each colour dot. Tap + / − or type; 0 if none. Missing a colour? Tap its dot on the cake.",done:()=>ORDER.length>0&&ORDER.every(rowDone),prog:rowsProg,next:false},
+  {sel:"#app .cake, #app [data-act=add]",title:"Step 2 of 4 · Count the cakes",text:"Fill in <b>every row</b>: <b>Waste</b> (thrown away or damaged) and <b>Left</b> (still in the chiller) for each colour dot. Tap + / − or type; 0 if none. Missing a colour, or no rows yet? Tap the dot on the cake.",done:()=>ORDER.length>0&&ORDER.every(rowDone),prog:rowsProg,next:false},
   {sel:"#ptiles",title:"Step 3 of 4 · Photos",text:"Tap each box to take a photo: today's <b>sales report</b> from the POS, the <b>chiller</b>, and the <b>waste</b> if there is any.",done:()=>PH.sales.length>0&&!!PH.display&&(!hasWaste()||!!PH.waste),next:false},
   {sel:"#next",title:"Step 4 of 4 · Send",text:"Tap <b>Send tonight's count</b>. Check the numbers on the next screen, then <b>Confirm &amp; send</b>. You're done when you see “Sent. Thank you!”",done:()=>false,last:true}
 ];
