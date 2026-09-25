@@ -90,7 +90,19 @@ body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bot
 .ca-hp .ca-rc .ca-tx{font-size:14px;color:var(--muted,#6f5f62);white-space:pre-wrap}
 .ca-hp .ca-rc .ca-rp{background:var(--s-soft);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.4;white-space:pre-wrap}
 .ca-hp .ca-rc .ca-mt{font-size:12px;color:#9a8f91}
-@media print{.ca-hbtn,.ca-hp,.ca-chip button{display:none!important}}
+/* Step-by-step guide (shared by every page): a spotlight (box-shadow cut-out, never blocks taps) + a small bubble that follows each step, and a "Show me how" button once the guide has been seen. */
+.tourhi{position:fixed;z-index:75;pointer-events:none;border-radius:14px;box-shadow:0 0 0 3000px rgba(20,10,12,.55),0 0 0 3px #e3c466,0 0 18px 2px rgba(227,196,102,.75);transition:top .35s ease,left .35s ease,width .35s ease,height .35s ease,opacity .25s ease}
+.tourhi.off,.tourbub.off{opacity:0!important;visibility:hidden}
+.tourbub{position:fixed;z-index:76;width:min(290px,calc(100vw - 28px));background:#2b1b1e;color:#fdf6ee;border-radius:14px;padding:12px 14px;font:500 14px var(--body,Jost,system-ui,sans-serif);box-shadow:0 10px 30px rgba(0,0,0,.35);transition:top .35s ease,left .35s ease,opacity .25s ease;box-sizing:border-box}
+.tourbub .tn{font:600 10.5px var(--body,Jost,system-ui,sans-serif);letter-spacing:.1em;text-transform:uppercase;color:#e3c466;margin-bottom:4px}
+.tourbub .tx{line-height:1.35}.tourbub .tx b{color:#fff}
+.tourbub .tp{margin-top:6px;font:600 12px var(--body,Jost,system-ui,sans-serif);color:#e3c466}
+.tourbub .tb{display:flex;justify-content:space-between;gap:14px;margin-top:10px;align-items:center}
+.tourbub .tsk{font:600 12.5px var(--body,Jost,system-ui,sans-serif);color:#e3c466;background:none;border:0;cursor:pointer;padding:4px 0;text-decoration:underline;touch-action:manipulation}
+.tourbub .tsk.go{background:#e3c466;color:#2b1b1e;text-decoration:none;border-radius:999px;padding:6px 14px}
+.tourshow{display:none;position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:59;background:var(--paper,#fff);border:1.5px solid var(--line,#e8dcd6);border-radius:20px;padding:8px 14px;font:600 12.5px var(--body,Jost,system-ui,sans-serif);color:var(--muted,#6f5f62);box-shadow:0 4px 10px rgba(0,0,0,.12);cursor:pointer;touch-action:manipulation}
+.tourshow.on{display:block}
+@media print{.ca-hbtn,.ca-hp,.ca-chip button,.tourhi,.tourbub,.tourshow{display:none!important}}
 </style>
 <script>
 /* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
@@ -277,7 +289,81 @@ const CA=(function(){
     b.onclick=()=>{ if(panel){close();return;} open(); };
     openHelp=v=>open(v);
   }
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update};
+  /* ---- Step-by-step guide (v21.7). Each page defines its steps; this draws the spotlight + bubble, moves on when a step is done,
+     shows itself the first 3 visits (per person once signed in, else per phone) and after that as a small "❔ Show me how" button.
+     A step: {sel, title, text, done(), prog(), next:false (no Next button in the automatic guide), last, above, noScroll}.
+     Config: {key, steps, ready(), busy(), finished(i), leaveDone(i), onTick(i), onStart(manual), onNext(i), btnBottom, auto, perPhone}. ---- */
+  const TOUR=(function(){
+    let C=null, I=-1, HI=null, BUB=null, BTN=null, IV=null, MAN=false, PROG="", RAF=0;
+    const TRIED=new Set(); /* guides already started by themselves in this page load (one automatic start per guide per visit) */
+    const PASSED=new Set(); /* steps confirmed with Next (steps that have no done() of their own) */
+    const vis=el=>{ if(!el) return false; const r=el.getBoundingClientRect(); return r.width>0&&r.height>0; };
+    /* first VISIBLE element for a selector list (a hidden bar or an empty card does not count) */
+    const q=s=>{ try{ if(!s) return null; if(s.nodeType===1) return vis(s)?s:null; const all=document.querySelectorAll(s); for(const el of all) if(vis(el)) return el; return null; }catch(e){ return null; } };
+    const who=()=>{ const s=get(); return s&&s.name?String(s.name).replace(/\s*\(.*$/,"").trim().toUpperCase():""; };
+    const keys=()=>{ const b="chaleur.tour."+((C&&C.key)||"page"), w=C&&C.perPhone?"":who(); return w?[b+"."+w,b]:[b]; };
+    const rdN=k=>{ try{ return +(localStorage.getItem(k)||0)||0; }catch(e){ return 0; } };
+    const seen=()=>rdN(keys()[0]);
+    const bump=min=>keys().forEach(k=>{ try{ localStorage.setItem(k,String(Math.max(rdN(k)+1,min||0))); }catch(e){} });
+    const auto=()=>C&&C.auto!=null?+C.auto:3;
+    const steps=()=>(C?(typeof C.steps==="function"?C.steps():C.steps):[])||[];
+    const cur=()=>steps()[I]||null;
+    const fv=v=>typeof v==="function"?v():v;
+    const busy=()=>!!(document.querySelector(".ca-hp")||(C&&C.busy&&C.busy()));
+    const isDone=(S,i)=>PASSED.has(i)||!!(S[i]&&S[i].done&&S[i].done());
+    /* automatic mode: the first step that is not done yet (so undoing a step brings the guide back to it) */
+    const nextI=()=>{ const S=steps(); let i=0; while(i<S.length-1&&isDone(S,i)) i++; return i; };
+    const ready=()=>!!(C&&(!C.ready||C.ready()));
+    function build(){ if(HI||!document.body) return;
+      HI=document.createElement("div"); HI.className="tourhi off"; document.body.appendChild(HI);
+      BUB=document.createElement("div"); BUB.className="tourbub off"; BUB.setAttribute("role","status"); document.body.appendChild(BUB);
+      BTN=document.createElement("button"); BTN.type="button"; BTN.className="tourshow"; BTN.textContent="❔ Show me how"; BTN.onclick=()=>start(true); document.body.appendChild(BTN);
+      BUB.addEventListener("click",e=>{ const b=e.target.closest("[data-tour]"); if(!b) return; if(b.dataset.tour==="skip") skip(); else next(); });
+      const re=()=>{ if(I>=0&&!RAF) RAF=requestAnimationFrame(()=>{ RAF=0; place(); }); };
+      window.addEventListener("scroll",re,{passive:true}); window.addEventListener("resize",re);
+      try{ new MutationObserver(()=>{ showBtn(); re(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+      window.addEventListener("pagehide",()=>{ const st=cur(); if(st&&!MAN&&(st.last||(C.leaveDone&&C.leaveDone(I)))) finish(); });
+    }
+    function showBtn(){ if(!BTN) return; if(C&&C.btnBottom) BTN.style.bottom=fv(C.btnBottom)||""; BTN.classList.toggle("on",!!C&&I<0&&ready()&&!busy()); }
+    function place(){ const st=cur(); if(!st||!HI) return;
+      const el=q(fv(st.sel)), b=busy();
+      if(b||(!el&&!MAN)){ HI.classList.add("off"); BUB.classList.add("off"); return; }
+      const p=8, vw=window.innerWidth, vh=window.innerHeight;
+      BUB.classList.remove("off"); const bw=BUB.offsetWidth||280, bh=BUB.offsetHeight||120;
+      if(!el){ HI.classList.add("off"); BUB.style.top=Math.max(8,Math.round((vh-bh)/2))+"px"; BUB.style.left=Math.max(14,Math.round((vw-bw)/2))+"px"; return; }
+      const r=el.getBoundingClientRect();
+      Object.assign(HI.style,{top:(r.top-p)+"px",left:(r.left-p)+"px",width:(r.width+2*p)+"px",height:(r.height+2*p)+"px"}); HI.classList.remove("off");
+      /* below the target if it fits above the bottom bar, else above it; a target taller than the screen gets the bubble at the top (bottom bars hold the buttons) */
+      const below=r.bottom+p+10, above=r.top-p-10-bh; let top;
+      if(st.last||st.above) top=above>=8?above:(below+bh<=vh-150?below:8);
+      else top=below+bh<=vh-150?below:(above>=8?above:8);
+      top=Math.max(8,Math.min(top,vh-bh-8));
+      let left=r.left+r.width/2-bw/2; left=Math.max(14,Math.min(left,vw-bw-14));
+      BUB.style.top=top+"px"; BUB.style.left=left+"px"; }
+    function show(i){ I=i; const st=cur(); if(!st) return finish();
+      PROG=st.prog?st.prog():""; const n=steps().length, last=st.last||i===n-1;
+      BUB.innerHTML=`<div class="tn">${esc(fv(st.title)||("Step "+(i+1)+" of "+n))}</div><div class="tx">${fv(st.text)||""}</div>${st.prog?`<div class="tp">${esc(PROG)}</div>`:""}<div class="tb"><button class="tsk" type="button" data-tour="skip">Skip, I know this</button>${st.next===false&&!MAN?"":`<button class="tsk go" type="button" data-tour="next">${last?"Got it":"Next →"}</button>`}</div>`;
+      const el=q(fv(st.sel)); if(el&&!st.last&&!st.noScroll){ try{ el.scrollIntoView({block:"center",behavior:"smooth"}); }catch(e){} }
+      showBtn(); setTimeout(place,60); setTimeout(place,420); }
+    function tick(){ if(I<0||!C) return; if(C.onTick) C.onTick(I);
+      if(C.finished&&C.finished(I)) return finish();
+      if(!ready()){ place(); return; }
+      if(!MAN){ const i=nextI(); if(i!==I) return show(i); }
+      const st=cur(); if(st&&st.prog){ const pr=st.prog(); if(pr!==PROG){ PROG=pr; const el=BUB.querySelector(".tp"); if(el) el.textContent=pr; } }
+      place(); }
+    function next(){ const st=cur(); if(!st) return; PASSED.add(I); if(C.onNext) C.onNext(I); if(st.last||I>=steps().length-1) return finish(); show(I+1); }
+    function stop(){ I=-1; if(IV){ clearInterval(IV); IV=null; } if(HI){ HI.classList.add("off"); BUB.classList.add("off"); } showBtn(); }
+    function finish(){ if(!MAN) bump(0); stop(); }
+    function skip(){ bump(auto()); stop(); }
+    function start(manual){ if(!C||!ready()) return; build(); MAN=!!manual; PASSED.clear(); if(C.onStart) C.onStart(MAN);
+      show(MAN?0:nextI()); if(!IV) IV=setInterval(tick,400); }
+    /* automatic start: at most once per page load (a page may call this after every render) */
+    function maybeStart(){ if(!C||TRIED.has(C.key)||window.CHALEUR_NO_GUIDE) return; build(); showBtn(); if(I<0&&ready()&&seen()<auto()){ TRIED.add(C.key); start(false); } }
+    function define(cfg){ stop(); C=cfg||null; build(); showBtn(); return TOUR; }
+    const TOUR={define,start,maybeStart,stop,skip,next,seen,on:()=>I>=0,step:()=>I,manual:()=>MAN,reset:()=>keys().forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} })};
+    return TOUR;
+  })();
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR};
 })();
 </script>
 
@@ -700,7 +786,7 @@ function clearDraft(kind){ try{localStorage.removeItem(dkey(kind));}catch(e){} c
 /* ---------- sign in ---------- */
 function signIn(msg){ $("#tabs").hidden=true; $("#bar").hidden=true; CA.toLogin(msg); }
 async function boot2(){ const s=CA.get(); $("#acct").innerHTML=CA.chip(s); $("#main").innerHTML=`<p class="hint" style="padding-top:20px">Loading…</p>`;
-  try{ INFO=await run("hqInfo",DATE||undefined); INFO_AT=Date.now(); DATE=DATE||INFO.today; try{ const n=CA.update({perms:INFO.me.perms,label:INFO.me.label}); if(n) $("#acct").innerHTML=CA.chip(n); }catch(_){ } await loadPhs(); render(); }catch(e){ if(TOK) $("#main").innerHTML=`<div class="card" style="margin-top:16px"><p class="err">${esc(e.message)}</p><button class="cb sm" type="button" data-act="reload">Try again</button></div>`; } }
+  try{ INFO=await run("hqInfo",DATE||undefined); INFO_AT=Date.now(); DATE=DATE||INFO.today; try{ const n=CA.update({perms:INFO.me.perms,label:INFO.me.label}); if(n) $("#acct").innerHTML=CA.chip(n); }catch(_){ } await loadPhs(); openLinkedPart(); render(); }catch(e){ if(TOK) $("#main").innerHTML=`<div class="card" style="margin-top:16px"><p class="err">${esc(e.message)}</p><button class="cb sm" type="button" data-act="reload">Try again</button></div>`; } }
 async function reload(date){ if(date&&date!==DATE){ Object.keys(P2).forEach(k=>delete P2[k]); DATE=date; HIST=null; await loadPhs(); } try{ INFO=await run("hqInfo",DATE); INFO_AT=Date.now(); if(LED&&!LED.dirty) LED=null; render(); }catch(e){ toast(e.message); } }
 async function freshen(){ if(!INFO||SENDING||!TOK) return; const t=todayISO(); if(t!==INFO.today&&DATE===INFO.today){ K.opening=K.closing=null; RESULT=null; await reload(t); } else if(Date.now()-INFO_AT>120000&&!CK&&!RCV) await reload(); }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") freshen(); });
@@ -712,6 +798,15 @@ function confetti(){ if(matchMedia("(prefers-reduced-motion: reduce)").matches) 
   const a=Math.random()*Math.PI*2, r=120+Math.random()*160, x=Math.cos(a)*r, y=Math.sin(a)*r-60, dur=1000+Math.random()*600;
   d.animate([{transform:"translate(-50%,-50%) scale(.6)",opacity:1},{transform:`translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) scale(1)`,opacity:1,offset:.7},{transform:`translate(calc(-50% + ${x}px),calc(-50% + ${y+80}px)) scale(.8)`,opacity:0}],{duration:dur,easing:"cubic-bezier(.2,.7,.3,1)"}); setTimeout(()=>d.remove(),dur+50); } }
 
+/* v21.7: a QR / link can open one report part straight away — kitchen.html?part=display#opening (HQ display count) or ?part=count#closing (closing count).
+   The part is only opened once per visit (the link is cleaned up), and not if someone already sent it today. */
+function openLinkedPart(){ let qp=""; try{ qp=new URLSearchParams(location.search).get("part")||""; }catch(e){}
+  if(!qp||!(TAB==="opening"||TAB==="closing")||!INFO) return;
+  const ok=PARTS()[TAB].some(([p])=>p===qp)&&(INFO.state[TAB].need||[]).includes(qp), sent=partOf(TAB,qp);
+  try{ const u=new URL(location.href); u.searchParams.delete("part"); history.replaceState(null,"",u.pathname+(u.search||"")+u.hash); }catch(e){}
+  if(!ok) return;
+  if(sent){ setTimeout(()=>toast(`${sent.by} already sent ${partName(TAB,qp).toLowerCase()} at ${hmOf(sent.at)}. Open it below if you need to send it again.`),300); return; }
+  PART=qp; PARTT=Date.now(); RESULT=null; SEEN[TAB+"|"+qp]=""; }
 /* ---------- layout ---------- */
 const TABI={
  today:`<svg viewBox="0 0 28 26"><path d="M8 2v22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M9 3h13l-3 5 3 5H9z" fill="currentColor"/></svg>`,
@@ -738,6 +833,7 @@ function render(){
   $("#bar").hidden=!(!V2&&(TAB==="opening"||TAB==="closing")&&PART&&!(RESULT&&RESULT.kind===TAB));
   if(!V2&&(TAB==="opening"||TAB==="closing")&&PART) refresh();
   if(res&&CONFD!==RESULT.r.id){ CONFD=RESULT.r.id; setTimeout(confetti,80); if(RESULT.r.pts) setTimeout(()=>xp(RESULT.r.pts),300); }
+  setTimeout(()=>CA.tour.maybeStart(),300);
 }
 function tabHdr(){ const eb="Kitchen HQ · "+niceD(DATE);
   if(TAB==="today") return hdr("To-do",{back:{href:"index.html",label:"Home"},eb,right:INFO.game?`<a class="pill ink" href="index.html#me" style="text-decoration:none">${nf(INFO.game.mine)} pts</a>`:""});
@@ -1287,6 +1383,21 @@ document.addEventListener("change",async e=>{ const t=e.target, d=t.dataset; if(
 });
 $("#send").onclick=send;
 window.addEventListener("hashchange",()=>{ const h=(location.hash||"").slice(1); if(TABS.some(([k])=>k===h)&&h!==TAB&&INFO){ TAB=h; RESULT=null; PART=null; V2=""; render(); } });
+/* ---- Step-by-step guide (v21.7): to-do list → the report's parts → fill in and send → next part.
+   Drawn by the shared CA.tour (Auth.html); shows itself the first 3 times a person opens Kitchen HQ, then "❔ Show me how" replays it. ---- */
+const tourRep=()=>TAB==="opening"||TAB==="closing";
+const tourSent=()=>!!(RESULT&&RESULT.kind===TAB);
+const tourSteps=[
+  {sel:()=>$("#main .card.tk.cur")?"#main .card.tk.cur":"#main .kseg",title:"Step 1 of 4 · Your list for today",
+   text:()=>$("#main .card.tk.cur")?"Your team's jobs for today, in order. On the other team? Tap <b>Morning</b> or <b>Production</b> at the top. The job with the red bar is next: tap its button.":"Your team's jobs for today. On the other team? Tap <b>Morning</b> or <b>Production</b>. Nothing is waiting right now.",
+   done:()=>tourRep(),next:false},
+  {sel:"#main .card.pc.cur, #main .card.pc",title:"Step 2 of 4 · A report has parts",text:"Fridges, HQ display, deliveries: each part is sent on its own, so two people can do them at the same time. Tap <b>Start</b> on the next part.",done:()=>tourRep()&&(!!PART||tourSent()),next:false},
+  {sel:"#bar .in",title:"Step 3 of 4 · Fill in and send",text:"One screen at a time: fill it in, then tap the button at the bottom to go on. At the end tap <b>Send</b>. Your answers stay on this phone until you send.",done:tourSent,next:false,above:true,noScroll:true},
+  {sel:"#main .res2 .stats, #main .res2",title:"Step 4 of 4 · Sent",text:"Part sent: the points go to the team jar. Tap <b>Next part</b> to carry on, or go back to the list. Every part sent by the due time keeps the team's streak.",last:true}
+];
+CA.tour.define({key:"kitchen",steps:tourSteps,ready:()=>!!INFO&&!V2&&!!TOK&&(TAB==="today"||tourRep()),busy:()=>!!document.querySelector("#sheet .sheet, #tksheet .sheet"),
+  finished:i=>i>=3&&!tourSent(), /* they moved on from the "sent" screen */
+  btnBottom:()=>document.body.classList.contains("flow")?"calc(150px + env(safe-area-inset-bottom,0px))":"calc(84px + env(safe-area-inset-bottom,0px))"});
 (function(){ CA.helper({auth:()=>TOK,page:()=>"Kitchen HQ › "+(V2==="deco"?"Finish & decorate":/^do:|^chk:|^rcv:/.test(V2)?"Delivery order":PART?partName(TAB,PART):((TABS.find(([k])=>k===TAB)||["",""])[1]))});
   const qt=new URLSearchParams(location.search).get("team"); if(qt==="am"||qt==="pm") teamSet(qt);
   const s=CA.get(); if(!s) return signIn(); TOK=s.t; boot2(); })();
