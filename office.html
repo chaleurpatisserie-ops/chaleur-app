@@ -202,7 +202,7 @@ const CA=(function(){
         ${opt.noReport?"":`<div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`}`; }
     function askHtml(){
       const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}${opt.noReport?"":`<div style="margin-top:6px"><a class="ca-lnk" href="index.html#guide">Open the how-to guide ›</a></div>`}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
         <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
     function fbHtml(){
       if(FB.sent){ const x=FB.sent;
@@ -758,11 +758,11 @@ const TIPS={
   last:"Ask the outlet to put it at the front and sell it first today.",
   extra:"The outlet counted more than we sent. Usually a delivery wasn't marked delivered (check Deliveries) or colour dots were mixed up. Fix the DO or the report, then Ignore.",
   variance:"The count differs from our records. Check Deliveries for an unconfirmed DO and the colour dots on the daily report.",
-  bill:"Open Weekly billing, check the draft and tap Approve & issue (Alfred or Joscelyn).",
-  ar:"Send a payment reminder, then record the payment in Weekly billing.",
+  bill:"Open Weekly bills, check the draft and tap Approve & issue (Alfred or Joscelyn).",
+  ar:"Send a payment reminder, then record the payment in Weekly bills.",
   audit:"Share the audit photos with the outlet and ask them to fix it. It is checked again at the next audit.",
   photocheck:"Open the report and look at the photos. If a photo is wrong or reused, ask the outlet to send the report again with the right photos, then Ignore.",
-  afterbill:"Open the week in Weekly billing. If the net amount changed, Alfred or Joscelyn voids the bill and issues it again; if not, Ignore.",
+  afterbill:"Open the week in Weekly bills. If the net amount changed, Alfred or Joscelyn voids the bill and issues it again; if not, Ignore.",
   late:"This report arrived after the week was billed, so it did not change the bill. Open the week and compare. If the bill is wrong, a manager can void and reissue it; otherwise Ignore."};
 const plain=h=>String(h||"").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
 function missingCause(pid,date,productId,qty,rep){
@@ -2060,6 +2060,21 @@ function qcPanel(){
       <td>${q.done?esc(q.done.by)+` <span class="muted small">${esc(new Date(q.done.at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"}))}</span>`:`<span class="pill warn">not done</span>`}</td>
       <td class="small">${(q.done?q.done.results:q.items).map(x=>`<div>${dot(x.colour)} ${esc(x.name)} ${q.done?`<span class="pill ${V[x.verdict][1]}">${V[x.verdict][0]}</span>${x.note?` <span class="muted">${esc(x.note)}</span>`:""}${x.photo?` <a href="${esc(x.photo)}" target="_blank" rel="noopener">photo</a>`:""}`:`<span class="muted">${esc(x.why)}</span>`}</div>`).join("")}</td></tr>`).join("")}</tbody></table></div>`}</div>`;
 }
+/* ---------- v21.6 Helper questions: what "? Ask" could not answer; Alfred's answers teach the helper ---------- */
+function vHelperQs(when){
+  if(!S.hq){ if(!S.hqLoading){S.hqLoading=true; GS("helpQList").then(r=>{S.hq=r;S.hqLoading=false;render();}).catch(e=>{S.hqLoading=false;S.hq={items:[],kb:[],err:e.message};render();});} return `<div class="panel"><div class="empty">Loading helper questions…</div></div>`; }
+  const H=S.hq, items=H.items||[], kb=H.kb||[], open=items.filter(x=>x.status==="open"), done=items.filter(x=>x.status!=="open").slice(0,30), A=S.ui.hqa||(S.ui.hqa={});
+  const item=x=>`<div class="panel hqq"><div class="spread"><div><b>${esc(x.who||"")}</b> <span class="small muted">${esc(when(x.at))}${x.page?` · ${esc(x.page)}`:""}</span></div><span class="pill ${x.status==="open"?"warn":x.status==="answered"?"ok":"mute"}">${x.status==="open"?"Waiting for your answer":x.status==="answered"?"Answered":"Dismissed"}</span></div>
+    <p style="margin:6px 0;font-weight:600;white-space:pre-wrap">“${esc(x.q||"")}”</p>${x.reply?`<p class="small muted" style="margin:0 0 8px;white-space:pre-wrap">The helper said: ${esc(x.reply)}</p>`:""}
+    ${x.status==="open"?`<label class="f">Your answer · the helper uses it from now on<textarea rows="3" data-hqa="${esc(x.id)}" placeholder="e.g. Open Kitchen › Opening, tap HQ display count, then …">${esc(A[x.id]||"")}</textarea></label>
+      <div class="row"><button class="btn pri sm" data-hqsave="${esc(x.id)}">Save answer &amp; teach the helper</button><button class="btn sm" data-hqdis="${esc(x.id)}">Dismiss</button></div>`
+      :x.answer?`<p class="small" style="margin:0;padding-left:8px;border-left:3px solid var(--accent);white-space:pre-wrap"><b>Answer${x.ansBy?` from ${esc(x.ansBy)}`:""}:</b> ${esc(x.answer)}</p>`:""}</div>`;
+  return `${H.err?`<p class="neg">${esc(H.err)}</p>`:""}
+    <div class="panel"><h2>Questions the helper couldn't answer</h2><p class="small muted" style="margin:4px 0 0">When <b>? Ask</b> can't answer from the guide, the question is saved here. You also get them on WhatsApp every <b>Monday 9 am</b>. Type the right answer and save: the helper uses it straight away, for everyone, and the person who asked sees your answer on their home page.</p></div>
+    ${open.length?open.map(item).join(""):`<div class="panel"><div class="empty">No open questions. The helper has answered everything so far.</div></div>`}
+    ${kb.length?`<div class="panel"><h2>What you have taught the helper (${kb.length})</h2>${kb.map(k=>`<div class="spread" style="border-top:1px dashed var(--line);padding:8px 0;align-items:flex-start"><div style="min-width:0"><b>${esc(k.q)}</b><br><span class="small" style="white-space:pre-wrap">${esc(k.a)}</span><br><span class="small muted">${esc(k.by||"")} · ${esc(when(k.at))}</span></div><button class="btn sm" data-kbrm="${esc(k.id)}">Remove</button></div>`).join("")}</div>`:""}
+    ${done.length?`<details class="panel"><summary>Answered and dismissed (${done.length})</summary>${done.map(item).join("")}</details>`:""}`;
+}
 /* ---------- Feedback: problems and ideas the team sends from "? Ask" › Report a problem ---------- */
 const FBS_L={open:"New",doing:"Being fixed",done:"Done"}, FBS_C={open:"warn",doing:"info",done:"ok"};
 function vFeedback(){
@@ -2072,8 +2087,8 @@ function vFeedback(){
   return `<div class="head"><div><h1>Problem reports</h1><p class="lede">What the team reported with <b>? Ask › Report a problem</b> on any page. Urgent ones also go by WhatsApp to the kitchen supervisors and your alert numbers. Set the status and write a reply: they see it in <b>? Ask › My reports</b> and on their home page.</p></div>
       <div class="row"><button class="btn" data-fbrefresh="1">Refresh</button></div></div>
     ${S.fb.err?`<p class="neg">${esc(S.fb.err)}</p>`:""}
-    <div class="sub">${[["todo","To do"],["done","Done"],["all","All"]].map(([k,l])=>`<button aria-pressed="${F===k}" data-fbf="${k}">${l} (${n(k)})</button>`).join("")}</div>
-    ${list.length?list.map(x=>{const d=D[x.id]||{}; return `<div class="panel" ${x.urgent&&x.status!=="done"?'style="box-shadow:0 0 0 2px #c0392b inset"':""}><div class="spread"><div>${x.ref?`<span class="mono small">#${esc(x.ref)}</span> `:""}<b>${esc(x.by)}</b> <span class="small muted">${esc(({owner:"Owner",manager:"Manager",office:"Office",supervisor:"Kitchen supervisor",kitchen:"Kitchen",auditor:"Team"})[x.role]||x.role||"")} · ${esc(when(x.at))}${x.page?` · ${esc(x.page)}`:""}</span></div>
+    <div class="sub">${[["todo","To do"],["done","Done"],["all","All"]].map(([k,l])=>`<button aria-pressed="${F===k}" data-fbf="${k}">${l} (${n(k)})</button>`).join("")}<button aria-pressed="${F==="helper"}" data-fbf="helper">Helper questions${S.hq&&S.hq.items?` (${S.hq.items.filter(x=>x.status==="open").length})`:""}</button></div>
+    ${F==="helper"?vHelperQs(when):list.length?list.map(x=>{const d=D[x.id]||{}; return `<div class="panel" ${x.urgent&&x.status!=="done"?'style="box-shadow:0 0 0 2px #c0392b inset"':""}><div class="spread"><div>${x.ref?`<span class="mono small">#${esc(x.ref)}</span> `:""}<b>${esc(x.by)}</b> <span class="small muted">${esc(({owner:"Owner",manager:"Manager",office:"Office",supervisor:"Kitchen supervisor",kitchen:"Kitchen",auditor:"Team"})[x.role]||x.role||"")} · ${esc(when(x.at))}${x.page?` · ${esc(x.page)}`:""}</span></div>
         <div class="row">${x.urgent?`<span class="pill bad">Urgent</span>`:""}<span class="pill mute">${esc(K[x.kind]||x.kind)}</span><span class="pill ${FBS_C[x.status]||"mute"}">${esc(FBS_L[x.status]||x.status)}</span></div></div>
       <p style="margin:6px 0;white-space:pre-wrap">${esc(x.text||(x.photo?"(photo only)":"(no description)"))}</p>${x.last||x.url||x.dev?`<p class="small muted" style="margin:0 0 6px">${x.last?`Last message on their screen: “${esc(x.last)}”<br>`:""}${x.url?`Page link: <a href="${esc(x.url)}">${esc(x.url)}</a>`:""}${x.dev?` · ${esc(x.dev)}`:""}</p>`:""}${x.photo?`<p class="small" style="margin:0 0 6px"><a href="${esc(x.photo)}" target="_blank" rel="noopener">Open the photo</a></p>`:""}
       ${x.reply&&!d.edit?`<p class="small" style="margin:0 0 6px;padding-left:8px;border-left:3px solid var(--accent)"><b>Reply${x.updBy?` from ${esc(x.updBy)}`:""}:</b> ${esc(x.reply)}</p>`:""}
@@ -2081,10 +2096,14 @@ function vFeedback(){
         <label class="f">Reply to ${esc(String(x.by).split(" ")[0])} (optional)<textarea id="fb-r-${esc(x.id)}" data-fbr="${esc(x.id)}" rows="2" placeholder="e.g. Fixed, please try again. Or: thanks, we'll try it next week.">${esc(d.reply??x.reply??"")}</textarea></label></div>
       <div class="row"><button class="btn pri sm" data-fbsave="${esc(x.id)}">Save</button>${x.updAt?`<span class="small muted">Last changed by ${esc(x.updBy)} · ${esc(when(x.updAt))}</span>`:""}</div></div>`;}).join(""):`<div class="panel"><div class="empty">${F==="done"?"Nothing marked done yet.":"No open feedback. When the team reports a problem it shows here."}</div></div>`}`;
 }
-document.addEventListener("input",e=>{const t=e.target, d=t&&t.dataset; if(!d) return; if(d.fbs){(S.ui.fbd||(S.ui.fbd={}))[d.fbs]={...((S.ui.fbd||{})[d.fbs]||{}),status:t.value};} if(d.fbr){(S.ui.fbd||(S.ui.fbd={}))[d.fbr]={...((S.ui.fbd||{})[d.fbr]||{}),reply:t.value};}});
-document.addEventListener("click",async e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-fbf],[data-fbsave],[data-fbrefresh]"); if(!b) return; const d=b.dataset;
+document.addEventListener("input",e=>{const t=e.target, d=t&&t.dataset; if(!d) return; if(d.hqa!=null){(S.ui.hqa||(S.ui.hqa={}))[d.hqa]=t.value; return;} if(d.fbs){(S.ui.fbd||(S.ui.fbd={}))[d.fbs]={...((S.ui.fbd||{})[d.fbs]||{}),status:t.value};} if(d.fbr){(S.ui.fbd||(S.ui.fbd={}))[d.fbr]={...((S.ui.fbd||{})[d.fbr]||{}),reply:t.value};}});
+document.addEventListener("click",async e=>{const b=e.target&&e.target.closest&&e.target.closest("[data-fbf],[data-fbsave],[data-fbrefresh],[data-hqsave],[data-hqdis],[data-kbrm]"); if(!b) return; const d=b.dataset;
   if(d.fbf){S.ui.fbf=d.fbf; render(); return;}
-  if(d.fbrefresh){S.fb=null; render(); return;}
+  if(d.fbrefresh){S.fb=null; S.hq=null; render(); return;}
+  if(d.hqsave){ const id=d.hqsave, ans=((S.ui.hqa||{})[id]||"").trim(); if(ans.length<3){ toast("Type the answer first"); return; } b.disabled=true; b.textContent="Saving…";
+    try{ const r=await GS("helpQAnswer",id,{answer:ans,teach:true}); delete S.ui.hqa[id]; S.hq=null; toast(r.msg); render(); }catch(err){ toast(err.message); b.disabled=false; b.textContent="Save answer & teach the helper"; } return; }
+  if(d.hqdis){ b.disabled=true; try{ const r=await GS("helpQDismiss",d.hqdis); S.hq=null; toast(r.msg); render(); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.kbrm){ b.disabled=true; try{ const r=await GS("helpKbRemove",d.kbrm); S.hq=null; toast(r.msg); render(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.fbsave){ const id=d.fbsave, x=((S.fb||{}).items||[]).find(y=>y.id===id)||{}, ch=(S.ui.fbd||{})[id]||{}; b.disabled=true;
     try{ S.fb=await GS("feedbackUpdate",id,{status:ch.status??x.status,reply:ch.reply??x.reply??""}); delete S.ui.fbd[id]; toast("Saved. "+String(x.by||"").split(" ")[0]+" will see it."); render(); }
     catch(err){ toast(err.message); b.disabled=false; } }});

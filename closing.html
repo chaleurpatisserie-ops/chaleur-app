@@ -202,7 +202,7 @@ const CA=(function(){
         ${opt.noReport?"":`<div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`}`; }
     function askHtml(){
       const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}${opt.noReport?"":`<div style="margin-top:6px"><a class="ca-lnk" href="index.html#guide">Open the how-to guide ›</a></div>`}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
         <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
     function fbHtml(){
       if(FB.sent){ const x=FB.sent;
@@ -371,7 +371,7 @@ label.f input,label.f select,label.f textarea{text-transform:none;letter-spacing
 .banner.warn{background:var(--warn-bg);color:var(--ink);border:1.5px solid var(--warn)}
 .sec{margin-top:18px;display:flex;flex-direction:column;gap:10px}
 .cat{font:600 10.5px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:6px 2px 0}
-.colh{display:grid;grid-template-columns:minmax(0,1fr) 100px 100px;gap:6px;font:600 10.5px var(--body);letter-spacing:.1em;color:var(--muted);padding:0 6px;text-transform:uppercase}.colh span:not(:first-child){text-align:center}
+.cake .colh{display:grid;grid-template-columns:minmax(0,1fr) 100px 100px;gap:6px;font:600 10.5px var(--body);letter-spacing:.1em;color:var(--muted);text-transform:uppercase;border-top:1px solid var(--cline);padding-top:8px}.cake .colh span:not(:first-child){text-align:center}.cake .colh+.ln{border-top:0;padding-top:0}
 .cake{padding:10px;display:flex;flex-direction:column;gap:8px}
 .cake .hd2{display:flex;align-items:center;gap:10px}.cake .hd2 .tt{flex:1;min-width:0}
 .cake .nm{font-weight:700;font-size:15px;line-height:1.2}.cake .sub{font-size:12px;color:var(--muted)}
@@ -405,6 +405,17 @@ th:first-child,td:first-child{text-align:left}td{padding:8px 4px;border-bottom:1
 .spin{width:22px;height:22px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp 1s linear infinite;display:inline-block;vertical-align:middle}@keyframes sp{to{transform:rotate(360deg)}}
 .empty{border:2px dashed var(--line);border-radius:14px;padding:16px;color:var(--muted);text-align:center}
 .ca-hbtn{bottom:calc(142px + env(safe-area-inset-bottom,0px))!important;min-height:44px!important;padding:0 14px!important;font-size:14px!important}
+/* First-time guide: a spotlight (box-shadow cut-out, never blocks taps) + a small bubble that follows each step. */
+.tourhi{position:fixed;z-index:75;pointer-events:none;border-radius:14px;box-shadow:0 0 0 3000px rgba(20,10,12,.55),0 0 0 3px #e3c466,0 0 18px 2px rgba(227,196,102,.75);transition:top .35s ease,left .35s ease,width .35s ease,height .35s ease,opacity .25s ease}
+.tourhi.off,.tourbub.off{opacity:0!important;visibility:hidden}
+.tourbub{position:fixed;z-index:76;width:min(290px,calc(100vw - 28px));background:#2b1b1e;color:#fdf6ee;border-radius:14px;padding:12px 14px;font:500 14px var(--body);box-shadow:0 10px 30px rgba(0,0,0,.35);transition:top .35s ease,left .35s ease,opacity .25s ease}
+.tourbub .tn{font:600 10.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:#e3c466;margin-bottom:4px}
+.tourbub .tx{line-height:1.35}.tourbub .tx b{color:#fff}
+.tourbub .tb{display:flex;justify-content:space-between;gap:14px;margin-top:10px;align-items:center}
+.tourbub .tsk{font:600 12.5px var(--body);color:#e3c466;background:none;border:0;cursor:pointer;padding:4px 0;text-decoration:underline;touch-action:manipulation}
+.tourbub .tsk.go{background:#e3c466;color:#2b1b1e;text-decoration:none;border-radius:999px;padding:6px 14px}
+.tourshow{display:none;position:fixed;left:14px;bottom:calc(142px + env(safe-area-inset-bottom,0px));z-index:59;background:var(--paper);border:1.5px solid var(--line);border-radius:20px;padding:8px 14px;font:600 12.5px var(--body);color:var(--muted);box-shadow:0 4px 10px rgba(0,0,0,.12);cursor:pointer;touch-action:manipulation}
+.tourshow.on{display:block}
 </style></head><body>
 <div class="w" id="app"><div class="empty"><span class="spin"></span> Loading…</div></div>
 <div class="foot" id="bar" hidden><div class="in"><div class="st" id="status"></div><button class="cb big full" id="next" type="button">Send tonight's count</button></div></div>
@@ -495,11 +506,10 @@ function render(){
   ${DRAFTED?`<div class="banner info" style="margin-top:12px">We kept the counts and photos you hadn't sent yet.</div>`:""}
   <section class="sec">
     ${safetyBanner()}
-    <p class="hint"><b>Waste</b> = thrown away or damaged · <b>Left</b> = still in the chiller now. Empty = 0. Found another colour? Tap its dot on the cake.</p>
-    <div class="colh"><span>Cake · dot</span><span>Waste</span><span>Left</span></div>
+    <p class="hint" style="text-wrap:balance"><b>Waste</b> = thrown away or damaged · <b>Left</b> = still in the chiller · empty = 0. Another colour? Tap its dot.</p>
     ${g.length?g.map(c=>`<div class="cat">${esc(CATL[c.cat]||c.cat)}</div>${c.items.map(({p,keys})=>`<div class="card cake" id="cake-${esc(p.id)}"><div class="hd2">${pic(p)}<div class="tt"><div class="nm">${esc(p.name)}</div><div class="sub">${keys.length?`${keys.length} colour${keys.length>1?"s":""}`:"Tap the colour dot on the cake"}</div></div></div>
       <div class="dots" role="group" aria-label="Colour dots for ${esc(p.name)}">${COL().map(c=>{const k=K(p.id,c.name), on=!!ROWS[k]; return `<button type="button" class="cd${on?" on":""}" data-cd="${esc(k)}" aria-pressed="${on}" aria-label="${esc(c.name)}, made ${esc(colDay(c.name))}"><i style="background:${esc(c.hex)}"></i><span>${esc(colDay(c.name))}</span></button>`;}).join("")}</div>
-      ${keys.map(k=>{const r=ROWS[k];return `<div class="ln"><div class="dot"><i style="background:${esc(colHex(r.colour))}"></i><span><b>${esc(p.name)}</b>${noteOf(r)}</span></div>${stepper(k,"w","Waste")}${stepper(k,"b","Left")}</div>`}).join("")}</div>`).join("")}`).join("")
+      ${keys.length?`<div class="colh"><span>Cake · dot</span><span>Waste</span><span>Left</span></div>`:""}${keys.map(k=>{const r=ROWS[k];return `<div class="ln"><div class="dot"><i style="background:${esc(colHex(r.colour))}"></i><span><b>${esc(p.name)}</b>${noteOf(r)}</span></div>${stepper(k,"w","Waste")}${stepper(k,"b","Left")}</div>`}).join("")}</div>`).join("")}`).join("")
       :`<div class="empty">No cakes on record for this outlet today. Use the button below to add what you have.</div>`}
     <button class="cb dash full" type="button" data-act="add">+ Add a cake that's not listed</button>
   </section>
@@ -623,8 +633,74 @@ document.addEventListener("change",async e=>{const t=e.target;
     try{const u=await shrink(t.files[0],key==="sales"?2000:1400); if(key==="sales") PH.sales.push(u); else PH[key]=u;}catch(err){status("That photo couldn't be read. Please try again.",true);}
     const y=window.scrollY; render(); window.scrollTo(0,y);}
 });
+/* ---- First-time guide (step-by-step, auto-advances, skippable) ----
+   Shows on its own the first few times an outlet opens the form; after that a small "Show me how" button brings it back.
+   It never blocks the form: the spotlight is a box-shadow cut-out with pointer-events off, so people just do the step. */
+const TOUR_AUTO_TIMES=3;
+const tourKey=()=>"chaleur.tour."+(KEY||"x");
+const tourSeenN=()=>+(store.get(tourKey())||0)||0;
+let tourI=-1, tourHi=null, tourBub=null, tourBtn=null, tourIv=null, tourMo=null, tourTyped=0, tourManual=false;
+const nameOk=()=>{const el=$("#who"); const v=((el&&el.value)||WHO||"").trim(); return v.length>=2&&(!el||document.activeElement!==el||Date.now()-tourTyped>1500);};
+const tourSteps=[
+  {sel:"#who",title:"Step 1 of 4 · Your name",text:"Type your name here, so Chaleur knows who counted tonight.",done:nameOk},
+  {sel:"#app .cake, #app [data-act=add]",title:"Step 2 of 4 · Count the cakes",text:"For each cake and colour dot, type <b>Waste</b> (thrown away or damaged) and <b>Left</b> (still in the chiller). Empty box = 0. Missing a colour? Tap its dot on the cake.",done:()=>ORDER.some(k=>ROWS[k].w!==""||ROWS[k].b!=="")},
+  {sel:"#ptiles",title:"Step 3 of 4 · Photos",text:"Tap each box to take a photo: today's <b>sales report</b> from the POS, the <b>chiller</b>, and the <b>waste</b> if there is any.",done:()=>PH.sales.length>0&&!!PH.display&&(!hasWaste()||!!PH.waste)},
+  {sel:"#next",title:"Step 4 of 4 · Send",text:"Tap <b>Send tonight's count</b>. Check the numbers on the next screen, then <b>Confirm &amp; send</b>. You're done when you see “Sent. Thank you!”",done:()=>false,last:true}
+];
+function tourBuild(){
+  if(tourHi) return;
+  tourHi=document.createElement("div"); tourHi.className="tourhi off"; document.body.appendChild(tourHi);
+  tourBub=document.createElement("div"); tourBub.className="tourbub off"; tourBub.setAttribute("role","status"); document.body.appendChild(tourBub);
+  tourBtn=document.createElement("button"); tourBtn.type="button"; tourBtn.className="tourshow"; tourBtn.textContent="❔ Show me how"; tourBtn.onclick=()=>tourStart(true); document.body.appendChild(tourBtn);
+  tourBub.addEventListener("click",e=>{const b=e.target.closest("[data-tour]"); if(!b) return; if(b.dataset.tour==="skip") tourSkip(); else tourNext();});
+  document.addEventListener("input",e=>{if(e.target.id==="who") tourTyped=Date.now();});
+  const re=()=>{if(tourI>=0) requestAnimationFrame(tourPlace);};
+  window.addEventListener("scroll",re,{passive:true}); window.addEventListener("resize",re);
+  tourMo=new MutationObserver(()=>{tourShowBtn(); if(tourI>=0) requestAnimationFrame(tourPlace);}); tourMo.observe($("#app"),{childList:true,subtree:true});
+}
+const tourOnForm=()=>!!$("#who")&&!!(INFO&&INFO.outlet);
+function tourShowBtn(){ if(tourBtn) tourBtn.classList.toggle("on",tourI<0&&tourOnForm()); }
+function tourPlace(){
+  const st=tourSteps[tourI]; if(!st||!tourHi) return;
+  const busy=!!document.querySelector("#sheet .sheet, .ca-hp");
+  const el=document.querySelector(st.sel);
+  if(!el||busy){ tourHi.classList.add("off"); tourBub.classList.add("off"); return; }
+  const r=el.getBoundingClientRect(), p=8;
+  Object.assign(tourHi.style,{top:(r.top-p)+"px",left:(r.left-p)+"px",width:(r.width+2*p)+"px",height:(r.height+2*p)+"px"});
+  tourHi.classList.remove("off"); tourBub.classList.remove("off");
+  const bw=tourBub.offsetWidth||280, bh=tourBub.offsetHeight||120, vw=window.innerWidth, vh=window.innerHeight;
+  let top=r.bottom+p+10; if(st.last||top+bh>vh-150) top=r.top-p-10-bh; if(top<8&&!st.last) top=r.bottom+p+10;
+  top=Math.max(8,Math.min(top,vh-bh-8));
+  let left=r.left+r.width/2-bw/2; left=Math.max(14,Math.min(left,vw-bw-14));
+  tourBub.style.top=top+"px"; tourBub.style.left=left+"px";
+}
+function tourShow(i){
+  tourI=i; const st=tourSteps[i]; if(!st) return tourFinish();
+  tourBub.innerHTML=`<div class="tn">${st.title}</div><div class="tx">${st.text}</div><div class="tb"><button class="tsk" type="button" data-tour="skip">Skip, I know this</button><button class="tsk go" type="button" data-tour="next">${st.last?"Got it":"Next →"}</button></div>`;
+  const el=document.querySelector(st.sel);
+  if(el&&!st.last) el.scrollIntoView({block:"center",behavior:"smooth"});
+  tourShowBtn(); setTimeout(tourPlace,60); setTimeout(tourPlace,420);
+}
+function tourTick(){
+  if(tourI<0) return;
+  if(!tourOnForm()){ if(document.querySelector("#app .spin")){tourPlace();return;} /* reloading: just wait */
+    if(tourSteps[tourI].last||tourI>=2) return tourFinish(); /* review or done screen: they made it to the end */ tourPlace(); return; }
+  let i=tourI; while(i<tourSteps.length-1&&tourSteps[i].done()) i++;
+  if(i!==tourI) tourShow(i); else tourPlace();
+}
+function tourNext(){ if(tourSteps[tourI]&&tourSteps[tourI].last) return tourFinish(); tourShow(tourI+1); }
+function tourStop(){ tourI=-1; if(tourIv){clearInterval(tourIv); tourIv=null;} if(tourHi){tourHi.classList.add("off"); tourBub.classList.add("off");} tourShowBtn(); }
+function tourFinish(){ if(!tourManual) store.set(tourKey(),String(tourSeenN()+1)); tourStop(); }
+function tourSkip(){ store.set(tourKey(),String(Math.max(tourSeenN()+1,TOUR_AUTO_TIMES))); tourStop(); }
+function tourStart(manual){
+  if(!tourOnForm()) return; tourBuild(); tourManual=!!manual; tourTyped=0;
+  let i=0; while(i<tourSteps.length-1&&tourSteps[i].done()) i++;
+  tourShow(i); if(!tourIv) tourIv=setInterval(tourTick,400);
+}
+function tourMaybeStart(){ tourBuild(); tourShowBtn(); if(tourOnForm()&&tourSeenN()<TOUR_AUTO_TIMES) tourStart(false); }
+
 document.getElementById("next").onclick=review;
-load();
+load().then(()=>setTimeout(tourMaybeStart,400));
 if(typeof CA!=="undefined") CA.helper({noReport:true,auth:()=>KEY&&INFO&&INFO.outlet?"o:"+KEY:"",page:()=>"Outlet closing form",hello:"Hi! Ask me anything about the closing form, for example: “What do I do with a cake past its shelf life?” or “What does the colour dot mean?”"});
 </script>
 </body></html>

@@ -202,7 +202,7 @@ const CA=(function(){
         ${opt.noReport?"":`<div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`}`; }
     function askHtml(){
       const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}${opt.noReport?"":`<div style="margin-top:6px"><a class="ca-lnk" href="index.html#guide">Open the how-to guide ›</a></div>`}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
         <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
     function fbHtml(){
       if(FB.sent){ const x=FB.sent;
@@ -369,6 +369,10 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 .mrow{min-height:58px;display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:left;color:var(--ink);text-decoration:none;width:100%;font:inherit}
 .mrow:active{background:var(--soft)}.mrow .mi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}.mrow .mi svg{width:24px;height:24px}.mrow b{display:block;font-weight:700;font-size:15.5px}.mrow small{display:block;font-size:12.5px;color:var(--muted);line-height:1.3}.mrow .go{color:var(--accent);font-size:22px}
 .mnone{padding:16px;font-size:14px;color:var(--muted)}
+.gsearch{display:flex;align-items:center;gap:8px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:0 12px;margin:0 0 10px}.gsearch span{font-size:20px;color:var(--muted)}.gsearch input{flex:1;border:0;background:transparent;font:inherit;font-size:16px;padding:13px 0;min-width:0;outline:none}
+.gchips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+details.gsec{padding:0;margin:0 0 10px;overflow:hidden}details.gsec>summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:700;font-size:16px;display:flex;justify-content:space-between;gap:8px}details.gsec>summary::after{content:"›";transform:rotate(90deg);color:var(--accent);font-size:20px;line-height:1}details.gsec[open]>summary::after{transform:rotate(270deg)}details.gsec>summary::-webkit-details-marker{display:none}
+.gbody{padding:0 16px 12px;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere}.gbody h3{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin:12px 0 4px}.gbody ul,.gbody ol{padding-left:20px;margin:4px 0}.gbody li{margin:5px 0}.gbody p{margin:6px 0}
 .mlinks{display:flex;justify-content:center;gap:22px;padding:2px 0 4px}.mlinks .lnk{min-height:40px;font-size:14px;border:0;background:none;box-shadow:none;padding:0 4px;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px}
 .grp>button{min-height:60px}
 .mva{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:var(--paper);border:1.5px solid var(--cline);font-size:13px;color:var(--muted);font-weight:600}
@@ -459,7 +463,7 @@ const TILES=[
  ["Office desk","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup"],"outlet cake product price shelf life whatsapp wasapbot key go-live fresh start holiday",[]],
  ["Office desk","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
 ];
-const HELP=[["? Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat","This month's treat and the jar","#treat"]];
+const HELP=[["How-to guide","Step by step for your job, and I'm stuck answers","#guide"],["? Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat","This month's treat and the jar","#treat"]];
 const ICON={
  Kitchen:["#f3e4e5",`<svg viewBox="0 0 30 30"><circle cx="15" cy="5" r="3" fill="#c0392b"/><path d="M7 12h16v4H7z" fill="#e0707a"/><path d="M5 16h20v9H5z" fill="#7b1c2b"/><path d="M5 19h20v2H5z" fill="#e3c466"/></svg>`],
  "Quality checks":["#fbecd2",`<svg viewBox="0 0 30 30"><circle cx="12" cy="12" r="7" fill="none" stroke="#a0620a" stroke-width="3"/><circle cx="10" cy="10" r="2.5" fill="#f2c230"/><path d="M17 17l8 8" stroke="#a0620a" stroke-width="4" stroke-linecap="round"/></svg>`],
@@ -550,7 +554,7 @@ function drawMenu(){ const m=$("#menu"); if(!MENU||!S){ m.innerHTML=""; document
     <label class="msearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><input id="msq" type="search" autocomplete="off" placeholder="Find a page: billing, fridge, audit…" value="${esc(MQ)}" aria-label="Find a page"></label>
     <div id="mres">${menuBody()}</div>
     <div class="mf"><button type="button" class="cb ink" data-help="ask">? Ask / Report</button><button type="button" class="cb ghost" data-ca-logout="1" style="color:var(--muted)">Log out</button></div>
-    <div class="mlinks"><button type="button" class="lnk" data-help="mine">My reports${mc?` (${mc} open)`:""}</button><a class="lnk" href="#treat" data-mgo="1">Team treat</a></div>
+    <div class="mlinks"><button type="button" class="lnk" data-help="mine">My reports${mc?` (${mc} open)`:""}</button><a class="lnk" href="#treat" data-mgo="1">Team treat</a><a class="lnk" href="#guide" data-mgo="1">How-to guide</a></div>
     ${CA.canView()?`<label class="mva"><span>Owner: see the app as</span>${CA.vaSelect()}</label>`:""}</div></div>`; }
 document.addEventListener("input",e=>{ if(e.target&&e.target.id==="msq"){ MQ=e.target.value; const r=$("#mres"); if(r) r.innerHTML=menuBody(); } });
 function setMenu(on){ MENU=!!on; if(!MENU) MQ=""; drawMenu(); if(MENU&&!MINE) loadMine(); }
@@ -717,10 +721,32 @@ async function qcSend(){ const q=QC.today, b=document.querySelector("[data-qcnex
   try{ QCRES=await CA.run("qcSubmit",S.t,{date:q.date,items:q.items.map((_,i)=>({photo:QCD.items[i].photo,verdict:QCD.items[i].verdict,note:QCD.items[i].note||""}))});
     try{ sessionStorage.removeItem("chaleur.qc"); }catch(e){} QCD=null; render(); confetti(); if(QCRES.pts) xp(QCRES.pts); TODAY=null; }
   catch(e){ b.disabled=false; b.textContent="Send QC report"; const er=$("#qc-err"); if(er) er.textContent=(e&&e.message)||"Couldn't send. Try again."; } }
+/* ---------- v21.6 How-to guide: the same text the helper answers from, by person, with search and "I'm stuck" (Alfred, 25 Sep) ---------- */
+let GQ="";
+const GUIDE_ORDER=[17,16,15,1,2,3,4,7,8,9,10,11,12,5,6,13,14];
+function guideSecs(){ const tpl=document.getElementById("guideTpl"), out=[]; if(!tpl) return out; const d=document.createElement("div"); d.innerHTML=tpl.innerHTML; let cur=null;
+  [...d.children].forEach(el=>{ if(el.tagName==="H1") return; if(el.tagName==="H2"){ const m=el.textContent.match(/^(\d+)\.\s*(.*)$/); cur={n:m?+m[1]:0,title:m?m[2]:el.textContent,html:""}; out.push(cur); } else if(cur) cur.html+=el.outerHTML; });
+  return out.sort((a,b)=>(GUIDE_ORDER.indexOf(a.n)+1||99)-(GUIDE_ORDER.indexOf(b.n)+1||99)); }
+function vGuide(){ const secs=guideSecs();
+  return `<div class="hd"><a class="back" href="#" aria-label="Home">‹</a><div class="ptitle">How-to guide</div></div>
+    <p class="hint" style="margin:4px 2px 10px">Everything the app does, step by step. Start with <b>your job</b>, or look under <b>I'm stuck</b>. Still stuck? Ask the helper: it answers from this guide, and questions it can't answer go to Alfred every week.</p>
+    <label class="gsearch"><span aria-hidden="true">⌕</span><input id="gq" type="search" placeholder="Search: fridge, PIN, DO, colour, bill…" value="${esc(GQ)}" autocomplete="off" aria-label="Search the guide"></label>
+    <div class="gchips"><button type="button" class="cb sm" data-gopen="17">My job, step by step</button><button type="button" class="cb sm" data-gopen="16">I'm stuck</button><button type="button" class="cb sm ghost" data-help="ask">? Ask the helper</button><button type="button" class="cb sm ghost" data-help="fb">Report a problem</button></div>
+    <p class="hint" id="gcount" style="margin:6px 2px"></p>
+    ${secs.length?secs.map(x=>`<details class="gsec card" data-gn="${x.n}" id="g${x.n}"${x.n===17?" open":""}><summary>${esc(x.title)}</summary><div class="gbody">${x.html}</div></details>`).join(""):`<div class="card">The guide is loading. Refresh the page.</div>`}
+    <p class="hint" style="margin:14px 2px 30px">Alfred · WhatsApp 014-665 0928 · Printed guides: ask Alfred or the office.</p>`; }
+function guideFilter(){ const q=GQ.trim().toLowerCase(), ws=q.split(/\s+/).filter(Boolean); let hits=0;
+  document.querySelectorAll("details.gsec").forEach(d=>{ const items=d.querySelectorAll(".gbody li,.gbody p"); let n=0;
+    items.forEach(it=>{ const t=it.textContent.toLowerCase(), ok=!ws.length||ws.every(w=>t.includes(w)); it.hidden=!ok; if(ok&&ws.length) n++; });
+    d.querySelectorAll(".gbody h3").forEach(h=>{ h.hidden=false; });
+    if(ws.length){ d.hidden=!n&&!d.querySelector("summary").textContent.toLowerCase().includes(q); if(n){ d.open=true; } hits+=n; } else { d.hidden=false; } });
+  const c=document.getElementById("gcount"); if(c) c.textContent=ws.length?(hits?`${hits} match${hits===1?"":"es"} for “${GQ.trim()}”`:`Nothing found for “${GQ.trim()}”. Try another word, or ask the helper.`):""; }
+document.addEventListener("input",e=>{ if(e.target&&e.target.id==="gq"){ GQ=e.target.value; guideFilter(); } });
+document.addEventListener("click",e=>{ const b=e.target&&e.target.closest&&e.target.closest("[data-gopen]"); if(!b) return; const d=document.getElementById("g"+b.dataset.gopen); if(d){ GQ=""; const i=document.getElementById("gq"); if(i) i.value=""; guideFilter(); d.open=true; d.scrollIntoView({behavior:"smooth",block:"start"}); } });
 /* ---------- render + data ---------- */
 function render(){ if(!S) return; const v=VIEW; const a=$("#app");
-  a.innerHTML=v==="team"?vTeam():v==="me"?vMe():v==="treat"?vTreat():v==="qc"?vQC():vHome();
-  $("#tabs").innerHTML=""; if(v!=="qc") tabs(); drawMenu(); }
+  a.innerHTML=v==="team"?vTeam():v==="me"?vMe():v==="treat"?vTreat():v==="qc"?vQC():v==="guide"?vGuide():vHome();
+  $("#tabs").innerHTML=""; if(v!=="qc") tabs(); drawMenu(); if(v==="guide") guideFilter(); }
 async function load(){ const v=VIEW, t=S.t;
   try{
     if(v===""){ const [a,b]=await Promise.all([CA.run("myToday",t),CA.run("myNext",t).catch(e=>({items:[],err:e.message}))]); TODAY=a; NX=b; }
@@ -730,7 +756,7 @@ async function load(){ const v=VIEW, t=S.t;
     else if(v==="qc"){ QC=await CA.run("qcInfo",t); if(!TODAY) CA.run("myToday",t).then(x=>{TODAY=x;}).catch(()=>{}); }
   }catch(e){ if(CA.isAuthErr(e)){ CA.clear(); return signIn(e.message); } toast((e&&e.message)||"Couldn't load. Pull down to refresh."); }
   if(VIEW===v) render(); }
-function route(){ const h=(location.hash||"").slice(1); VIEW=["team","me","treat","qc"].includes(h)?h:""; MENU=false; if(VIEW!=="qc"){ QCRES=null; } render(); window.scrollTo(0,0); load(); }
+function route(){ const h=(location.hash||"").slice(1); VIEW=["team","me","treat","qc","guide"].includes(h)?h:""; MENU=false; if(VIEW!=="qc"){ QCRES=null; } render(); window.scrollTo(0,0); load(); }
 window.addEventListener("hashchange",()=>{ if(S) route(); });
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&S&&VIEW!=="qc"){ MINE=null; load(); } });
 document.addEventListener("click",async e=>{ const t=e.target&&e.target.closest?e.target:null; if(!t||!S||$(".si")) return;
@@ -762,6 +788,253 @@ document.addEventListener("change",async e=>{ if(e.target.matches&&e.target.matc
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&MENU) setMenu(false); });
 function boot(){ S=CA.get(); if(!S) return signIn(QS.get("msg")||""); if(NEXT){ location.replace(NEXT); return; } route();
   CA.run("me",S.t).then(u=>{ const b=JSON.stringify([CA.permsOf(S),CA.labelOf(S),CA.areaOf(S)]); S=CA.update(u)||S; if(JSON.stringify([CA.permsOf(S),CA.labelOf(S),CA.areaOf(S)])!==b){ TODAY=null; NX=null; ME=null; TEAMI=null; render(); load(); } }).catch(()=>{}); }
-(function(){ CA.helper({auth:()=>S&&S.t,page:()=>VIEW==="qc"?"Random QC":VIEW==="team"?"Team":VIEW==="me"?"Me":VIEW==="treat"?"Team treat":"Home"}); boot(); })();
+(function(){ CA.helper({auth:()=>S&&S.t,page:()=>VIEW==="guide"?"How-to guide":VIEW==="qc"?"Random QC":VIEW==="team"?"Team":VIEW==="me"?"Me":VIEW==="treat"?"Team treat":"Home"}); boot(); })();
 </script>
+<template id="guideTpl"><h1>Chaleur Atelier Back office guide (September 2026)</h1>
+<p>Chaleur Atelier Back office (the app) is the operations app of Chaleur Atelier Patisserie (outlets, deliveries, billing, Kitchen HQ reports, production plan).</p>
+<h2>1. The pages</h2>
+<ul>
+<li>Home page: chaleurpatisserie-ops.github.io/chaleur-app — the ONLY place to sign in. It opens on Today: a greeting, the Team jar, today's Random QC (on QC days) and your team's list for today (each line has a button that takes you to the right page), then "Also for you". The bar at the bottom has 4 tabs: Today, Kitchen (or Desk = the office desk, for office staff), Team and Me. The logo at the top left always brings you back to Today. ☰ Menu at the top right: "Your daily pages" first (up to 5, chosen for your job), a search box ("Find a page": type a word such as billing, fridge or audit), then "All pages" in three groups: Kitchen (Morning to-do, Noon to-do, Plan &amp; prep, Production plan, Taste check (Random QC), Kitchen history, Kitchen setup), Outlets &amp; deliveries (Delivery orders, To clear today, Outlet closing reports, Do a spot audit) and Office desk = the back office (Weekly bills, Spot audits &amp; taste checks, Corrections log, Problem reports, Setup, Staff &amp; access). At the bottom: ? Ask / Report, Log out, My reports, Team treat and How-to guide. The ? button next to Menu opens the helper. Every other page has a "‹ Home" button. Tip: add the home page to your phone's home screen (iPhone: Safari › Share › Add to Home Screen. Android: Chrome › ⋮ › Add to Home screen).</li>
+<li>Office desk (office.html): the menu at the top is grouped. Every day: To clear today, Plan &amp; prep, Delivery orders, Outlet closing reports. Each week: Weekly bills, Spot audits &amp; taste checks, Problem reports. Records &amp; settings: Corrections log, Setup, Staff &amp; access. At the bottom: ‹ Home and Kitchen HQ.</li>
+<li>How-to guide (Menu › How-to guide, or ? Ask › Open the how-to guide): the whole guide inside the app, by person (kitchen morning, kitchen noon, supervisor, office, spot audit, outlet staff), with a search box and "I'm stuck" answers for common problems.</li>
+<li>Report a problem or an idea: tap ? Ask (bottom right of every page) › Report a problem, or Menu › ? Ask / Report on the home page. Pick what's wrong (App not working, Wrong numbers, Equipment broken, Stock / ingredients, Food safety, Idea / other), write one line in any language if you can, add a photo or screenshot if it helps, tick Urgent only if it stops your work right now, then tap Send report. The app attaches the page you were on, your name, your phone type and the last message on your screen, so you don't need to explain where. You get a report number like #1044. Urgent reports go by WhatsApp at once to the kitchen supervisors and Alfred's alert numbers. ? Ask › My reports (or Menu › My reports) shows each report with its status (New, Being fixed, Done) and the office's reply. A new reply also shows in Next for you for 2 days.</li>
+<li>Office desk › Problem reports (owner, manager, office): the Helper questions button lists the questions ? Ask could not answer (see section 15). Every report with its number, who sent it, when, from which page, the last message on their screen, their phone and the photo. Urgent ones have a red frame. Filter To do / Done / All, set the status, write a reply and tap Save. New and urgent reports show in Next for you.</li>
+<li>Owner only, View as: on the home page (Menu, at the bottom, or Me) or next to your name on the other pages, pick a team member to see the app exactly as they do, with their access, without signing out. A dark strip at the top shows who you are viewing as; tap Back to Owner to return. Anything you change while viewing is recorded as 'ALFRED (as Amira)' and so on, and earns no points.</li>
+<li>Kitchen HQ (kitchen.html): chips at the top: To-do, Opening, Closing, Plan, History, Setup; the same 4-tab bar at the bottom. To-do: the two teams' cards (tick the circle when done), the opening and closing reports in parts, Finish &amp; decorate, one screen per delivery order, the HQ display count. History: on-time streak and a 14-day calendar. Setup: fridges, display cakes, reminders.</li>
+<li>Spot audit (audit.html): for Chaleur staff visiting an outlet. 5 stages (Setup, Prices, Count, Photos, Ideas) with a live score.</li>
+<li>Outlet closing form (closing.html with the outlet's own link or QR code): for partner outlet staff every night. No sign-in. Shows the outlet's nightly streak.</li>
+</ul>
+<h2>2. Signing in and out</h2>
+<ul>
+<li>Type your phone number (or your name if your number is not set up yet), then tap your PIN on the number pad (4 to 6 digits, usually your FeedMe staff code) and tap Start my shift. A 6-digit PIN signs in by itself.</li>
+<li>Tick "Remember me 30 days" only on your own phone. Do not tick it on a shared phone or computer. When remembered, the phone shows your number next time; tap Change to sign in as someone else (this unticks Remember me).</li>
+<li>Sign in once on the home page; it works for every page in the same browser. If you open a page (or a link) while signed out, it takes you to the home page to sign in and then straight back.</li>
+<li>Log out: ☰ Menu › Log out at the bottom (in the office desk and Kitchen HQ it is in their menu). On a shared phone, always log out when you finish.</li>
+<li>Wrong PIN 5 times: that login is locked for 15 minutes. Alfred or Joscelyn can unlock it: office desk › Staff &amp; access › Edit your record › Save.</li>
+<li>"Please sign in again" means your sign-in ended (it expired, your PIN or phone changed, or you were deactivated). Just sign in again; what you typed on the page is kept.</li>
+<li>Forgot your PIN or changed phone number: ask Alfred or Joscelyn to update it in office desk › Staff &amp; access.</li>
+</ul>
+<h3>Today and "Also for you"</h3>
+<ul>
+<li>Kitchen staff: Today shows your team's list (tap Morning team / Production team at the top to switch; the phone remembers it). Each line shows when it is due, ✓ with who did it when it is done, and shows in red when it is overdue. The line to do now is highlighted with a button (for example "Do it now"). "X of Y done" shows how far the team is.</li>
+<li>Office, managers and the owner: "Clear the board" shows what needs you now (changes to approve, outlets to chase, bills to approve, problem reports), most urgent first.</li>
+<li>"Also for you" lists other things for you: a red dot = late or urgent, orange = to do now, grey = coming up, green = all done. The same list shows when you open the "? Ask" helper on any page.</li>
+</ul>
+<h2>3. Who can do what (your access)</h2>
+<ul>
+<li>Everyone has their own access, set by Alfred or Joscelyn in office desk › Staff &amp; access. Each person has "Works in" (Kitchen, Office or Outlets), a starting level (Staff, Supervisor or Manager) that ticks the usual boxes, and then any box can be ticked or unticked for that person. People in the same area can have different responsibilities. Changes work straight away; nobody needs to sign in again.</li>
+<li>To see your own access: home page › Me › "What you can do". The home menu and the office desk only show what you can use, and the server checks it too.</li>
+<li>The 16 kinds of access, in plain words:</li>
+<li>Kitchen work: send the opening and closing report parts, tick to-dos, see the production plan and prep, and suggest changes to the plan.</li>
+<li>Kitchen supervisor: approve or reject kitchen changes, change the plan, lists, display cakes and fridges directly, mark the plan checked and remind the group on WhatsApp.</li>
+<li>Add and edit to-dos: add custom orders, Grab pre-packs and other to-dos for the two kitchen teams.</li>
+<li>Random QC: do the taste check on the HQ display when the app picks cakes.</li>
+<li>Deliveries: check the colour dots, type Made numbers, mark delivery orders delivered and make draft orders from the plan.</li>
+<li>Create and edit delivery orders: make new delivery orders, change quantities or dates before delivery and delete undelivered ones.</li>
+<li>Outlets today: see missing outlet reports and cakes to take off display, see each outlet's closing link and chase outlets on WhatsApp.</li>
+<li>Spot audits: do spot audits at outlets and see all audit results and the Random QC history.</li>
+<li>View the office desk: open the office desk pages to look (read-only).</li>
+<li>See prices and bills: see prices, rates, delivery values, bills and partner terms. Without this, all money is hidden.</li>
+<li>Office work: correct outlet reports (with a reason), sort out Needs attention, paste WhatsApp reports, record payments and save PDFs.</li>
+<li>Setup: change outlets, cakes, prices, opening stock, holidays and go-live rules.</li>
+<li>Approve bills: approve and issue the weekly bills and void them.</li>
+<li>Problem reports: read the team's problem reports, reply and mark them done.</li>
+<li>Staff and access: add staff and change their PIN, phone and access (only giving access they have themselves).</li>
+<li>Owner settings: shelf life, outlet closing links, WhatsApp, Kitchen HQ times, points and the treat, sample data, the AI key and deleting records.</li>
+<li>Some boxes tick others they need: Kitchen supervisor ticks Kitchen work; Create and edit delivery orders ticks Deliveries; Office work ticks View the office desk; Setup and Approve bills tick View and See prices; Owner settings ticks Setup.</li>
+<li>Usual starting sets: Kitchen staff = Kitchen work, Random QC, Deliveries. Kitchen supervisor = those plus Kitchen supervisor, to-dos, Create and edit delivery orders and Outlets today. Office staff = everything except Kitchen supervisor, Random QC, Approve bills, Staff and access and Owner settings. Manager = everything. Outlets staff = Kitchen work, Spot audits, View the office desk, See prices and bills.</li>
+<li>The owner (Alfred) always has everything. Someone with Staff and access can't give access they don't have, can't change people who have more access than them, and can't change the owner.</li>
+<li>Outlet staff: only their outlet's closing form (no sign-in).</li>
+</ul>
+<h2>4. Kitchen daily routine</h2>
+<h3>Two teams, each with its own to-do list (Kitchen HQ › To-do)</h3>
+<p>At the top of To-do, pick your team (Morning · N left / Noon · N left). The phone remembers it. Each job is a card with a circle on the left: tap the circle to tick it (your name and time are saved); the bar under the team switch shows how far the team is. Cards with a Start button open the right screen. "Yesterday ›" shows yesterday's list.
+- Morning / Decoration team (morning shift): 0) Plan &amp; prep, due 7:00am, the first card. Before the delivery orders exist it is called "Plan &amp; prep for today" and shows each outlet delivering today with its DO number or "no DO yet" (the office makes the DOs in Plan &amp; prep). Once every outlet has a DO it becomes "Plan &amp; prep · make N cakes": the DOs (outlets and the HQ display) and the prep list (how many of each cake and for which outlets); Finish &amp; decorate is part of this card and it ticks itself when every cake is finished. "Full prep list ›" opens Plan &amp; prep (suggested quantities from the last 28 days, Made numbers, prep sheet, Draft DOs from suggestions with a preview). The card ticks itself once every outlet delivering that day has a DO. The red "Prep list ›" button next to To-do at the top of Kitchen HQ opens Plan &amp; prep from any kitchen screen. Every team member can open Plan &amp; prep for all outlets (that button, Menu › Kitchen › Plan &amp; prep, or the link under the to-do list), see the delivery orders and print the prep sheet and delivery notes; only people with "Create and edit delivery orders" can change them. "Print this list" under the to-do list prints the team's list for the day. With a prep lead time of 1 day (Setup › Go-live), or after 2pm, it is about tomorrow's deliveries instead. 1) the opening report (fridges, HQ display count, outlet deliveries), 2) To-dos: custom orders (whole cakes, special orders, with the time they must be ready) and Grab pre-packs, 3) Finish &amp; decorate (the button on the Plan &amp; prep card): a banner shows today's dot colour, then one line per cake with how many for each outlet and for the HQ display. Tap the number tile when that cake is finished; "All cakes finished and decorated" ticks by itself when every line is done. Tap "Made a different number? Tap to change" only if you made a different number (the office sees it in Plan &amp; prep). 4) Pack &amp; deliver: one card per outlet with 3 steps. Tap Start to open the delivery: Check colours (tap each cake, then the dot you see on it; only today's or yesterday's dot can go out, an older dot says "too old, swap it"; tap Split if some cakes have another dot), Pack + DO photo (attach the delivery order to the boxes and snap them: that photo is part of the opening report › Outlet deliveries), Mark delivered (enter what the outlet accepted and confirm). 5) HQ display: what to put out today, then "Count the display".
+- Noon / Production team (noon shift): 1) today's production list (from last night's closing report and any lists added in Plan); tick the paper list as you go, 2) prep reminders for today and tomorrow, 3) To-dos for production, 4) the closing report (fridges, HQ display waste and left, the 4 list photos that become the plan), 5) the plan for the next days.
+- To-dos: tick the box when it is done (your name and the time are saved). Untick if it was ticked by mistake. You can tick for today or yesterday. Kitchen supervisors and the office add to-dos: + Custom order, + Grab pre-pack, + Other to-do; each is for one team, once on a date or repeating on set days (for example Grab pre-packs every day), with an optional "ready by" time. To-dos not ticked by closing time show in the daily check. Tomorrow's custom orders are in the 4pm WhatsApp message.
+- WhatsApp reminders for a late opening report go to the Morning / Decoration team, for a late closing report to the Noon / Production team.
+- Assign a task to someone (people with "Add and edit to-dos": Alfred, Joscelyn, the office, kitchen supervisors): Home › Today › "＋ Assign a task to someone". Type what needs to be done, choose who (anyone in the team, everyone with a given access such as Spot audits, or one person), by when (date, optional time), whether it also goes on the Morning or Noon kitchen list, and the page it should open (Spot audit, Plan &amp; prep, Delivery orders, Outlet closing reports, Kitchen HQ…). The people it is for see it on their Home under "Tasks for you" (office) or in Today (kitchen) and in Next for you, and tick the circle when it is done (+10 points if on time); once WasapBot is set up they also get a WhatsApp message with the link. Overdue tasks stay on their Home with "from <date>" until ticked.</p>
+<h3>The reports</h3>
+<p>Each report is split into parts. Different people can do different parts at the same time; each part has its own Send button. The report is complete when every part is sent. Kitchen HQ › To-do shows which parts are done and by whom.</p>
+<h3>Opening report — due 10:30am (Kitchen HQ › Opening)</h3>
+<ol>
+<li>Fridges &amp; freezers: a dark screen, one unit per screen (Freezer 1–6, Chiller 1–4, Display chiller), with the rule at the top (freezer −18°C or colder, chiller 0–5°C) and a progress strip (green = in range, pink = good catch, gold = this one). Type what the thermometer says on the keypad (± for minus; freezers start on −), tick Door shut, take the photo, tap "Log it ›". A reading out of range is a Good catch (+10): log it as it is, never a "nicer" number. After the last unit you see the summary; tap a line to fix it, then Send.</li>
+<li>HQ display count: one list, the same as the outlet closing form. Each cake has its photo and the 7 colour dots (Sun to Sat); the colours on the display are already open, pre-filled from last night's count. Tap a colour dot to add a colour, then − / + (or type) "On display" to what you really see. "+ Add a cake that's not listed" for other cakes, "Event and other items" for things not on the menu (type the name). Take a photo of the display, then Send.</li>
+<li>Outlet deliveries (only on days with outlet deliveries): check the colour dots first (Check colours), attach the delivery order (DO) to the boxes, take a photo of each packed delivery, or tick "Goes out later today". The AI checks the DO is attached and is the right one. Send.</li>
+</ol>
+<h3>Closing report — due 7:30pm (Kitchen HQ › Closing)</h3>
+<ol>
+<li>Fridges &amp; freezers again, one unit per screen.</li>
+<li>HQ display count: the same one list: for each cake and colour dot, Waste (thrown away or damaged) and Left (still on the display) side by side with − / +; "N this morning" under the colour reminds you what was there. Empty = 0. Tap a colour dot to add a colour. Then the display photo, and a waste photo if there is waste, and Send. Sold at HQ = this morning's count − waste − left. Cakes missing since last night are counted as waste and flagged.</li>
+<li>Mise en place lists: 4 photos: today's list (tick or cross each item first, up to 3 photos), then the lists for tomorrow, the day after and the day after that (up to 2 photos each). The AI reads today's list (done / not done) and writes out the 3 future lists; they become the production plan for those days (Plan tab). Send.</li>
+</ol>
+<h3>After sending a part</h3>
+<ul>
+<li>A burgundy "Part N complete" screen shows the points added to the Team jar, a few numbers, the reference, and what is still to do, with a gold button for the next part.</li>
+<li>You see the result straight away and what is still to do. Red lines ("Please act now") mean something needs action now, for example a freezer that is too warm: move the food to another unit and tell the supervisor. Alfred and the kitchen WhatsApp group are told automatically.</li>
+<li>The AI reads the temperature photos, the delivery photos and the lists. It flags photos that do not show a thermometer, readings that do not match what was typed, a missing or wrong DO, and items not finished.</li>
+<li>Sending a part again replaces it. You can send for today or yesterday (change the Report date).</li>
+<li>If a report is late, the kitchen WhatsApp group gets a reminder with the link and the parts still to do (up to 3 times; the third also goes to Alfred).</li>
+<li>Your answers and photos are kept on the phone until you send, even if the page closes. Do not clear the browser data before sending.</li>
+</ul>
+<h3>Safe temperatures</h3>
+<ul>
+<li>Freezers: −18°C or colder. Chillers and display chiller: 5°C or colder.</li>
+<li>Up to 3°C over the limit shows "warm": check the door and check again in 30 minutes. More than 3°C over shows "too warm" and is urgent.</li>
+<li>A kitchen supervisor can change the list of fridges and freezers and the limits (Kitchen HQ › Setup › Fridges: tap a row to edit its name, type and warmest allowed temperature, + Add a fridge, Remove, then Save changes). Setup › Display cakes ticks which cakes are on the HQ display; Setup › Reminders holds the prep reminders.</li>
+<li>Kitchen HQ › History: "N days in a row, all on time" and a 14-day calendar (green on time, amber late, red missed, grey closed). Tap a day to see who sent each part, issues, temperatures and photos.</li>
+</ul>
+<h2>5. Points, the Team jar and the month's treat</h2>
+<ul>
+<li>Every report part, fridge reading, to-do and taste check adds points to the Team jar. The jar is for the whole kitchen team and fills over the month; it empties on the 1st.</li>
+<li>Points: report part sent on time +50 (late +15); each fridge or freezer reading +5; to-do ticked by its ready time +10; Random QC sent +30; Good catch +10 (a fridge reading above its limit, or a problem report; at most 2 reports a day count, and ideas don't). Sending the same thing again never counts twice. A "+N to the team jar" note pops up after you send.</li>
+<li>Points reward doing the work and reporting honestly, never a "good" number: a warm fridge that you log truthfully is a Good catch.</li>
+<li>The jar holds 5,000 points a month (Alfred can change this in Setup). The team gets the treat when the jar reaches 90% (4,500 points) by the end of the month. The jar card shows the percentage, points so far out of 5,000 and how many days are left.</li>
+<li>The month's treat (Team treat page: tap the jar, or Menu › Team treat): Alfred or Joscelyn either picks the treat, or opens voting. When voting is open, everyone can add up to 3 ideas (20 ideas at most) and vote for one (tap again to take your vote back, or tap another to change it). Voting closes on the 7th at 6pm (or 7 days after voting was opened).</li>
+<li>Me tab (only you can see it): your points this month, your path to chef — Commis, Demi-chef, Chef de partie, Sous-chef, Chef pâtissier — with how far you are from the next step, and your recent points.</li>
+<li>Leaderboard (Team tab): everyone in the kitchen team with their points this month, highest first, with gold, silver and bronze for the top 3 and your own line highlighted. Tap Last month to see last month's final board. People with the same points share a place; nobody gets a place with 0 points. The board starts again on the 1st. Your place also shows on your Me page.</li>
+<li>Team tab: the leaderboard, the Team jar, how many report parts and to-dos each team did on time this month, shout-outs (good catches, outlets that sent their closing counts every day) and your badges (Streak 7, Cold chain, Good catch, Early bird, Taster, Helper, Treat month, Sous-chef).</li>
+<li>Setup (Alfred and Joscelyn): office desk › Setup › Kitchen HQ &amp; WhatsApp › Team points &amp; treat: the jar size (5,000 points unless changed; the panel also shows what a perfect month would add up to), the % needed for the treat (default 90), the points for each chef step, and Random QC on/off with its time.</li>
+</ul>
+<h2>6. Random QC (taste check)</h2>
+<ul>
+<li>On about every other open day (never 2 open days in a row without one) the app picks 2 to 5 cakes from the HQ display: the oldest colour dots first, plus one at random. It shows on the home page as a Random QC card with the cakes and the time to finish it by (11:00 unless changed). If a cake is sent as Off, supervisors and the office also see it in Also for you.</li>
+<li>Tap Start QC. One cake per screen: cut a slice, take a photo of the cut, then choose Good, Not sure or Off, and tap Next cake. For Off, write what's wrong if you can and take that cake off the display. On the last cake tap Send QC report. Your answers stay on the phone until you send.</li>
+<li>Only one person needs to send it. If a cake is Off, the supervisors and Alfred get a WhatsApp at once and should check other cakes with the same dot.</li>
+<li>Supervisors and the office see every QC with its photos in office desk › Spot audits &amp; taste checks (Menu › Office desk › Spot audits &amp; taste checks).</li>
+</ul>
+<h2>7. Colour dots and shelf life</h2>
+<ul>
+<li>Every cake gets the colour dot of the day it was made or thawed: Monday ORANGE, Tuesday YELLOW, Wednesday GREEN, Thursday BLUE, Friday RED, Saturday PURPLE, Sunday BLACK.</li>
+<li>Shelf life counts the day it was made as day 1 (set per cake by Alfred or Joscelyn in office desk › Setup › Shelf life, 1 to 6 days). "Last day: sell first" and "Past shelf life: throw away" tags appear on the forms.</li>
+<li>Deliveries: only cakes made on the delivery day or the day before can go out (made Monday, sent Tuesday is fine; sent Wednesday is not). Always check the colour dot on every cake before it goes out (office desk › Delivery orders › Check colours; tap Split if one flavour has two colours). A delivery can only be marked delivered after the colour check.</li>
+<li>Oldest colour at the front (first in, first out).</li>
+</ul>
+<h2>8. Production plan and prep reminders (Kitchen HQ › Plan)</h2>
+<ul>
+<li>One shared plan for the whole team. It must always cover the next 3 days.</li>
+<li>The plan for a day is made of lists. The 4 day tiles at the top show which days still have no list (amber "missing"); tap a day to see its lists. Add a list: choose the day (tomorrow is chosen first), tap "Snap Friday's list" to take a photo of the written list, tap Read it. The photo is saved, and the AI writes the list out line by line, the way your team wrote it (no quantity or note boxes). Fix a line if it read something wrong, then tap Save list. One photo = one list; add as many lists as you need for a day.</li>
+<li>No photo? Tap "Type it instead" and write one line per item, the way you like.</li>
+<li>Anyone can add a list. Changing or removing a list needs a kitchen supervisor: other staff tap "Propose a change" and give a reason; the supervisor approves it.</li>
+<li>Tap a list's photo to open it. All list photos are kept in Google Drive (Kitchen HQ › Production lists).</li>
+<li>A supervisor taps "Mark as checked" after checking a day.</li>
+<li>Prep reminders: rules like "when the plan has mango → Defrost mango puree, 1 day before". The To-do tab (Noon / Production) shows today's and tomorrow's reminders, and the 4pm WhatsApp message lists tomorrow's. The AI suggests new reminders from the plans; a supervisor approves them. Staff can suggest reminders too.</li>
+</ul>
+<h2>9. Kitchen supervisor</h2>
+<ul>
+<li>To-do tab: "Waiting for a supervisor" lists proposed changes (plan changes, reminders, lists). Tap Approve or Reject.</li>
+<li>To-dos: in each team's to-do card, + Custom order, + Grab pre-pack or + Other to-do. Choose the team, once (a date) or repeats (tick the days), and an optional ready-by time. Edit or Remove any to-do; "All to-dos for this team" lists the repeating and future ones.</li>
+<li>Plan tab: check each day (Mark as checked), edit or remove lists directly, turn reminders on or off.</li>
+<li>Setup tab (Kitchen setup): the cakes on the HQ display chiller (same as the Orderla menu) and the fridges and freezers with their limits.</li>
+<li>"Remind the group on WhatsApp" (To-do tab or the report) sends a reminder with the link and the parts still to do if a report is late (at most every 15 minutes).</li>
+<li>Office desk › Today: Needs attention shows missing outlet reports and cakes to take off display. Tap "Chase on WhatsApp" to send the outlet its reminder with their own link.</li>
+<li>Office desk › Delivery orders: New delivery order and Edit (change quantities or dates before delivery), Check colours, Mark delivered with the accepted quantities. Delivered orders can only be changed by the office.</li>
+<li>Office desk › Plan &amp; prep: suggestions per outlet (including Chaleur HQ), type the real Made number if the kitchen made fewer, print the prep sheet and delivery notes, Draft DOs from suggestions (it first shows a preview of every draft DO: outlet, date, colour dot, cakes; tap Create to make them, then it lists the DO numbers created and anything not drafted and why).</li>
+</ul>
+<h2>10. Office desk (office staff and managers)</h2>
+<ul>
+<li>To clear today ("clear the board"): a ring with the number of things to clear, then one item at a time: a big button for the main action (Chase on WhatsApp, Open, or Sold / Wasted / Remaining for missing or expired cakes), How to fix, Ignore with a note, ‹ Previous / Skip ›. "All N items" shows the classic list; Handled shows what was cleared (Undo puts an item back). Below: New delivery order, Paste WhatsApp report, Start spot audit, closing reports for the last 7 days (tap a cell to open that day), the Daily check (runs after every report and at 4am and 4pm) and this week's totals.</li>
+<li>Plan &amp; prep: suggestion per outlet from the last 28 days of sales, holidays (+10% at most; school holidays +5%). Whole cakes: each outlet has its own whole-cake setting in Setup › Outlets (edit the outlet): the days they go out (usually Fri, Sat, Sun), how to choose (Take turns = every whole cake ticked for that outlet gets a turn before any repeats, in a mixed order, and outlets get different ones on the same day where possible; Random each time = a fresh random pick, not the same as last time; Best sellers = the fastest sellers), kinds per delivery (e.g. 1 to 2, picked for each delivery) and the max of each (usually 1). A whole cake still sellable at the outlet counts as one of them. The "Why" column in Plan &amp; prep says "its turn" or "waits for its turn". To change which whole cakes an outlet gets, tick or untick them in "Cakes this outlet carries". Chaleur HQ uses Best sellers (every day, alternating kinds) unless changed.</li>
+<li>Delivery orders: every delivery order with filters, colour check, mark delivered, delivery notes.</li>
+<li>Kitchen to-dos: office staff and managers add custom orders (whole cakes, special orders), Grab pre-packs and other to-dos in Kitchen HQ › To-do (pick the team, then + Custom order / + Grab pre-pack / + Other to-do). The kitchen ticks them; the ones not ticked by closing time show in the daily check.</li>
+<li>Outlet closing reports: each outlet's closing report per day (paste a WhatsApp report here too). Correct report needs a reason; every change is kept in the Corrections log and the Edit log sheet.</li>
+<li>Weekly bills: each Monday last week's bill is drafted from the reports. The week card at the top shows one card per outlet: Invoice (stock held), CF note (unsold), Credit note (waste) and Net (sold), missing closing reports with a Chase button, and Approve &amp; issue (Alfred or Joscelyn): tap it, check the details below and confirm; issued cards turn green. Below the cards is the full detail for the chosen outlet (documents, Bukku references, payment, stock reconciliation, history). Changes after a bill is issued are flagged on the bill; to bill the new amount, void and issue again. Chaleur HQ is never billed.</li>
+<li>Spot audits &amp; taste checks: every audit with photos, AI suggestions and the PDF, and the QC history (every Random QC with its photos and results).</li>
+<li>Setup: Outlets &amp; terms (closing links and QR codes), Products, Shelf life, Price register, Opening stock, Go-live &amp; rules (sample data removal, sales photo reader, and for Alfred only "Fresh start": deletes every report, delivery order, bill, audit, QC, kitchen report, plan, points and problem report after saving a backup to Drive › Backups, and keeps outlets, cakes, prices, settings, to-dos, reminders and the Team; type FRESH START to confirm), Kitchen HQ &amp; WhatsApp (report times, closed days, WhatsApp link, Team points &amp; treat, Random QC).</li>
+<li>Staff &amp; access (people with Staff and access): PINs are never shown in the list (••••); only the owner sees a person's PIN in Edit, anyone else with Staff access can set a new one (leave it blank to keep it). Add staff with name, phone number, PIN, Works in, a starting level and the access tick boxes (each with a short description; "What each access means" at the bottom of the page lists them all and what each job starts with). Changing a PIN or phone, or deactivating someone, signs them out on every phone; changing access works straight away.</li>
+<li>Bukku (office desk › Setup › Bukku): Alfred links the app once: in Bukku, Control Panel › Integrations › turn on API Access › Save, copy the Access Token; in the app type the Bukku subdomain (the first part of the Bukku address) and paste the token, then Save &amp; test. The token is kept in the Google backend and never shown again; Unlink removes it. Then "Match cakes and outlets with Bukku": every cake gets its Bukku product and every outlet its Bukku customer (matched by code, then by name; pick from the list for any that are missing, then Save matches). After a weekly bill is issued, Weekly bills › the outlet › "Send to Bukku (draft)" sends the invoice, carry forward and credit note to Bukku as drafts with the same numbers as the app (each only once); delivery orders have "Send to Bukku (draft)" in their View window. Nothing is sent by itself, and nothing is final until it is approved in Bukku. If a cake is not matched yet, the app says which one. In Bukku the carry forward is a credit note with the title "Carry Forward Note" (like the app's own PDF); the waste credit note keeps Bukku's "Credit Note" title. Bukku needs a sales account on each product: the app takes it from the Bukku product. Safe test (Alfred): Setup › Bukku › Run a safe test makes a test customer "ZZ TEST Chaleur app (delete me)" and a test week of drafts numbered TEST-… (DO, invoice with a B/F line, carry forward, waste credit note), checks them, and "Delete the test items in Bukku" removes only those.</li>
+<li>Chaleur HQ appears like an outlet in Plan &amp; prep, Delivery orders and Outlet closing reports; its numbers come from the kitchen reports.</li>
+</ul>
+<h2>11. Spot audit (Chaleur staff at an outlet)</h2>
+<ol>
+<li>Open the spot audit (Home › Menu › Outlets &amp; deliveries › Do a spot audit); you are already signed in.</li>
+<li>5 stages, shown as a strip at the top: Setup, Prices, Count, Photos, Ideas. The circle at the top right is the live score (Yes answers out of Yes + No).</li>
+<li>Setup: choose the outlet, date and menu type, then answer every check with Yes or No · photo (or "Not applicable here"), take the required photos (display, signage, menu), and type the chiller temperature with a thermometer photo.</li>
+<li>Prices: type the sell prices you see (RM). Count: pick 2–3 cakes, tap the colour dots you see and count them.</li>
+<li>Photos: shows which required photos are done; add up to 6 other photos (damage, wrong labels, expired stock).</li>
+<li>Ideas &amp; send: optional "Get suggestions" (AI looks at the photos; changing a photo clears old suggestions), a summary, notes, then Submit audit. The office sees it in Spot audits &amp; taste checks (office desk) with a PDF.</li>
+</ol>
+<h2>12. Outlet closing form (partner outlet staff)</h2>
+<ol>
+<li>Open your outlet's own link or QR code from Chaleur every night after closing. The dark badge at the top right is your streak: nights in a row with a report.</li>
+<li>Type your name. For each cake and colour dot: Waste (thrown away or damaged) and Left (still in the chiller), with − / + or type the number. Empty = 0. Tap a colour dot on the cake to add a colour that was not listed; "+ Add a cake that's not listed" for other cakes.</li>
+<li>Photos · tap to take: today's POS sales report (required, up to 3 photos), the chiller, and the waste photo if you entered waste. "From phone" picks a photo already taken.</li>
+<li>The line above the button says what is still needed. Tap "Send tonight's count", check the numbers, then Confirm &amp; send. If a photo looks wrong you will be told; retake it or send anyway. "Sent. N nights in a row!" means it went through.</li>
+<li>Reports are accepted for today and the 2 days before. Sending again replaces the earlier report.</li>
+</ol>
+<h2>13. Common problems</h2>
+<ul>
+<li>The Send button is grey: read "Still needed" in the bottom bar and complete those items.</li>
+<li>A photo did not stick: tap Take photo again; if the phone says the photo couldn't be read, try Choose from phone.</li>
+<li>No internet: your answers stay on the phone; send when the connection is back.</li>
+<li>Wrong report sent: fix it and send again; it replaces the earlier one. Office staff can also correct outlet reports in Outlet closing reports (with a reason).</li>
+<li>Forgot yesterday's kitchen report: open the report, set the Report date to yesterday, then do the missing parts.</li>
+<li>A freezer or chiller is too warm: move the food, keep the door closed, tell the supervisor, check again in 30 minutes and note it in the next report.</li>
+<li>The desk looks old or a button is missing: refresh the page (computer: Ctrl+Shift+R; phone: close the tab and open it again).</li>
+<li>Locked out after wrong PINs: wait 15 minutes, or ask Alfred or Joscelyn to open your staff record and tap Save.</li>
+</ul>
+<h2>14. Contact</h2>
+<ul>
+<li>Alfred (WhatsApp 014-665 0928) or Joscelyn for anything the guide does not cover.</li>
+</ul>
+<h2>15. The helper (? Ask) and questions it can't answer</h2>
+<ul>
+<li>? Ask is on every page (bottom right). Type a question in English, Malay or Chinese; it answers from this guide and from the answers Alfred has added.</li>
+<li>If it cannot answer, it still gives the safest suggestion it can and saves the question for Alfred. Every Monday at 9am Alfred gets the week's saved questions on WhatsApp and answers them in office desk › Problem reports › Helper questions. His answer is added to what the helper knows, so the next person gets it straight away, and the person who asked sees the answer on their home page for 3 days.</li>
+<li>Something is broken or unsafe (not a question)? Use ? Ask › Report a problem instead, and tick Urgent if it stops your work.</li>
+</ul>
+<h2>16. I'm stuck: problems and what to do</h2>
+<h3>Sign-in and the app</h3>
+<ul>
+<li>"Wrong PIN" or locked: check the phone number (the one Alfred saved for you; or type your name). After 5 wrong PINs wait 15 minutes, or ask Alfred or Joscelyn to open your record in Staff &amp; access and tap Save.</li>
+<li>"Please sign in again": your sign-in ended. Sign in on the home page; it brings you back to the page you were on.</li>
+<li>The page is blank, old or a button is missing: close the tab and open the home page again (computer: Ctrl+Shift+R). Still wrong: ? Ask › Report a problem with a screenshot.</li>
+<li>Slow or "No internet": what you typed and your photos stay on the phone. Move closer to the Wi-Fi or use mobile data, then tap Send again. Don't clear the browser.</li>
+<li>A photo won't upload: tap the photo tile again; if the camera fails, use "or choose from phone" and pick the photo from the gallery. Very dark photos are rejected by the check: turn on the light and retake.</li>
+<li>I can't see a page my job needs: your access decides what you see (Me › What you can do). Ask Alfred or Joscelyn to tick the right box in Staff &amp; access.</li>
+</ul>
+<h3>Kitchen</h3>
+<ul>
+<li>The Send button is grey: read "Still needed" under it; it names what is missing (a photo, a unit, a colour).</li>
+<li>I sent a part with a mistake: open the part again, fix it and Send; the newest one counts. For yesterday, change the report date first.</li>
+<li>A fridge or freezer is too warm: log the real reading (it is a Good catch, never type a nicer number), move the food to a working unit, keep the door shut, tell the supervisor now and check again in 30 minutes. Alfred and the group are told automatically.</li>
+<li>Plan &amp; prep says "no DO yet": the office has not made that outlet's delivery order. Tell the supervisor or the office; they make it in Plan &amp; prep (Draft DOs from suggestions). The card ticks itself when every outlet has a DO.</li>
+<li>We made fewer (or more) cakes than the list: on Finish &amp; decorate tap "Made a different number? Tap to change" and type what you made; the office sees it.</li>
+<li>Check colours refuses a cake ("too old"): only today's or yesterday's dot can go out. Swap it for a newer cake; the old one stays for the HQ display if it is still within shelf life, otherwise waste.</li>
+<li>One cake flavour has two dot colours in the box: in Check colours tap Split and enter how many of each.</li>
+<li>The outlet took fewer cakes (damaged, refused): on Mark delivered change the accepted number and write why in the note. The outlet's stock and bill follow what you enter.</li>
+<li>A cake on the display is not in the count list: tap "+ Add a cake that's not listed". Something not on the menu (event cake, sample): "Event and other items".</li>
+<li>A colour is missing on a cake in the count: tap that colour dot on the cake to open it.</li>
+<li>The AI says the DO photo is wrong: make sure the DO paper for that outlet is attached and readable in the photo, retake it. If it is right and the AI is wrong, send anyway and add a note.</li>
+<li>The production list for a day is missing: Plan › Add a list (snap the paper list), or it comes with tonight's closing report (lists part).</li>
+<li>Random QC: cut one slice per cake, photo of the cut, choose Good / Not sure / Off. Off = take that cake off the display and tell the supervisor.</li>
+<li>Points didn't go up: points only count once and only for work done on time; late parts give fewer points. The jar card updates after Send.</li>
+</ul>
+<h3>Office</h3>
+<ul>
+<li>An outlet did not send its closing count: To clear today › Chase on WhatsApp (their own link is in the message). If they sent it by WhatsApp message instead, use Paste WhatsApp report.</li>
+<li>A report has wrong numbers: Outlet closing reports › pick the outlet and day › Correct report, with the reason. It is kept in the Corrections log.</li>
+<li>Cakes missing or past shelf life at an outlet: To clear today › the item › Sold / Wasted / Remaining.</li>
+<li>A delivery order is wrong before it goes out: Delivery orders › Edit. After it is delivered only the office can change it.</li>
+<li>A weekly bill is wrong after issuing: void it in Weekly bills (the week reopens), fix the reports, then Approve &amp; issue again. In Bukku, delete or void the draft there too.</li>
+<li>Bukku says a cake is not matched: Setup › Bukku › Match cakes and outlets, pick the Bukku product, Save matches, then send again.</li>
+<li>WhatsApp messages are not arriving: Setup › Kitchen HQ &amp; WhatsApp › Send a test message. If the test fails, the WasapBot link or group needs checking (Alfred).</li>
+</ul>
+<h3>Outlet staff (closing form)</h3>
+<ul>
+<li>The link does not open or says "ask Chaleur for your link": use the QR code or link Chaleur gave your outlet; each outlet has its own. WhatsApp Chaleur 014-665 0928.</li>
+<li>A cake or colour is not on the form: tap its colour dot on the cake, or "+ Add a cake that's not listed".</li>
+<li>I sent the wrong numbers: tap Edit this report, fix and send again (today or the 2 days before). The newest report counts.</li>
+<li>The POS sales report is long: take up to 3 photos.</li>
+</ul>
+<h2>17. Quick guide by person (what you do each day)</h2>
+<ul>
+<li>Kitchen, Morning / Decoration team: sign in › Today (Morning) › Plan &amp; prep (7:00, make the cakes on today's DOs, Finish &amp; decorate) › Opening report by 10:30 (fridges and freezers, HQ display count, outlet deliveries with the DO photo) › custom orders and Grab pre-packs by their ready time › Pack &amp; deliver each outlet (Check colours, Pack + DO photo, Mark delivered) › Count the HQ display after putting out today's cakes.</li>
+<li>Kitchen, Noon / Production team: sign in › Today (Production) › today's production list (tick the paper list) › prep reminders › to-dos › Closing report by 19:30 (fridges and freezers, HQ display waste and left, the 4 list photos that become the plan).</li>
+<li>Kitchen supervisor: everything above for your team, plus Waiting for a supervisor (Approve / Reject), add and edit to-dos, Plan › Mark as checked, Remind the group on WhatsApp when a report is late, Delivery orders when the office is away.</li>
+<li>Office: Home › Clear the board › To clear today (chase outlets, missing cakes) › Plan &amp; prep before 7am or the afternoon before (Draft DOs from suggestions) › Delivery orders › Outlet closing reports (corrections with a reason) › Monday: Weekly bills (Alfred or Joscelyn approve and issue, then Send to Bukku (draft)) › Problem reports and Helper questions.</li>
+<li>Spot audit (Chaleur staff): Menu › Outlets &amp; deliveries › Do a spot audit › Setup, Prices, Count, Photos, Ideas › Submit audit.</li>
+<li>Outlet staff (Knocknock KKJB, Jiran Cafe): every night after closing open your outlet's link or QR › your name › Waste and Left per cake and colour › photos (POS sales report, chiller, waste) › Send tonight's count › Confirm &amp; send.</li>
+<li>Alfred (owner): all of the above, plus Setup (outlets, prices, shelf life, go-live, Bukku, WhatsApp), Staff &amp; access, View as a team member, and the Monday Helper questions.</li>
+</ul></template>
 </body></html>

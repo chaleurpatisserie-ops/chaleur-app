@@ -202,7 +202,7 @@ const CA=(function(){
         ${opt.noReport?"":`<div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`}`; }
     function askHtml(){
       const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}${opt.noReport?"":`<div style="margin-top:6px"><a class="ca-lnk" href="index.html#guide">Open the how-to guide ›</a></div>`}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
         <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
     function fbHtml(){
       if(FB.sent){ const x=FB.sent;
@@ -535,7 +535,9 @@ body.dark{background:var(--night);color:#fff}body.dark .hd{background:var(--nigh
 .cd{display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:4px 2px;border-radius:10px;font:600 10.5px var(--body);color:var(--muted);min-width:38px;touch-action:manipulation}
 .cd i{width:26px;height:26px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.18);opacity:.3}.cd.on i{opacity:1;box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}.cd.on span{color:var(--ink)}
 @media (max-width:560px){.dots{width:100%;justify-content:space-between;margin-left:0}}
-.ln2{display:grid;grid-template-columns:minmax(64px,1fr) auto auto;gap:8px;align-items:center;border-top:1px dashed var(--line);padding-top:8px}.ln2.c1{grid-template-columns:minmax(64px,1fr) auto}
+.ln2{display:grid;grid-template-columns:minmax(0,1fr) 104px 104px;gap:8px;align-items:center;border-top:1px dashed var(--line);padding-top:8px}.ln2.c1{grid-template-columns:minmax(0,1fr) 132px}
+/* v21.6: Waste and Left side by side on a phone, like the outlet form (they overflowed at 390px) */
+.ln2 .stp{width:100%;min-width:0}.ln2 .stp .ctl{display:grid;grid-template-columns:32px minmax(0,1fr) 32px;width:100%}.ln2 .stp button{width:auto}.ln2 .stp input{width:100%;min-width:0}
 .dot{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1.1;padding:0}
 .dot i{width:16px;height:16px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.15)}.dot small{display:block;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
 .dot small.sf{font-weight:700;margin-top:2px}.sf.bad{color:var(--bad-tx)!important}.sf.warn{color:var(--warn-tx)!important}
@@ -795,7 +797,9 @@ function planDaysCard(){ const t=INFO.today, ds=[]; for(let i=1;i<=INFO.conf.pla
 /* Plan & prep (07:00, first Morning job): tomorrow's outlet deliveries and whether each has a delivery order; the office desk › Plan & prep page does the work. */
 function planItem(){ const tm=INFO.tomorrow; if(!tm||DATE!==INFO.today) return null;
   const late=!tm.done&&!tm.none&&INFO.now>tm.due, outs=tm.outlets||[];
-  const lines=outs.length?`<ul class="lines">${outs.map(o=>`<li class="${o.hasDo?"ok":o.expected?"":"mute"}">${o.hasDo?"✓":o.expected?"○":"–"} ${esc(o.name)}${o.hasDo?` · ${esc(o.no)} · ${o.qty} cake${o.qty===1?"":"s"}${o.status==="delivered"?" · delivered":""}`:o.expected?" · no DO yet":" · no delivery planned"}</li>`).join("")}</ul>`:"";
+  /* v21.6: the HQ display's own DO is listed too, so the outlet lines add up to "make N cakes" (Alfred's review, 25 Sep) */
+  const hqL=tm.today?(INFO.dos||[]).filter(d=>d.internal).map(d=>{const q=(d.lines||[]).reduce((a,l)=>a+(+l.qty||0),0); return q?`<li class="ok">✓ HQ display · ${esc(d.no||"")} · ${q} cake${q===1?"":"s"}${d.hqAuto?" · put out":""}</li>`:"";}).join(""):"";
+  const lines=outs.length||hqL?`<ul class="lines">${outs.map(o=>`<li class="${o.hasDo?"ok":o.expected?"":"mute"}">${o.hasDo?"✓":o.expected?"○":"–"} ${esc(o.name)}${o.hasDo?` · ${esc(o.no)} · ${o.qty} cake${o.qty===1?"":"s"}${o.status==="delivered"?" · delivered":""}`:o.expected?" · no DO yet":" · no delivery planned"}</li>`).join("")}${hqL}</ul>`:"";
   const sub=tm.none?`No outlet deliveries scheduled for ${esc(tm.day)}. Check the plan for what to prep.`:tm.done?`${esc(tm.day)} · ${tm.qty} cakes on ${tm.ready} DO${tm.ready>1?"s":""} · prep and decorate ${tm.today?"this morning":"today"}`:`${esc(tm.day)} · ${tm.ready} of ${tm.expected} outlet${tm.expected>1?"s have":" has"} a DO`;
   const rows=tm.today?(()=>{ const m={}; INFO.dos.forEach(d=>(d.lines||[]).forEach(l=>{ const r=m[l.productId]||(m[l.productId]={pid:l.productId,qty:0,by:{}}); r.qty+=l.qty; const k=d.internal?"HQ":(d.code||d.outlet); r.by[k]=(r.by[k]||0)+l.qty; })); return Object.values(m).sort((a,b)=>b.qty-a.qty||String(prodOf(a.pid).name).localeCompare(String(prodOf(b.pid).name))); })():[], tot=rows.reduce((a,r)=>a+r.qty,0);
   if(rows.length&&(tm.done||tm.none)){ const c=colOf(DATE), dn=doneOf("auto_decorate"), ln=rows.filter(r=>doneOf(dId(r.pid))).length;
@@ -979,7 +983,7 @@ function vEq(kind){ const s=st(kind), p=pre(kind), E=INFO.conf.equipment, n=E.le
 const CDAY=c=>WDL[CONFIG.colours.findIndex(x=>x.name===c)]||"";
 const picH=p=>p.photo?`<img class="pic" src="${esc(p.photo)}" alt="" loading="lazy">`:`<span class="pic ph" aria-hidden="true">${esc((p.name||"?").slice(0,2))}</span>`;
 const sfOf=(pid,c)=>{const a=ageOf(c,DATE), l=+(prodOf(pid).shelfDays)||3; return a>=l?"bad":(a===l-1?"warn":"");};
-function stepH(kind,k,f,label,v){ return `<div class="stp ${f}"><span class="lb">${label}</span><div class="ctl"><button type="button" data-kstep="${kind}|${esc(k)}|${f}|-1" aria-label="${label} minus one">−</button><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(v||"")}" data-kv="${kind}|${esc(k)}|${f}" aria-label="${label}"><button type="button" data-kstep="${kind}|${esc(k)}|${f}|1" aria-label="${label} plus one">+</button></div></div>`; }
+function stepH(kind,k,f,label,v){ return `<div class="stp sf-${f}"><span class="lb">${label}</span><div class="ctl"><button type="button" data-kstep="${kind}|${esc(k)}|${f}|-1" aria-label="${label} minus one">−</button><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(v||"")}" data-kv="${kind}|${esc(k)}|${f}" aria-label="${label}"><button type="button" data-kstep="${kind}|${esc(k)}|${f}|1" aria-label="${label} plus one">+</button></div></div>`; }
 function cMode(kind){ const s=st(kind); s.cmode="list"; return "list"; } /* v21.1: one list for every count (Alfred: same as the outlet form, no page by page) */
 function vCount(kind,part){ const s=st(kind), open=kind==="opening"; if(cMode(kind)==="list"||!s.order.length) return partHead(kind,part,"")+vCountList(kind,part);
   const n=s.order.length, i=Math.max(0,Math.min(n-1,s.cstep)); s.cstep=i; const k=s.order[i], [pid,c]=k.split("|"), r=s.rows[k], pr=prodOf(pid), same=s.order.filter(x=>x.split("|")[0]===pid), ci=same.indexOf(k)+1, q=sfOf(pid,c);
