@@ -1417,6 +1417,8 @@ function vSetup(){
     const L=S.ui.opDraft.lines;
     body=`<div class="panel"><h2>Opening stock</h2><p class="small muted" style="margin:0">Stock already at the outlet on your go-live date (from a signed count). It is used as the first week's B/F only when there is no earlier week.</p>
       <div class="row">${partnerSelect("op-p",pid)}</div>
+      ${(()=>{ const reps=Object.values(S.weeks).filter(w=>w.partnerId===pid).flatMap(w=>Object.keys(w.days||{})).sort(); const last=reps[reps.length-1]||""; const d=S.ui.opFrom||last;
+        return `<div class="row" style="align-items:flex-end;flex-wrap:wrap"><label class="f" style="margin:0">Closing report date<input type="date" id="op-from" data-ui="opFrom" value="${esc(d)}" ${reps.length?"":"disabled"}></label><button class="btn" data-act="opFromReport" ${reps.length?"":"disabled"}>Use that night's "Left" as the opening stock</button><span class="small muted">${reps.length?`Latest report for this outlet: ${nice(last)}. Fills the lines below from what the outlet said was left; check, then Save.`:"No closing report for this outlet yet."}</span></div>`; })()}
       <div class="tw"><table><thead><tr><th>Cake</th><th>Colour</th><th>Made on</th><th class="r">Qty</th><th class="r">Rate RM</th><th></th></tr></thead><tbody>
       ${L.map((l,i)=>`<tr><td><select id="op-${i}-p" data-op="${i}" data-k="productId">${products().map(x=>opt(x.id,x.name,l.productId)).join("")}</select></td><td><select id="op-${i}-c" data-op="${i}" data-k="colour">${cfg().colours.map(x=>opt(x.name,x.name,l.colour)).join("")}</select></td><td><input type="date" id="op-${i}-b" data-op="${i}" data-k="batchDate" value="${esc(l.batchDate||"")}"></td><td class="r"><input type="number" min="0" id="op-${i}-q" data-op="${i}" data-k="qty" value="${esc(l.qty??"")}"></td><td class="r"><input class="numin" id="op-${i}-r" data-op="${i}" data-k="rate" value="${esc(l.rate??"")}" placeholder="auto"></td><td class="r"><button class="btn sm" data-oprm="${i}">Remove</button></td></tr>`).join("")||`<tr><td colspan="6" class="muted">No opening stock.</td></tr>`}
       </tbody></table></div><div class="row"><button class="btn" data-act="opAdd">Add line</button><button class="btn pri" data-act="opSave">Save opening stock</button></div></div>`;
@@ -1816,6 +1818,7 @@ document.addEventListener("change",async e=>{
   if(t.dataset.ui==="partner"){S.ui.partner=t.value;S.ui.editDay=false;S.ui.confirm=null;render();}
   if(t.dataset.ui==="date"&&t.value){S.ui.date=t.value;S.ui.editDay=false;render();}
   if(t.dataset.ui==="bweek"&&t.value){S.ui.week=weekStartOf(t.value);S.ui.confirm=null;render();}
+  if(t.dataset.ui==="opFrom"){S.ui.opFrom=t.value;}
   if(t.dataset.made){const [d,id]=t.dataset.made.split("|"); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); await savePrep(d,x=>{x.made=x.made||{}; if(v==="") delete x.made[id]; else x.made[id]=+v;}); toast(v===""?"Made cleared":"Made saved: outlets updated"); return;}
   if(t.dataset.short){const [d,id]=t.dataset.short.split("|"); await savePrep(d,x=>{x.reason=x.reason||{}; x.reason[id]=t.value;}); return;}
 });
@@ -2057,6 +2060,13 @@ async function act(a,b){
       await put(`prices/${id}`,{...row,status:"Active",approvedBy:row.approvedBy||"Owner",approvedAt:t}); }
     S.ui.priceNew={partnerId:n.partnerId}; toast(st==="Active"?"Price activated":"Price saved as proposed"); return;}
   case "opAdd": S.ui.opDraft.lines.push({productId:(products()[0]||{}).id,colour:colourOf(t).name,qty:"",rate:"",batchDate:t}); render(); return;
+  /* v21.7c: go-live shortcut — the outlet's "Left" on a chosen night becomes its opening stock (made-on = the last day with that colour dot) */
+  case "opFromReport":{const pid=S.ui.opDraft.pid, d=S.ui.opFrom||($("#op-from")||{}).value||""; const w=S.weeks[wid(pid,weekStartOf(d))], rep=w&&w.days&&w.days[d];
+    if(!d||!rep){toast("No closing report for that date");return;}
+    const madeOn=(c,upTo)=>{ for(let i=0;i<7;i++){ const x=add(upTo,-i); if(colourOf(x).name===c) return x; } return upTo; };
+    const lines=(rep.lines||[]).filter(l=>+l.b>0).map(l=>({productId:l.productId,colour:l.colour,qty:+l.b,rate:"",batchDate:madeOn(l.colour,d)}));
+    if(!lines.length){toast("That report says nothing was left");return;}
+    S.ui.opDraft.lines=lines; render(); toast(`${lines.length} line${lines.length===1?"":"s"} from ${nice(d)}'s report — check, then Save opening stock`); return;}
   case "opSave":{const pid=S.ui.opDraft.pid; const lines=S.ui.opDraft.lines.filter(l=>+l.qty>0).map(l=>({productId:l.productId,colour:l.colour,qty:+l.qty,rate:l.rate===""||l.rate==null?null:+l.rate,batchDate:l.batchDate||""}));
     await put(`partners/${pid}`,{...S.partners[pid],opening:lines}); toast("Opening stock saved"); return;}
   case "saveGeneral":{const g=S.ui.gen; const num=(v,d)=>v===""||v==null||isNaN(+v)?d:+v;
