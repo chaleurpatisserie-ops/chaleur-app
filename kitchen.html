@@ -298,7 +298,7 @@ const CA=(function(){
      shows itself the first 3 visits (per person once signed in, else per phone) and after that as a small "❔ Show me how" button.
      A step: {sel, title, text, done(), prog(), next:false (no Next button in the automatic guide), last, above, at:"top", noScroll, revisit}.
      The bubble shows while its target is on screen; scrolled away (or hidden with —) it becomes a small pill at the bottom left that brings it back.
-     Config: {key, steps, ready(), busy(), finished(i), leaveDone(i), onTick(i), onStart(manual), onNext(i), btnBottom, auto, perPhone}. ---- */
+     Config: {key, steps, ready(), busy(), finished(i), leaveDone(i), onTick(i), onStart(manual), onNext(i), btnBottom, btnHide(), topPad, auto, perPhone}. ---- */
   const TOUR=(function(){
     let C=null, I=-1, HI=null, BUB=null, BTN=null, PILL=null, IV=null, MAN=false, PROG="", RAF=0, MIN=false, NT=0;
     const TRIED=new Set(); /* guides already started by themselves in this page load (one automatic start per guide per visit) */
@@ -333,9 +333,10 @@ const CA=(function(){
       try{ new MutationObserver(()=>{ showBtn(); re(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
       window.addEventListener("pagehide",()=>{ const st=cur(); if(st&&!MAN&&(st.last||(C.leaveDone&&C.leaveDone(I)))) finish(); });
     }
-    function showBtn(){ if(!BTN) return; if(C&&C.btnBottom) BTN.style.bottom=fv(C.btnBottom)||""; BTN.classList.toggle("on",!!C&&I<0&&ready()&&!busy()); }
+    function showBtn(){ if(!BTN) return; if(C&&C.btnBottom) BTN.style.bottom=fv(C.btnBottom)||""; BTN.classList.toggle("on",!!C&&I<0&&ready()&&!busy()&&!(C.btnHide&&C.btnHide())); }
     const pillTxt=()=>{ const st=cur(); if(!st) return ""; const t=String(fv(st.title)||"").split("·")[0].trim(); return `<b>❔</b> ${esc(t||"Guide")}${PROG?` · ${esc(PROG)}`:""} ▸`; };
-    function pill(on){ if(!PILL) return; if(on){ PILL.innerHTML=pillTxt(); if(C&&C.btnBottom) PILL.style.bottom=fv(C.btnBottom)||""; } PILL.classList.toggle("on",!!on); }
+    /* the pill sits where the Show-me-how button lives (bottom left); for a step drawn at the top it sits under the header instead, so it never covers the bottom controls */
+    function pill(on){ if(!PILL) return; if(on){ PILL.innerHTML=pillTxt(); const st=cur(); if(st&&st.at==="top"){ PILL.style.bottom="auto"; PILL.style.top=Math.max(8,+(C&&fv(C.topPad))||8)+"px"; } else { PILL.style.top="auto"; PILL.style.bottom=(C&&fv(C.btnBottom))||""; } } PILL.classList.toggle("on",!!on); }
     function place(){ const st=cur(); if(!st||!HI) return;
       const el=q(fv(st.sel)), b=busy();
       if(b||(!el&&!MAN)){ HI.classList.add("off"); BUB.classList.add("off"); pill(false); return; }
@@ -1412,7 +1413,7 @@ const tourSteps=[
   {sel:"#bar .in",title:"Step 3 of 4 · Fill in and send",text:"One screen at a time: fill it in, then tap the button at the bottom to go on. At the end tap <b>Send</b>. Your answers stay on this phone until you send.",done:tourSent,next:false,at:"top",noScroll:true,revisit:true},
   {sel:"#main .res2 .stats, #main .res2",title:"Step 4 of 4 · Sent",text:"Part sent: the points go to the team jar. Tap <b>Next part</b> to carry on, or go back to the list. Every part sent by the due time keeps the team's streak.",last:true}
 ];
-CA.tour.define({key:"kitchen",steps:tourSteps,ready:()=>!!INFO&&!V2&&!!TOK&&(TAB==="today"||tourRep()),busy:()=>!!document.querySelector("#sheet .sheet, #tksheet .sheet"),topPad:()=>{ const h=document.querySelector("#hdr .hd, #main .hd"); const b=h?h.getBoundingClientRect().bottom:0; return b>0&&b<200?b+6:8; },
+CA.tour.define({key:"kitchen",steps:tourSteps,ready:()=>!!INFO&&!V2&&!!TOK&&(TAB==="today"||tourRep()),busy:()=>!!document.querySelector("#sheet .sheet, #tksheet .sheet"),btnHide:()=>!!PART||document.body.classList.contains("flow"),topPad:()=>{ const h=document.querySelector("#hdr .hd, #main .hd"); const b=h?h.getBoundingClientRect().bottom:0; return b>0&&b<200?b+6:8; },
   finished:i=>i>=3&&!tourSent(), /* they moved on from the "sent" screen */
   btnBottom:()=>document.body.classList.contains("flow")?"calc(150px + env(safe-area-inset-bottom,0px))":"calc(84px + env(safe-area-inset-bottom,0px))"});
 (function(){ CA.helper({auth:()=>TOK,page:()=>"Kitchen HQ › "+(V2==="deco"?"Finish & decorate":/^do:|^chk:|^rcv:/.test(V2)?"Delivery order":PART?partName(TAB,PART):((TABS.find(([k])=>k===TAB)||["",""])[1]))});
