@@ -592,6 +592,7 @@ body:not(.flow):has(#main .foot) .ca-hbtn{bottom:calc(170px + env(safe-area-inse
 body.dark{background:var(--night);color:#fff}body.dark .hd{background:var(--night)}
 .night .hd .back{background:transparent;color:#fff;border-color:rgba(255,255,255,.3);box-shadow:none;width:auto;padding:0 12px;font-size:15px;font-weight:600}
 .night .ctr{flex:1;text-align:center;font-size:14px;color:#cdbfc1}
+h2.sech{font:700 22px/1.15 var(--display);margin:18px 0 2px;padding-top:14px;border-top:1px solid var(--line)}
 .night h2{font:700 34px/1.05 var(--display);text-align:center;margin:16px 0 4px}.night .rule{text-align:center;color:#cdbfc1;font-size:14px}
 .rd{display:flex;align-items:center;justify-content:center;gap:10px;margin:18px 0 6px}
 .rd .tin{width:170px;background:transparent;border:0;border-bottom:3px solid #fff;border-radius:0;color:#fff;font:600 64px/1 var(--body);text-align:center;padding:0 0 4px;font-variant-numeric:tabular-nums}
@@ -765,9 +766,50 @@ function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}
 </script>
 
 <script>
-const TABS=[["today","To-do"],["opening","Opening"],["closing","Closing"],["plan","Plan"],["history","History"],["lists","Setup"]];
+/* v21.10 (Alfred): "Kitchen setup … can put inside kitchen history > kitchen report" → one Reports tab = past reports + fridges, display cakes, reminders */
+const TABS=[["today","To-do"],["opening","Opening"],["closing","Closing"],["plan","Plan"],["history","Reports"]];
+const TAB_ALIAS={lists:"history",setup:"history"};
 const SEEN={}; const partOf=(k,p)=>(INFO&&INFO.day&&INFO.day[k]&&INFO.day[k].parts&&INFO.day[k].parts[p])||null;
-let TOK=null, INFO=null, INFO_AT=0, TAB=(location.hash||"#today").slice(1), DATE=null, SENDING=false, RESULT=null, HIST=null, HISTERR="", PLE=null, NEWD=null, PART=null, PHWARN=false, RU={m:"",r:"",l:"1"};
+/* v21.11 (Alfred): the display photo is checked for tidiness the moment it is taken; a messy display pops up with the photo and asks for a re-do.
+   TIDY[key] = {state:"checking"|"ok"|"messy"|"skip", problems, tips, tries} — sending waits while checking, and is blocked on the first messy photo. */
+const TIDY={};
+async function tidyCheck(k){ if(!(k==="op_display"||k==="cl_display")||!P2[k]||!TOK) return; const prev=TIDY[k]||{tries:0}; TIDY[k]={state:"checking",tries:prev.tries}; refresh();
+  try{ const r=await run("hqPhotoCheck",k==="cl_display"?"closing":"opening",P2[k]); if(!P2[k]) return;
+    if(r&&r.tidy===false){ TIDY[k]={state:"messy",problems:r.problems||[],tips:r.tips||[],score:r.score,tries:prev.tries+1}; tidySheet(k); }
+    else TIDY[k]={state:"ok",tries:prev.tries}; }
+  catch(e){ TIDY[k]={state:"skip",tries:prev.tries}; }
+  refresh(); }
+function tidySheet(k){ const t=TIDY[k]; if(!t||t.state!=="messy") return;
+  $("#sheet").innerHTML=`<div class="sheet"><div class="box stack" role="dialog" aria-label="Tidy the display"><div class="ptitle">Please tidy the display first</div>
+    <img src="${P2[k]}" alt="Your display photo" style="width:100%;border-radius:12px;max-height:44vh;object-fit:cover">
+    <p class="err" style="margin:0"><b>The display looks messy in this photo.</b> ${esc((t.problems||[]).join(" "))}</p>
+    ${(t.tips||[]).length?`<ul class="iss" style="margin:0">${t.tips.map(x=>`<li class="warn">${esc(x)}</li>`).join("")}</ul>`:""}
+    <p class="hint" style="margin:0">Straight rows, even gaps, every cake on its own card, same cakes together. Then take the photo again.</p>
+    <button class="cb big full" type="button" data-tidyretake="${esc(k)}">I've tidied it — take the photo again</button>
+    ${t.tries>=2?`<button class="cb ghost full" type="button" data-tidysend="${esc(k)}">Send anyway (the supervisor will see the photo)</button>`:""}</div></div>`; }
+/* v21.10 manual chase (WasapBot down): open WhatsApp with the reminder text; the supervisor picks the kitchen group. */
+function chaseText(kind){ const s0=INFO.state[kind], due=kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy, team=kind==="opening"?"Morning":"Production";
+  return `⏰ Chaleur kitchen, ${team} team: the ${kind} report for ${niceD(DATE)} (due ${due}) is not complete yet. Still to do: ${s0.names.join(", ")}. Please send it now: ${location.origin+location.pathname}#${kind}`; }
+/* v21.12 (Alfred): "since the group message is not working, I want to send to everyone working in Kitchen HQ when I press the button".
+   One press asks the server to WhatsApp every Kitchen HQ person one by one (+ the group). While WasapBot is off, this sheet opens instead:
+   Share → WhatsApp lets him tick the group or everyone at once and send once; underneath, one tap per person as a fallback. */
+function chaseSheet(kind,r){ const txt=(r&&r.text)||chaseText(kind), people=(r&&r.people)||[], share=!!(navigator.share);
+  $("#sheet").innerHTML=`<div class="sheet" data-close="1"><div class="box stack" role="dialog" aria-label="Remind the kitchen team"><div class="ptitle">Remind the kitchen team</div>
+    <p class="hint" style="margin:0">${esc(r&&r.why?r.why:"Automatic WhatsApp is off")} — so the phone sends it. ${share?"<b>Send on WhatsApp</b> opens the share list: tick the kitchen group, or tick every person, then Send once.":"Tap a name to open WhatsApp with the message ready, then Send."}</p>
+    <div class="card" style="white-space:pre-wrap;font-size:14px">${esc(txt)}</div>
+    ${share?`<button class="cb big full" type="button" data-chaseshare="${esc(kind)}">Send on WhatsApp — pick everyone at once</button>`:""}
+    ${people.length?`<div class="hint" style="margin:6px 0 0">${share?"Or one by one":"One by one"} (${people.length} in Kitchen HQ):</div><div class="stack" style="gap:6px">${people.map(p=>`<a class="cb ghost full" href="https://wa.me/${esc(p.phone)}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">💬 ${esc(p.name)}</a>`).join("")}</div>`:`<p class="hint" style="margin:0">${r&&r.people?"No Kitchen HQ phone numbers found in Staff &amp; access.":"The one-by-one list appears once the server is updated (Code.gs v21.12)."}</p>`}
+    <div class="row" style="gap:8px"><button class="cb ghost" type="button" data-chasecopy="1">Copy the message</button><button class="cb ghost" type="button" data-sclose="1">Close</button></div></div></div>`;
+  $("#sheet").dataset.chasetxt=txt; }
+function chaseManual(kind){ chaseSheet(kind,null); }
+let QCI=null, QCI_AT=0;
+/* v21.10 the Random QC (taste check) lives inside the opening report on QC days: one card, done state from qcInfo */
+async function loadQC(){ if(!TOK||!CA.can("qc")) return; if(Date.now()-QCI_AT<60000) return; try{ const r=await run("qcInfo"); QCI=r&&r.today?r:null; QCI_AT=Date.now(); if(TAB==="opening"&&!PART&&!RESULT) render(); }catch(e){} }
+function qcCard(){ if(!QCI||!QCI.today||DATE!==INFO.today) return ""; const q=QCI.today, d=q.done, by=q.by||"11:00", late=!d&&INFO.now>by;
+  return `<div class="card pc qc ${d?"sent":""}"><span class="no">${d?"✓":"★"}</span><div><div class="nm">Taste check (Random QC)</div><div class="sb">${d?`${esc(d.by)} · ${esc(hmOf(d.at))}`:`${q.items.length} cake${q.items.length>1?"s":""} picked by the app: ${esc(q.items.map(x=>x.name).join(", "))} · before ${esc(by)}`}</div></div>
+    <span class="pt">${d?"":"+30"}</span>${late?`<p class="err" style="grid-column:1/-1;margin:4px 0 0">Late: the taste check was due by ${esc(by)}.</p>`:""}
+    <div class="go">${d?`<a class="lnk" href="index.html#qc">See it</a>`:`<a class="cb sm ghost" href="index.html#qc">Start</a>`}</div></div>`; }
+let TOK=null, INFO=null, INFO_AT=0, TAB=(h=>TAB_ALIAS[h]||h)((location.hash||"#today").slice(1)), DATE=null, SENDING=false, RESULT=null, HIST=null, HISTERR="", PLE=null, NEWD=null, PART=null, PHWARN=false, RU={m:"",r:"",l:"1"};
 let V2="", CK=null, RCV=null, PARTT=0, HSEL="", SETC="eq", EQE=null, DECOED="", CONFD="";
 if(!TABS.some(([k])=>k===TAB)) TAB="today";
 const K={opening:null,closing:null}, P2={};
@@ -804,8 +846,8 @@ function clearDraft(kind){ try{localStorage.removeItem(dkey(kind));}catch(e){} c
 /* ---------- sign in ---------- */
 function signIn(msg){ $("#tabs").hidden=true; $("#bar").hidden=true; CA.toLogin(msg); }
 async function boot2(){ const s=CA.get(); $("#acct").innerHTML=CA.chip(s); $("#main").innerHTML=`<p class="hint" style="padding-top:20px">Loading…</p>`;
-  try{ INFO=await run("hqInfo",DATE||undefined); INFO_AT=Date.now(); DATE=DATE||INFO.today; try{ const n=CA.update({perms:INFO.me.perms,label:INFO.me.label}); if(n) $("#acct").innerHTML=CA.chip(n); }catch(_){ } await loadPhs(); openLinkedPart(); render(); }catch(e){ if(TOK) $("#main").innerHTML=`<div class="card" style="margin-top:16px"><p class="err">${esc(e.message)}</p><button class="cb sm" type="button" data-act="reload">Try again</button></div>`; } }
-async function reload(date){ if(date&&date!==DATE){ Object.keys(P2).forEach(k=>delete P2[k]); DATE=date; HIST=null; await loadPhs(); } try{ INFO=await run("hqInfo",DATE); INFO_AT=Date.now(); if(LED&&!LED.dirty) LED=null; render(); }catch(e){ toast(e.message); } }
+  try{ INFO=await run("hqInfo",DATE||undefined); INFO_AT=Date.now(); DATE=DATE||INFO.today; try{ const n=CA.update({perms:INFO.me.perms,label:INFO.me.label}); if(n) $("#acct").innerHTML=CA.chip(n); }catch(_){ } await loadPhs(); openLinkedPart(); render(); loadQC(); }catch(e){ if(TOK) $("#main").innerHTML=`<div class="card" style="margin-top:16px"><p class="err">${esc(e.message)}</p><button class="cb sm" type="button" data-act="reload">Try again</button></div>`; } }
+async function reload(date){ if(date&&date!==DATE){ Object.keys(P2).forEach(k=>delete P2[k]); DATE=date; HIST=null; await loadPhs(); } try{ INFO=await run("hqInfo",DATE); INFO_AT=Date.now(); if(LED&&!LED.dirty) LED=null; render(); if(TAB==="opening") loadQC(); }catch(e){ toast(e.message); } }
 async function freshen(){ if(!INFO||SENDING||!TOK) return; const t=todayISO(); if(t!==INFO.today&&DATE===INFO.today){ K.opening=K.closing=null; RESULT=null; await reload(t); } else if(Date.now()-INFO_AT>120000&&!CK&&!RCV) await reload(); }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") freshen(); });
 window.addEventListener("pageshow",e=>{ if(e.persisted) freshen(); });
@@ -846,7 +888,7 @@ function render(){
   $("#hdr").innerHTML=flow?"":tabHdr();
   let html;
   if(V2==="deco") html=vDeco(); else if(/^do:/.test(V2)) html=vDo(V2.slice(3)); else if(/^chk:/.test(V2)) html=vChk(V2.slice(4)); else if(/^rcv:/.test(V2)) html=vRcv(V2.slice(4));
-  else html={today:vToday,opening:()=>vReport("opening"),closing:()=>vReport("closing"),plan:vPlan,lists:vLists,history:vHistory}[TAB]();
+  else html={today:vToday,opening:()=>vReport("opening"),closing:()=>vReport("closing"),plan:vPlan,lists:vHistory,history:vHistory}[TAB]();
   $("#main").innerHTML=(PHWARN?phWarn():"")+html;
   $("#bar").hidden=!(!V2&&(TAB==="opening"||TAB==="closing")&&PART&&!(RESULT&&RESULT.kind===TAB));
   if(!V2&&(TAB==="opening"||TAB==="closing")&&PART) refresh();
@@ -858,9 +900,8 @@ function tabHdr(){ const eb="Kitchen HQ · "+niceD(DATE);
   if(TAB==="opening"||TAB==="closing"){ const s0=INFO.state[TAB], due=TAB==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=!s0.done&&DATE===INFO.today&&INFO.now>due;
     return hdr(TAB==="opening"?"Opening report":"Closing report",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb,right:`<span class="duepill ${s0.done?"ok":late?"bad":""}">${s0.done?"✓ Complete":late?"Late · "+esc(due):"due "+esc(due)}</span>`}); }
   if(TAB==="plan") return hdr("Production plan",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb:"Kitchen HQ"});
-  if(TAB==="history") return hdr("Last 14 days",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb:"Kitchen HQ"});
-  return hdr("Kitchen setup",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb:"Kitchen HQ"}); }
-function go(t){ if(SENDING){ toast("Please wait until the report is sent."); return; } TAB=t; RESULT=null; PART=null; V2=""; CK=null; RCV=null; history.replaceState(null,"","#"+t); render(); window.scrollTo(0,0); if((t==="opening"||t==="closing")&&Date.now()-INFO_AT>60000) reload(); }
+  return hdr("Kitchen reports",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb:"Kitchen HQ · last 14 days, fridges, display cakes, reminders"}); }
+function go(t){ if(SENDING){ toast("Please wait until the report is sent."); return; } t=TAB_ALIAS[t]||t; TAB=t; RESULT=null; PART=null; V2=""; CK=null; RCV=null; history.replaceState(null,"","#"+t); render(); window.scrollTo(0,0); if((t==="opening"||t==="closing")&&Date.now()-INFO_AT>60000) reload(); }
 
 /* ---------- TO-DO (3d): two teams, one list each ---------- */
 let TEAM=null, TK=null;
@@ -881,12 +922,12 @@ function repItem(kind){ const s0=INFO.state[kind], r=INFO.day[kind], due=kind===
   const parts=PARTS()[kind].filter(([p])=>s0.need.includes(p)), sent=s0.need.length-s0.missing.length;
   const lines=r&&r.legacy?`<ul class="lines"><li class="ok">Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}</li></ul>`:`<ul class="lines">${parts.map(([p,l])=>{const x=r&&r.parts&&r.parts[p]; return `<li class="${x?"ok":""}">${x?"✓":"○"} ${esc(l)}${x?` · ${esc(x.by)} ${esc(hmOf(x.at))}`:""}</li>`;}).join("")}</ul>`;
   const iss=r&&(r.issues||[]).length?`<ul class="iss">${r.issues.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul>`:"";
-  const chase=!s0.done&&SUP()&&DATE===INFO.today&&INFO.now>due?`<button class="cb sm ghost" type="button" data-chase="${kind}">Remind the group</button>`:"";
+  const chase=!s0.done&&(SUP()||CA.can("chase"))&&DATE===INFO.today&&INFO.now>due?`<button class="cb sm ghost" type="button" data-chase="${kind}">Remind the kitchen team</button>`:"";
   return {count:true,done:s0.done,html:tkCard({circle:autoTick(s0.done),tag:s0.done?"✓ Complete":"Report",tagc:s0.done?"ok":"",due:s0.done?"":(late?"Late · was due "+esc(due):"due "+esc(due)),late,title:kind==="opening"?"Opening report":"Closing report",sub:`${sent} of ${s0.need.length} parts sent`,extra:lines+iss+(chase?`<div style="margin-top:8px">${chase}</div>`:""),
     act:(s0.done?`<button class="cb sm ghost" type="button" data-tab="${kind}">Open</button>`:`<button class="cb sm" type="button" data-tab="${kind}">${sent?"Continue":"Start"}</button>`)})}; }
 function taskItems(team){ const ts=TD().tasks.filter(x=>x.team===team), can=!!(INFO.me&&INFO.me.canTask);
   return ts.map(x=>({count:true,done:!!x.done,html:tkCard({circle:boxTick(x.id,!!x.done,x.title),tag:esc(TTYPE()[x.type]||"To-do"),tagc:x.type,due:x.ready&&!x.done?"ready by "+esc(x.ready):"",title:esc(x.title),sub:[x.assigned?"From "+esc(niceName(x.by||""))+(x.forLabel&&x.forLabel!=="Anyone"?" · for "+esc(x.forLabel):""):"",x.detail?esc(x.detail):""].filter(Boolean).join(" · "),by:x.done?esc(x.done.by)+" "+esc(hmOf(x.done.at)):"",act:can?`<button class="lnk" type="button" data-tedit="${esc(x.id)}">Edit</button>`:""})})); }
-function decoRows(){ const m={}; INFO.dos.forEach(d=>(d.lines||[]).forEach(l=>{ const r=m[l.productId]||(m[l.productId]={pid:l.productId,qty:0,by:{}}); r.qty+=l.qty; const k=d.internal?"HQ":(d.outlet||d.code); r.by[k]=(r.by[k]||0)+l.qty; }));
+function decoRows(){ const m={}; INFO.dos.filter(d=>!d.internal).forEach(d=>(d.lines||[]).forEach(l=>{ const r=m[l.productId]||(m[l.productId]={pid:l.productId,qty:0,by:{}}); r.qty+=l.qty; const k=d.internal?"HQ":(d.outlet||d.code); r.by[k]=(r.by[k]||0)+l.qty; }));
   return Object.values(m).sort((a,b)=>b.qty-a.qty||String(prodOf(a.pid).name).localeCompare(String(prodOf(b.pid).name))); }
 function decoItem(){ const rows=decoRows(); if(!rows.length) return {count:false,html:`<div class="card info"><h3>Finish &amp; decorate</h3><p class="hint">No delivery orders for this day yet. The office makes them the day before (office desk › Plan &amp; prep › Create draft DOs).</p></div>`};
   const c=colOf(DATE), tot=rows.reduce((a,r)=>a+r.qty,0), dn=doneOf("auto_decorate"), ln=rows.filter(r=>doneOf(dId(r.pid))).length;
@@ -894,7 +935,7 @@ function decoItem(){ const rows=decoRows(); if(!rows.length) return {count:false
 function doState(d){ const op=INFO.day.opening, x=((op&&op.deliveries)||[]).find(y=>y.id===d.id); return {s1:!!(d.checked||d.status==="delivered"),s2:!!(x&&(x.photo||x.later))||d.status==="delivered",later:!!(x&&x.later&&!x.photo),s3:d.status==="delivered"}; }
 function packItems(){ return INFO.dos.filter(d=>!d.internal).map(d=>{ const z=doState(d), n=(d.lines||[]).reduce((a,l)=>a+l.qty,0);
   return {count:true,done:z.s3,html:tkCard({circle:autoTick(z.s3),tag:"Delivery",title:`Pack &amp; deliver · ${esc(d.outlet)}`,sub:`${n} cakes · ${esc(d.no)}`,extra:`<ul class="lines"><li class="${z.s1?"ok":""}">${z.s1?"✓":"○"} Check colours${d.checkedBy?" · "+esc(d.checkedBy):""}</li><li class="${z.s2?"ok":""}">${z.s2?"✓":"○"} Pack + DO photo${z.later?" (goes out later)":""}</li><li class="${z.s3?"ok":""}">${z.s3?"✓":"○"} Delivered${d.receivedBy?" · "+esc(d.receivedBy):""}</li></ul>`,act:`<button class="cb sm ${z.s3?"ghost":""}" type="button" data-v2="do:${esc(d.id)}">${z.s3?"Open":"Start"}</button>`})}; }); }
-function displayItem(){ const op=INFO.day.opening, disp=op&&op.parts&&op.parts.display, plan=INFO.dos.find(d=>d.internal&&!d.hqAuto&&d.status!=="delivered");
+function displayItem(){ const op=INFO.day.opening, disp=op&&op.parts&&op.parts.display, plan=null; /* v21.12: HQ has no DO (Alfred) */
   if(disp){ const n=(((op.display&&op.display.counts)||op.putOut||[])).reduce((a,x)=>a+(+x.qty||0),0); return {count:true,done:true,html:tkCard({circle:autoTick(true),tag:"HQ display",title:"HQ display counted",sub:`${n} cakes`,by:esc(disp.by)+" "+esc(hmOf(disp.at))})}; }
   return {count:true,done:false,html:tkCard({circle:autoTick(false),tag:"HQ display",title:"Count the HQ display",sub:plan?"Put out today: "+(plan.lines||[]).map(l=>esc(prodOf(l.productId).name)+" "+l.qty).join(" · "):"Fill the gaps, oldest colour at the front.",act:`<button class="cb sm" type="button" data-gopart="opening|display">Count</button>`})}; }
 function prodListCard(){ const p=INFO.plan[DATE], lists=(p&&p.lists)||[];
@@ -911,11 +952,11 @@ function planDaysCard(){ const t=INFO.today, ds=[]; for(let i=1;i<=INFO.conf.pla
 /* Plan & prep (07:00, first Morning job): tomorrow's outlet deliveries and whether each has a delivery order; the office desk › Plan & prep page does the work. */
 function planItem(){ const tm=INFO.tomorrow; if(!tm||DATE!==INFO.today) return null;
   const late=!tm.done&&!tm.none&&INFO.now>tm.due, outs=tm.outlets||[];
-  /* v21.6: the HQ display's own DO is listed too, so the outlet lines add up to "make N cakes" (Alfred's review, 25 Sep) */
-  const hqL=tm.today?(INFO.dos||[]).filter(d=>d.internal).map(d=>{const q=(d.lines||[]).reduce((a,l)=>a+(+l.qty||0),0); return q?`<li class="ok">✓ HQ display · ${esc(d.no||"")} · ${q} cake${q===1?"":"s"}${d.hqAuto?" · put out":""}</li>`:"";}).join(""):"";
+  /* v21.12 (Alfred, 26 Sep): "HQ doesn't need a DO, only other outlets" — the prep list is the outlet DOs only; the display is topped up by the kitchen and counted in the morning */
+  const hqL="";
   const lines=outs.length||hqL?`<ul class="lines">${outs.map(o=>`<li class="${o.hasDo?"ok":o.expected?"":"mute"}">${o.hasDo?"✓":o.expected?"○":"–"} ${esc(o.name)}${o.hasDo?` · ${esc(o.no)} · ${o.qty} cake${o.qty===1?"":"s"}${o.status==="delivered"?" · delivered":""}`:o.expected?" · no DO yet":" · no delivery planned"}</li>`).join("")}${hqL}</ul>`:"";
   const sub=tm.none?`No outlet deliveries scheduled for ${esc(tm.day)}. Check the plan for what to prep.`:tm.done?`${esc(tm.day)} · ${tm.qty} cakes on ${tm.ready} DO${tm.ready>1?"s":""} · prep and decorate ${tm.today?"this morning":"today"}`:`${esc(tm.day)} · ${tm.ready} of ${tm.expected} outlet${tm.expected>1?"s have":" has"} a DO`;
-  const rows=tm.today?(()=>{ const m={}; INFO.dos.forEach(d=>(d.lines||[]).forEach(l=>{ const r=m[l.productId]||(m[l.productId]={pid:l.productId,qty:0,by:{}}); r.qty+=l.qty; const k=d.internal?"HQ":(d.code||d.outlet); r.by[k]=(r.by[k]||0)+l.qty; })); return Object.values(m).sort((a,b)=>b.qty-a.qty||String(prodOf(a.pid).name).localeCompare(String(prodOf(b.pid).name))); })():[], tot=rows.reduce((a,r)=>a+r.qty,0);
+  const rows=tm.today?(()=>{ const m={}; INFO.dos.filter(d=>!d.internal).forEach(d=>(d.lines||[]).forEach(l=>{ const r=m[l.productId]||(m[l.productId]={pid:l.productId,qty:0,by:{}}); r.qty+=l.qty; const k=d.code||d.outlet; r.by[k]=(r.by[k]||0)+l.qty; })); return Object.values(m).sort((a,b)=>b.qty-a.qty||String(prodOf(a.pid).name).localeCompare(String(prodOf(b.pid).name))); })():[], tot=rows.reduce((a,r)=>a+r.qty,0);
   if(rows.length&&(tm.done||tm.none)){ const c=colOf(DATE), dn=doneOf("auto_decorate"), ln=rows.filter(r=>doneOf(dId(r.pid))).length;
     const pl=`<div class="prepl"><div class="prh"><span>Prep list · ${tot} cake${tot===1?"":"s"}</span><span>to outlets</span></div>${rows.map(r=>`<div class="prr${doneOf(dId(r.pid))?" dn":""}"><b>${r.qty}</b><span class="nm">${doneOf(dId(r.pid))?"✓ ":""}${esc(prodOf(r.pid).name)}</span><span class="to">${Object.entries(r.by).map(([k,q])=>`${esc(k)} ${q}`).join(" · ")}</span></div>`).join("")}</div>`;
     return {count:true,done:!!dn,merged:true,html:tkCard({circle:boxTick("auto_decorate",!!dn,"All cakes finished and decorated"),tag:"Plan &amp; prep",title:`Plan &amp; prep · make ${tot} cakes`,sub:`DOs ready · today's dot <b style="color:${hex(c.name)}">●</b> ${esc(capw(c.name))} · ${ln} of ${rows.length} cakes finished`,by:dn?esc(dn.by)+" "+esc(hmOf(dn.at)):"",extra:(tm.none?"":lines)+pl+`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="cb" type="button" data-v2="deco">${dn?"Open":"Finish &amp; decorate"} ›</button><a class="cb ghost" href="office.html#plan">Full prep list ›</a></div>`,act:""})}; }
@@ -1035,7 +1076,7 @@ function clearPart(kind,part){ const s=st(kind), p=pre(kind);
   if(part==="display"||part==="count"){ s.rows=null; s.order=[]; s.shown=[]; s.ev=[]; s.cstep=0; s.cmode=""; }
   if(part==="deliveries") s.later={};
   delete s.notes[part]; delete s.nonce[part];
-  const keys=part==="eq"?[p+"eq_"]:part==="display"?["op_display"]:part==="deliveries"?["op_do_"]:part==="count"?["cl_display","cl_waste"]:["cl_l"];
+  const keys=part==="eq"?[p+"eq_"]:part==="display"?["op_display","op_waste"]:part==="deliveries"?["op_do_"]:part==="count"?["cl_display","cl_waste"]:["cl_l"];
   Object.keys(P2).forEach(k=>{ if(keys.some(x=>k.indexOf(x)===0)){ delete P2[k]; savePh(k);} });
   K[kind]=null; const n=st0(kind); Object.assign(n,{equip:part==="eq"?{}:s.equip,step:part==="eq"?0:s.step,later:part==="deliveries"?{}:s.later,notes:s.notes,nonce:s.nonce});
   if(part!=="display"&&part!=="count"){ n.rows=s.rows; n.order=s.order; n.shown=s.shown; n.ev=s.ev; n.pre=s.pre; n.cstep=s.cstep; n.cmode=s.cmode; }
@@ -1060,8 +1101,9 @@ function vReport(kind){
         <span class="pt">${x?(bad?`<span class="pill bad">Act now</span>`:""):"+"+partPts(kind,p)}</span>
         ${iss.length?`<ul class="iss go">${iss.map(z=>`<li class="${esc(z.sev)}">${esc(z.text)}</li>`).join("")}</ul>`:""}
         <div class="go">${x?`<button class="lnk" type="button" data-part="${p}">Send again</button>`:`<button class="cb ${cur?"big":"sm ghost"} ${cur?"full":""}" type="button" data-part="${p}">Start</button>`}</div></div>`; }).join("")}
+    ${kind==="opening"?qcCard():""}
     ${!s0.need.includes("deliveries")&&kind==="opening"?`<p class="hint">No outlet deliveries today, so there is no delivery part.</p>`:""}
-    ${!s0.done&&SUP()&&DATE===INFO.today&&INFO.now>due?`<button class="cb ghost full" type="button" data-chase="${kind}">Remind the group on WhatsApp</button>`:""}
+    ${!s0.done&&(SUP()||CA.can("chase"))&&DATE===INFO.today&&INFO.now>due?`<button class="cb ghost full" type="button" data-chase="${kind}">Remind the kitchen team on WhatsApp</button>`:""}
     <p class="hint" style="text-align:center">Send ${list.length>1?"all "+list.length:"it"} by ${esc(due)} to keep the team's on-time streak. Each part can be done by a different person at the same time; your answers stay on this phone until you send.</p>
     <details class="card flat"><summary style="cursor:pointer;font-weight:600">Report for another day</summary><label class="f" style="margin-top:8px">Report date<input type="date" data-rdate="1" value="${esc(DATE)}" min="${esc(addD(INFO.today,-1))}" max="${esc(INFO.today)}"></label></details></div>`; }
 function partIdx(kind,part){ return PARTS()[kind].findIndex(x=>x[0]===part)+1; }
@@ -1117,19 +1159,19 @@ function vCountList(kind,part){ const s=st(kind), open=kind==="opening", ex={}; 
   const cats={}; Object.keys(by).forEach(pid=>{const pr=prodOf(pid); (cats[pr.category]=cats[pr.category]||[]).push(pid);});
   const order=CATS.filter(c=>cats[c]).concat(Object.keys(cats).filter(c=>!CATS.includes(c)));
   const cols=CONFIG.colours, wn=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0)+s.ev.reduce((a,x)=>a+(+x.w||0),0);
-  return `<p class="hint">${open?`Review everything on the HQ display, by colour dot. Tap a colour dot to add a colour.`:`<b>Waste</b> = thrown away or damaged, <b>Left</b> = still on the display. Empty = 0. Tap a colour dot to add a colour.`}</p>
+  return `<p class="hint">${open?`<b>Wastage</b> = thrown away this morning, <b>Available</b> = all the stock you have now, display included. Empty = 0. Tap a colour dot to add a colour.`:`<b>Waste</b> = thrown away or damaged, <b>Left</b> = still on the display. Empty = 0. Tap a colour dot to add a colour.`}</p>
     ${order.map(c=>`<div class="catt">${esc(CATL[c]||c)}</div>${cats[c].map(pid=>{const pr=prodOf(pid), keys=(by[pid]||[]).sort((a,b)=>cols.findIndex(x=>x.name===a.split("|")[1])-cols.findIndex(x=>x.name===b.split("|")[1]));
       return `<div class="cake" id="cake-${esc(pid)}"><div class="hd2">${picH(pr)}<div class="tt"><div class="nm">${esc(pr.name)}</div><div class="sub">${keys.length?keys.length+" colour"+(keys.length>1?"s":""):"Tap the colour dot on the cake"}</div></div>
         <div class="dots" role="group" aria-label="Colour dots for ${esc(pr.name)}">${cols.map(c0=>{const k=pid+"|"+c0.name, on=!!s.rows[k]; return `<button type="button" class="cd${on?" on":""}" data-cd="${kind}|${esc(k)}" aria-pressed="${on}" aria-label="${esc(c0.name)}, made ${esc(CDAY(c0.name))}"><i style="background:${esc(c0.hex)}"></i><span>${esc(CDAY(c0.name))}</span></button>`;}).join("")}</div></div>
         ${keys.map(k=>{const [,c0]=k.split("|"), r=s.rows[k], q=sfOf(pid,c0);
-          return `<div class="ln2 ${open?"c1":""}"><div class="dot"><i style="background:${esc(hex(c0))}"></i><span>${esc(c0)}<small>made ${esc(CDAY(c0))}${!open&&ex[k]!=null?` · ${ex[k]} this morning`:""}</small>${q==="bad"?`<small class="sf bad">Past shelf life: throw away</small>`:q==="warn"?`<small class="sf warn">Last day: sell first</small>`:""}</span></div>
-            ${open?stepH(kind,k,"q","On display",r.q):stepH(kind,k,"w","Waste",r.w)+stepH(kind,k,"b","Left",r.b)}</div>`;}).join("")}</div>`;}).join("")}`).join("")||`<p class="hint">No cakes on the HQ display on record. Add what you have below.</p>`}
+          return `<div class="ln2"><div class="dot"><i style="background:${esc(hex(c0))}"></i><span>${esc(c0)}<small>made ${esc(CDAY(c0))}${!open&&ex[k]!=null?` · ${ex[k]} this morning`:""}</small>${q==="bad"?`<small class="sf bad">Past shelf life: throw away</small>`:q==="warn"?`<small class="sf warn">Last day: sell first</small>`:""}</span></div>
+            ${open?stepH(kind,k,"w","Wastage",r.w)+stepH(kind,k,"q","Available",r.q):stepH(kind,k,"w","Waste",r.w)+stepH(kind,k,"b","Left",r.b)}</div>`;}).join("")}</div>`;}).join("")}`).join("")||`<p class="hint">No cakes on the HQ display on record. Add what you have below.</p>`}
     <button class="lnk" type="button" data-addcake="${kind}">+ Add a cake that's not listed</button>
     <div class="card" style="margin-top:8px"><h3>Event and other items</h3><p class="hint">Things that are not on the menu (events, samples). Type the name.</p>
       ${s.ev.map((x,i)=>`<div class="evln"><input data-evn="${kind}|${i}" value="${esc(x.name)}" placeholder="e.g. Wedding tart" aria-label="Item name"><select data-evc="${kind}|${i}" aria-label="Colour dot"><option value="">No dot</option>${cols.map(c0=>`<option value="${c0.name}" ${x.colour===c0.name?"selected":""}>${c0.name} · ${CDAY(c0.name)}</option>`).join("")}</select>
         <div class="evs">${open?stepH(kind,"ev"+i,"q","Qty",x.q):stepH(kind,"ev"+i,"w","Waste",x.w)+stepH(kind,"ev"+i,"b","Left",x.b)}<button type="button" class="cb sm ghost" data-evrm="${kind}|${i}" aria-label="Remove">✕</button></div></div>`).join("")}
       <button class="cb sm ghost" type="button" data-evadd="${kind}" style="margin-top:6px">+ Add an item</button></div>
-    <div class="stack sec">${shotBox(open?"op_display":"cl_display","HQ display chiller now","All the cakes on the display.")}${!open&&wn>0?shotBox("cl_waste","Cakes thrown away (you entered "+wn+")",""):""}</div>
+    <div class="stack sec">${shotBox(open?"op_display":"cl_display","HQ display chiller now","All the cakes on the display.")}${wn>0?shotBox(open?"op_waste":"cl_waste","Cakes thrown away (you entered "+wn+")",""):""}</div>
     ${noteBox(kind,part)}`; }
 function vDeliveries(kind){ const s=st(kind), outs=INFO.dos.filter(d=>!d.internal);
   return `<p class="hint">Check the colour dots first. Attach the delivery order (DO) to the boxes, then take the photo: the AI checks the DO is there and is the right one.</p><div class="stack" style="margin-top:10px">
@@ -1144,12 +1186,13 @@ function vLists4(kind){ const t=DATE, slots=[["cl_lt","Today · "+niceD(t)+" · 
     ${noteBox(kind,"lists")}`; }
 function missingPart(kind,part){ const s=st(kind), p=pre(kind), m=[];
   if(part==="eq") INFO.conf.equipment.forEach(e=>{const z=eqState(e,s.equip[e.id],p+"eq_"+e.id); if(!z.ok) m.push(e.name+" temperature"); if(!z.photo) m.push(e.name+" photo");});
-  if(part==="display"){ const any=Object.values(s.rows).some(x=>+x.q>0)||s.ev.some(x=>x.name.trim()&&+x.q>0); if(any&&!P2.op_display) m.push("HQ display photo"); }
+  if(part==="display"){ const any=Object.values(s.rows).some(x=>+x.q>0||+x.w>0)||s.ev.some(x=>x.name.trim()&&+x.q>0); if(any&&!P2.op_display) m.push("HQ display photo"); }
   if(part==="count"){ if(!P2.cl_display) m.push("HQ display photo"); const w=Object.values(s.rows).some(x=>+x.w>0)||s.ev.some(x=>+x.w>0); if(w&&!P2.cl_waste) m.push("waste photo"); }
   if(part==="deliveries") INFO.dos.filter(d=>!d.internal).forEach(d=>{ if(!s.later[d.id]&&!P2["op_do_"+d.id]) m.push(d.outlet+" delivery photo"); });
   if(part==="lists"){ if(!P2.cl_lt1) m.push("today's list photo"); [1,2,3].forEach(i=>{ if(!P2["cl_ld"+i+"_1"]) m.push(niceD(addD(DATE,i))+" list photo"); }); }
   return m; }
-function refresh(){ if(SENDING) return; const b=$("#send"), nav=$("#eqnav"), cn=$("#cnav"); if(!PART||!(TAB==="opening"||TAB==="closing")) return; const m=missingPart(TAB,PART);
+function tidyGate(){ const k=TAB==="opening"?"op_display":"cl_display"; const t=TIDY[k]; if(!t||!P2[k]) return ""; if(t.state==="checking") return "Checking the display photo…"; if(t.state==="messy"&&!t.sendAnyway) return "Please tidy the display and take the photo again"; return ""; }
+function refresh(){ if(SENDING) return; const b=$("#send"), nav=$("#eqnav"), cn=$("#cnav"); if(!PART||!(TAB==="opening"||TAB==="closing")) return; const m=missingPart(TAB,PART); { const g=(PART==="display"||PART==="count")?tidyGate():""; if(g) m.unshift(g); }
   const E=INFO.conf.equipment, s=st(TAB), stp=s.step, stepping=PART==="eq"&&stp<E.length, csteps=(PART==="display"||PART==="count")&&cMode(TAB)==="step"&&s.order.length>0;
   nav.hidden=!stepping; cn.hidden=!csteps; b.hidden=stepping||csteps;
   if(stepping){ const e=E[stp], z=eqState(e,s.equip[e.id],pre(TAB)+"eq_"+e.id), need=[!z.ok&&"temperature",!z.door&&"door",!z.photo&&"photo"].filter(Boolean);
@@ -1160,11 +1203,11 @@ function refresh(){ if(SENDING) return; const b=$("#send"), nav=$("#eqnav"), cn=
   b.textContent="Send: "+partName(TAB,PART); b.disabled=!!m.length; b.setAttribute("aria-disabled",String(!!m.length)); b.classList.toggle("ok",!m.length);
   $("#status").textContent=m.length?`Still needed (${m.length}): ${m.slice(0,6).join(", ")}${m.length>6?"…":""}.`:"Ready to send.";
   if(PART==="eq") E.forEach(e=>{ const el=document.getElementById("ew-"+e.id); if(el){ const z=eqState(e,s.equip[e.id],pre(TAB)+"eq_"+e.id); el.innerHTML=eqPill(e,z.v); } }); }
-function wasteBox(k){ if(k!=="closing") return; const s=st(k), wn=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0)+s.ev.reduce((a,x)=>a+(+x.w||0),0), box=document.getElementById("sb-cl_waste");
-  if(wn>0&&!box){ const d0=document.getElementById("sb-cl_display"); if(d0) d0.insertAdjacentHTML("afterend",shotBox("cl_waste","Cakes thrown away","")); } else if(!wn&&box) box.remove(); }
+function wasteBox(k){ const pk=k==="closing"?"cl_":"op_", s=st(k), wn=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0)+s.ev.reduce((a,x)=>a+(+x.w||0),0), box=document.getElementById("sb-"+pk+"waste");
+  if(wn>0&&!box){ const d0=document.getElementById("sb-"+pk+"display"); if(d0) d0.insertAdjacentHTML("afterend",shotBox(pk+"waste","Cakes thrown away","")); } else if(!wn&&box) box.remove(); }
 function partStats(kind,part){ const s=st(kind), mins=Math.max(1,Math.round((Date.now()-(PARTT||Date.now()))/60000));
   if(part==="eq"){ const E=INFO.conf.equipment, c=E.filter(e=>{const z=eqState(e,s.equip[e.id],pre(kind)+"eq_"+e.id); return z.v!=null&&z.v>+e.max;}).length; return [[E.length,"units"],[mins,"minutes"],[c,"good catch"+(c===1?"":"es")]]; }
-  if(part==="display"){ const n=Object.values(s.rows).reduce((a,x)=>a+(+x.q||0),0)+s.ev.reduce((a,x)=>a+(+x.q||0),0); return [[n,"cakes"],[s.order.length,"cake · colours"],[mins,"minutes"]]; }
+  if(part==="display"){ const n=Object.values(s.rows).reduce((a,x)=>a+(+x.q||0),0)+s.ev.reduce((a,x)=>a+(+x.q||0),0), w=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0); return [[n,"available"],[w,"wasted"],[mins,"minutes"]]; }
   if(part==="count"){ const w=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0), l=Object.values(s.rows).reduce((a,x)=>a+(+x.b||0),0); return [[w,"waste"],[l,"left"],[mins,"minutes"]]; }
   if(part==="deliveries"){ const o=INFO.dos.filter(d=>!d.internal); return [[o.length,"deliveries"],[o.filter(d=>P2["op_do_"+d.id]).length,"photos"],[mins,"minutes"]]; }
   return [[Object.keys(P2).filter(k=>/^cl_l/.test(k)).length,"photos"],[3,"days planned"],[mins,"minutes"]]; }
@@ -1172,8 +1215,8 @@ async function send(replace){ const kind=TAB, part=PART; if(SENDING||!part||miss
   SENDING=true; const b=$("#send"); b.disabled=true; $("#status").textContent="Sending "+partName(kind,part).toLowerCase()+"… keep this page open (up to a minute).";
   const d={date:DATE,nonce:s.nonce[part]||(s.nonce[part]=nonce()),note:s.notes[part]||"",seen:SEEN[kind+"|"+part]!==undefined?SEEN[kind+"|"+part]:((partOf(kind,part)||{}).id||"")}; if(replace===true) d.replace=true;
   if(part==="eq") d.equip=INFO.conf.equipment.map(e=>{const x=s.equip[e.id]; return {id:e.id,t:String((x.neg?-1:1)*Math.abs(+String(x.t).replace(",","."))),door:!!x.door,photo:P2[p+"eq_"+e.id]};});
-  if(part==="display"){ d.counts=s.order.map(k=>{const [pid,c]=k.split("|"); return {productId:pid,colour:c,qty:+s.rows[k].q||0};}).filter(x=>x.qty>0); d.events=s.ev.filter(x=>x.name.trim()&&+x.q>0).map(x=>({name:x.name,colour:x.colour,qty:+x.q})); d.photo=P2.op_display; }
-  if(part==="count"){ d.lines=s.order.map(k=>{const [pid,c]=k.split("|"), r=s.rows[k]; return {productId:pid,colour:c,w:+r.w||0,b:+r.b||0};}); d.events=s.ev.filter(x=>x.name.trim()).map(x=>({name:x.name,colour:x.colour,w:+x.w||0,b:+x.b||0})); d.photos={display:P2.cl_display,waste:P2.cl_waste}; }
+  if(part==="display"){ d.counts=s.order.map(k=>{const [pid,c]=k.split("|"); return {productId:pid,colour:c,qty:+s.rows[k].q||0,w:+s.rows[k].w||0};}).filter(x=>x.qty>0||x.w>0); d.events=s.ev.filter(x=>x.name.trim()&&+x.q>0).map(x=>({name:x.name,colour:x.colour,qty:+x.q})); d.photo=P2.op_display; if(P2.op_waste) d.photoWaste=P2.op_waste; if(TIDY.op_display&&TIDY.op_display.state==="messy") d.tidy={tidy:false,problems:TIDY.op_display.problems}; }
+  if(part==="count"){ d.lines=s.order.map(k=>{const [pid,c]=k.split("|"), r=s.rows[k]; return {productId:pid,colour:c,w:+r.w||0,b:+r.b||0};}); d.events=s.ev.filter(x=>x.name.trim()).map(x=>({name:x.name,colour:x.colour,w:+x.w||0,b:+x.b||0})); d.photos={display:P2.cl_display,waste:P2.cl_waste}; } if(TIDY.cl_display&&TIDY.cl_display.state==="messy") d.tidy={tidy:false,problems:TIDY.cl_display.problems};
   if(part==="deliveries"){ d.deliveries={}; INFO.dos.filter(x=>!x.internal).forEach(x=>{ d.deliveries[x.id]=s.later[x.id]?"later":P2["op_do_"+x.id]; }); }
   if(part==="lists"){ d.today=[1,2,3].map(j=>P2["cl_lt"+j]).filter(Boolean); d.days=[1,2,3].map(i=>[1,2].map(j=>P2["cl_ld"+i+"_"+j]).filter(Boolean)); }
   saveDraft(kind); const stats=partStats(kind,part);
@@ -1276,7 +1319,10 @@ function vHistory(){ if(!HIST){ if(HISTERR){ const m=HISTERR; HISTERR=""; return
       ${days.map(x=>`<button type="button" class="${x.st||""} ${x.date===HSEL?"sel":""}" data-hday="${x.date}" aria-label="${esc(niceD(x.date))}: ${esc(lab[x.st]||"")}">${+x.date.slice(8)}</button>`).join("")}</div>
       <div class="leg"><span><i style="background:var(--ok)"></i>on time</span><span><i style="background:var(--warn)"></i>late</span><span><i style="background:var(--bad)"></i>missed</span></div></div>
     ${h.date?`<div class="card"><h3 style="font-size:18px">${esc(niceD(h.date))}${h.closed?" · kitchen closed":""}</h3>${rep(h.opening,"opening")}${rep(h.closing,"closing")}</div>`:""}
-    <p class="hint">Every temperature is also logged in the Google Sheet (tab “HQ temps”).</p></div>`; }
+    <p class="hint">Every temperature is also logged in the Google Sheet (tab “HQ temps”).</p>
+    <h2 class="sech" id="ksetup">Fridges, display cakes and reminders</h2>
+    <p class="hint">What every opening and closing report checks (fridges and freezers are checked morning and evening, every day), the cakes on the HQ display, and the prep reminders.</p>
+    ${vLists()}</div>`; }
 
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
@@ -1298,7 +1344,14 @@ document.addEventListener("click",async e=>{
     b.disabled=true; try{ const r=await run("hqSave","task",{task:{id:TK.id,remove:true}},""); toast(r.msg); TK=null; drawTask(); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.act==="printList"){ window.print(); return; }
   if(d.act==="reload"){ boot2(); return; }
-  if(d.chase){ b.disabled=true; try{ const r=await run("hqChaseNow",d.chase); toast(r.ok?"Reminder sent to the kitchen group.":"The WhatsApp message could not be sent. Check Setup › Kitchen HQ & WhatsApp."); }catch(err){ toast(err.message); b.disabled=false; } return; }
+  if(d.tidyretake){ const k=d.tidyretake; delete P2[k]; savePh(k); TIDY[k]={state:"skip",tries:(TIDY[k]||{}).tries||0}; $("#sheet").innerHTML=""; render(); const inp=document.querySelector(`input[data-kshot="${k}"]`); if(inp) inp.click(); return; }
+  if(d.tidysend){ const k=d.tidysend; TIDY[k].sendAnyway=true; $("#sheet").innerHTML=""; refresh(); return; }
+  if(d.chase){ b.disabled=true; let r=null; try{ r=await run("hqChaseNow",d.chase); }catch(err){ b.disabled=false; if(/not set up|WhatsApp|WasapBot/i.test(err.message||"")) r={ok:false,manual:true,why:"Automatic WhatsApp is not set up"}; else { toast(err.message); return; } }
+    b.disabled=false; if(r&&r.ok){ toast(`Reminder sent on WhatsApp to ${r.sent} ${r.sent===1?"person":"people"}${r.group?" and the kitchen group":""}${r.missed&&r.missed.length?" · not delivered: "+r.missed.join(", "):""}.`); return; }
+    chaseSheet(d.chase,r); return; }
+  if(d.chaseshare){ const txt=$("#sheet").dataset.chasetxt||chaseText(d.chaseshare); try{ await navigator.share({text:txt}); toast("Shared — check WhatsApp."); }catch(e){ if(!/abort/i.test(String(e&&e.name||e))) toast("Could not open the share list. Tap a name below instead."); } return; }
+  if(d.chasecopy){ const txt=$("#sheet").dataset.chasetxt||""; try{ await navigator.clipboard.writeText(txt); toast("Message copied — paste it in WhatsApp."); }catch(e){ toast("Could not copy on this phone."); } return; }
+  if(d.sclose){ $("#sheet").innerHTML=""; return; }
   if(d.date){ RESULT=null; PART=null; V2=""; K.opening=K.closing=null; await reload(d.date); return; }
   if(d.part){ const k0=TAB, was=partOf(k0,d.part); if(Date.now()-INFO_AT>20000) await reload(); const now=partOf(k0,d.part);
     if(!was&&now){ toast(`${now.by} already sent ${partName(k0,d.part).toLowerCase()} at ${hmOf(now.at)}. No need to do it again.`); RESULT=null; render(); return; }
@@ -1379,7 +1432,7 @@ document.addEventListener("change",async e=>{ const t=e.target, d=t.dataset; if(
   if(d.kshot&&t.files&&t.files[0]){ const k=d.kshot, sp=document.getElementById("mi-"+k); if(sp) sp.insertAdjacentHTML("beforeend",' <span class="hint">processing…</span>'); if(TAB==="opening"||TAB==="closing"){ const b=$("#send"); b.disabled=true; }
     let bad=false; try{ P2[k]=await shrink(t.files[0],k==="plan_read"?1600:1200); savePh(k); }catch(err){ bad=true; }
     t.value=""; if(bad){ const el=document.getElementById("mi-"+k); if(el){ el.querySelectorAll(".hint").forEach(x=>x.remove()); el.insertAdjacentHTML("beforeend",' <span class="err">Photo not taken. Please try again.</span>'); } if(TAB==="opening"||TAB==="closing") refresh(); return; }
-    const y=window.scrollY; render(); window.scrollTo(0,y); if(TAB==="opening"||TAB==="closing") refresh(); return; }
+    const y=window.scrollY; render(); window.scrollTo(0,y); if(TAB==="opening"||TAB==="closing") refresh(); if(k==="op_display"||k==="cl_display") tidyCheck(k); return; }
   if(d.tk&&TK){ TK[d.tk]=t.value; return; }
   if(d.tkday!=null&&TK){ const i=+d.tkday; TK.days=TK.days.filter(x=>x!==i); if(t.checked) TK.days.push(i); return; }
   if(d.tdone){ const id=d.tdone, on=t.checked; t.disabled=true;
@@ -1400,7 +1453,7 @@ document.addEventListener("change",async e=>{ const t=e.target, d=t.dataset; if(
   if(d.eqi!=null&&LED){ LED.eq[+d.eqi][d.k]=t.value; LED.dirty=true; render(); const pt=document.querySelector("#sheet .ptitle"); if(pt) pt.textContent=LED.eq[+d.eqi].name||"New unit"; return; }
 });
 $("#send").onclick=send;
-window.addEventListener("hashchange",()=>{ const h=(location.hash||"").slice(1); if(TABS.some(([k])=>k===h)&&h!==TAB&&INFO){ TAB=h; RESULT=null; PART=null; V2=""; render(); } });
+window.addEventListener("hashchange",()=>{ const h=TAB_ALIAS[(location.hash||"").slice(1)]||(location.hash||"").slice(1); if(TABS.some(([k])=>k===h)&&h!==TAB&&INFO){ TAB=h; RESULT=null; PART=null; V2=""; render(); } });
 /* ---- Step-by-step guide (v21.7): to-do list → the report's parts → fill in and send → next part.
    Drawn by the shared CA.tour (Auth.html); shows itself the first 3 times a person opens Kitchen HQ, then "❔ Show me how" replays it. ---- */
 const tourRep=()=>TAB==="opening"||TAB==="closing";
