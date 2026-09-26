@@ -467,6 +467,7 @@ td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
 .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.03em;white-space:nowrap}
 .pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.info{background:var(--accent-soft);color:var(--accent)} .pill.mute{background:var(--raise);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
 .pos{color:var(--ok)} .neg{color:var(--bad)}
+.psend label{display:inline-flex;align-items:center;gap:3px;margin:0 6px 2px 0;white-space:nowrap}.psend input{width:3.6em;padding:3px 4px;text-align:right}.psend input.over{border-color:var(--accent);text-decoration:underline}
 .items{display:flex;flex-direction:column}
 .item{display:grid;grid-template-columns:6px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .item:first-child{border-top:0}
@@ -850,7 +851,7 @@ const TABS=[["today","To clear today"],["plan","Plan & prep"],["deliveries","Del
 const TABGRP={today:"Every day",plan:"Every day",deliveries:"Every day",daily:"Every day",billing:"Each week",audits:"Each week",feedback:"Each week",log:"Records & settings",setup:"Records & settings",staff:"Records & settings"};
 const NCOL=8;
 let rq=false, MENU=false;
-const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null)) return true; if(!can("deliv")) return false; return d.made!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
+const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null)) return true; if(!can("deliv")) return false; return d.made!=null||d.psend!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
 function render(){ if(rq||!AUTH.pin) return; rq=true; requestAnimationFrame(()=>{rq=false; doRender();}); }
 function doRender(){
   if(!AUTH.pin) return;
@@ -1633,7 +1634,7 @@ function planAll(){const taken={};
   for(const pl of plans){ if(pl.planned&&pl.planned.length){ const q={}; for(const o of pl.planned) for(const l of o.lines||[]) q[l.productId]=(q[l.productId]||0)+(+l.qty||0);
       for(const id of Object.keys(q)) if(!pl.lines.some(l=>l.productId===id)) pl.lines.push({productId:id,aw:null,ae:null,stockNow:0,usable:0,demand:0,buffer:0,suggest:0,notes:["on the delivery order"]});
       for(const l of pl.lines) l.base=q[l.productId]||0; }
-    else for(const l of pl.lines) l.base=l.suggest; }
+    else { const ov=(((S.prep||{})[pl.prepDate]||{}).send||{}); for(const l of pl.lines){ const o=(ov[l.productId]||{})[pl.pid]; l.over=o!=null&&o!==""&&+o!==l.suggest; l.base=l.over?Math.max(0,Math.round(+o)):l.suggest; } } }
   for(const pl of plans) for(const l of pl.lines) if(l.base>0){const d=pl.prepDate;((prep[d]||(prep[d]={}))[l.productId]||(prep[d][l.productId]={}))[pl.pid]=l.base;}
   for(const pl of plans) for(const l of pl.lines){ const pm=(prep[pl.prepDate]||{})[l.productId]; if(!pm){l.send=l.base;continue;}
     const made=(((S.prep||{})[pl.prepDate]||{}).made||{})[l.productId], tot=Object.values(pm).reduce((a,b)=>a+b,0);
@@ -1717,10 +1718,11 @@ function vPlan(){
           <div class="tw" style="margin-top:6px"><table><thead><tr><th>Cake</th><th class="r">Planned</th><th class="r">Made</th><th>Send to outlets</th><th></th></tr></thead><tbody>
           ${rows.map(([id,pm])=>{const tot=prep[d][id], made=(mk.made||{})[id], short=made!=null&&+made<tot;
             return `<tr><td>${cake(id)}</td><td class="r mono"><b>${tot}</b></td><td class="r"><input class="made mono" type="number" min="0" step="1" inputmode="numeric" data-made="${d}|${id}" value="${esc(made??"")}" placeholder="${tot}" aria-label="Made"></td>
-            <td class="small">${plans.filter(pl=>pl.prepDate===d&&pm[pl.pid]).map(pl=>{const l=pl.lines.find(x=>x.productId===id);return `${esc(partner(pl.pid).code)} ${short?`${pm[pl.pid]}→<b>${l?l.send:0}</b>`:pm[pl.pid]}`}).join(" · ")}</td>
+            <td class="small psend">${plans.filter(pl=>pl.prepDate===d&&pl.d1&&(pm[pl.pid]||pl.lines.some(x=>x.productId===id))).map(pl=>{const l=pl.lines.find(x=>x.productId===id), q=pm[pl.pid]||0, done=(pl.planned||[]).some(o=>o.status==="delivered");
+              return `<label title="${esc(partner(pl.pid).name)} · ${nice(pl.d1)}${l&&l.over?` · suggested ${l.suggest}`:""}${pl.planned.length?` · on ${pl.planned.map(o=>esc(o.no)).join(", ")}`:""}">${esc(partner(pl.pid).code)} <input type="number" min="0" step="1" inputmode="numeric" class="mono${l&&l.over?" over":""}" data-psend="${d}|${id}|${pl.pid}" value="${q}" ${done?"disabled":""} aria-label="${esc(partner(pl.pid).name)} quantity">${short?`→<b>${l?l.send:0}</b>`:""}</label>`}).join(" ")}</td>
             <td>${short?`<select data-short="${d}|${id}" aria-label="Why short">${opt("","Why short?",(mk.reason||{})[id]||"")}${["Ingredient out","Short staff","Quality reject","Equipment","Other"].map(r=>opt(r,r,(mk.reason||{})[id]||"")).join("")}</select>`:""}</td></tr>`}).join("")}
           <tr><td><b>Total</b></td><td class="r mono"><b>${Object.values(prep[d]).reduce((a,b)=>a+b,0)}</b></td><td class="r mono"><b>${madeTot}</b></td><td></td><td></td></tr></tbody></table></div></div>`}).join(""):`<div class="empty">Nothing to prep — no suggestions yet.</div>`}
-        <p class="small muted" style="margin:0">If the kitchen makes fewer than planned, type the real number in <b>Made</b>: every outlet first gets at least one of each flavour it carries, and the rest goes to the outlet that sells it faster. Whole cakes follow each outlet's whole-cake setting in Setup › Outlets (usually Fri–Sun, 1–2 kinds, 1 of each, every ticked whole cake taking its turn). Mark every prepared/thawed cake with the dot of the prep day. Lead time: ${+cfg().prepLeadDays||0} day(s) before delivery (change in Setup › Go-live & rules). ${(+cfg().prepLeadDays||0)>0?"":`Until ${+(cfg().planSwitchHour??14)}:00 this page shows today's delivery; after that, the next one.`}</p>
+        <p class="small muted" style="margin:0"><b>Send to outlets</b>: type a number per outlet to change what goes where — it updates the outlet's delivery order if one exists, otherwise it is used when the DOs are drafted (a changed number is underlined; the suggestion stays in the tooltip). If the kitchen makes fewer than planned, type the real number in <b>Made</b>: every outlet first gets at least one of each flavour it carries, and the rest goes to the outlet that sells it faster. Whole cakes follow each outlet's whole-cake setting in Setup › Outlets (usually Fri–Sun, 1–2 kinds, 1 of each, every ticked whole cake taking its turn). Mark every prepared/thawed cake with the dot of the prep day. Lead time: ${+cfg().prepLeadDays||0} day(s) before delivery (change in Setup › Go-live & rules). ${(+cfg().prepLeadDays||0)>0?"":`Until ${+(cfg().planSwitchHour??14)}:00 this page shows today's delivery; after that, the next one.`}</p>
       </div>
       <div class="panel"><div class="spread"><h2>Holidays & events</h2><span class="small muted">next 75 days</span></div>
         ${up.length?`<div class="items">${up.map(e=>`<div class="item"><span class="sev ${e.type==="public"?"warn":e.type==="event"?"bad":"info"}"></span><div><b>${esc(e.name)}</b> ${regionPill(e.region)}<div class="small muted">${nice(e.date)}${e.end&&e.end!==e.date?` – ${nice(e.end)}`:""} · ${esc(e.type)} · demand ${effUp(e)>=0?"+":""}${effUp(e)}%${e.source?` · ${esc(e.source)}`:""}</div></div>${RO()?"":`<button class="btn sm" data-evdel="${esc(e.id)}" aria-label="Remove">✕</button>`}</div>`).join("")}</div>`:`<div class="empty">No holidays in the next 75 days.</div>`}
@@ -1858,6 +1860,14 @@ document.addEventListener("change",async e=>{
   if(t.dataset.ui==="opFrom"){S.ui.opFrom=t.value;}
   if(t.dataset.made){const [d,id]=t.dataset.made.split("|"); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); await savePrep(d,x=>{x.made=x.made||{}; if(v==="") delete x.made[id]; else x.made[id]=+v;}); toast(v===""?"Made cleared":"Made saved: outlets updated"); return;}
   if(t.dataset.short){const [d,id]=t.dataset.short.split("|"); await savePrep(d,x=>{x.reason=x.reason||{}; x.reason[id]=t.value;}); return;}
+  if(t.dataset.psend){const [d,id,pid]=t.dataset.psend.split("|"); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); const q=v===""?null:Math.max(0,+v); const p=partner(pid);
+    const pl=planAll().plans.find(x=>x.pid===pid&&x.prepDate===d); const o=pl&&(pl.planned||[]).find(x=>x.status!=="delivered")||null;
+    if(o){ const w=clone(weekDoc(pid,weekStartOf(o.date))); const x=w.dos[o.id]; if(!x){toast("That delivery order is gone — refresh");return;}
+      const lines=(x.lines||[]).filter(l=>l.productId!==id); if(q>0) lines.push({productId:id,qty:q}); if(!lines.length){toast(`${o.no} would be empty — delete it on the Delivery orders page instead`);render();return;}
+      x.lines=lines; x.editedAt=new Date().toISOString(); x.editedBy=(CA.get()||{}).name||""; await saveWeek(w);
+      const warn=limitCheck(p,lines,o.date); toast(`${o.no} · ${p.name}: ${q||0} ${prod(id).name}${warn.length?`. Note: ${warn[0]}`:""}`); return; }
+    await savePrep(d,x=>{x.send=x.send||{}; const m=x.send[id]||(x.send[id]={}); if(q==null) delete m[pid]; else m[pid]=q; if(!Object.keys(m).length) delete x.send[id];});
+    toast(q==null?`${p.name}: back to the suggestion`:`${p.name}: ${q} ${prod(id).name} when the DOs are drafted`); return;}
 });
 document.addEventListener("click",async e=>{
   if(MENU&&!e.target.closest("#nav")){MENU=false;render();}
