@@ -645,21 +645,29 @@ function wholeOf(p){const d=wholeDef(p), w={...d,...((p&&p.whole)||{})}, num=(v,
   if(!WHOLE_MODES.some(m=>m[0]===w.mode)) w.mode=d.mode; return w;}
 const wholeDaysOf=p=>((p&&p.wholeDays)||cfg().wholeDays||[5,6,0]).map(Number);
 const daysTxt=a=>{const o=[1,2,3,4,5,6,0].filter(i=>a.includes(i)); return o.length===7?"every day":o.length?o.map(i=>WD[i]).join(" "):"no days";};
-/* v21.9 Per-outlet min and max of EACH petit gâteau / cheesecake for a delivery on each day of the week (Setup › Outlets).
-   p.limits = {petit:{min:[Sun..Sat],max:[Sun..Sat]}, cheese:{min:[],max:[]}}; blank = no limit. The planner never suggests
-   outside the range; a delivery order outside it warns (tap again to save). Whole cakes have their own rules above. */
-const LIM_KINDS=[["petit","Petit gâteau"],["cheese","Cheesecake (slice)"]];
+/* v21.9 Per-outlet min and max TOTAL of petit gâteaux and of cheesecake slices for a delivery on each day of the week (Setup › Outlets).
+   p.limits = {petit:{min:[Sun..Sat],max:[Sun..Sat]}, cheese:{min:[],max:[]}}; blank = no limit. The numbers are for the TYPE (all flavours added up).
+   Plan & prep keeps the type total inside the range; a delivery order outside it warns (tap again to save). Whole cakes have their own rules above. */
+const LIM_KINDS=[["petit","Petit gâteaux"],["cheese","Cheesecake slices"]];
 const limKindOf=id=>{const c=catOf(prod(id)); return c==="Petit gâteau"?"petit":c==="Cheesecake"?"cheese":"";};
 function limitsOf(p){const L=(p&&p.limits)||{}, out={}; const n=v=>{if(v===""||v==null) return null; v=Math.round(+v); return isFinite(v)&&v>=0?Math.min(v,999):null;};
   for(const [k] of LIM_KINDS){ const src=L[k]||{}; out[k]={min:WD.map((_,i)=>n((src.min||[])[i])),max:WD.map((_,i)=>n((src.max||[])[i]))}; } return out;}
 const limitsSet=p=>{const L=limitsOf(p); return LIM_KINDS.some(([k])=>L[k].min.some(v=>v!=null)||L[k].max.some(v=>v!=null));};
-/* The limit for one cake on one date: {kind,min,max,day} or null when the cake is a whole cake or nothing is set for that day. */
-function limitFor(p,id,iso){const k=limKindOf(id); if(!k||!p) return null; const L=limitsOf(p)[k], i=dow(iso); let mn=L.min[i], mx=L.max[i];
-  if(mn==null&&mx==null) return null; if(mn!=null&&mx!=null&&mn>mx) mn=mx; return {kind:k,min:mn,max:mx,day:WD[i]};}
-function limitCheck(p,lines,iso){const out=[]; for(const l of lines||[]){ const L=limitFor(p,l.productId,iso); if(!L) continue; const q=Math.round(+l.qty)||0;
-  if(L.max!=null&&q>L.max) out.push(`${prod(l.productId).name}: ${q} is over the ${L.day} max of ${L.max}`); else if(L.min!=null&&q>0&&q<L.min) out.push(`${prod(l.productId).name}: ${q} is under the ${L.day} min of ${L.min}`);} return out;}
+/* The limits for one date: {petit:{min,max,label,day}, cheese:{…}} with only the kinds that have a limit that day; null when none. */
+function limitsOn(p,iso){if(!p) return null; const L=limitsOf(p), i=dow(iso), out={}; let any=false;
+  for(const [k,label] of LIM_KINDS){ let mn=L[k].min[i], mx=L[k].max[i]; if(mn==null&&mx==null) continue; if(mn!=null&&mx!=null&&mn>mx) mn=mx; out[k]={min:mn,max:mx,label,day:WD[i]}; any=true; }
+  return any?out:null;}
+const kindTotals=lines=>{const t={petit:0,cheese:0}; for(const l of lines||[]){ const k=limKindOf(l.productId); if(k) t[k]+=Math.round(+l.qty)||0; } return t;};
+function limitCheck(p,lines,iso){const out=[], L=limitsOn(p,iso); if(!L) return out; const t=kindTotals(lines);
+  for(const k of Object.keys(L)){ const q=t[k], R=L[k]; if(R.max!=null&&q>R.max) out.push(`${R.label}: ${q} in total is over the ${R.day} max of ${R.max}`); else if(R.min!=null&&q<R.min) out.push(`${R.label}: ${q} in total is under the ${R.day} min of ${R.min}`); }
+  return out;}
+/* Plan & prep: keep each type's total inside the range. Over the max: take units off the biggest suggestions first (one at a time); under the min: add units to the highest-demand cakes first. */
+function limitApply(p,lines,d1){const L=limitsOn(p,d1); if(!L) return;
+  for(const k of Object.keys(L)){ const R=L[k], ls=lines.filter(l=>limKindOf(l.productId)===k); if(!ls.length) continue; let tot=ls.reduce((a,l)=>a+l.suggest,0); const touched=new Set();
+    if(R.max!=null&&tot>R.max){ let guard=5000; while(tot>R.max&&guard--){ const l=ls.filter(x=>x.suggest>0).sort((a,b)=>b.suggest-a.suggest||a.demand-b.demand)[0]; if(!l) break; l.suggest--; tot--; touched.add(l); } touched.forEach(l=>l.notes.push(`${R.day}: ${R.label.toLowerCase()} max ${R.max} in total (Setup › Outlets)`)); }
+    if(R.min!=null&&tot<R.min){ const order=[...ls].sort((a,b)=>b.demand-a.demand||b.suggest-a.suggest); let i=0, guard=5000; while(tot<R.min&&guard--){ const l=order[i%order.length]; l.suggest++; tot++; touched.add(l); i++; } touched.forEach(l=>{ if(!l.notes.some(n=>/in total/.test(n))) l.notes.push(`${R.day}: ${R.label.toLowerCase()} min ${R.min} in total (Setup › Outlets)`); }); } } }
 const limitsTxt=p=>{const L=limitsOf(p); return LIM_KINDS.map(([k,l])=>{const dd=[1,2,3,4,5,6,0].filter(i=>L[k].min[i]!=null||L[k].max[i]!=null); if(!dd.length) return ""; const same=dd.every(i=>L[k].min[i]===L[k].min[dd[0]]&&L[k].max[i]===L[k].max[dd[0]]);
-  const rng=i=>(L[k].min[i]!=null?L[k].min[i]:"–")+"–"+(L[k].max[i]!=null?L[k].max[i]:"–"); return `${l.replace(" (slice)","")}: ${same?rng(dd[0])+" each"+(dd.length===7?"":" "+dd.map(i=>WD[i]).join(" ")):dd.map(i=>WD[i]+" "+rng(i)).join(", ")}`;}).filter(Boolean).join(" · ");};
+  const rng=i=>(L[k].min[i]!=null?L[k].min[i]:"–")+"–"+(L[k].max[i]!=null?L[k].max[i]:"–"); return `${l} total ${same?rng(dd[0])+(dd.length===7?" every day":" "+dd.map(i=>WD[i]).join(" ")):dd.map(i=>WD[i]+" "+rng(i)).join(", ")}`;}).filter(Boolean).join(" · ");};
 /* Same numbers every time the page is opened (no reshuffle on refresh): a hash of outlet + date. */
 const seedR=(...a)=>{let h=2166136261; for(const ch of a.join("|")){h^=ch.charCodeAt(0); h=Math.imul(h,16777619)>>>0;} h^=h>>>15; h=Math.imul(h,2246822507)>>>0; h^=h>>>13; h=Math.imul(h,3266489909)>>>0; h^=h>>>16; return (h>>>0)/4294967296;};
 const seedInt=(lo,hi,...a)=>hi<=lo?lo:lo+Math.floor(seedR(...a)*(hi-lo+1));
@@ -1022,6 +1030,10 @@ function vToday(att){
 /* ---- DELIVERIES ---- */
 function rcvRows(e,pid){return (e.rl||[]).map((l,i)=>`<tr><td>${cake(l.productId)} ${dot(l.colour)}</td><td class="mono small">${esc(prod(l.productId).sku||"")}</td>${KIT()?"":`<td class="r mono">${fm(priceFor(pid,l.productId,e.date).net)}</td>`}<td class="r"><span class="mono">${l.qty||0}</span></td><td class="r"><input type="number" min="0" step="1" inputmode="numeric" id="dra-${i}" data-rcl="${i}" value="${esc(l.accepted??l.qty??"")}" aria-label="Accepted"></td></tr>`).join("");}
 function allDOs(){const out=[];for(const w of Object.values(S.weeks))for(const d of Object.values(w.dos||{}))out.push({...d,partnerId:w.partnerId,weekStart:w.weekStart});return out.sort((a,b)=>b.date.localeCompare(a.date)||String(b.no).localeCompare(String(a.no)))}
+/* v21.9 the running totals against the outlet's limits for that day (Setup › Outlets), under the DO lines */
+function doLimLine(e){const p=partner(e.partnerId); const L=e.date?limitsOn(p,e.date):null; if(!L) return "";
+  const t=kindTotals(Object.entries(e.lines||{}).map(([k,v])=>({productId:k,qty:v.qty})));
+  return Object.keys(L).map(k=>{const R=L[k], q=t[k], bad=(R.max!=null&&q>R.max)||(R.min!=null&&q<R.min); return `<span class="${bad?"neg":""}" data-limk="${k}"><b>${q}</b> ${esc(R.label.toLowerCase())} · ${esc(R.day)} ${R.min!=null?`min ${R.min}`:""}${R.min!=null&&R.max!=null?", ":""}${R.max!=null?`max ${R.max}`:""} in total</span>`;}).join(" &nbsp;·&nbsp; ");}
 function vDeliveries(){
   const e=S.ui.doEdit;
   let form="";
@@ -1037,9 +1049,10 @@ function vDeliveries(){
       </div>
       <div class="tw"><table><thead><tr><th>Cake</th><th>SKU</th>${KIT()?"":`<th class="r">Unit price</th>`}<th class="r">Qty sent</th>${e.mode==="receive"?`<th class="r">Accepted</th>`:""}</tr></thead><tbody>
       ${e.mode==="receive"?rcvRows(e,pid):""}${(e.mode==="receive"?[]:products()).map(p=>{const l=e.lines[p.id]||{};const pr=priceFor(pid,p.id,e.date);return `<tr><td>${cake(p.id)}</td><td class="mono small">${esc(p.sku)}</td>${KIT()?"":`<td class="r mono">${fm(pr.net)}${pr.approved?"":` <span class="pill warn" title="Default % of retail, no approved price">default</span>`}</td>`}
-        <td class="r">${e.mode==="receive"?`<span class="mono">${l.qty||0}</span>`:`<input type="number" min="0" step="1" inputmode="numeric" id="dq-${p.id}" data-doline="${p.id}" data-k="qty" value="${esc(l.qty??"")}">${(()=>{const L=e.date?limitFor(partner(pid),p.id,e.date):null; return L?`<div class="small muted lim" data-limhint="${p.id}">${esc(L.day)}: ${L.min!=null?`min ${L.min}`:""}${L.min!=null&&L.max!=null?" · ":""}${L.max!=null?`max ${L.max}`:""}</div>`:"";})()}`}</td>
+        <td class="r">${e.mode==="receive"?`<span class="mono">${l.qty||0}</span>`:`<input type="number" min="0" step="1" inputmode="numeric" id="dq-${p.id}" data-doline="${p.id}" data-k="qty" value="${esc(l.qty??"")}">`}</td>
         ${e.mode==="receive"?`<td class="r"><input type="number" min="0" step="1" inputmode="numeric" id="da-${p.id}" data-doline="${p.id}" data-k="accepted" value="${esc(l.accepted??l.qty??"")}" ${l.qty?"":"disabled"}></td>`:""}</tr>`}).join("")}
       </tbody></table></div>
+      ${e.mode!=="receive"?`<div id="do-lim" class="small muted">${doLimLine(e)}</div>`:""}
       <label class="f">Note (short delivery, damage, reason for rejected units)<input id="do-n" data-do="note" value="${esc(e.note||"")}"></label>
       <div class="row">${e.mode==="receive"?`<button class="btn pri" data-act="receiveDO">Confirm delivered</button>`:`<button class="btn pri" data-act="saveDO">${e.no?"Save changes":"Create DO"}</button>`}</div>
     </div>`;
@@ -1378,10 +1391,10 @@ function vSetup(){
         <label class="f">Kinds per delivery<span class="row" style="flex-wrap:nowrap"><input id="pe-wmin" data-pew="min" inputmode="numeric" value="${esc(W.min)}" aria-label="At least" style="width:4.5em"><span class="muted">to</span><input id="pe-wmax" data-pew="max" inputmode="numeric" value="${esc(W.max)}" aria-label="At most" style="width:4.5em"></span></label>
         <label class="f">Max of each whole cake<input id="pe-weach" data-pew="each" inputmode="numeric" value="${esc(W.each)}"></label>`;})()}</div>
         <p class="small muted" style="margin:8px 0 0">Picked from the whole cakes ticked in "Cakes this outlet carries". <b>Take turns</b>: every ticked whole cake gets a turn before any repeats, in a mixed order, and outlets get different ones on the same day where possible. The number of kinds is picked between the two numbers for each delivery. A whole cake still sellable at the outlet counts as one of them.</p></div>
-        <div style="grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-weight:600;margin-bottom:2px">Petit gâteaux and cheesecakes: min and max of each cake, per delivery day</div>
-        <p class="small muted" style="margin:0 0 8px">How many of <b>each</b> cake this outlet can take on a delivery that day. Leave a box empty for no limit. Plan &amp; prep never suggests outside the range; a delivery order outside it warns before saving.</p>
+        <div style="grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-weight:600;margin-bottom:2px">Petit gâteaux and cheesecakes: min and max per delivery day, by type</div>
+        <p class="small muted" style="margin:0 0 8px">The <b>total</b> of that type (all flavours added up) this outlet takes on a delivery that day, e.g. petit gâteaux 12–20 on Saturday. Leave a box empty for no limit. Plan &amp; prep keeps its suggestion inside the range; a delivery order outside it warns before saving.</p>
         ${(()=>{const L=limitsOf(e), dd=(e.deliveryDays||[1,3,5]).map(Number); return `<div class="tw"><table class="limt"><thead><tr><th></th>${WD.map((d,i)=>`<th class="r${dd.includes(i)?"":" muted"}">${d}</th>`).join("")}</tr></thead><tbody>
-        ${LIM_KINDS.map(([k,l])=>["min","max"].map(mm=>`<tr><td class="small">${esc(l)} · <b>${mm}</b></td>${WD.map((d,i)=>`<td class="r"><input type="number" min="0" step="1" inputmode="numeric" id="pe-lim-${k}-${mm}-${i}" data-pelim="${k}|${mm}|${i}" value="${L[k][mm][i]==null?"":L[k][mm][i]}" aria-label="${esc(l)} ${mm} ${d}" style="width:4em${dd.includes(i)?"":";opacity:.55"}"></td>`).join("")}</tr>`).join("")).join("")}
+        ${LIM_KINDS.map(([k,l])=>["min","max"].map(mm=>`<tr><td class="small">${esc(l)} · <b>${mm} total</b></td>${WD.map((d,i)=>`<td class="r"><input type="number" min="0" step="1" inputmode="numeric" id="pe-lim-${k}-${mm}-${i}" data-pelim="${k}|${mm}|${i}" value="${L[k][mm][i]==null?"":L[k][mm][i]}" aria-label="${esc(l)} ${mm} ${d}" style="width:4em${dd.includes(i)?"":";opacity:.55"}"></td>`).join("")}</tr>`).join("")).join("")}
         </tbody></table></div>`;})()}
         <p class="small muted" style="margin:6px 0 0">Greyed days are not delivery days for this outlet (the limit still applies if a delivery is made). Whole cakes follow the box above.</p></div>
         <details class="help" style="grid-column:1/-1"><summary>Cakes this outlet carries (${(e.carries||[]).length||"not set"}), used by Plan & prep</summary><div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px">${CATS.map(cat=>`<div style="flex-basis:100%;font-weight:600;margin-top:6px">${CATL[cat]}</div>${products().filter(pp=>catOf(pp)===cat).map(pp=>`<label class="chk"><input type="checkbox" data-pecarry="${pp.id}" ${(e.carries||[]).includes(pp.id)?"checked":""}>${esc(pp.name)}</label>`).join("")}`).join("")}</div></details>
@@ -1596,10 +1609,9 @@ function planOutlet(pid,taken){
     const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
     if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`); if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — +15%`);
     if(d2&&diffDays(d2,d1)>life) notes.push(`gap to next delivery (${diffDays(d2,d1)}d) is longer than shelf life`);
-    {const L=limitFor(p,id,d1); if(L){ if(L.max!=null&&suggest>L.max){ notes.push(`${L.day} max ${L.max} each (Setup › Outlets)`); suggest=L.max; } if(L.min!=null&&suggest<L.min){ notes.push(`${L.day} min ${L.min} each (Setup › Outlets)`); suggest=L.min; } }}
     lines.push({productId:id,aw:f.aw,ae:f.ae,stockNow,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n});
   }
-  wholePick(p,lines,d1,taken);
+  wholePick(p,lines,d1,taken); limitApply(p,lines,d1);
   const hol=[]; for(let i=0;i<(d2?diffDays(d2,d1):3);i++){for(const e of dayEvents(add(d1,i))) if(!hol.includes(e)) hol.push(e);}
   return {pid,d1,d2,lines,planned,hol,carryNote,prepDate:add(d1,-(+cfg().prepLeadDays||0))};
 }
@@ -1795,7 +1807,7 @@ document.addEventListener("input",e=>{
     if((d.do==="date"||d.do==="batchDate")&&!E.colourTouched&&(E.batchDate||E.date)) E.colour=colourOf(E.batchDate||E.date).name;
     if(d.do!=="note") render(); return;}
   if(d.doline){const L=S.ui.doEdit.lines[d.doline]||(S.ui.doEdit.lines[d.doline]={}); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); if(v!==t.value) t.value=v; L[d.k]=v;
-    if(d.k==="qty"){const h=t.parentElement.querySelector("[data-limhint]"); if(h){const E=S.ui.doEdit, Q=limitFor(partner(E.partnerId),d.doline,E.date), q=+v||0; h.classList.toggle("neg",!!Q&&((Q.max!=null&&q>Q.max)||(Q.min!=null&&q>0&&q<Q.min)));}} return;}
+    if(d.k==="qty"){const h=$("#do-lim"); if(h) h.innerHTML=doLimLine(S.ui.doEdit);} return;}
   if(d.dd){const v=S.ui.dayDraft[d.dd]||(S.ui.dayDraft[d.dd]={}); v[d.k]=t.value; render(); return;}
   if(d.au){S.ui.auditDraft[d.au]=t.value; if(d.au==="partnerId"||d.au==="date") render(); return;}
   if(d.aup){S.ui.auditDraft.prices[d.aup]=t.value; render(); return;}
