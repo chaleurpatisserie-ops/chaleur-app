@@ -866,7 +866,10 @@ const KLINKS=()=>[["Opening report","kitchen.html#opening",can("kitchen")||can("
 const NCOL=8;
 let rq=false, MENU=false, MCLOSED=(()=>{ try{ return new Set(JSON.parse(localStorage.getItem("chaleur.deskmenu")||"[]")); }catch(e){ return new Set(); } })(); /* v21.13: every menu group can be minimised (Alfred) */
 const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null)) return true; if(!can("deliv")) return false; return d.made!=null||d.psend!=null||d.padd!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
-function render(){ if(rq||!AUTH.pin) return; rq=true; requestAnimationFrame(()=>{rq=false; doRender();}); }
+/* 28 Sep: a background tab never gets an animation frame (the page stayed on "Loading…"), so a timer draws it too;
+   and a drawing error is shown on the page instead of leaving "Loading…" for ever. */
+function render(){ if(rq||!AUTH.pin) return; rq=true; let done=false; const run=()=>{ if(done) return; done=true; rq=false; safeRender(); }; requestAnimationFrame(run); setTimeout(run,150); }
+function safeRender(){ try{ doRender(); }catch(e){ console.error(e); const m=document.getElementById("main"); if(m) m.innerHTML=`<div class="empty">Something went wrong drawing this page: ${esc(String(e&&e.message||e))}. Please send a screenshot to Alfred.</div>`; } }
 function doRender(){
   if(!AUTH.pin) return;
   memo=new Map();
