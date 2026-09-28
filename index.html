@@ -411,6 +411,7 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 .w{padding-top:66px}.hd .logo{text-decoration:none;cursor:pointer}.hd .logo:active{transform:scale(.94)}
 .asheet{position:fixed;inset:0;z-index:65;background:rgba(20,10,12,.5);display:flex;align-items:flex-end;justify-content:center}.asheet .box{background:var(--paper);width:100%;max-width:560px;max-height:90vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
 .asheet label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}.asheet input,.asheet select,.asheet textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;text-transform:none;letter-spacing:0;font-weight:400}
+.rsteps{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}.rsteps i{font-style:normal;font-weight:600}.rsteps .ok{color:var(--ok)}.rsteps .no{color:var(--bad-tx)}
 .row .circ.tk{cursor:pointer;position:relative}.row .circ.tk input{position:absolute;inset:0;opacity:0;margin:0;width:100%;height:100%;cursor:pointer}.asgbtn{margin-top:6px}
 .logo{width:36px;height:36px;border-radius:9px;background:var(--deep);color:var(--gold);display:grid;place-items:center;flex:none}.logo svg{width:28px;height:auto;display:block}
 .hd .tt{flex:1;min-width:0}.hd h1{font:700 20px/1.05 var(--display);margin:0}.hd .sub{font-size:12px;color:var(--muted)}
@@ -544,12 +545,13 @@ details.gsec{padding:0;margin:0 0 10px;overflow:hidden}details.gsec>summary{curs
 const $=s=>document.querySelector(s), esc=CA.esc, LOGO=()=>document.getElementById("logo").innerHTML;
 const QS=new URLSearchParams(location.search);
 /* where to go back to after signing in (only our own pages) */
-const NEXT=(()=>{ const n=QS.get("next")||""; return /^(office|kitchen|audit)\.html(\?[A-Za-z0-9_=&%.-]*)?(#[A-Za-z0-9_-]*)?$/.test(n)?n:""; })();
+const NEXT=(()=>{ const n=QS.get("next")||""; return /^(office|kitchen|audit|reports)\.html(\?[A-Za-z0-9_=&%.-]*)?(#[A-Za-z0-9_-]*)?$/.test(n)?n:""; })();
 /* Every page, by access (Staff tab). Pages still check access on the server. [group, title, description, link, roles] */
 /* v21.10 four areas, numbered (Alfred: "separate them into better and clearer area … is very messy currently"). A person only sees the pages
    their access allows; their own area opens first. [group, title, description, link, access, search words, daily-for (kept for Today)] */
-const SECD={"Kitchen HQ":"Opening and closing reports, decoration & delivery, production","Delivery & consignment partner":"Delivery orders, carry forward, bills, outlet reports, audits","Back office":"Setup, staff, problem reports, corrections, prep list","Help & support":"How-to guide, the helper, report a problem, team treat"};
+const SECD={"Kitchen HQ":"Prep list (what to make), opening and closing reports, decoration & delivery, production","Delivery & consignment partner":"Delivery orders, carry forward, bills, outlet reports, audits","Back office":"Setup, staff, problem reports, corrections, prep list","Help & support":"How-to guide, the helper, report a problem, team treat"};
 const TILES=[
+ ["Kitchen HQ","Prep list · what to make","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
  ["Kitchen HQ","Opening report","Fridges & freezers, HQ display count, outlet deliveries · due 10:30","kitchen.html#opening",["kitchen","kapprove"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
  ["Kitchen HQ","Closing report","Fridges & freezers, waste & left, mise en place lists · due 19:30","kitchen.html#closing",["kitchen","kapprove"],"closing report waste left lists evening",["kitchen:pm"]],
  ["Kitchen HQ","Decoration & delivery list","Morning to-do: Plan & prep, finish & decorate, pack & deliver","kitchen.html?team=am#today",["kitchen","kapprove","todo"],"morning decoration to-do custom order grab pack deliver",["kitchen:am"]],
@@ -564,11 +566,11 @@ const TILES=[
  ["Delivery & consignment partner","To clear today","Missing reports, chase outlets, bills to approve","office.html#today",["chase","view"],"attention chase whatsapp missing report board",["office","outlets"]],
  ["Delivery & consignment partner","Spot audit","Visit an outlet: display, prices, chiller","audit.html",["audit"],"audit visit outlet check",["outlets"]],
  ["Delivery & consignment partner","Audit results","Every spot audit and taste check, with photos and PDF","office.html#audits",["audit","kapprove"],"spot audit results qc history pdf score taste check",[]],
+ ["Back office","Reports","Every report: done and not done, what was sent, photos, reminders and Chase on WhatsApp","reports.html",()=>/owner|manager/i.test(CA.labelOf(S)||""),"reports report done undone missing photos chase reminder whatsapp",[]],
  ["Back office","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup"],"outlet cake product price shelf life whatsapp wasapbot key go-live fresh start holiday limits",[]],
  ["Back office","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
  ["Back office","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems"],"feedback problem report reply urgent helper questions",[]],
  ["Back office","Corrections log","Every change to a report: who, when and why","office.html#log",["reports"],"edit log correction history",[]],
- ["Back office","Prep list (Plan & prep)","Today's prep list for every outlet, Made numbers, draft DOs","office.html#plan",["kitchen","deliv","doedit","reports"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
 ];
 /* Help & support: the same rows, as the 4th area of the menu (v21.10) */
 const HELP=[["How-to guide","Step by step for your job, and I'm stuck answers","#guide"],["Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat & points","This month's treat, the jar and the leaderboard","#treat"]];
@@ -683,6 +685,29 @@ function rowHtml(r){ const right=r.done?`<span class="r">${esc(hmOf(r.at)||"Done
   const sub=r.done?(r.by?"✓ "+esc(cap(String(r.by).split(" ")[0]))+(r.sub?" · "+esc(r.sub):""):esc(r.sub||"")):esc(r.sub||"");
   const inner=`<span class="circ ${r.tick?"tk":""}" ${r.tick?`aria-label="${r.done?"Done":"Tick when done"}"`:'aria-hidden="true"'}>${r.tick?`<input type="checkbox" data-asdone="${esc(r.tid)}" data-asdate="${esc(r.tdate)}" ${r.done?"checked":""}>`:""}${r.done?"✓":""}</span><span><span class="t">${esc(r.title)}</span>${sub?`<span class="s ${!r.done&&r.late?"late":""}">${sub}</span>`:""}</span>${right}`;
   return r.go&&!r.cur?`<a class="row ${r.done?"done":""}" href="${esc(CA.nextHref(r.go))}">${inner}</a>`:`<div class="row ${r.done?"done":""} ${r.cur?"cur":""}">${inner}</div>`; }
+/* v22 Reports today: every required report (Kitchen HQ opening/closing, each outlet's closing count), who sent it, and the automatic
+   WhatsApp reminders 1 hour before, on time and 1 hour after. Kitchen HQ: managers and supervisors can remind; outlets: anyone can ask. */
+function remCard(){ const B=REM; if(!B||!B.rows||!B.rows.length) return "";
+  const mk={sent:["ok","✓"],failed:["no","✗"],missed:["","–"],sending:["","…"],waiting:["",""],skip:["",""]};
+  const rows=B.rows.map(r=>{ const steps=r.done||!r.auto?"":r.steps.map(x=>{ const m=mk[x.state]||["",""]; return `<i class="${m[0]}" title="${esc(x.label+(x.why?": "+x.why:""))}">${esc(x.hm)}${m[1]?" "+m[1]:""}</i>`; }).join(" · ");
+    const man=(r.manual||[]).length?` · asked by ${esc(r.manual[r.manual.length-1].by)} ${esc(hmOf(r.manual[r.manual.length-1].at))}`:"";
+    const sub=r.done?`✓ ${esc(cap(String(r.by||"").split(" ")[0]))}${r.at?" · "+esc(hmOf(r.at)):""}`:(r.late?`Late — due ${esc(r.due)}`:`Due ${esc(r.due)}`)+(r.date!==B.date?` · ${esc(r.day)}`:"")+(r.left&&r.left.length?` · still: ${esc(r.left.join(", "))}`:"");
+    const btn=r.canRemind?`<button class="cb sm ${r.late?"":"ghost"}" type="button" data-rnow="${esc(r.key)}">${r.type==="outlet"?"Ask":"Remind"}</button>`:"";
+    return `<div class="row ${r.done?"done":""}"><span class="circ" aria-hidden="true">${r.done?"✓":""}</span><span><span class="t">${esc(r.title)}</span><span class="s ${!r.done&&r.late?"late":""}">${sub}${man}</span>${steps?`<span class="rsteps">Auto WhatsApp: ${steps}</span>`:""}</span>${btn}</div>`; }).join("");
+  const miss=B.rows.filter(r=>!r.done&&r.canRemind).length, dn=B.rows.filter(r=>r.done).length;
+  return `<div class="lh"><b>Reports today</b><span>${dn} of ${B.rows.length} in</span></div><div class="card rows">${rows}</div>
+    ${B.wa?"":`<p class="hint" style="margin:2px 2px 0">Automatic WhatsApp is off (WasapBot), so nothing goes out by itself. Remind / Ask opens WhatsApp on your phone instead.</p>`}
+    ${B.mgr&&miss?`<button class="cb ghost full" type="button" data-rall="1">Remind everyone still missing</button>`:""}`; }
+function remSheet(r){ let el=$("#rsh"); if(!el){ el=document.createElement("div"); el.id="rsh"; document.body.appendChild(el); }
+  const txt=r.text||"", people=r.people||[], share=!!navigator.share;
+  el.innerHTML=`<div class="asheet" data-rclose="1"><div class="box stack" role="dialog" aria-label="Send the reminder"><div class="ptitle">Send the reminder</div>
+    <p class="hint" style="margin:0">${esc(r.why||"Automatic WhatsApp is off")} — so your phone sends it. ${share?"<b>Send on WhatsApp</b> opens the share list: pick the chat, then Send.":"Tap a name to open WhatsApp with the message ready."}</p>
+    <div class="card" style="white-space:pre-wrap;font-size:14px;padding:12px">${esc(txt)}</div>
+    ${share?`<button class="cb big full" type="button" data-rshare="1">Send on WhatsApp</button>`:""}
+    ${people.filter(p=>p.phone).map(p=>`<a class="cb ghost full" href="https://wa.me/${esc(p.phone)}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">💬 ${esc(p.name||p.phone)}</a>`).join("")}
+    <div style="display:flex;gap:8px"><button class="cb ghost" type="button" data-rcopy="1">Copy the message</button><button class="cb ghost" type="button" data-rclose="1">Close</button></div></div></div>`;
+  el.dataset.txt=txt; }
+async function remReload(){ try{ REM=await CA.run("remindBoard",S.t); }catch(e){} if(VIEW==="") render(); }
 function vHome(){
   const T=TODAY, kit=isKit();
   let html=header()+`<div class="stack">`;
@@ -705,10 +730,12 @@ function vHome(){
       ${n?`<div class="card also">${items.filter(i=>!/^Task from/.test(i.text)).map(nxItem).join("")}</div>`:""}
       ${can("todo")?`<button class="cb ghost full asgbtn" type="button" data-assign="1">＋ Assign a task to someone</button>`:""}`;
   }
+  html+=remCard();
   html+=`<p class="hint" style="margin:6px 2px 0">Everything else is in <b>☰ Menu</b>. Stuck? Tap <b>?</b> (English, Malay or Chinese). Urgent: WhatsApp Alfred 014-665 0928.</p></div>`;
   return html; }
 /* Assign a task (people with "Add and edit to-dos"): anyone, everyone with an access, or one person; date, due time, page to open */
 let ASG=null, ASGD=null;
+let REM=null; /* v22 Reports today (remindBoard) */
 function openAssign(){ ASG={title:"",detail:"",who:"all",date:TODAY?TODAY.date:new Date().toISOString().slice(0,10),ready:"",team:"",link:""}; drawAssign(); if(!ASGD) CA.run("assignees",S.t).then(r=>{ASGD=r; drawAssign();}).catch(x=>toast(x.message)); }
 function closeAssign(){ ASG=null; const el=$("#asg"); if(el) el.remove(); }
 function drawAssign(){ if(!ASG) return; let el=$("#asg"); if(!el){ el=document.createElement("div"); el.id="asg"; document.body.appendChild(el); }
@@ -860,7 +887,7 @@ function render(){ if(!S) return; const v=VIEW; const a=$("#app");
   if(v===""&&(TODAY||NX)) setTimeout(()=>CA.tour.maybeStart(),300); }
 async function load(){ const v=VIEW, t=S.t;
   try{
-    if(v===""){ const [a,b]=await Promise.all([CA.run("myToday",t),CA.run("myNext",t).catch(e=>({items:[],err:e.message}))]); TODAY=a; NX=b; }
+    if(v===""){ const [a,b,c]=await Promise.all([CA.run("myToday",t),CA.run("myNext",t).catch(e=>({items:[],err:e.message})),CA.run("remindBoard",t).catch(()=>null)]); TODAY=a; NX=b; REM=c; }
     else if(v==="team") TEAMI=await CA.run("teamInfo",t);
     else if(v==="me") ME=await CA.run("meInfo",t);
     else if(v==="treat") RW=await CA.run("rewardGet",t);
@@ -878,6 +905,12 @@ document.addEventListener("click",async e=>{ const t=e.target&&e.target.closest?
   const sb=g("[data-msec]"); if(sb){ const n=sb.dataset.msec; OPEN=OPEN===n?"":n; try{ localStorage.setItem("chaleur.menu",OPEN); }catch(x){} drawMenu(); return; }
   const h=g("[data-help]"); if(h){ setMenu(false); CA.openHelp(h.dataset.help); return; }
   if(g("[data-assign]")){ openAssign(); return; }
+  { const rn=g("[data-rnow]"); if(rn&&!rn.disabled){ rn.disabled=true; let r=null; try{ r=await CA.run("remindNow",S.t,rn.dataset.rnow); }catch(x){ rn.disabled=false; toast(x.message); return; }
+      rn.disabled=false; if(r&&r.ok){ toast(`Sent on WhatsApp to ${r.sent} ${r.sent===1?"person":"people"}${r.group?" and the kitchen group":""}.`); remReload(); } else if(r){ remSheet(r); remReload(); } return; } }
+  { const ra=g("[data-rall]"); if(ra&&!ra.disabled){ ra.disabled=true; try{ const r=await CA.run("remindAll",S.t); if(r.manual) toast(r.why); else toast(r.items.map(x=>x.title+": "+(x.ok?"sent "+x.sent:x.why)).join(" · ")||"Nothing to remind."); remReload(); }catch(x){ toast(x.message); } ra.disabled=false; return; } }
+  if(g("[data-rshare]")){ const txt=($("#rsh")||{dataset:{}}).dataset.txt||""; try{ await navigator.share({text:txt}); }catch(x){} return; }
+  if(g("[data-rcopy]")){ const txt=($("#rsh")||{dataset:{}}).dataset.txt||""; try{ await navigator.clipboard.writeText(txt); toast("Message copied — paste it in WhatsApp."); }catch(x){ toast("Could not copy on this phone."); } return; }
+  { const rc=g("[data-rclose]"), cb=t.closest("button"); if(rc&&(t===rc||(cb&&cb.dataset.rclose))){ const el=$("#rsh"); if(el) el.remove(); return; } }
   if(g("[data-asave]")){ await saveAssign(g("[data-asave]")); return; }
   { const ac=g("[data-aclose]"), cb=t.closest("button"); if(ac&&(t===ac||(cb&&cb.dataset.aclose))){ closeAssign(); return; } }
   { const lb=g("[data-lb]"); if(lb){ LBM=lb.dataset.lb==="last"?"last":"now"; render(); return; } }
@@ -1052,7 +1085,10 @@ CA.tour.define({key:"home",steps:tourSteps,ready:()=>!!$(".si .keys")||(!!S&&VIE
 <li>Plan tab: check each day (Mark as checked), edit or remove lists directly, turn reminders on or off.</li>
 <li>Setup tab (Kitchen setup): the cakes on the HQ display chiller (same as the Orderla menu) and the fridges and freezers with their limits.</li>
 <li>"Remind the kitchen team on WhatsApp" (To-do tab or the report) when a report is late: one press sends the reminder (the link and the parts still to do) to every Kitchen HQ person one by one and to the kitchen group, at most every 15 minutes. While WasapBot is off, a sheet opens instead: "Send on WhatsApp — pick everyone at once" opens the phone's share list (tick the kitchen group or every person, then Send once), or tap a name to send one by one, or Copy the message.</li>
-<li>Office desk › Today: Needs attention shows missing outlet reports and cakes to take off display. Tap "Chase on WhatsApp" to send the outlet its reminder with their own link.</li>
+<li>Office desk › Today: Needs attention shows missing outlet reports and cakes to take off display. "Chase now · N people" (v21.14) makes the bot send one personal WhatsApp ("Hi Aina, kindly send the closing count…") to every person listed for that outlet in Setup › Outlets › People to remind; "Or by hand" opens WhatsApp on your phone with the reminder and their own link.</li>
+<li>Automatic outlet chase (v21.14): every day at the chase time (Setup › Go-live &amp; rules › Auto-chase outlets, default 05:30 next morning) the bot messages every outlet whose closing count for last night is still missing — one message per person, by name, once a day; Alfred's alert numbers get a one-line summary ("Outlet chase 05:30: Knocknock (Fri 25 Sep): chased 3 numbers — Aina, Mr Lim, Mgr"). The message text can be changed there ({name} {outlet} {date} {close} {link}). Needs WasapBot on; nothing is sent while it is off.</li>
+<li>Report reminders (v22): every required report gets automatic WhatsApp reminders 1 hour before, on time and 1 hour after its due time, but only while it is still missing. Kitchen HQ opening report (due at the opening time, default 10:30) and closing report (default 19:30): every Kitchen HQ person with a phone in Staff &amp; access, by name, plus the kitchen group. Each outlet's closing count (due at the outlet's closing time): every person in Setup › Outlets › People to remind. The "1 hour after" message also goes to Alfred's alert numbers. Switches: Setup › Go-live &amp; rules › Outlet reminders, and the Kitchen HQ chase switch. Needs WasapBot on; while it is off nothing is sent by itself.</li>
+<li>Home › Reports today: shows every report due today (and last night's outlet counts still missing), who sent it and when, and the three automatic reminder times (✓ sent, ✗ not sent, – missed). Anyone in the team can press Ask to ask an outlet for its closing count. Managers (and kitchen supervisors) can press Remind on a Kitchen HQ report; managers also get "Remind everyone still missing". When WhatsApp sending is off, the phone opens WhatsApp with the message ready instead.</li>
 <li>Office desk › Delivery orders: New delivery order and Edit (change quantities or dates before delivery), Check colours, Mark delivered with the accepted quantities. Delivered orders can only be changed by the office.</li>
 <li>Office desk › Plan &amp; prep: suggestions per outlet AND for the HQ display (column "HQ display · send to outlets": the HQ number is what the kitchen makes for our own display — it counts in Planned and Made but is never a delivery: no DO, nothing to pack; the morning HQ display count records what was actually put out), type the real Made number if the kitchen made fewer, print the prep sheet and delivery notes, Draft DOs from suggestions (it first shows a preview of every draft DO: outlet, date, colour dot, cakes; tap Create to make them, then it lists the DO numbers created and anything not drafted and why).</li>
 </ul>
@@ -1137,7 +1173,7 @@ CA.tour.define({key:"home",steps:tourSteps,ready:()=>!!$(".si .keys")||(!!S&&VIE
 </ul>
 <h3>Office</h3>
 <ul>
-<li>An outlet did not send its closing count: To clear today › Chase on WhatsApp (their own link is in the message). If they sent it by WhatsApp message instead, use Paste WhatsApp report.</li>
+<li>An outlet did not send its closing count: the bot chases them by itself at the chase time (default 05:30) if their people are listed in Setup › Outlets; or To clear today › Chase now / Or by hand (their own link is in the message). If they sent it by WhatsApp message instead, use Paste WhatsApp report.</li>
 <li>A report has wrong numbers: Outlet closing reports › pick the outlet and day › Correct report, with the reason. It is kept in the Corrections log.</li>
 <li>Cakes missing or past shelf life at an outlet: To clear today › the item › Sold / Wasted / Remaining.</li>
 <li>A delivery order is wrong before it goes out: Delivery orders › Edit. After it is delivered only the office can change it.</li>
