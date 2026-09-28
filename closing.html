@@ -522,7 +522,13 @@ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},se
 const run=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(e))[fn](...a));
 function todayISO(){const d=new Date();if(d.getHours()<5)d.setDate(d.getDate()-1);return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
 const niceDate=iso=>{const d=new Date(iso+"T00:00:00");return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})};
-let INFO=null, KEY=(PRESET||store.get("chaleur.key")||"").trim().toUpperCase(), DATE=todayISO();
+/* v22 (Alfred, 28 Sep): a count sent in the morning is for LAST NIGHT. Before 3pm the form picks yesterday; a reminder link
+   (?d=YYYY-MM-DD) opens that night. The date stays changeable and the form says clearly which night it is. */
+function calToday(){ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); }
+function dAdd(iso,n){ const d=new Date(iso+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function defaultDate(){ const q=(new URLSearchParams(location.search).get("d")||"").trim(), t=calToday(), y=dAdd(t,-1);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(q)&&q<=t&&q>=dAdd(t,-2)) return q; return new Date().getHours()<15?y:t; }
+let INFO=null, KEY=(PRESET||store.get("chaleur.key")||"").trim().toUpperCase(), DATE=defaultDate();
 let DRAFTED=false, ROWS={}, ORDER=[], SHOWN=[], EXP=new Set(), PH={sales:[],display:null,waste:null}, NOTE="", WHO=store.get("chaleur.who")||"", PREV=null, SENDING=false;
 const COL=()=>INFO.colours||CONFIG.colours;
 const colHex=n=>(COL().find(c=>c.name===n)||{}).hex||"#999";
@@ -594,8 +600,9 @@ function render(){
   const ex=INFO.existing, g=grouped();
   $("#app").innerHTML=`${head()}
   <div class="card stack" style="gap:10px">
-    <div class="g2"><label class="f">Date<input id="date" type="date" value="${esc(DATE)}" min="${esc(isoAdd(todayISO(),-2))}" max="${esc(todayISO())}"></label>
+    <div class="g2"><label class="f">Date<input id="date" type="date" value="${esc(DATE)}" min="${esc(isoAdd(todayISO(),-2))}" max="${esc(calToday())}"></label>
     <label class="f">Your name<input id="who" value="${esc(WHO)}" placeholder="e.g. Aina" autocomplete="name"></label></div>
+    <div class="banner ${DATE<calToday()?"warn":"info"}" id="nightsay" style="margin:0">You are sending the closing count for <b>${esc(niceDate(DATE))}${DATE===isoAdd(calToday(),-1)?" (last night)":DATE===calToday()?" (tonight)":""}</b>. Not the right night? Change the date above.</div>
   </div>
   ${ex?`<div class="banner ${ex.locked?"warn":"info"}" style="margin-top:12px">${ex.locked?"This week is already billed. Your changes will be sent to the office to review.":`A report for this day was already sent${ex.by?` by <b>${esc(ex.by)}</b>`:""}${ex.at?` at ${esc(new Date(ex.at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}))}`:""}. Fix anything below and send again — the new report replaces the old one.`}</div>`:""}
   ${DRAFTED?`<div class="banner info" style="margin-top:12px">We kept the counts and photos you hadn't sent yet.</div>`:""}

@@ -608,7 +608,7 @@ function secHtml(x){
     ${x.photos.length?`<div class="pics">${x.photos.map(p=>`<a href="${esc(pLink(p.id))}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(pSrc(p.id))}" alt="${esc(p.label)}">${esc(p.label)}</a>`).join("")}</div>`:""}
     ${x.pdf?`<p style="margin:8px 0 0"><a href="${esc(x.pdf)}" target="_blank" rel="noopener">Open the PDF</a></p>`:""}</div>`; }
 function remHtml(r){
-  const st={sent:["ok","✓ sent"],failed:["no","✗ not sent"],sending:["mut","sending…"],none:["mut","—"]};
+  const st={sent:["ok","✓ sent"],skipped:["mut","– skipped"],failed:["no","✗ not sent"],sending:["mut","sending…"],none:["mut","—"]};
   const steps=r.steps.map(s=>{ const k=st[s.state]||st.none; return `<div><span>${esc(s.label)} · ${esc(s.hm)}</span><span class="${k[0]}">${k[1]}${s.state==="sent"?` (${s.sent} ${s.sent===1?"person":"people"}${s.group?" + group":""})`:""}${s.why?" · "+esc(s.why):""}</span></div>`; }).join("");
   const man=r.manual.map(m=>`<div><span>${esc(m.by)}</span><span class="mut">${esc(hm(m.at))} · ${esc(m.how)}</span></div>`).join("");
   return `<div class="sec"><h3>Reminders<small>${r.times?`sent ${r.times} time${r.times>1?"s":""}`:"none sent yet"}</small></h3>

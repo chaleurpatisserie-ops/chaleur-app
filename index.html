@@ -688,7 +688,7 @@ function rowHtml(r){ const right=r.done?`<span class="r">${esc(hmOf(r.at)||"Done
 /* v22 Reports today: every required report (Kitchen HQ opening/closing, each outlet's closing count), who sent it, and the automatic
    WhatsApp reminders 1 hour before, on time and 1 hour after. Kitchen HQ: managers and supervisors can remind; outlets: anyone can ask. */
 function remCard(){ const B=REM; if(!B||!B.rows||!B.rows.length) return "";
-  const mk={sent:["ok","✓"],failed:["no","✗"],missed:["","–"],sending:["","…"],waiting:["",""],skip:["",""]};
+  const mk={sent:["ok","✓"],skipped:["","– team asked"],failed:["no","✗"],missed:["","–"],sending:["","…"],waiting:["",""],skip:["",""]};
   const rows=B.rows.map(r=>{ const steps=r.done||!r.auto?"":r.steps.map(x=>{ const m=mk[x.state]||["",""]; return `<i class="${m[0]}" title="${esc(x.label+(x.why?": "+x.why:""))}">${esc(x.hm)}${m[1]?" "+m[1]:""}</i>`; }).join(" · ");
     const man=(r.manual||[]).length?` · asked by ${esc(r.manual[r.manual.length-1].by)} ${esc(hmOf(r.manual[r.manual.length-1].at))}`:"";
     const sub=r.done?`✓ ${esc(cap(String(r.by||"").split(" ")[0]))}${r.at?" · "+esc(hmOf(r.at)):""}`:(r.late?`Late — due ${esc(r.due)}`:`Due ${esc(r.due)}`)+(r.date!==B.date?` · ${esc(r.day)}`:"")+(r.left&&r.left.length?` · still: ${esc(r.left.join(", "))}`:"");
