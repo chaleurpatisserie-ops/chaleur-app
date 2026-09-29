@@ -886,7 +886,7 @@ function render(){
   document.body.classList.toggle("dark",!res&&!V2&&(TAB==="opening"||TAB==="closing")&&PART==="eq"&&st(TAB).step<INFO.conf.equipment.length);
   $("#tabs").hidden=flow; $("#ktabs").hidden=flow; $("#acct").hidden=flow;
   $("#tabs").innerHTML=flow?"":TABS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${TAB===k}" data-tab="${k}">${l}${k==="today"&&INFO.proposals.length&&SUP()?`<span class="n">${INFO.proposals.length}</span>`:""}</button>`+(k==="today"?`<a class="pchip" href="office.html#plan" title="Prep list: what to make today, for the HQ display and every outlet">Prep list · what to make ›</a>`:"")).join("");
-  $("#ktabs").innerHTML=`<nav aria-label="Main"><a href="index.html">${TABI.today}<span>Today</span></a><a href="kitchen.html" aria-current="page">${TABI.kitchen}<span>Kitchen</span></a><a href="index.html#team">${TABI.team}<span>Team</span></a><a href="index.html#me">${TABI.me}<span>Me</span></a></nav>`;
+  $("#ktabs").innerHTML=`<nav aria-label="Main"><a href="index.html#today">${TABI.today}<span>Today</span></a><a href="kitchen.html" aria-current="page">${TABI.kitchen}<span>Kitchen</span></a><a href="index.html#team">${TABI.team}<span>Team</span></a><a href="index.html#me">${TABI.me}<span>Me</span></a></nav>`;
   $("#hdr").innerHTML=flow?"":tabHdr();
   let html;
   if(V2==="deco") html=vDeco(); else if(/^do:/.test(V2)) html=vDo(V2.slice(3)); else if(/^chk:/.test(V2)) html=vChk(V2.slice(4)); else if(/^rcv:/.test(V2)) html=vRcv(V2.slice(4));
