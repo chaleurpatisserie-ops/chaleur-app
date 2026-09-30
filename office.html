@@ -446,7 +446,7 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--mute
 .btn.wa{background:#1f8f55;border-color:#1f8f55;color:#fff}
 ul.bkt{list-style:none;margin:0;padding:0}ul.bkt li{padding:7px 10px;border-radius:8px;margin:4px 0;background:var(--card2,rgba(127,127,127,.08))}ul.bkt li.ok b{color:var(--ok)}ul.bkt li.bad b{color:var(--bad)}#bktest .box2{margin-top:10px;padding:10px 12px;border:1px dashed var(--line,rgba(127,127,127,.4));border-radius:10px}#bktest .box2 ul{margin:6px 0 8px;padding-left:18px}
 .btn.danger{color:var(--bad)}
-.btn.sm{padding:5px 9px;font-size:12px}
+.btn.sm{padding:5px 9px;font-size:12px}.btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 button:focus-visible,a:focus-visible,input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
 input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:7px 9px;min-width:0}
@@ -870,11 +870,11 @@ const can=p=>(AUTH.perms||[]).includes(p);
 const MGR=()=>can("admin"), KIT=()=>!can("money"), SUPK=()=>can("doedit"), DELIV=()=>can("deliv")||can("doedit");
 /* view-only depends on the page: Setup needs Setup, Staff needs Staff and access, Problem reports needs Problem reports, the rest needs Office work */
 const RO=()=>{ const t=S.tab; if(t==="setup") return !can("setup"); if(t==="staff") return !can("staff"); if(t==="feedback") return !can("problems"); if(t==="audits") return !(can("reports")||can("audit")); return !can("reports"); };
-const TABOK={today:()=>can("chase")||can("reports")||can("view"),plan:()=>DELIV()||can("reports")||can("view"),deliveries:()=>DELIV()||can("reports")||can("view"),daily:()=>can("reports")||can("view"),log:()=>can("reports")||can("view"),
+const TABOK={numbers:()=>can("reports")||can("view")||can("kapprove"),today:()=>can("chase")||can("reports")||can("view"),plan:()=>DELIV()||can("reports")||can("view"),deliveries:()=>DELIV()||can("reports")||can("view"),daily:()=>can("reports")||can("view"),log:()=>can("reports")||can("view"),
   billing:()=>can("money")&&(can("reports")||can("view")||can("bills")),carry:()=>can("money")&&(can("reports")||can("view")||can("bills")),bills:()=>can("money")&&(can("reports")||can("view")||can("bills")),audits:()=>can("audit")||can("kapprove"),feedback:()=>can("problems"),setup:()=>can("setup")||can("view"),staff:()=>can("staff")};
 /* v21.10 the desk menu follows the same four areas as the home menu (Alfred), numbered */
-const TABS=[["deliveries","Delivery orders"],["carry","Carry forward"],["billing","Weekly billing"],["bills","All bills"],["daily","Outlet closing reports"],["today","To clear today"],["audits","Audit results"],["setup","Setup"],["staff","Staff & access"],["feedback","Problem reports"],["log","Corrections log"],["plan","Prep list · what to make"]];
-const TABGRP={deliveries:"Outlet Delivery",carry:"Outlet Delivery",billing:"Outlet Delivery",bills:"Outlet Delivery",daily:"Outlet Delivery",today:"Outlet Delivery",audits:"Outlet Delivery",setup:"Back office",staff:"Back office",feedback:"Back office",log:"Back office",plan:"Back office"};
+const TABS=[["deliveries","Delivery orders"],["carry","Carry forward"],["billing","Weekly billing"],["bills","All bills"],["daily","Outlet closing reports"],["today","To clear today"],["audits","Audit results"],["setup","Setup"],["staff","Staff & access"],["feedback","Problem reports"],["log","Corrections log"],["plan","Prep list · what to make"],["numbers","Numbers · made & waste"]];
+const TABGRP={deliveries:"Outlet Delivery",carry:"Outlet Delivery",billing:"Outlet Delivery",bills:"Outlet Delivery",daily:"Outlet Delivery",today:"Outlet Delivery",audits:"Outlet Delivery",setup:"Back office",staff:"Back office",feedback:"Back office",log:"Back office",plan:"Back office",numbers:"Back office"};
 const KLINKS=()=>[["Kitchen opening","kitchen.html#opening",can("kitchen")||can("kapprove")],["Kitchen closing","kitchen.html#closing",can("kitchen")||can("kapprove")],["Morning to-do · decorate & deliver","kitchen.html?team=am#today",can("kitchen")||can("kapprove")||can("todo")],["Noon to-do · production","kitchen.html?team=pm#today",can("kitchen")||can("kapprove")||can("todo")],["Kitchen reports","kitchen.html#history",true]].filter(x=>x[2]);
 const NCOL=8;
 let rq=false, MENU=false, MCLOSED=(()=>{ try{ return new Set(JSON.parse(localStorage.getItem("chaleur.deskmenu")||"[]")); }catch(e){ return new Set(); } })(); /* v21.13: every menu group can be minimised (Alfred) */
@@ -900,7 +900,7 @@ function doRender(){
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
   else if(S.loaded.size<NCOL) html=`<div class="empty">Loading consignment data…</div>`;
-  else html=({today:vToday,plan:vPlan,deliveries:vDeliveries,daily:vDaily,log:vLog,billing:vBilling,carry:vCarry,bills:vBills,audits:vAudits,feedback:vFeedback,setup:vSetup,staff:vStaff,none:()=>`<div class="empty">Your access doesn't include any office desk pages. Kitchen reports are in <a href="kitchen.html">Kitchen HQ</a>; ask Alfred or Joscelyn if you need more.</div>`})[S.tab](att);
+  else html=({today:vToday,plan:vPlan,deliveries:vDeliveries,daily:vDaily,log:vLog,billing:vBilling,carry:vCarry,bills:vBills,numbers:vNumbers,audits:vAudits,feedback:vFeedback,setup:vSetup,staff:vStaff,none:()=>`<div class="empty">Your access doesn't include any office desk pages. Kitchen reports are in <a href="kitchen.html">Kitchen HQ</a>; ask Alfred or Joscelyn if you need more.</div>`})[S.tab](att);
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
@@ -1269,6 +1269,81 @@ function vCarry(){
   return `<div class="head"><div><h1>Carry forward</h1><p class="lede">What each outlet still holds. Cakes unsold at the end of a billed week are credited on that week's carry-forward (CF) note and rebilled the next week as B/F lines at the original rate. The "At the outlet now" list comes from the latest closing count.</p></div></div>${cards||`<div class="empty">No outlets yet.</div>`}`;
 }
 /* ---- v21.10 All bills: every issued invoice / CF / credit note across outlets and weeks (Outlet Delivery › 4) ---- */
+/* ---- v22.6 Numbers · made & waste (Alfred 29 Sep: "a page to see all the numbers, including wastages, prepared … mainly to track wastage and produced").
+   One row per cake for a day, week or month. Numbers come from what the app already holds:
+   To make = the delivery orders + HQ display plan for the day; Made = the Made column of the prep list (kept 30 days);
+   Sent = the outlets' DOs (accepted qty once delivered); HQ waste/left = the kitchen closing count; outlet sold/waste/left = their closing reports.
+   HQ sold follows Alfred's rule: HQ has = yesterday's left + made − DOs out; sold = has − waste − left (only on days with a Made number and a count). ---- */
+function nmState(){ const u=S.ui.nm||(S.ui.nm={mode:"week",anchor:today(),who:""}); if(!u.anchor) u.anchor=today(); return u; }
+function nmRange(u){ const a=u.anchor; if(u.mode==="day") return {from:a,to:a,label:nice(a)};
+  if(u.mode==="month"){ const from=a.slice(0,8)+"01", d=P(from); d.setUTCMonth(d.getUTCMonth()+1); const to=add(d.toISOString().slice(0,10),-1); return {from,to,label:P(from).toLocaleString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"})}; }
+  const from=weekStartOf(a); return {from,to:add(from,6),label:`Week ${nice(from)} – ${nice(add(from,6))}`}; }
+function nmStep(u,n){ const a=u.anchor; if(u.mode==="day") return add(a,n); if(u.mode==="month"){ const d=P(a.slice(0,8)+"01"); d.setUTCMonth(d.getUTCMonth()+n); return d.toISOString().slice(0,10); } return add(weekStartOf(a),7*n); }
+function numbersData(from,to){
+  const R={}, row=id=>R[id]||(R[id]={id,toMake:0,made:null,madeDays:0,hqPlan:0,sent:{},sentAll:0,rejected:0,hqWaste:0,hqLeft:null,hqLeftDate:"",hqSold:null,hqSoldDays:0,oWaste:0,oSold:0,oLeft:{},days:new Set()});
+  const hq=partners(true).find(p=>p.internal), hqId=hq?hq.id:"", outs=partners(true).filter(p=>!p.internal), days=[]; for(let d=from;d<=to;d=add(d,1)) days.push(d);
+  const weeks=[...new Set(days.map(weekStartOf))];
+  /* DOs: to make (all), sent per outlet, HQ display plan */
+  for(const p of partners(true)) for(const ws of weeks) for(const o of Object.values(weekDoc(p.id,ws).dos||{})){ if(o.status==="cancelled"||o.date<from||o.date>to) continue;
+    for(const l of o.lines||[]){ const q=+l.qty||0; if(!q||!S.products[l.productId]) continue; const r=row(l.productId); r.toMake+=q; r.days.add(o.date);
+      if(p.internal){ r.hqPlan+=q; continue; }
+      const got=o.status==="delivered"?(+(l.accepted??l.qty)||0):q; r.sent[p.id]=(r.sent[p.id]||0)+got; r.sentAll+=got; if(o.status==="delivered") r.rejected+=Math.max(0,q-got); } }
+  /* Made (prep list) */
+  for(const d of days){ const m=((S.prep||{})[d]||{}).made||{}; for(const id of Object.keys(m)){ if(m[id]===""||m[id]==null||!S.products[id]) continue; const r=row(id); r.made=(r.made||0)+(+m[id]||0); r.madeDays++; r.days.add(d); } }
+  /* HQ closing counts: waste adds up, left = the last count in the period */
+  const hqCount={}; if(hqId) for(const ws of weeks){ const w=weekDoc(hqId,ws); for(const d of Object.keys(w.days||{})){ if(d<add(from,-1)||d>to) continue; const rep=w.days[d]; const per={}; for(const l of rep.lines||[]){ if(!S.products[l.productId]) continue; const x=per[l.productId]||(per[l.productId]={w:0,b:0}); x.w+=+l.w||0; x.b+=+l.b||0; } hqCount[d]=per; } }
+  for(const d of days){ const per=hqCount[d]; if(!per) continue; for(const id of Object.keys(per)){ const r=row(id); r.hqWaste+=per[id].w; r.hqLeft=per[id].b; r.hqLeftDate=d; r.days.add(d); } }
+  /* HQ sold, Alfred's rule, day by day */
+  for(const d of days){ const per=hqCount[d], prev=hqCount[add(d,-1)], m=((S.prep||{})[d]||{}).made||{}; if(!per) continue;
+    for(const id of Object.keys(per)){ if(m[id]===""||m[id]==null) continue; const r=row(id); let out=0;
+      for(const p of outs) for(const o of Object.values(weekDoc(p.id,weekStartOf(d)).dos||{})){ if(o.status==="cancelled"||o.date!==d) continue; for(const l of o.lines||[]) if(l.productId===id) out+=o.status==="delivered"?(+(l.accepted??l.qty)||0):(+l.qty||0); }
+      const has=((prev||{})[id]||{}).b||0, sold=has+(+m[id]||0)-out-per[id].w-per[id].b; r.hqSold=(r.hqSold||0)+Math.max(0,sold); r.hqSoldDays++; } }
+  /* outlets: sold / waste from calcWeek, left = last count in the period */
+  for(const p of outs) for(const ws of weeks){ const c=calcWeek(p.id,ws); for(const dd of c.days){ if(dd.date<from||dd.date>to||!dd.rep) continue;
+      for(const L of dd.lines){ if(!S.products[L.productId]) continue; const r=row(L.productId); r.oWaste+=+L.waste||0; r.oSold+=+L.sold||0; r.days.add(dd.date); }
+      const per={}; for(const L of dd.lines){ if(L.close==null) continue; per[L.productId]=(per[L.productId]||0)+(+L.close||0); } for(const id of Object.keys(per)) row(id).oLeft[p.id]=per[id]; } }
+  const rows=Object.values(R).map(r=>{ r.waste=r.hqWaste+r.oWaste; r.base=r.made!=null?r.made:r.toMake; r.pct=r.base>0?Math.round(r.waste*100/r.base):null; r.sold=(r.hqSold||0)+r.oSold; r.oLeftAll=Object.values(r.oLeft).reduce((a,b)=>a+b,0); return r; })
+    .filter(r=>r.toMake||r.made||r.waste||r.sold||r.hqLeft||r.oLeftAll).sort((a,b)=>(CATS.indexOf(catOf(prod(a.id)))-CATS.indexOf(catOf(prod(b.id))))||prod(a.id).name.localeCompare(prod(b.id).name));
+  return {rows,outs,hq,days};
+}
+function vNumbers(){ const u=nmState(), rg=nmRange(u), D=numbersData(rg.from,rg.to), t=today();
+  const who=u.who, outs=D.outs, one=who&&who!=="hq"?outs.find(p=>p.id===who):null;
+  const T={made:0,toMake:0,sent:0,hqW:0,oW:0,sold:0,madeRows:0}; for(const r of D.rows){ T.toMake+=r.toMake; if(r.made!=null){T.made+=r.made;T.madeRows++;} T.sent+=one?(r.sent[one.id]||0):r.sentAll; T.hqW+=r.hqWaste; T.oW+=one?0:r.oWaste; T.sold+=one?0:r.sold; }
+  const wasteT=who==="hq"?T.hqW:one?0:(T.hqW+T.oW), baseT=T.madeRows?T.made:T.toMake, pctT=baseT>0?Math.round(wasteT*100/baseT):null;
+  const worst=D.rows.filter(r=>(who==="hq"?r.hqWaste:one?0:r.waste)>0).sort((a,b)=>(who==="hq"?b.hqWaste-a.hqWaste:b.waste-a.waste)).slice(0,5);
+  const pctCell=(w,base)=>{ const pc=base>0?Math.round(w*100/base):null; return pc==null?`<span class="muted">—</span>`:`<b style="color:${pc>=25?"var(--bad)":pc>=10?"var(--warn)":"var(--ok)"}">${pc}%</b>`; };
+  const n=v=>v==null?`<span class="muted">—</span>`:`<span class="mono">${v}</span>`;
+  const head=who==="hq"?`<tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th><th class="r">Sent out</th><th class="r">HQ display plan</th><th class="r">HQ sold</th><th class="r">HQ left</th><th class="r">HQ waste</th><th class="r">Waste %</th></tr>`
+    :one?`<tr><th>Cake</th><th class="r">Sent</th><th class="r">Rejected</th><th class="r">Sold</th><th class="r">Left now</th><th class="r">Waste</th><th class="r">Waste % of sent</th></tr>`
+    :`<tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th>${outs.map(p=>`<th class="r">${esc(p.code)}</th>`).join("")}<th class="r">HQ</th><th class="r">Sold</th><th class="r">Left</th><th class="r">HQ waste</th><th class="r">Outlet waste</th><th class="r">Waste %</th></tr>`;
+  const body=D.rows.map(r=>{ const w=who==="hq"?r.hqWaste:one?0:r.waste, hi=w>=2&&r.base>0&&w*4>=r.base;
+    if(one){ const sent=r.sent[one.id]||0; if(!sent&&!r.oLeft[one.id]) return ""; const c=calcOne(one.id,r.id,rg.from,rg.to); return `<tr class="${c.waste>=3?"warnrow":""}"><td>${cake(r.id)}</td><td class="r">${n(sent)}</td><td class="r">${n(c.rej||0)}</td><td class="r">${n(c.sold)}</td><td class="r">${n(r.oLeft[one.id]??null)}</td><td class="r">${n(c.waste)}</td><td class="r">${pctCell(c.waste,sent)}</td></tr>`; }
+    if(who==="hq") return `<tr class="${hi?"warnrow":""}"><td>${cake(r.id)}</td><td class="r">${n(r.toMake)}</td><td class="r">${n(r.made)}${r.made!=null&&r.made<r.toMake?` <span class="pill warn">short ${r.toMake-r.made}</span>`:r.made!=null&&r.made>r.toMake?` <span class="pill info">+${r.made-r.toMake}</span>`:""}</td><td class="r">${n(r.sentAll)}</td><td class="r">${n(r.hqPlan)}</td><td class="r">${n(r.hqSold)}${r.hqSold!=null&&r.hqSoldDays<r.days.size?`<span class="small muted"> · ${r.hqSoldDays} day${r.hqSoldDays===1?"":"s"}</span>`:""}</td><td class="r">${n(r.hqLeft)}</td><td class="r">${n(r.hqWaste)}</td><td class="r">${pctCell(r.hqWaste,r.base)}</td></tr>`;
+    return `<tr class="${hi?"warnrow":""}"><td>${cake(r.id)}</td><td class="r">${n(r.toMake)}</td><td class="r">${n(r.made)}${r.made!=null&&r.made<r.toMake?` <span class="pill warn">short ${r.toMake-r.made}</span>`:r.made!=null&&r.made>r.toMake?` <span class="pill info">+${r.made-r.toMake}</span>`:""}</td>${outs.map(p=>`<td class="r">${n(r.sent[p.id]||0)}</td>`).join("")}<td class="r">${n(r.hqPlan)}</td><td class="r">${n(r.sold)}</td><td class="r">${n((r.hqLeft||0)+r.oLeftAll)}</td><td class="r">${n(r.hqWaste)}</td><td class="r">${n(r.oWaste)}</td><td class="r">${pctCell(r.waste,r.base)}</td></tr>`; }).join("");
+  const tot=one?"":`<tr class="tot"><td><b>Total</b></td><td class="r mono"><b>${T.toMake}</b></td><td class="r mono"><b>${T.madeRows?T.made:"—"}</b></td>${who==="hq"?`<td class="r mono"><b>${T.sent}</b></td><td class="r mono"><b>${D.rows.reduce((a,r)=>a+r.hqPlan,0)}</b></td><td class="r mono"><b>${D.rows.some(r=>r.hqSold!=null)?D.rows.reduce((a,r)=>a+(r.hqSold||0),0):"—"}</b></td><td class="r mono"><b>${D.rows.reduce((a,r)=>a+(r.hqLeft||0),0)}</b></td><td class="r mono"><b>${T.hqW}</b></td>`:`${outs.map(p=>`<td class="r mono"><b>${D.rows.reduce((a,r)=>a+(r.sent[p.id]||0),0)}</b></td>`).join("")}<td class="r mono"><b>${D.rows.reduce((a,r)=>a+r.hqPlan,0)}</b></td><td class="r mono"><b>${T.sold}</b></td><td class="r mono"><b>${D.rows.reduce((a,r)=>a+(r.hqLeft||0)+r.oLeftAll,0)}</b></td><td class="r mono"><b>${T.hqW}</b></td><td class="r mono"><b>${T.oW}</b></td>`}<td class="r">${pctCell(wasteT,baseT)}</td></tr>`;
+  const noMade=D.rows.length&&!T.madeRows;
+  return `<div class="head"><div><h1>Numbers · made &amp; waste</h1><p class="lede">What was planned, made, sent, sold, left and wasted, per cake. Waste % = waste ÷ made (or ÷ to make when no Made number was typed). Red rows: a quarter or more went to waste (2 cakes or more).</p></div></div>
+    <div class="panel"><div class="spread"><div class="row" style="flex-wrap:wrap;gap:8px">
+      <span class="seg" role="group" aria-label="Period">${[["day","Day"],["week","Week"],["month","Month"]].map(([k,l])=>`<button class="btn sm ${u.mode===k?"on":""}" data-nmmode="${k}" aria-pressed="${u.mode===k}">${l}</button>`).join("")}</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><button class="btn sm" data-nmstep="-1" aria-label="Previous">‹</button><b>${esc(rg.label)}</b><button class="btn sm" data-nmstep="1" aria-label="Next" ${nmStep(u,1)>t?"disabled":""}>›</button></span>${rg.to<t||rg.from>t?`<button class="btn sm" data-nmstep="0">Today</button>`:""}
+      <select data-nmwho="1" aria-label="Show"><option value="" ${!who?"selected":""}>Everything</option><option value="hq" ${who==="hq"?"selected":""}>Kitchen HQ only</option>${outs.map(p=>opt(p.id,p.name+" only",who)).join("")}</select></div></div>
+      <div class="stats" style="margin-top:12px">
+        <div class="stat"><h3>${T.madeRows?"Made":"To make"}</h3><span class="v">${baseT}</span><span class="small muted">${T.madeRows?"cakes made · from the prep list":"cakes on the DOs · no Made typed yet"}</span></div>
+        ${one?`<div class="stat"><h3>Sent to ${esc(one.name)}</h3><span class="v">${T.sent}</span><span class="small muted">on delivery orders</span></div>`:`<div class="stat"><h3>Sent to outlets</h3><span class="v">${T.sent}</span><span class="small muted">${outs.map(p=>`${esc(p.code)} ${D.rows.reduce((a,r)=>a+(r.sent[p.id]||0),0)}`).join(" · ")}</span></div>`}
+        ${one?"":`<div class="stat"><h3>Sold</h3><span class="v">${T.sold}</span><span class="small muted">${who==="hq"?"HQ, by the closing count":"outlets by their counts"+(D.rows.some(r=>r.hqSold!=null)?" + HQ":"")}</span></div>`}
+        <div class="stat"><h3>Waste</h3><span class="v" style="color:${wasteT?(pctT>=10?"var(--bad)":"var(--warn)"):"var(--ok)"}">${one?calcOneTotal(one.id,rg.from,rg.to).waste:wasteT}</span><span class="small muted">${who==="hq"?"thrown away at HQ":one?"thrown away at the outlet":`HQ ${T.hqW} · outlets ${T.oW}`}${!one&&pctT!=null?` · ${pctT}% of ${T.madeRows?"made":"to make"}`:""}</span></div>
+      </div>
+      ${worst.length?`<p class="small" style="margin:10px 0 0"><b>Most wasted:</b> ${worst.map(r=>`${esc(prod(r.id).name)} ${who==="hq"?r.hqWaste:r.waste}`).join(" · ")}</p>`:""}
+      ${noMade?`<p class="small muted" style="margin:8px 0 0">No Made numbers for this period: the prep list keeps Made for 30 days, and someone has to type it (or, soon, snap the prep sheet). Until then the table uses To make.</p>`:""}</div>
+    <div class="panel">${D.rows.length?`<div class="tw"><table><thead>${head}</thead><tbody>${body}${tot}</tbody></table></div>`:`<div class="empty">Nothing recorded for ${esc(rg.label)}: no delivery orders, Made numbers or closing counts.</div>`}
+      <p class="small muted" style="margin:8px 0 0">To make = the day's delivery orders + HQ display plan. Made = the prep list's Made column. Sent = accepted quantity once delivered. Sold and waste at outlets come from their closing counts; HQ waste and left from the kitchen closing count. HQ sold = yesterday's left + made − sent out − waste − left, only on days with a Made number.</p></div>`;
+}
+/* one outlet, one cake, over a range (for the outlet-only view) */
+function calcOne(pid,id,from,to){ let sold=0,waste=0,rej=0; const weeks=[...new Set((()=>{const a=[];for(let d=from;d<=to;d=add(d,1)) a.push(weekStartOf(d));return a;})())];
+  for(const ws of weeks){ const c=calcWeek(pid,ws); for(const dd of c.days){ if(dd.date<from||dd.date>to||!dd.rep) continue; for(const L of dd.lines) if(L.productId===id){ sold+=+L.sold||0; waste+=+L.waste||0; } }
+    for(const o of Object.values(weekDoc(pid,ws).dos||{})){ if(o.status!=="delivered"||o.date<from||o.date>to) continue; for(const l of o.lines||[]) if(l.productId===id) rej+=Math.max(0,(+l.qty||0)-(+(l.accepted??l.qty)||0)); } }
+  return {sold,waste,rej}; }
+function calcOneTotal(pid,from,to){ let waste=0; for(const id of Object.keys(S.products)) waste+=calcOne(pid,id,from,to).waste; return {waste}; }
 function vBills(){
   const rows=[]; for(const w of Object.values(S.weeks)){ const p=partner(w.partnerId); if(!p||p.internal) continue;
     if(w.settlement){ const st=w.settlement, T=st.totals||{}; rows.push({pid:p.id,name:p.name,ws:w.weekStart,we:add(w.weekStart,6),invNo:st.invNo,cfNo:st.cfNo,cnNo:st.cnNo,inv:+T.inv||0,cf:+T.cf||0,cn:+T.cn||0,net:+T.net||0,issuedAt:st.issuedAt,paid:st.paid,bukku:!!(st.bukku&&st.bukku.invId),status:"issued",flag:!!(w.afterBill&&w.afterBill.length)}); }
@@ -1951,6 +2026,7 @@ document.addEventListener("change",async e=>{
   if(t.dataset.hq!==undefined){(S.ui.hqd=S.ui.hqd||{})[t.dataset.hq]=t.value;return;}
   if(t.dataset.hqcl!=null){const h=S.ui.hqd||(S.ui.hqd={}); const c=new Set(((h.closed??(S.ui.hqs||{}).closed)||[]).map(Number)); if(t.checked) c.add(+t.dataset.hqcl); else c.delete(+t.dataset.hqcl); h.closed=[...c].sort(); return;}
   if(t.dataset.flt){const [g,k]=t.dataset.flt.split(".");S.ui[g]={...(S.ui[g]||{}),[k]:t.value};render();return;}
+  if(t.dataset.nmwho!=null){ nmState().who=t.value; render(); return; }
   if(RO()&&!t.dataset.ui&&!t.dataset.stp&&!t.dataset.st&&!(DELIV()&&kitOK(t))){toast("View only — your access doesn't include changing this");render();return;}
   if(t.dataset.doadd!=null&&S.ui.doEdit){const E=S.ui.doEdit, id=t.value; if(id&&S.products[id]){ E.rows=[...doRowIds(E).filter(x=>x!==id),id]; E.rowsTouched=true; } render(); setTimeout(()=>{const q=document.getElementById("dq-"+id); if(q) q.focus();},60); return;}
   if(t.dataset.ckc!=null&&S.ui.colChk){S.ui.colChk.rows[+t.dataset.ckc].colour=t.value;render();return;}
@@ -1984,7 +2060,7 @@ document.addEventListener("click",async e=>{
   if(d.mgrp){ if(MCLOSED.has(d.mgrp)) MCLOSED.delete(d.mgrp); else MCLOSED.add(d.mgrp); try{ localStorage.setItem("chaleur.deskmenu",JSON.stringify([...MCLOSED])); }catch(x){} render(); return; }
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
-  if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null||d.dorm!=null))&&!(DELIV()&&(d.prm||d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"||d.act==="makeDOsGo"||d.act==="makeDOsNo"||d.dskip!=null))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.attnav||d.act==="attAll"||d.billsel||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF")){toast("View only — ask a manager to make changes");return;}
+  if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null||d.dorm!=null))&&!(DELIV()&&(d.prm||d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"||d.act==="makeDOsGo"||d.act==="makeDOsNo"||d.dskip!=null))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.attnav||d.act==="attAll"||d.billsel||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF"||d.nmmode||d.nmstep!=null)){toast("View only — ask a manager to make changes");return;}
   if(d.dorm&&S.ui.doEdit){const E=S.ui.doEdit; E.rows=doRowIds(E).filter(x=>x!==d.dorm); delete E.lines[d.dorm]; E.rowsTouched=true; render(); return;}
   if(d.dskip&&S.ui.doPrev){const P=S.ui.doPrev, x=P.out.find(o=>o.pid===d.dskip); P.out=P.out.filter(o=>o.pid!==d.dskip); if(x) P.skip.push({name:x.p.name,d1:x.d1,why:"removed by you"}); (S.ui.doSkip||(S.ui.doSkip=new Set())).add(d.dskip); render(); return;}
   if(d.prm){const [dd,id]=d.prm.split("|"); if(!confirm(`Take ${prod(id).name} off the prep list for ${nice(dd)}? Every outlet goes to 0.`)) return; b.disabled=true;
@@ -1994,7 +2070,7 @@ document.addEventListener("click",async e=>{
   if(d.stnew){const C=S.stCat||{presets:{kitchen:{staff:[]}}}; S.ui.stEdit={row:0,name:"",phone:"",code:"",role:"kitchen",notes:"",area:"kitchen",level:"staff",perms:(C.presets.kitchen.staff||[]).slice()};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
   if(d.stedit){const x=(S.team||[]).find(r=>String(r.row)===d.stedit); if(x){S.ui.stEdit={...x,phone:x.phone&&/^60\d{8,10}$/.test(x.phone)?"0"+x.phone.slice(2):(x.phone||"")};render();window.scrollTo(0,0);} return;}
-  if(d.stsave){const x=S.ui.stEdit; if(x){b.disabled=true; await stSave({...x,active:x.row?x.active:true}); b.disabled=false;} return;}
+  if(d.stsave){const x=S.ui.stEdit; { const c=String((x&&x.code)||""); if(x&&c&&c!=="••••"&&!/^[0-9]{4}$/.test(c)){ toast("The PIN must be 4 digits."); return; } } /* v22.5: new and changed PINs are 4 digits */ if(x){b.disabled=true; await stSave({...x,active:x.row?x.active:true}); b.disabled=false;} return;}
   if(d.sttog){const x=(S.team||[]).find(r=>String(r.row)===d.sttog); if(x){b.disabled=true; await stSave({...x,active:!x.active});} return;}
   if(d.goDaily){const [p,dt]=d.goDaily.split("|");S.ui.partner=p;S.ui.date=dt;S.tab="daily";S.ui.editDay=false;render();return;}
   if(d.tip){S.ui.tipOpen=S.ui.tipOpen===d.tip?null:d.tip;render();return;}
@@ -2011,6 +2087,8 @@ document.addEventListener("click",async e=>{
   if(d.dnprint){printDN(d.dnprint);return;}
   if(d.att){const a=attention()[+d.att]; if(a&&a.go){S.ui.partner=a.pid;S.tab=a.go.tab;if(a.go.date)S.ui.date=a.go.date;if(a.go.week)S.ui.week=a.go.week;render();}return;}
   if(d.day){S.ui.date=add(S.ui.date||today(),+d.day);S.ui.editDay=false;render();return;}
+  if(d.nmmode){ nmState().mode=d.nmmode; render(); return; }
+  if(d.nmstep!=null){ const u=nmState(); u.anchor=+d.nmstep?nmStep(u,+d.nmstep):today(); render(); return; }
   if(d.wk){S.ui.week=add(S.ui.week||weekStartOf(add(today(),-7)),+d.wk);S.ui.confirm=null;render();return;}
   if(d.setup){S.ui.setup=d.setup;S.ui.confirm=null;render();return;}
   if(d.chk){const [pid,ws,id]=d.chk.split("|"); const x=weekDoc(pid,ws).dos[id]; if(!x) return; S.ui.colChk={pid,ws,id,no:x.no,date:x.date,ok:false,rows:(x.lines||[]).filter(l=>+l.qty).map(l=>({productId:l.productId,qty:String(l.qty),colour:l.colour||x.colour}))}; S.ui.doEdit=null; render(); window.scrollTo(0,0); return;}
@@ -2282,7 +2360,7 @@ function vStaff(){
   const form=ed?`<div class="panel"><div class="spread"><h2>${ed.row?"Edit staff":"Add staff"}</h2><button class="btn sm" data-stcancel="1">Cancel</button></div>
     <div class="fgrid"><label class="f">Name<input id="st-name" data-st="name" value="${esc(ed.name||"")}" autocomplete="off"></label>
       <label class="f">Phone number (for signing in)<input id="st-phone" data-st="phone" type="tel" inputmode="tel" value="${esc(ed.phone||"")}" placeholder="012-345 6789" autocomplete="off"></label>
-      <label class="f">PIN (4–6 digits)<input id="st-code" data-st="code" inputmode="numeric" maxlength="6" value="${esc(ed.code==="••••"?"":(ed.code||""))}" placeholder="${ed.row?"Leave blank to keep the current PIN":"e.g. 4821"}" autocomplete="off"></label>
+      <label class="f">PIN (4 digits)<input id="st-code" data-st="code" inputmode="numeric" maxlength="4" value="${esc(ed.code==="••••"?"":(ed.code||""))}" placeholder="${ed.row?"Leave blank to keep the current PIN":"e.g. 4821"}" autocomplete="off"></label>
       <label class="f">Notes<input id="st-notes" data-st="notes" value="${esc(ed.notes||"")}"></label></div>
     ${ed.role==="owner"?`<p class="small"><b>Owner</b> — has every access, always, and can view the app as anyone.</p>`:`
     <h3 style="margin:14px 0 4px">Access</h3>
