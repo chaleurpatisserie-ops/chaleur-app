@@ -108,6 +108,37 @@ body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bot
 .tourpill{display:none;position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:76;max-width:calc(100vw - 28px);background:#2b1b1e;color:#fdf6ee;border:1.5px solid #e3c466;border-radius:20px;padding:8px 14px;font:600 12.5px var(--body,Jost,system-ui,sans-serif);box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;touch-action:manipulation;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tourpill.on{display:block}.tourbub:not(.off)~.tourpill{display:none}.tourpill b{color:#e3c466}
 @media print{.ca-hbtn,.ca-hp,.ca-chip button,.tourhi,.tourbub,.tourshow,.tourpill{display:none!important}}
+
+/* v22.7 the one menu (same on every page) */
+#camenu{--m-ground:var(--ground,#f7f2ec);--m-paper:var(--paper,#fff);--m-ink:var(--ink,#2b1b1e);--m-muted:var(--muted,#6f5f62);--m-line:var(--cline,var(--line,#e8dcd6));--m-soft:var(--soft,#f3e4e5);--m-accent:var(--accent,#7b1c2b);--m-display:var(--display,'Cormorant Garamond',Georgia,serif);--m-body:var(--body,Jost,system-ui,sans-serif);font:15px/1.45 var(--m-body);color:var(--m-ink)}
+#camenu .menu{position:fixed;inset:0;z-index:80;background:var(--m-ground);overflow:auto;-webkit-tap-highlight-color:transparent}
+#camenu .in{max-width:560px;margin:0 auto;padding:10px 12px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;box-sizing:border-box}
+#camenu *,#camenu *::before{box-sizing:border-box}#camenu a{color:inherit}#camenu button{font-family:inherit;cursor:pointer}
+#camenu .mh{display:flex;align-items:center;gap:8px;padding:0 4px 4px}#camenu .mh div{flex:1;font:700 26px var(--m-display)}
+#camenu .hbtn{height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--m-line);background:var(--m-paper);font-weight:600;font-size:14px;color:var(--m-ink);box-shadow:0 3px 0 var(--m-line);flex:none}
+#camenu .card{background:var(--m-paper);border:1.5px solid var(--m-line);border-radius:20px;box-shadow:0 3px 0 var(--m-line);padding:0;margin:0;display:block;font-size:15px;line-height:1.45}
+#camenu .grp .its b,#camenu .grp .its small,#camenu .grp .nm b,#camenu .grp .nm small{line-height:1.3;margin:0}
+#camenu .msearch{display:flex;align-items:center;gap:8px;min-height:50px;padding:0 14px;border-radius:14px;background:var(--m-paper);border:1.5px solid var(--m-line);color:var(--m-muted)}#camenu .msearch svg{width:20px;height:20px;flex:none}#camenu .msearch input{flex:1;border:0;background:transparent;font:16px var(--m-body);color:var(--m-ink);min-width:0;outline:none}
+#camenu .grp{overflow:hidden;flex-shrink:0}#camenu .grp>button{width:100%;min-height:60px;display:flex;align-items:center;gap:12px;padding:8px 14px;border:0;background:transparent;text-align:left;color:var(--m-ink)}
+#camenu .ico{width:46px;height:46px;border-radius:14px;flex:none;display:grid;place-items:center}#camenu .ico svg{width:30px;height:30px}
+#camenu .grp .nm{flex:1;min-width:0}#camenu .grp .nm b{display:block;font-weight:700;font-size:16px}#camenu .grp .nm small{display:block;font-size:12px;color:var(--m-muted)}
+#camenu .grp .chev{width:32px;height:32px;border-radius:50%;background:var(--m-soft);color:var(--m-accent);display:grid;place-items:center;font-size:12px;flex:none}
+#camenu .grp .its{padding:0 8px 8px;display:flex;flex-direction:column;gap:4px}
+#camenu .grp .its a,#camenu .grp .its button{min-height:54px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:8px 12px;border:0;border-radius:12px;background:var(--m-ground);text-align:left;color:var(--m-ink);text-decoration:none;width:100%;font:inherit}
+#camenu .grp .its a:active,#camenu .grp .its button:active{background:var(--m-soft)}#camenu .grp .its a[aria-current="page"]{background:var(--m-soft);box-shadow:inset 0 0 0 1.5px var(--m-accent)}
+#camenu .grp .its .num{width:26px;height:26px;border-radius:50%;background:var(--m-paper);border:1.5px solid var(--m-line);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--m-accent)}
+#camenu .grp .its b{display:block;font-weight:600;font-size:14.5px}#camenu .grp .its small{display:block;font-size:12px;color:var(--m-muted)}#camenu .go{color:var(--m-accent);font-size:20px;font-weight:700}
+#camenu .mlab{font:700 11.5px var(--m-body);letter-spacing:.1em;text-transform:uppercase;color:var(--m-muted);padding:8px 6px 0}
+#camenu .mlist{padding:6px;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+#camenu .mrow{min-height:58px;display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:left;color:var(--m-ink);text-decoration:none;width:100%;font:inherit}
+#camenu .mrow:active,#camenu .mrow[aria-current="page"]{background:var(--m-soft)}#camenu .mrow .mi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}#camenu .mrow .mi svg{width:24px;height:24px}#camenu .mrow b{display:block;font-weight:700;font-size:15.5px}#camenu .mrow small{display:block;font-size:12.5px;color:var(--m-muted)}
+#camenu .mnone{padding:16px;font-size:14px;color:var(--m-muted)}
+#camenu .mf{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px}
+#camenu .cb{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:16px;min-height:52px;padding:0 18px;font:700 15px var(--m-body);text-decoration:none}
+#camenu .cb.ink{background:var(--m-ink);color:var(--m-paper);box-shadow:0 4px 0 #000}#camenu .cb.ghost{background:var(--m-paper);color:var(--m-muted);border:1.5px solid var(--m-line);box-shadow:0 3px 0 var(--m-line)}
+#camenu .mlinks{display:flex;justify-content:center;gap:22px;padding:2px 0 4px;flex-wrap:wrap}#camenu .lnk{min-height:40px;display:inline-flex;align-items:center;font-size:14px;border:0;background:none;box-shadow:none;padding:0 4px;color:var(--m-accent);font-weight:600;text-decoration:underline;text-underline-offset:3px;font-family:inherit}
+#camenu .mwho{display:flex;justify-content:center;padding:4px 0}#camenu .mwho .ca-chip{justify-content:center}
+@media (prefers-color-scheme:dark){#camenu .cb.ink{box-shadow:0 4px 0 rgba(0,0,0,.6)}}
 </style>
 <script>
 /* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
@@ -381,7 +412,87 @@ const CA=(function(){
     const TOUR={define,start,maybeStart,stop,skip,next,seen,on:()=>I>=0,step:()=>I,manual:()=>MAN,reset:()=>keys().forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} })};
     return TOUR;
   })();
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR};
+
+  /* ===== v22.7 ONE MENU for every page (Alfred 1 Oct: "both this interface should be the same … only one for each thing").
+     The pages, their areas, access and search words live here once; Home, the office desk and the kitchen page all draw the same menu. ===== */
+  const AREAS=["Kitchen HQ","Outlet Delivery","Back office","Help & support"];
+  const AREAD={"Kitchen HQ":"Opening and closing, prep list, morning and noon to-do, kitchen reports, numbers","Outlet Delivery":"Delivery orders, carry forward, bills, outlet reports, audits","Back office":"Reports, setup, staff, problem reports, corrections","Help & support":"How-to guide, the helper, report a problem, team treat"};
+  /* [area, title, description, link, access (ticks: any of; or a function of can), search words, daily-for] */
+const PAGES=[
+ /* v22.4 (Alfred 29 Sep): 6 clear Kitchen HQ pages. "Decoration & delivery list" → Morning to-do, "Production list" → Noon to-do;
+    the production plan (lists for the next days) is inside the Noon to-do (and the Plan chip on the kitchen page), no longer its own page here. */
+ ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries · due 10:30","kitchen.html#opening",["kitchen","kapprove"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
+ ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists · due 19:30","kitchen.html#closing",["kitchen","kapprove"],"closing report waste left lists evening",["kitchen:pm"]],
+ ["Kitchen HQ","Prep list · what to make","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
+ ["Kitchen HQ","Morning to-do · decorate & deliver","Morning team: today's cakes, custom & Grab orders, finish & decorate, pack & deliver the DOs","kitchen.html?team=am#today",["kitchen","kapprove","todo"],"morning decoration decorate delivery list to-do custom order grab pack deliver",["kitchen:am"]],
+ ["Kitchen HQ","Noon to-do · production","Noon team: today's production list, prep reminders, and the plan for the next days","kitchen.html?team=pm#today",["kitchen","kapprove","todo"],"noon production list plan mise en place photo next days to-do reminders",["kitchen:pm"]],
+ ["Kitchen HQ","Kitchen reports","Past reports, temperatures and photos · fridges, display cakes and reminders","kitchen.html#history",["kitchen","kapprove","view"],"history temperature fridge freezer streak calendar setup display list reminder limit",[]],
+ ["Kitchen HQ","Numbers · made & waste","To make, made, sent, sold, left and waste per cake · day, week or month","office.html#numbers",["reports","view","kapprove"],"numbers waste wastage made produced prepared sold left figures report",[]],
+ ["Outlet Delivery","Delivery orders","Check colours, mark delivered, edit before it goes out","office.html#deliveries",["deliv","doedit"],"do delivery order colour dot",["kitchen","office"]],
+ ["Outlet Delivery","Carry forward","Stock held at each outlet and what rolls into this week's bill","office.html#carry",(c)=>c("money")&&(c("reports")||c("view")||c("bills")),"carry forward b/f stock held unsold cf note",["office"]],
+ ["Outlet Delivery","Weekly billing","Invoice, carry forward and credit note per outlet week","office.html#billing",(c)=>c("money")&&(c("reports")||c("bills")),"invoice bill cf cn credit bukku payment weekly",["office"]],
+ ["Outlet Delivery","All bills","Every invoice, carry forward and credit note: amount, paid, Bukku","office.html#bills",(c)=>c("money")&&(c("reports")||c("view")||c("bills")),"all bills invoices list paid bukku history",["office"]],
+ ["Outlet Delivery","Outlet closing reports","Each outlet's nightly count, and corrections","office.html#daily",["reports","view"],"closing report correction paste waste balance sold",["office","outlets"]],
+ ["Outlet Delivery","To clear today","Missing reports, chase outlets, bills to approve","office.html#today",["chase","view"],"attention chase whatsapp missing report board",["office","outlets"]],
+ ["Outlet Delivery","Spot audit","Visit an outlet: display, prices, chiller","audit.html",["audit"],"audit visit outlet check",["outlets"]],
+ ["Outlet Delivery","Audit results","Every spot audit and taste check, with photos and PDF","office.html#audits",["audit","kapprove"],"spot audit results qc history pdf score taste check",[]],
+ ["Back office","Reports","Every report: done and not done, what was sent, photos, reminders and Chase on WhatsApp","reports.html",(c,s)=>/owner|manager/i.test(labelOf(s)||""),"reports report done undone missing photos chase reminder whatsapp",[]],
+ ["Back office","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup"],"outlet cake product price shelf life whatsapp wasapbot bukku key go-live fresh start holiday limits",[]],
+ ["Back office","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
+ ["Back office","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems"],"feedback problem report reply urgent helper questions",[]],
+ ["Back office","Corrections log","Every change to a report: who, when and why","office.html#log",["reports"],"edit log correction history",[]],
+];
+const HELP=[["How-to guide","Step by step for your job, and I'm stuck answers","#guide"],["Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat & points","This month's treat, the jar and the leaderboard","#treat"]];
+const ICON={
+ "Kitchen HQ":["#f3e4e5",`<svg viewBox="0 0 30 30"><circle cx="15" cy="5" r="3" fill="#c0392b"/><path d="M7 12h16v4H7z" fill="#e0707a"/><path d="M5 16h20v9H5z" fill="#7b1c2b"/><path d="M5 19h20v2H5z" fill="#e3c466"/></svg>`],
+ "Quality checks":["#fbecd2",`<svg viewBox="0 0 30 30"><circle cx="12" cy="12" r="7" fill="none" stroke="#a0620a" stroke-width="3"/><circle cx="10" cy="10" r="2.5" fill="#f2c230"/><path d="M17 17l8 8" stroke="#a0620a" stroke-width="4" stroke-linecap="round"/></svg>`],
+ "Outlet Delivery":["#dde8f8",`<svg viewBox="0 0 30 30"><path d="M4 9h22v4H4z" fill="#b07c44"/><path d="M6 13h18v12H6z" fill="#c9955b"/><path d="M13 13h4v12h-4z" fill="#ecc98f"/><circle cx="23" cy="22" r="4" fill="#2f6fd0" stroke="#fff" stroke-width="1.5"/></svg>`],
+ "Back office":["#fbf1d3",`<svg viewBox="0 0 30 30"><rect x="6" y="5" width="18" height="22" rx="3" fill="#fff" stroke="#2b1b1e" stroke-width="2"/><rect x="11" y="3" width="8" height="5" rx="2" fill="#2b1b1e"/><path d="M10 13h10M10 17h7M10 21h9" stroke="#a0620a" stroke-width="2"/></svg>`],
+ "Help & support":["#dcefe2",`<svg viewBox="0 0 30 30"><path d="M4 6h22v14H13l-6 5v-5H4z" fill="#1e8449"/><text x="15" y="17" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Jost,sans-serif">?</text></svg>`]};
+
+  const pageOK=(x,s)=>{ const c=p=>permsOf(s).includes(p); return typeof x[4]==="function"?!!x[4](c,s):x[4].some(c); };
+  const pagesFor=s=>PAGES.filter(x=>pageOK(x,s));
+  const myArea=s=>(areaOf(s)||"office")==="kitchen"?"Kitchen HQ":"Outlet Delivery";
+  const helpItems=()=>HELP.map(([t,d,v])=>/^#/.test(v)?{t,d,href:"index.html"+v,sec:"Help & support",k:"help guide ask report problem treat points"}:{t,d,help:v,sec:"Help & support",k:"help ask report problem mine"});
+  /* the four areas in a fixed order (the same everywhere); a person only sees the pages their access allows */
+  const sections=s=>AREAS.map(sec=>({name:sec,items:sec==="Help & support"?helpItems():pagesFor(s).filter(x=>x[0]===sec).map(x=>({t:x[1],d:x[2],href:x[3],k:x[5]||"",sec}))})).filter(x=>x.items.length);
+  const here=()=>(location.pathname.split("/").pop()||"index.html")+location.search+location.hash;
+  const isHere=href=>{ const h=here(); if(href===h) return true; const base=href.split("#")[0]; return !href.includes("#")&&base===h.split("#")[0]&&!/^index\.html/.test(base); };
+  const icon=sec=>ICON[sec]||ICON["Help & support"];
+  const row=it=>{ const ic=icon(it.sec), inner=`<span class="mi" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="mt"><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span>`;
+    return it.help?`<button type="button" class="mrow" data-help="${esc(it.help)}">${inner}</button>`:`<a class="mrow" href="${esc(it.href)}" data-mgo="1" ${isHere(it.href)?'aria-current="page"':""}>${inner}</a>`; };
+  let MOPEN=(()=>{ try{ const v=localStorage.getItem("chaleur.menu"); return v==null?null:v; }catch(e){ return null; } })(), MQ="", MINE=null, MON=false;
+  function menuBody(){ const s=get(), q=MQ.trim().toLowerCase(), secs=sections(s);
+    if(q){ const words=q.split(/\s+/), all=secs.flatMap(x=>x.items), hit=all.filter(it=>{ const hay=(it.t+" "+it.d+" "+it.k+" "+it.sec).toLowerCase(); return words.every(w=>hay.includes(w)); });
+      return hit.length?`<div class="mlab">${hit.length} page${hit.length===1?"":"s"}</div><div class="card mlist">${hit.map(row).join("")}</div>`:`<div class="card mnone">Nothing found for “${esc(MQ.trim())}”. Try another word, or tap <b>? Ask</b>.</div>`; }
+    if(MOPEN==null||(MOPEN&&!secs.some(x=>x.name===MOPEN))) MOPEN=secs.some(x=>x.name===myArea(s))?myArea(s):(secs.length?secs[0].name:""); /* "" = all areas closed (v21.13) */
+    return secs.map(sec=>{ const op=MOPEN===sec.name, ic=icon(sec.name);
+      return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${esc(AREAD[sec.name]||"")}</small></span><span class="chev" aria-hidden="true">${op?"▲":`${sec.items.length} ▼`}</span></button>
+        ${op?`<div class="its">${sec.items.map((it,i)=>it.help?`<button type="button" data-help="${esc(it.help)}"><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></button>`:`<a href="${esc(it.href)}" data-mgo="1" ${isHere(it.href)?'aria-current="page"':""}><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join(""); }
+  function menuEl(){ let m=document.getElementById("camenu"); if(!m){ m=document.createElement("div"); m.id="camenu"; document.body.appendChild(m); } return m; }
+  function drawMenu(){ const m=menuEl(), s=get(); if(!MON||!s){ m.innerHTML=""; document.body.style.overflow=""; return; } document.body.style.overflow="hidden";
+    const mc=MINE&&MINE.length?MINE.filter(x=>x.status!=="done").length:0;
+    m.innerHTML=`<div class="menu" role="dialog" aria-modal="true" aria-label="Menu"><div class="in"><div class="mh"><div>Menu</div><button class="hbtn" type="button" data-mclose="1">✕ Close</button></div>
+      <label class="msearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><input id="msq" type="search" autocomplete="off" placeholder="Find a page: billing, fridge, audit…" value="${esc(MQ)}" aria-label="Find a page"></label>
+      <div id="mres">${menuBody()}</div>
+      <div class="mf"><button type="button" class="cb ink" data-help="ask">? Ask / Report</button><button type="button" class="cb ghost" data-ca-logout="1">Log out</button></div>
+      <div class="mlinks">${/^index\.html/.test(here())?"":`<a class="lnk" href="index.html">‹ Home</a>`}${mc?`<button type="button" class="lnk" data-help="mine">My reports (${mc} open)</button>`:""}</div>
+      <div class="mwho">${chip(s)}</div></div></div>`; }
+  function menuOpen(){ const s=get(); if(!s) return; MON=true; MQ=""; drawMenu(); if(!MINE){ run("feedbackMine",s.t).then(r=>{ MINE=r||[]; if(MON) drawMenu(); }).catch(()=>{ MINE=[]; }); } }
+  function menuClose(){ if(!MON) return; MON=false; MQ=""; drawMenu(); }
+  document.addEventListener("input",e=>{ if(e.target&&e.target.id==="msq"&&e.target.closest("#camenu")){ MQ=e.target.value; const r=document.querySelector("#camenu #mres"); if(r) r.innerHTML=menuBody(); } });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&MON) menuClose(); });
+  document.addEventListener("click",e=>{ const t=e.target; if(!t||!t.closest) return;
+    const mb=t.closest("[data-menu]"); if(mb&&!t.closest("#camenu")){ e.preventDefault(); e.stopImmediatePropagation(); menuOpen(); return; }
+    if(!t.closest("#camenu")) return;
+    e.stopImmediatePropagation(); /* the menu handles its own taps; the page's handlers stay out */
+    if(t.closest("[data-mclose]")){ menuClose(); return; }
+    const sb=t.closest("[data-msec]"); if(sb){ const n=sb.dataset.msec; MOPEN=MOPEN===n?"":n; try{ localStorage.setItem("chaleur.menu",MOPEN); }catch(x){} drawMenu(); return; }
+    const h=t.closest("[data-help]"); if(h){ menuClose(); openHelp(h.dataset.help); return; }
+    const g=t.closest("[data-mgo]"); if(g){ const href=g.getAttribute("href")||""; menuClose(); if(href.split("#")[0]===here().split("#")[0]&&href.includes("#")){ e.preventDefault(); location.hash=href.slice(href.indexOf("#")); } return; }
+    if(t.closest("[data-ca-logout]")){ e.preventDefault(); logout(); return; } });
+  const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON};
 })();
 </script>
 
@@ -471,31 +582,12 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 .sechd{display:flex;align-items:center;gap:12px;margin:2px 2px 0}.sechd .ico{width:56px;height:56px;border-radius:16px}.sechd .ico svg{width:36px;height:36px}.sechd h2{font:700 30px/1.05 var(--display);margin:0}
 .todayln{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;text-decoration:none;color:inherit}
 .todayln .ico{color:var(--accent)}.todayln .ico svg{width:26px;height:24px}.todayln b{display:block;font-size:16px}
-/* menu */
-.menu{position:fixed;inset:0;z-index:60;background:var(--ground);overflow:auto}
-.menu .in{max-width:560px;margin:0 auto;padding:10px 12px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px}
-.menu .mh{display:flex;align-items:center;gap:8px;padding:0 4px 4px}.menu .mh div{flex:1;font:700 26px var(--display)}
-.grp{overflow:hidden;flex-shrink:0}.grp>button{width:100%;min-height:66px;display:flex;align-items:center;gap:12px;padding:8px 14px;border:0;background:transparent;text-align:left;color:var(--ink)}
-.grp .nm{flex:1}.grp .nm b{display:block;font-weight:700;font-size:16px}.grp .nm small{display:block;font-size:12px;color:var(--muted)}
-.grp .chev{width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--accent);display:grid;place-items:center;font-size:12px;flex:none}
-.grp .its{padding:0 8px 8px;display:flex;flex-direction:column;gap:4px}
-.grp .its a,.grp .its button{min-height:54px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:8px 12px;border:0;border-radius:12px;background:var(--ground);text-align:left;color:var(--ink);text-decoration:none;width:100%;font:inherit}
-.grp .its a:active,.grp .its button:active{background:var(--soft)}.grp .its .num{width:26px;height:26px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--accent)}.grp .its b{display:block;font-weight:600;font-size:15px}.grp .its small{display:block;font-size:12px;color:var(--muted)}.grp .its .go{color:var(--accent);font-size:22px}
-.mf{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px}
-.msearch{display:flex;align-items:center;gap:8px;min-height:50px;padding:0 14px;border-radius:14px;background:var(--paper);border:1.5px solid var(--cline);color:var(--muted)}.msearch svg{width:20px;height:20px;flex:none}.msearch input{flex:1;border:0;background:transparent;font:500 16px var(--body);color:var(--ink);min-height:46px;outline:none;min-width:0}
-.mlab{font:700 11.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:8px 6px 0}
+/* rows reused by Home's hub (the menu itself is drawn by CA.menu) */
 .mlist{padding:6px;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
 .mrow{min-height:58px;display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:left;color:var(--ink);text-decoration:none;width:100%;font:inherit}
-.mrow:active{background:var(--soft)}.mrow .mi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}.mrow .mi svg{width:24px;height:24px}.mrow b{display:block;font-weight:700;font-size:15.5px}.mrow small{display:block;font-size:12.5px;color:var(--muted);line-height:1.3}.mrow .go{color:var(--accent);font-size:22px}
+.mrow:active{background:var(--soft)}.mrow .mi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}.mrow .mi svg{width:24px;height:24px}.mrow b{display:block;font-weight:700;font-size:15.5px}.mrow small{display:block;font-size:12.5px;color:var(--muted)}
 .mnone{padding:16px;font-size:14px;color:var(--muted)}
-.gsearch{display:flex;align-items:center;gap:8px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:0 12px;margin:0 0 10px}.gsearch span{font-size:20px;color:var(--muted)}.gsearch input{flex:1;border:0;background:transparent;font:inherit;font-size:16px;padding:13px 0;min-width:0;outline:none}
-.gchips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
-details.gsec{padding:0;margin:0 0 10px;overflow:hidden}details.gsec>summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:700;font-size:16px;display:flex;justify-content:space-between;gap:8px}details.gsec>summary::after{content:"›";transform:rotate(90deg);color:var(--accent);font-size:20px;line-height:1}details.gsec[open]>summary::after{transform:rotate(270deg)}details.gsec>summary::-webkit-details-marker{display:none}
-.gbody{padding:0 16px 12px;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere}.gbody h3{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin:12px 0 4px}.gbody ul,.gbody ol{padding-left:20px;margin:4px 0}.gbody li{margin:5px 0}.gbody p{margin:6px 0}
 .mlinks{display:flex;justify-content:center;gap:22px;padding:2px 0 4px}.mlinks .lnk{min-height:40px;font-size:14px;border:0;background:none;box-shadow:none;padding:0 4px;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px}
-.grp>button{min-height:60px}
-.mva{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:var(--paper);border:1.5px solid var(--cline);font-size:13px;color:var(--muted);font-weight:600}
-.mva .ca-va{min-height:44px;font-size:14px;max-width:210px}
 /* team / me / treat */
 .hero{border-radius:22px;background:var(--deep);color:#fff;padding:16px}.hero .eb{color:var(--gold)}.hero .big{font:700 38px/1 var(--body);color:var(--gold)}
 .bar{height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden;position:relative}.bar i{display:block;height:100%;border-radius:4px;background:var(--gold);transition:width .5s}
@@ -563,39 +655,9 @@ const NEXT=(()=>{ const n=QS.get("next")||""; return /^(office|kitchen|audit|rep
 /* Every page, by access (Staff tab). Pages still check access on the server. [group, title, description, link, roles] */
 /* v21.10 four areas, numbered (Alfred: "separate them into better and clearer area … is very messy currently"). A person only sees the pages
    their access allows; their own area opens first. [group, title, description, link, access, search words, daily-for (kept for Today)] */
-const SECD={"Kitchen HQ":"Opening and closing, prep list, morning and noon to-do, kitchen reports","Outlet Delivery":"Delivery orders, carry forward, bills, outlet reports, audits","Back office":"Setup, staff, problem reports, corrections, prep list","Help & support":"How-to guide, the helper, report a problem, team treat"};
-const TILES=[
- /* v22.4 (Alfred 29 Sep): 6 clear Kitchen HQ pages. "Decoration & delivery list" → Morning to-do, "Production list" → Noon to-do;
-    the production plan (lists for the next days) is inside the Noon to-do (and the Plan chip on the kitchen page), no longer its own page here. */
- ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries · due 10:30","kitchen.html#opening",["kitchen","kapprove"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
- ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists · due 19:30","kitchen.html#closing",["kitchen","kapprove"],"closing report waste left lists evening",["kitchen:pm"]],
- ["Kitchen HQ","Prep list · what to make","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
- ["Kitchen HQ","Morning to-do · decorate & deliver","Morning team: today's cakes, custom & Grab orders, finish & decorate, pack & deliver the DOs","kitchen.html?team=am#today",["kitchen","kapprove","todo"],"morning decoration decorate delivery list to-do custom order grab pack deliver",["kitchen:am"]],
- ["Kitchen HQ","Noon to-do · production","Noon team: today's production list, prep reminders, and the plan for the next days","kitchen.html?team=pm#today",["kitchen","kapprove","todo"],"noon production list plan mise en place photo next days to-do reminders",["kitchen:pm"]],
- ["Kitchen HQ","Kitchen reports","Past reports, temperatures and photos · fridges, display cakes and reminders","kitchen.html#history",["kitchen","kapprove","view"],"history temperature fridge freezer streak calendar setup display list reminder limit",[]],
- ["Kitchen HQ","Numbers · made & waste","To make, made, sent, sold, left and waste per cake · day, week or month","office.html#numbers",["reports","view","kapprove"],"numbers waste wastage made produced prepared sold left figures report",[]],
- ["Outlet Delivery","Delivery orders","Check colours, mark delivered, edit before it goes out","office.html#deliveries",["deliv","doedit"],"do delivery order colour dot",["kitchen","office"]],
- ["Outlet Delivery","Carry forward","Stock held at each outlet and what rolls into this week's bill","office.html#carry",()=>can("money")&&(can("reports")||can("view")||can("bills")),"carry forward b/f stock held unsold cf note",["office"]],
- ["Outlet Delivery","Weekly billing","Invoice, carry forward and credit note per outlet week","office.html#billing",()=>can("money")&&(can("reports")||can("bills")),"invoice bill cf cn credit bukku payment weekly",["office"]],
- ["Outlet Delivery","All bills","Every invoice, carry forward and credit note: amount, paid, Bukku","office.html#bills",()=>can("money")&&(can("reports")||can("view")||can("bills")),"all bills invoices list paid bukku history",["office"]],
- ["Outlet Delivery","Outlet closing reports","Each outlet's nightly count, and corrections","office.html#daily",["reports","view"],"closing report correction paste waste balance sold",["office","outlets"]],
- ["Outlet Delivery","To clear today","Missing reports, chase outlets, bills to approve","office.html#today",["chase","view"],"attention chase whatsapp missing report board",["office","outlets"]],
- ["Outlet Delivery","Spot audit","Visit an outlet: display, prices, chiller","audit.html",["audit"],"audit visit outlet check",["outlets"]],
- ["Outlet Delivery","Audit results","Every spot audit and taste check, with photos and PDF","office.html#audits",["audit","kapprove"],"spot audit results qc history pdf score taste check",[]],
- ["Back office","Reports","Every report: done and not done, what was sent, photos, reminders and Chase on WhatsApp","reports.html",()=>/owner|manager/i.test(CA.labelOf(S)||""),"reports report done undone missing photos chase reminder whatsapp",[]],
- ["Back office","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup"],"outlet cake product price shelf life whatsapp wasapbot key go-live fresh start holiday limits",[]],
- ["Back office","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
- ["Back office","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems"],"feedback problem report reply urgent helper questions",[]],
- ["Back office","Corrections log","Every change to a report: who, when and why","office.html#log",["reports"],"edit log correction history",[]],
-];
-/* Help & support: the same rows, as the 4th area of the menu (v21.10) */
-const HELP=[["How-to guide","Step by step for your job, and I'm stuck answers","#guide"],["Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat & points","This month's treat, the jar and the leaderboard","#treat"]];
-const ICON={
- "Kitchen HQ":["#f3e4e5",`<svg viewBox="0 0 30 30"><circle cx="15" cy="5" r="3" fill="#c0392b"/><path d="M7 12h16v4H7z" fill="#e0707a"/><path d="M5 16h20v9H5z" fill="#7b1c2b"/><path d="M5 19h20v2H5z" fill="#e3c466"/></svg>`],
- "Quality checks":["#fbecd2",`<svg viewBox="0 0 30 30"><circle cx="12" cy="12" r="7" fill="none" stroke="#a0620a" stroke-width="3"/><circle cx="10" cy="10" r="2.5" fill="#f2c230"/><path d="M17 17l8 8" stroke="#a0620a" stroke-width="4" stroke-linecap="round"/></svg>`],
- "Outlet Delivery":["#dde8f8",`<svg viewBox="0 0 30 30"><path d="M4 9h22v4H4z" fill="#b07c44"/><path d="M6 13h18v12H6z" fill="#c9955b"/><path d="M13 13h4v12h-4z" fill="#ecc98f"/><circle cx="23" cy="22" r="4" fill="#2f6fd0" stroke="#fff" stroke-width="1.5"/></svg>`],
- "Back office":["#fbf1d3",`<svg viewBox="0 0 30 30"><rect x="6" y="5" width="18" height="22" rx="3" fill="#fff" stroke="#2b1b1e" stroke-width="2"/><rect x="11" y="3" width="8" height="5" rx="2" fill="#2b1b1e"/><path d="M10 13h10M10 17h7M10 21h9" stroke="#a0620a" stroke-width="2"/></svg>`],
- "Help & support":["#dcefe2",`<svg viewBox="0 0 30 30"><path d="M4 6h22v14H13l-6 5v-5H4z" fill="#1e8449"/><text x="15" y="17" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Jost,sans-serif">?</text></svg>`]};
+/* v22.7: the pages, areas, access and icons live in the shared menu (Auth.html › CA.menu), the same on every page */
+const TILES=CA.PAGES, HELP=CA.HELP, SECD=CA.menu.desc, AREA_ORDER=CA.menu.areas;
+const ICON=Object.assign({"Quality checks":["#fbecd2",`<svg viewBox="0 0 30 30"><circle cx="12" cy="12" r="7" fill="none" stroke="#a0620a" stroke-width="3"/><circle cx="10" cy="10" r="2.5" fill="#f2c230"/><path d="M17 17l8 8" stroke="#a0620a" stroke-width="4" stroke-linecap="round"/></svg>`]},CA.ICON);
 const TABI={
  home:`<svg viewBox="0 0 28 26"><path d="M3 12.5 14 3.5l11 9" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 11.5V24h6v-7h3v7h6V11.5L14 5.5z" fill="currentColor"/></svg>`,
  today:`<svg viewBox="0 0 28 26"><path d="M8 2v22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M9 3h13l-3 5 3 5H9z" fill="currentColor"/></svg>`,
@@ -604,12 +666,12 @@ const TABI={
  team:`<svg viewBox="0 0 28 26"><circle cx="9" cy="8" r="4.5" fill="currentColor"/><circle cx="19.5" cy="9" r="4" fill="currentColor" opacity=".6"/><path d="M1.5 23c0-5 3.5-8 7.5-8s7.5 3 7.5 8z" fill="currentColor"/><path d="M14 23c.5-4 3-7 5.5-7s5.8 3 6 7z" fill="currentColor" opacity=".6"/></svg>`,
  me:`<svg viewBox="0 0 28 26"><circle cx="14" cy="8" r="6" fill="currentColor"/><path d="M3 25c0-6.5 5-10 11-10s11 3.5 11 10z" fill="currentColor"/></svg>`};
 const DOTS=["#b5b5b5","#f39c4a","#f2c230","#3c9a50","#2f6fd0","#e0707a","#a98bd6"];
-let LBM="now", S=null, VIEW="", TODAY=null, NX=null, ME=null, TEAMI=null, RW=null, MINE=null, MENU=false, OPEN=(()=>{ try{ const v=localStorage.getItem("chaleur.menu"); return v==null?null:v; }catch(e){ return null; } })();
+let LBM="now", S=null, VIEW="", TODAY=null, NX=null, ME=null, TEAMI=null, RW=null;
 let TEAM=(()=>{ try{ return localStorage.getItem("kh2.team")||""; }catch(e){ return ""; } })();
 const cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1).toLowerCase():"";
 const first=()=>cap(String((S&&S.name)||"").split(" ")[0].replace(/[()]/g,""));
 /* v20: what shows follows the person's access ticks; "works in" decides the home layout */
-const can=p=>CA.permsOf(S).includes(p), isKit=()=>S&&CA.areaOf(S)==="kitchen", tileOK=x=>typeof x[4]==="function"?x[4]():x[4].some(can);
+const can=p=>CA.permsOf(S).includes(p), isKit=()=>S&&CA.areaOf(S)==="kitchen", tileOK=x=>CA.menu.ok(x);
 const nf=n=>Number(n||0).toLocaleString("en-MY");
 function hi(){ const h=+new Date().toLocaleString("en-GB",{hour:"2-digit",hour12:false,timeZone:"Asia/Kuala_Lumpur"}); return h<12?"Morning":h<17?"Afternoon":"Evening"; }
 function dateTxt(){ try{ return new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Asia/Kuala_Lumpur"}).replace(",",""); }catch(e){ return ""; } }
@@ -622,7 +684,7 @@ function confetti(){ if(matchMedia("(prefers-reduced-motion: reduce)").matches) 
   d.animate([{transform:"translate(-50%,-50%) scale(.6)",opacity:1},{transform:`translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) scale(1)`,opacity:1,offset:.7},{transform:`translate(calc(-50% + ${x}px),calc(-50% + ${y+80}px)) scale(.8)`,opacity:0}],{duration:dur,easing:"cubic-bezier(.2,.7,.3,1)"}); setTimeout(()=>d.remove(),dur+50); } }
 /* ---------- sign in (3a): phone + big PIN pad ---------- */
 let PIN="", SIBUSY=false;
-function signIn(msg){ S=null; $("#tabs").innerHTML=""; $("#menu").innerHTML=""; $("#app").innerHTML="";
+function signIn(msg){ S=null; CA.menu.close(); $("#tabs").innerHTML=""; $("#app").innerHTML="";
   let last=""; try{ last=localStorage.getItem("chaleur.lastid")||""; }catch(e){}
   PIN=""; $("#si").innerHTML=`<div class="si" role="dialog" aria-label="Sign in"><div class="in">
     <div class="lg" aria-hidden="true">${LOGO()}</div><h1>Chaleur Atelier</h1><div class="bo">Back office</div><div class="tag">Ready for your shift?</div>
@@ -662,36 +724,11 @@ function subHead(title,back){ return `<div class="hd"><a class="logo" href="inde
 /* v22.3: Home (the two big buttons) · Today (your list) · Team · Me. Kitchen HQ and Outlet Delivery are on Home. */
 function tabs(){ const T=[["home","Home","#"],["today","Today","#today"],["team","Team","#team"],["me","Me","#me"]], cur=["","hq","out","bo"].includes(VIEW)?"home":VIEW==="treat"||VIEW==="qc"?"today":VIEW;
   $("#tabs").innerHTML=`<div class="tabs"><nav aria-label="Main">${T.map(([k,l,h])=>`<a href="${h}" ${cur===k?'aria-current="page"':""}>${TABI[k]}<span>${l}</span></a>`).join("")}</nav></div>`; }
-const AREA_ORDER=["Kitchen HQ","Outlet Delivery","Back office","Help & support"];
-function myArea(){ const a=CA.areaOf(S)||"office"; return a==="kitchen"?"Kitchen HQ":"Outlet Delivery"; }
-function sections(){ const tiles=TILES.filter(tileOK), help=HELP.map(([t,d,v])=>/^#/.test(v)?{t,d,href:v,sec:"Help & support",k:"help guide ask report problem treat points"}:{t,d,help:v,sec:"Help & support",k:"help ask report problem mine"});
-  const secs=AREA_ORDER.map(sec=>({name:sec,items:sec==="Help & support"?help:tiles.filter(x=>x[0]===sec).map(x=>({t:x[1],d:x[2],href:x[3],k:x[5]||"",sec}))})).filter(x=>x.items.length);
-  const mine=myArea(); return secs.sort((a,b)=>(a.name===mine?0:1)-(b.name===mine?0:1)); }
+const myArea=()=>CA.menu.myArea(), sections=()=>CA.menu.sections();
 function dailyPages(){ const a=CA.areaOf(S)||"office", tm=myTeam(); const out=[];
   TILES.filter(tileOK).forEach(x=>{ if((x[6]||[]).some(z=>z===a||z===a+":"+tm)) out.push({t:x[1],d:x[2],href:x[3],sec:x[0]}); });
   return out.slice(0,5); }
-function menuRow(it){ const ic=ICON[it.sec]||ICON["Help & support"], inner=`<span class="mi" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="mt"><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span>`;
-  return it.help?`<button type="button" class="mrow" data-help="${it.help}">${inner}</button>`:`<a class="mrow" href="${esc(it.href)}" data-mgo="1">${inner}</a>`; }
-let MQ="";
-function menuBody(){ const q=MQ.trim().toLowerCase();
-  if(q){ const words=q.split(/\s+/), all=sections().flatMap(x=>x.items);
-    const hit=all.filter(it=>{ const hay=(it.t+" "+it.d+" "+it.k+" "+it.sec).toLowerCase(); return words.every(w=>hay.includes(w)); });
-    return hit.length?`<div class="mlab">${hit.length} page${hit.length===1?"":"s"}</div><div class="card mlist">${hit.map(menuRow).join("")}</div>`:`<div class="card mnone">Nothing found for “${esc(MQ.trim())}”. Try another word, or tap <b>? Ask</b>.</div>`; }
-  const secs=sections(); if(OPEN==null||(OPEN&&!secs.some(x=>x.name===OPEN))) OPEN=secs.length?secs[0].name:""; /* v21.13: "" = all areas closed (every area can be minimised) */
-  return secs.map(sec=>{ const op=OPEN===sec.name, ic=ICON[sec.name]||ICON["Help & support"];
-      return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${SECD[sec.name]?esc(SECD[sec.name]):""}</small></span><span class="chev" aria-hidden="true">${op?"▲":`${sec.items.length} ▼`}</span></button>
-        ${op?`<div class="its">${sec.items.map((it,i)=>it.help?`<button type="button" data-help="${esc(it.help)}"><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></button>`:`<a href="${esc(it.href)}" data-mgo="1"><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join(""); }
-function drawMenu(){ const m=$("#menu"); if(!MENU||!S){ m.innerHTML=""; document.body.style.overflow=""; return; } document.body.style.overflow="hidden";
-  const mc=MINE&&MINE.length?MINE.filter(x=>x.status!=="done").length:0;
-  m.innerHTML=`<div class="menu" role="dialog" aria-modal="true" aria-label="Menu"><div class="in"><div class="mh"><div>Menu</div><button class="hbtn" type="button" data-mclose="1">✕ Close</button></div>
-    <label class="msearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><input id="msq" type="search" autocomplete="off" placeholder="Find a page: billing, fridge, audit…" value="${esc(MQ)}" aria-label="Find a page"></label>
-    <div id="mres">${menuBody()}</div>
-    <div class="mf"><button type="button" class="cb ink" data-help="ask">? Ask / Report</button><button type="button" class="cb ghost" data-ca-logout="1" style="color:var(--muted)">Log out</button></div>
-    ${mc?`<div class="mlinks"><button type="button" class="lnk" data-help="mine">My reports (${mc} open)</button></div>`:""}
-    ${CA.canView()?`<label class="mva"><span>Owner: see the app as</span>${CA.vaSelect()}</label>`:""}</div></div>`; }
-document.addEventListener("input",e=>{ if(e.target&&e.target.id==="msq"){ MQ=e.target.value; const r=$("#mres"); if(r) r.innerHTML=menuBody(); } });
-function setMenu(on){ MENU=!!on; if(!MENU) MQ=""; drawMenu(); if(MENU&&!MINE) loadMine(); }
-async function loadMine(){ try{ MINE=await CA.run("feedbackMine",S.t); }catch(e){ MINE=[]; } if(MENU) drawMenu(); }
+const menuRow=it=>CA.menu.row(it);
 /* ---------- views ---------- */
 function jarCard(j,treat,link){ if(!j) return ""; const pct=j.pct||0, fill=Math.max(4,Math.min(100,pct));
   const ln=j.unlocked?`${pct}% reached: the treat is on! Keep it up until the end of the month.`:`Needs ${j.unlock}% by the end of the month (${nf(j.points)} of ${nf(j.target)} points). Every on-time report, to-do and QC adds to it.${j.mineToday?` You added ${nf(j.mineToday)} today.`:""}`;
@@ -931,7 +968,7 @@ function hdFit(){ const h=$("#app .hd"); if(h) document.documentElement.style.se
 window.addEventListener("resize",()=>{ if(S) hdFit(); });
 function render(){ if(!S) return; const v=VIEW; const a=$("#app");
   a.innerHTML=v==="team"?vTeam():v==="me"?vMe():v==="treat"?vTreat():v==="qc"?vQC():v==="guide"?vGuide():v==="today"?vHome():["hq","out","bo"].includes(v)?vSec(v):vHub();
-  $("#tabs").innerHTML=""; if(v!=="qc") tabs(); drawMenu(); if(v==="guide") guideFilter(); hdFit();
+  $("#tabs").innerHTML=""; if(v!=="qc") tabs(); CA.menu.redraw(); if(v==="guide") guideFilter(); hdFit();
   if(v==="") setTimeout(()=>CA.tour.maybeStart(),300); }
 async function load(){ const v=VIEW, t=S.t;
   try{
@@ -942,16 +979,12 @@ async function load(){ const v=VIEW, t=S.t;
     else if(v==="qc"){ QC=await CA.run("qcInfo",t); if(!TODAY) CA.run("myToday",t).then(x=>{TODAY=x;}).catch(()=>{}); }
   }catch(e){ if(CA.isAuthErr(e)){ CA.clear(); return signIn(e.message); } toast((e&&e.message)||"Couldn't load. Pull down to refresh."); }
   if(VIEW===v) render(); }
-function route(){ const h=(location.hash||"").slice(1); VIEW=["today","hq","out","bo","team","me","treat","qc","guide"].includes(h)?h:""; MENU=false; if(VIEW!=="qc"){ QCRES=null; } render(); window.scrollTo(0,0); load(); }
+function route(){ const h=(location.hash||"").slice(1); VIEW=["today","hq","out","bo","team","me","treat","qc","guide"].includes(h)?h:""; CA.menu.close(); if(VIEW!=="qc"){ QCRES=null; } render(); window.scrollTo(0,0); load(); }
 window.addEventListener("hashchange",()=>{ if(S) route(); });
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&S&&VIEW!=="qc"){ MINE=null; load(); } });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&S&&VIEW!=="qc"){ load(); } });
 document.addEventListener("click",async e=>{ const t=e.target&&e.target.closest?e.target:null; if(!t||!S||$(".si")) return;
   const g=s=>t.closest(s);
-  if(g("[data-menu]")){ setMenu(true); return; }
-  if(g("[data-mclose]")){ setMenu(false); return; }
-  if(g("[data-mgo]")&&/^#/.test(g("[data-mgo]").getAttribute("href"))){ setMenu(false); return; }
-  const sb=g("[data-msec]"); if(sb){ const n=sb.dataset.msec; OPEN=OPEN===n?"":n; try{ localStorage.setItem("chaleur.menu",OPEN); }catch(x){} drawMenu(); return; }
-  const h=g("[data-help]"); if(h){ setMenu(false); CA.openHelp(h.dataset.help); return; }
+  const h=g("[data-help]"); if(h){ CA.openHelp(h.dataset.help); return; }
   if(g("[data-assign]")){ openAssign(); return; }
   { const rn=g("[data-rnow]"); if(rn&&!rn.disabled){ rn.disabled=true; let r=null; try{ r=await CA.run("remindNow",S.t,rn.dataset.rnow); }catch(x){ rn.disabled=false; toast(x.message); return; }
       rn.disabled=false; if(r&&r.ok){ toast(`Sent on WhatsApp to ${r.sent} ${r.sent===1?"person":"people"}${r.group?" and the kitchen group":""}.`); remReload(); } else if(r){ remSheet(r); remReload(); } return; } }
@@ -977,7 +1010,6 @@ document.addEventListener("change",async e=>{ const t=e.target; if(!t.matches||!
 document.addEventListener("input",e=>{ if(e.target.id==="qc-note"&&QCD){ (QCD.items[QCI]||(QCD.items[QCI]={})).note=e.target.value; qcSaveDraft(); } });
 document.addEventListener("change",async e=>{ if(e.target.matches&&e.target.matches("[data-qcphoto]")){ const f=e.target.files&&e.target.files[0]; if(!f) return;
   try{ const u=await shrink(f); (QCD.items[QCI]||(QCD.items[QCI]={})).photo=u; qcSaveDraft(); render(); }catch(x){ toast(x.message); } } });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&MENU) setMenu(false); });
 function boot(){ S=CA.get(); if(!S) return signIn(QS.get("msg")||""); if(NEXT){ location.replace(NEXT); return; } route();
   CA.run("me",S.t).then(u=>{ const b=JSON.stringify([CA.permsOf(S),CA.labelOf(S),CA.areaOf(S)]); S=CA.update(u)||S; if(JSON.stringify([CA.permsOf(S),CA.labelOf(S),CA.areaOf(S)])!==b){ TODAY=null; NX=null; ME=null; TEAMI=null; render(); load(); } }).catch(()=>{}); }
 /* ---- Step-by-step guide (v21.7): sign in → today's list → the tabs → menu & help → start the first job.
@@ -992,14 +1024,14 @@ const tourSteps=[
   {sel:"#app .hd .hbtn",title:"Step 5 of 5 · Menu and help",text:"Every page is also in <b>☰ Menu</b>. Stuck? Tap <b>?</b> next to it and ask in English, Malay or Chinese, or report a problem.",noScroll:true,last:true}
 ];
 CA.tour.define({key:"home",steps:tourSteps,ready:()=>!!$(".si .keys")||(!!S&&VIEW===""&&!!$("#tabs nav")&&!!$("#app .hub")),
-  busy:()=>!!$("#menu .menu, #asg .asheet"),topPad:()=>{ const h=$("#app .hd"); const b=h?h.getBoundingClientRect().bottom:0; return b>0&&b<200?b+6:8; },btnBottom:"calc(78px + env(safe-area-inset-bottom,0px))"});
+  busy:()=>!!$("#camenu .menu, #asg .asheet"),topPad:()=>{ const h=$("#app .hd"); const b=h?h.getBoundingClientRect().bottom:0; return b>0&&b<200?b+6:8; },btnBottom:"calc(78px + env(safe-area-inset-bottom,0px))"});
 (function(){ CA.helper({auth:()=>S&&S.t,page:()=>VIEW==="today"?"Today":VIEW==="hq"?"Kitchen HQ":VIEW==="out"?"Outlet Delivery":VIEW==="bo"?"Back office":VIEW==="guide"?"How-to guide":VIEW==="qc"?"Random QC":VIEW==="team"?"Team":VIEW==="me"?"Me":VIEW==="treat"?"Team treat":"Home"}); boot(); })();
 </script>
 <template id="guideTpl"><h1>Chaleur Atelier Back office guide (September 2026)</h1>
 <p>Chaleur Atelier Back office (the app) is the operations app of Chaleur Atelier Patisserie (outlets, deliveries, billing, Kitchen HQ reports, production plan).</p>
 <h2>1. The pages</h2>
 <ul>
-<li>Home page: chaleurpatisserie-ops.github.io/chaleur-app — the ONLY place to sign in. After you sign in it opens on Home (since 29 Sep 2026): two big buttons, Kitchen HQ (kitchen opening by 10:30, kitchen closing by 19:30, prep list = what to make, morning to-do · decorate &amp; deliver, noon to-do · production (with the plan for the next days inside), kitchen reports &amp; temperatures, numbers · made &amp; waste) and Outlet Delivery (delivery orders &amp; colour check, outlet closing counts, to clear today, carry forward &amp; weekly bills, spot audits). Tap one to see its pages; you only see the points you can use. Under them: "Your list for today" (tap it for Today), then Back office (managers) and Help &amp; how-to. Today = a greeting, the Team jar, today's Random QC (on QC days) and your team's list for today (each line has a button that takes you to the right page), then "Also for you". The bar at the bottom has 4 tabs: Home, Today, Team and Me. The logo at the top left always brings you back to Home. ☰ Menu at the top right (since 26 Sep 2026): a search box ("Find a page": type a word such as billing, fridge or audit), then four numbered areas — your own area opens first, tap an area name to open it: 1. Kitchen HQ (1 Kitchen opening = opening report, 2 Kitchen closing = closing report, 3 Prep list · what to make, 4 Morning to-do · decorate &amp; deliver (was "Decoration &amp; delivery list"), 5 Noon to-do · production (was "Production list"; the production plan for the next days is inside it and under the Plan chip on the kitchen page), 6 Kitchen reports, 7 Numbers · made &amp; waste (since 29 Sep 2026; office desk › Numbers: per cake for a day, week or month — to make, made, sent per outlet, HQ display plan, sold, left, HQ waste, outlet waste, waste %; filter Everything / Kitchen HQ only / one outlet; red rows = a quarter or more wasted; HQ sold = yesterday's left + made − sent out − waste − left, only on days with a Made number) = history, on-time streak, taste checks, fridge and freezer setup), 2. Outlet Delivery (1 Delivery orders, 2 Carry forward, 3 Weekly billing, 4 All bills, 5 Outlet closing reports, 6 To clear today, 7 Spot audit, 8 Audit results), 3. Back office (Setup, Staff &amp; access, Problem reports, Corrections log, Prep list = Plan &amp; prep) and 4. Help &amp; support (How-to guide, Ask the helper, Report a problem, My reports, Team treat &amp; points). You only see the pages you can use. At the bottom: ? Ask / Report and Log out. The ? button next to Menu opens the helper. Every other page has a "‹ Home" button. Tip: add the home page to your phone's home screen (iPhone: Safari › Share › Add to Home Screen. Android: Chrome › ⋮ › Add to Home screen).</li>
+<li>Home page: chaleurpatisserie-ops.github.io/chaleur-app — the ONLY place to sign in. After you sign in it opens on Home (since 29 Sep 2026): two big buttons, Kitchen HQ (kitchen opening by 10:30, kitchen closing by 19:30, prep list = what to make, morning to-do · decorate &amp; deliver, noon to-do · production (with the plan for the next days inside), kitchen reports &amp; temperatures, numbers · made &amp; waste) and Outlet Delivery (delivery orders &amp; colour check, outlet closing counts, to clear today, carry forward &amp; weekly bills, spot audits). Tap one to see its pages; you only see the points you can use. Under them: "Your list for today" (tap it for Today), then Back office (managers) and Help &amp; how-to. Today = a greeting, the Team jar, today's Random QC (on QC days) and your team's list for today (each line has a button that takes you to the right page), then "Also for you". The bar at the bottom has 4 tabs: Home, Today, Team and Me. The logo at the top left always brings you back to Home. ☰ Menu at the top right (since 26 Sep 2026): a search box ("Find a page": type a word such as billing, fridge or audit), then four numbered areas — your own area opens first, tap an area name to open it: 1. Kitchen HQ (1 Kitchen opening = opening report, 2 Kitchen closing = closing report, 3 Prep list · what to make, 4 Morning to-do · decorate &amp; deliver (was "Decoration &amp; delivery list"), 5 Noon to-do · production (was "Production list"; the production plan for the next days is inside it and under the Plan chip on the kitchen page), 6 Kitchen reports, 7 Numbers · made &amp; waste (since 29 Sep 2026; office desk › Numbers: per cake for a day, week or month — to make, made, sent per outlet, HQ display plan, est. sold (worked out from the counts, not the till), left, HQ waste, outlet waste, waste %; filter Everything / Kitchen HQ only / one outlet; red rows = a quarter or more wasted; HQ est. sold = yesterday's left + made − sent out − waste − left, only on days with a Made number) = history, on-time streak, taste checks, fridge and freezer setup), 2. Outlet Delivery (1 Delivery orders, 2 Carry forward, 3 Weekly billing, 4 All bills, 5 Outlet closing reports, 6 To clear today, 7 Spot audit, 8 Audit results), 3. Back office (Setup, Staff &amp; access, Problem reports, Corrections log, Prep list = Plan &amp; prep) and 4. Help &amp; support (How-to guide, Ask the helper, Report a problem, My reports, Team treat &amp; points). You only see the pages you can use. At the bottom: ? Ask / Report and Log out. The ? button next to Menu opens the helper. Every other page has a "‹ Home" button. Tip: add the home page to your phone's home screen (iPhone: Safari › Share › Add to Home Screen. Android: Chrome › ⋮ › Add to Home screen).</li>
 <li>Office desk (office.html): the menu at the top has the same numbered areas: Outlet Delivery (Delivery orders, Carry forward, Weekly billing, All bills, Outlet closing reports, To clear today, Audit results), Back office (Setup, Staff &amp; access, Problem reports, Corrections log, Prep list = Plan &amp; prep), then Kitchen HQ links and Help &amp; support. Carry forward shows, per outlet and week, what was carried over from last week and what the outlet holds after the latest closing report. All bills lists every weekly bill (drafts, issued, paid, voided) for every outlet; tap one to open it in Weekly billing.</li>
 <li>Step-by-step guide on every page (since 25 Sep 2026): the first 3 times you open a page, a small dark bubble with a gold spotlight walks you through it (home page: sign in › pick your area › your list for today › the tabs › menu and help; Kitchen HQ: the list › the report's parts › fill in and send › next part; spot audit: setup › checks › chiller › prices › count › photos › send; office desk: To clear today, Plan &amp; prep, Delivery orders and Weekly bills; outlet closing form: name › count every row › photos › send). It moves on by itself when you finish each step; a step with a job to do has no Next button. Tap "Skip, I know this" to stop it for good; after that a "❔ Show me how" button at the bottom left replays the whole walkthrough any time. Kitchen HQ QR codes: the HQ display count (morning) and HQ closing count (evening) posters open that part of the report straight away after the sign-in.</li>
 <li>How-to guide (Menu › How-to guide, or ? Ask › Open the how-to guide): the whole guide inside the app, by person (kitchen morning, kitchen noon, supervisor, office, spot audit, outlet staff), with a search box and "I'm stuck" answers for common problems.</li>

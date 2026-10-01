@@ -108,6 +108,37 @@ body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bot
 .tourpill{display:none;position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:76;max-width:calc(100vw - 28px);background:#2b1b1e;color:#fdf6ee;border:1.5px solid #e3c466;border-radius:20px;padding:8px 14px;font:600 12.5px var(--body,Jost,system-ui,sans-serif);box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;touch-action:manipulation;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tourpill.on{display:block}.tourbub:not(.off)~.tourpill{display:none}.tourpill b{color:#e3c466}
 @media print{.ca-hbtn,.ca-hp,.ca-chip button,.tourhi,.tourbub,.tourshow,.tourpill{display:none!important}}
+
+/* v22.7 the one menu (same on every page) */
+#camenu{--m-ground:var(--ground,#f7f2ec);--m-paper:var(--paper,#fff);--m-ink:var(--ink,#2b1b1e);--m-muted:var(--muted,#6f5f62);--m-line:var(--cline,var(--line,#e8dcd6));--m-soft:var(--soft,#f3e4e5);--m-accent:var(--accent,#7b1c2b);--m-display:var(--display,'Cormorant Garamond',Georgia,serif);--m-body:var(--body,Jost,system-ui,sans-serif);font:15px/1.45 var(--m-body);color:var(--m-ink)}
+#camenu .menu{position:fixed;inset:0;z-index:80;background:var(--m-ground);overflow:auto;-webkit-tap-highlight-color:transparent}
+#camenu .in{max-width:560px;margin:0 auto;padding:10px 12px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;box-sizing:border-box}
+#camenu *,#camenu *::before{box-sizing:border-box}#camenu a{color:inherit}#camenu button{font-family:inherit;cursor:pointer}
+#camenu .mh{display:flex;align-items:center;gap:8px;padding:0 4px 4px}#camenu .mh div{flex:1;font:700 26px var(--m-display)}
+#camenu .hbtn{height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--m-line);background:var(--m-paper);font-weight:600;font-size:14px;color:var(--m-ink);box-shadow:0 3px 0 var(--m-line);flex:none}
+#camenu .card{background:var(--m-paper);border:1.5px solid var(--m-line);border-radius:20px;box-shadow:0 3px 0 var(--m-line);padding:0;margin:0;display:block;font-size:15px;line-height:1.45}
+#camenu .grp .its b,#camenu .grp .its small,#camenu .grp .nm b,#camenu .grp .nm small{line-height:1.3;margin:0}
+#camenu .msearch{display:flex;align-items:center;gap:8px;min-height:50px;padding:0 14px;border-radius:14px;background:var(--m-paper);border:1.5px solid var(--m-line);color:var(--m-muted)}#camenu .msearch svg{width:20px;height:20px;flex:none}#camenu .msearch input{flex:1;border:0;background:transparent;font:16px var(--m-body);color:var(--m-ink);min-width:0;outline:none}
+#camenu .grp{overflow:hidden;flex-shrink:0}#camenu .grp>button{width:100%;min-height:60px;display:flex;align-items:center;gap:12px;padding:8px 14px;border:0;background:transparent;text-align:left;color:var(--m-ink)}
+#camenu .ico{width:46px;height:46px;border-radius:14px;flex:none;display:grid;place-items:center}#camenu .ico svg{width:30px;height:30px}
+#camenu .grp .nm{flex:1;min-width:0}#camenu .grp .nm b{display:block;font-weight:700;font-size:16px}#camenu .grp .nm small{display:block;font-size:12px;color:var(--m-muted)}
+#camenu .grp .chev{width:32px;height:32px;border-radius:50%;background:var(--m-soft);color:var(--m-accent);display:grid;place-items:center;font-size:12px;flex:none}
+#camenu .grp .its{padding:0 8px 8px;display:flex;flex-direction:column;gap:4px}
+#camenu .grp .its a,#camenu .grp .its button{min-height:54px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:8px 12px;border:0;border-radius:12px;background:var(--m-ground);text-align:left;color:var(--m-ink);text-decoration:none;width:100%;font:inherit}
+#camenu .grp .its a:active,#camenu .grp .its button:active{background:var(--m-soft)}#camenu .grp .its a[aria-current="page"]{background:var(--m-soft);box-shadow:inset 0 0 0 1.5px var(--m-accent)}
+#camenu .grp .its .num{width:26px;height:26px;border-radius:50%;background:var(--m-paper);border:1.5px solid var(--m-line);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--m-accent)}
+#camenu .grp .its b{display:block;font-weight:600;font-size:14.5px}#camenu .grp .its small{display:block;font-size:12px;color:var(--m-muted)}#camenu .go{color:var(--m-accent);font-size:20px;font-weight:700}
+#camenu .mlab{font:700 11.5px var(--m-body);letter-spacing:.1em;text-transform:uppercase;color:var(--m-muted);padding:8px 6px 0}
+#camenu .mlist{padding:6px;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+#camenu .mrow{min-height:58px;display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:left;color:var(--m-ink);text-decoration:none;width:100%;font:inherit}
+#camenu .mrow:active,#camenu .mrow[aria-current="page"]{background:var(--m-soft)}#camenu .mrow .mi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}#camenu .mrow .mi svg{width:24px;height:24px}#camenu .mrow b{display:block;font-weight:700;font-size:15.5px}#camenu .mrow small{display:block;font-size:12.5px;color:var(--m-muted)}
+#camenu .mnone{padding:16px;font-size:14px;color:var(--m-muted)}
+#camenu .mf{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:6px}
+#camenu .cb{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:16px;min-height:52px;padding:0 18px;font:700 15px var(--m-body);text-decoration:none}
+#camenu .cb.ink{background:var(--m-ink);color:var(--m-paper);box-shadow:0 4px 0 #000}#camenu .cb.ghost{background:var(--m-paper);color:var(--m-muted);border:1.5px solid var(--m-line);box-shadow:0 3px 0 var(--m-line)}
+#camenu .mlinks{display:flex;justify-content:center;gap:22px;padding:2px 0 4px;flex-wrap:wrap}#camenu .lnk{min-height:40px;display:inline-flex;align-items:center;font-size:14px;border:0;background:none;box-shadow:none;padding:0 4px;color:var(--m-accent);font-weight:600;text-decoration:underline;text-underline-offset:3px;font-family:inherit}
+#camenu .mwho{display:flex;justify-content:center;padding:4px 0}#camenu .mwho .ca-chip{justify-content:center}
+@media (prefers-color-scheme:dark){#camenu .cb.ink{box-shadow:0 4px 0 rgba(0,0,0,.6)}}
 </style>
 <script>
 /* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
@@ -381,7 +412,87 @@ const CA=(function(){
     const TOUR={define,start,maybeStart,stop,skip,next,seen,on:()=>I>=0,step:()=>I,manual:()=>MAN,reset:()=>keys().forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} })};
     return TOUR;
   })();
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR};
+
+  /* ===== v22.7 ONE MENU for every page (Alfred 1 Oct: "both this interface should be the same … only one for each thing").
+     The pages, their areas, access and search words live here once; Home, the office desk and the kitchen page all draw the same menu. ===== */
+  const AREAS=["Kitchen HQ","Outlet Delivery","Back office","Help & support"];
+  const AREAD={"Kitchen HQ":"Opening and closing, prep list, morning and noon to-do, kitchen reports, numbers","Outlet Delivery":"Delivery orders, carry forward, bills, outlet reports, audits","Back office":"Reports, setup, staff, problem reports, corrections","Help & support":"How-to guide, the helper, report a problem, team treat"};
+  /* [area, title, description, link, access (ticks: any of; or a function of can), search words, daily-for] */
+const PAGES=[
+ /* v22.4 (Alfred 29 Sep): 6 clear Kitchen HQ pages. "Decoration & delivery list" → Morning to-do, "Production list" → Noon to-do;
+    the production plan (lists for the next days) is inside the Noon to-do (and the Plan chip on the kitchen page), no longer its own page here. */
+ ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries · due 10:30","kitchen.html#opening",["kitchen","kapprove"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
+ ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists · due 19:30","kitchen.html#closing",["kitchen","kapprove"],"closing report waste left lists evening",["kitchen:pm"]],
+ ["Kitchen HQ","Prep list · what to make","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
+ ["Kitchen HQ","Morning to-do · decorate & deliver","Morning team: today's cakes, custom & Grab orders, finish & decorate, pack & deliver the DOs","kitchen.html?team=am#today",["kitchen","kapprove","todo"],"morning decoration decorate delivery list to-do custom order grab pack deliver",["kitchen:am"]],
+ ["Kitchen HQ","Noon to-do · production","Noon team: today's production list, prep reminders, and the plan for the next days","kitchen.html?team=pm#today",["kitchen","kapprove","todo"],"noon production list plan mise en place photo next days to-do reminders",["kitchen:pm"]],
+ ["Kitchen HQ","Kitchen reports","Past reports, temperatures and photos · fridges, display cakes and reminders","kitchen.html#history",["kitchen","kapprove","view"],"history temperature fridge freezer streak calendar setup display list reminder limit",[]],
+ ["Kitchen HQ","Numbers · made & waste","To make, made, sent, sold, left and waste per cake · day, week or month","office.html#numbers",["reports","view","kapprove"],"numbers waste wastage made produced prepared sold left figures report",[]],
+ ["Outlet Delivery","Delivery orders","Check colours, mark delivered, edit before it goes out","office.html#deliveries",["deliv","doedit"],"do delivery order colour dot",["kitchen","office"]],
+ ["Outlet Delivery","Carry forward","Stock held at each outlet and what rolls into this week's bill","office.html#carry",(c)=>c("money")&&(c("reports")||c("view")||c("bills")),"carry forward b/f stock held unsold cf note",["office"]],
+ ["Outlet Delivery","Weekly billing","Invoice, carry forward and credit note per outlet week","office.html#billing",(c)=>c("money")&&(c("reports")||c("bills")),"invoice bill cf cn credit bukku payment weekly",["office"]],
+ ["Outlet Delivery","All bills","Every invoice, carry forward and credit note: amount, paid, Bukku","office.html#bills",(c)=>c("money")&&(c("reports")||c("view")||c("bills")),"all bills invoices list paid bukku history",["office"]],
+ ["Outlet Delivery","Outlet closing reports","Each outlet's nightly count, and corrections","office.html#daily",["reports","view"],"closing report correction paste waste balance sold",["office","outlets"]],
+ ["Outlet Delivery","To clear today","Missing reports, chase outlets, bills to approve","office.html#today",["chase","view"],"attention chase whatsapp missing report board",["office","outlets"]],
+ ["Outlet Delivery","Spot audit","Visit an outlet: display, prices, chiller","audit.html",["audit"],"audit visit outlet check",["outlets"]],
+ ["Outlet Delivery","Audit results","Every spot audit and taste check, with photos and PDF","office.html#audits",["audit","kapprove"],"spot audit results qc history pdf score taste check",[]],
+ ["Back office","Reports","Every report: done and not done, what was sent, photos, reminders and Chase on WhatsApp","reports.html",(c,s)=>/owner|manager/i.test(labelOf(s)||""),"reports report done undone missing photos chase reminder whatsapp",[]],
+ ["Back office","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup"],"outlet cake product price shelf life whatsapp wasapbot bukku key go-live fresh start holiday limits",[]],
+ ["Back office","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
+ ["Back office","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems"],"feedback problem report reply urgent helper questions",[]],
+ ["Back office","Corrections log","Every change to a report: who, when and why","office.html#log",["reports"],"edit log correction history",[]],
+];
+const HELP=[["How-to guide","Step by step for your job, and I'm stuck answers","#guide"],["Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat & points","This month's treat, the jar and the leaderboard","#treat"]];
+const ICON={
+ "Kitchen HQ":["#f3e4e5",`<svg viewBox="0 0 30 30"><circle cx="15" cy="5" r="3" fill="#c0392b"/><path d="M7 12h16v4H7z" fill="#e0707a"/><path d="M5 16h20v9H5z" fill="#7b1c2b"/><path d="M5 19h20v2H5z" fill="#e3c466"/></svg>`],
+ "Quality checks":["#fbecd2",`<svg viewBox="0 0 30 30"><circle cx="12" cy="12" r="7" fill="none" stroke="#a0620a" stroke-width="3"/><circle cx="10" cy="10" r="2.5" fill="#f2c230"/><path d="M17 17l8 8" stroke="#a0620a" stroke-width="4" stroke-linecap="round"/></svg>`],
+ "Outlet Delivery":["#dde8f8",`<svg viewBox="0 0 30 30"><path d="M4 9h22v4H4z" fill="#b07c44"/><path d="M6 13h18v12H6z" fill="#c9955b"/><path d="M13 13h4v12h-4z" fill="#ecc98f"/><circle cx="23" cy="22" r="4" fill="#2f6fd0" stroke="#fff" stroke-width="1.5"/></svg>`],
+ "Back office":["#fbf1d3",`<svg viewBox="0 0 30 30"><rect x="6" y="5" width="18" height="22" rx="3" fill="#fff" stroke="#2b1b1e" stroke-width="2"/><rect x="11" y="3" width="8" height="5" rx="2" fill="#2b1b1e"/><path d="M10 13h10M10 17h7M10 21h9" stroke="#a0620a" stroke-width="2"/></svg>`],
+ "Help & support":["#dcefe2",`<svg viewBox="0 0 30 30"><path d="M4 6h22v14H13l-6 5v-5H4z" fill="#1e8449"/><text x="15" y="17" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Jost,sans-serif">?</text></svg>`]};
+
+  const pageOK=(x,s)=>{ const c=p=>permsOf(s).includes(p); return typeof x[4]==="function"?!!x[4](c,s):x[4].some(c); };
+  const pagesFor=s=>PAGES.filter(x=>pageOK(x,s));
+  const myArea=s=>(areaOf(s)||"office")==="kitchen"?"Kitchen HQ":"Outlet Delivery";
+  const helpItems=()=>HELP.map(([t,d,v])=>/^#/.test(v)?{t,d,href:"index.html"+v,sec:"Help & support",k:"help guide ask report problem treat points"}:{t,d,help:v,sec:"Help & support",k:"help ask report problem mine"});
+  /* the four areas in a fixed order (the same everywhere); a person only sees the pages their access allows */
+  const sections=s=>AREAS.map(sec=>({name:sec,items:sec==="Help & support"?helpItems():pagesFor(s).filter(x=>x[0]===sec).map(x=>({t:x[1],d:x[2],href:x[3],k:x[5]||"",sec}))})).filter(x=>x.items.length);
+  const here=()=>(location.pathname.split("/").pop()||"index.html")+location.search+location.hash;
+  const isHere=href=>{ const h=here(); if(href===h) return true; const base=href.split("#")[0]; return !href.includes("#")&&base===h.split("#")[0]&&!/^index\.html/.test(base); };
+  const icon=sec=>ICON[sec]||ICON["Help & support"];
+  const row=it=>{ const ic=icon(it.sec), inner=`<span class="mi" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="mt"><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span>`;
+    return it.help?`<button type="button" class="mrow" data-help="${esc(it.help)}">${inner}</button>`:`<a class="mrow" href="${esc(it.href)}" data-mgo="1" ${isHere(it.href)?'aria-current="page"':""}>${inner}</a>`; };
+  let MOPEN=(()=>{ try{ const v=localStorage.getItem("chaleur.menu"); return v==null?null:v; }catch(e){ return null; } })(), MQ="", MINE=null, MON=false;
+  function menuBody(){ const s=get(), q=MQ.trim().toLowerCase(), secs=sections(s);
+    if(q){ const words=q.split(/\s+/), all=secs.flatMap(x=>x.items), hit=all.filter(it=>{ const hay=(it.t+" "+it.d+" "+it.k+" "+it.sec).toLowerCase(); return words.every(w=>hay.includes(w)); });
+      return hit.length?`<div class="mlab">${hit.length} page${hit.length===1?"":"s"}</div><div class="card mlist">${hit.map(row).join("")}</div>`:`<div class="card mnone">Nothing found for “${esc(MQ.trim())}”. Try another word, or tap <b>? Ask</b>.</div>`; }
+    if(MOPEN==null||(MOPEN&&!secs.some(x=>x.name===MOPEN))) MOPEN=secs.some(x=>x.name===myArea(s))?myArea(s):(secs.length?secs[0].name:""); /* "" = all areas closed (v21.13) */
+    return secs.map(sec=>{ const op=MOPEN===sec.name, ic=icon(sec.name);
+      return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${esc(AREAD[sec.name]||"")}</small></span><span class="chev" aria-hidden="true">${op?"▲":`${sec.items.length} ▼`}</span></button>
+        ${op?`<div class="its">${sec.items.map((it,i)=>it.help?`<button type="button" data-help="${esc(it.help)}"><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></button>`:`<a href="${esc(it.href)}" data-mgo="1" ${isHere(it.href)?'aria-current="page"':""}><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join(""); }
+  function menuEl(){ let m=document.getElementById("camenu"); if(!m){ m=document.createElement("div"); m.id="camenu"; document.body.appendChild(m); } return m; }
+  function drawMenu(){ const m=menuEl(), s=get(); if(!MON||!s){ m.innerHTML=""; document.body.style.overflow=""; return; } document.body.style.overflow="hidden";
+    const mc=MINE&&MINE.length?MINE.filter(x=>x.status!=="done").length:0;
+    m.innerHTML=`<div class="menu" role="dialog" aria-modal="true" aria-label="Menu"><div class="in"><div class="mh"><div>Menu</div><button class="hbtn" type="button" data-mclose="1">✕ Close</button></div>
+      <label class="msearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><input id="msq" type="search" autocomplete="off" placeholder="Find a page: billing, fridge, audit…" value="${esc(MQ)}" aria-label="Find a page"></label>
+      <div id="mres">${menuBody()}</div>
+      <div class="mf"><button type="button" class="cb ink" data-help="ask">? Ask / Report</button><button type="button" class="cb ghost" data-ca-logout="1">Log out</button></div>
+      <div class="mlinks">${/^index\.html/.test(here())?"":`<a class="lnk" href="index.html">‹ Home</a>`}${mc?`<button type="button" class="lnk" data-help="mine">My reports (${mc} open)</button>`:""}</div>
+      <div class="mwho">${chip(s)}</div></div></div>`; }
+  function menuOpen(){ const s=get(); if(!s) return; MON=true; MQ=""; drawMenu(); if(!MINE){ run("feedbackMine",s.t).then(r=>{ MINE=r||[]; if(MON) drawMenu(); }).catch(()=>{ MINE=[]; }); } }
+  function menuClose(){ if(!MON) return; MON=false; MQ=""; drawMenu(); }
+  document.addEventListener("input",e=>{ if(e.target&&e.target.id==="msq"&&e.target.closest("#camenu")){ MQ=e.target.value; const r=document.querySelector("#camenu #mres"); if(r) r.innerHTML=menuBody(); } });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&MON) menuClose(); });
+  document.addEventListener("click",e=>{ const t=e.target; if(!t||!t.closest) return;
+    const mb=t.closest("[data-menu]"); if(mb&&!t.closest("#camenu")){ e.preventDefault(); e.stopImmediatePropagation(); menuOpen(); return; }
+    if(!t.closest("#camenu")) return;
+    e.stopImmediatePropagation(); /* the menu handles its own taps; the page's handlers stay out */
+    if(t.closest("[data-mclose]")){ menuClose(); return; }
+    const sb=t.closest("[data-msec]"); if(sb){ const n=sb.dataset.msec; MOPEN=MOPEN===n?"":n; try{ localStorage.setItem("chaleur.menu",MOPEN); }catch(x){} drawMenu(); return; }
+    const h=t.closest("[data-help]"); if(h){ menuClose(); openHelp(h.dataset.help); return; }
+    const g=t.closest("[data-mgo]"); if(g){ const href=g.getAttribute("href")||""; menuClose(); if(href.split("#")[0]===here().split("#")[0]&&href.includes("#")){ e.preventDefault(); location.hash=href.slice(href.indexOf("#")); } return; }
+    if(t.closest("[data-ca-logout]")){ e.preventDefault(); logout(); return; } });
+  const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON};
 })();
 </script>
 
@@ -419,15 +530,8 @@ nav{position:relative;margin-left:auto}
 .mbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:600 14.5px var(--body);padding:9px 14px;border-radius:10px;cursor:pointer;white-space:nowrap}
 .mbtn{max-width:min(320px,calc(100vw - 140px));min-width:0}.mbtn .mcur{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}.mbtn .bars,.mbtn .car{flex:none}
 .mbtn .bars{font-size:16px;line-height:1;color:var(--muted);position:relative;margin-right:8px}.mbtn .bars .n{position:absolute;top:-9px;right:-11px;margin:0;font-size:10px;min-width:16px;line-height:16px}.mbtn .car{color:var(--muted);font-size:11px}
-.menu{position:absolute;right:0;top:calc(100% + 6px);min-width:250px;max-height:calc(100vh - 90px);max-height:calc(100dvh - 90px);overflow:auto;overscroll-behavior:contain;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(20,10,12,.18);padding:6px;display:flex;flex-direction:column;z-index:30}
-.menu button{border:0;background:transparent;color:var(--ink);font:500 15px var(--body);padding:11px 12px;border-radius:8px;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.menu button:hover{background:var(--soft)}
-.menu button[aria-current="page"]{background:var(--soft);color:var(--accent);font-weight:600}
 table.bkm select{width:100%;max-width:340px;min-height:36px}table.bkm tr.miss td{background:#fff6ea}
 .dprev{border:2px solid var(--accent);margin-bottom:14px}.dprev.ok{border-color:#2e7d4f}.dcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}.dlines{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 4px;font-size:14px}
-.menu .mgl{display:flex;justify-content:space-between;align-items:center;width:100%;font:700 10.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:10px 12px 2px;background:none;border:0;box-shadow:none;border-radius:0;text-align:left;min-height:34px;cursor:pointer}.menu .mgl:first-child{padding-top:4px}.menu .mgl .mgc{font-size:11px;letter-spacing:0;color:var(--accent)}.menu .mgl[aria-expanded="false"]{border-bottom:1px solid var(--line)}
-.menu .mn{display:inline-flex;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);align-items:center;justify-content:center;font:700 11px var(--body);font-style:normal;color:var(--accent);margin-right:8px;vertical-align:middle;flex:none}
-.menu .mgo{display:grid;grid-template-columns:1fr;gap:4px;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}.menu .mgo button{justify-content:center;background:var(--soft);font-weight:600;font-size:13.5px;padding:10px 6px;white-space:nowrap}
 nav .n{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;margin-left:5px;text-align:center}
 main{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 80px;display:flex;flex-direction:column;gap:18px}
 h1{font-family:var(--display);font-weight:600;font-size:36px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
@@ -556,13 +660,12 @@ input.made{width:70px;text-align:right}
 .who{margin-left:auto}.menu a.mlink{display:flex;justify-content:space-between;gap:10px;text-decoration:none;color:inherit}
 @media print{.top,#testbar,.testbar,#toast,.btn,button,.fbar,details.help,.noprint,.ign{display:none!important}body{background:#fff!important;color:#000}.panel,.claude{border:0!important;box-shadow:none!important;padding:0!important}.tw{overflow:visible!important;border:0!important}table{font-size:11px}main{padding:0!important;max-width:none!important}.cols{display:block!important}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:12mm}}
 .btn.home{margin-left:auto;padding:9px 12px}.top .in nav{margin-left:0}
-.mwho{border-top:1px solid var(--line);margin-top:6px;padding:10px 12px 6px;display:none}
 @media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:420px){.logo b{display:none}}
 @media (max-width:640px){
   .top .in{gap:8px;padding-block:8px;flex-wrap:nowrap}.logo b{font-size:17px}.logo small{display:none}.logo .mono-ca{transform:scale(.85)}
   .mbtn{padding:8px 10px;max-width:calc(100vw - 206px)}.btn.home{padding:8px 10px}
-  .who{display:none}.mwho{display:block}
+  .who{display:none} /* on a phone the name + Log out are in ☰ Menu */
   main{padding-inline:12px;padding-block:14px 90px;gap:14px}
   h1{font-size:28px}.head{align-items:flex-start}
   .lede{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;font-size:14px}.lede.open{display:block}
@@ -874,10 +977,8 @@ const TABOK={numbers:()=>can("reports")||can("view")||can("kapprove"),today:()=>
   billing:()=>can("money")&&(can("reports")||can("view")||can("bills")),carry:()=>can("money")&&(can("reports")||can("view")||can("bills")),bills:()=>can("money")&&(can("reports")||can("view")||can("bills")),audits:()=>can("audit")||can("kapprove"),feedback:()=>can("problems"),setup:()=>can("setup")||can("view"),staff:()=>can("staff")};
 /* v21.10 the desk menu follows the same four areas as the home menu (Alfred), numbered */
 const TABS=[["deliveries","Delivery orders"],["carry","Carry forward"],["billing","Weekly billing"],["bills","All bills"],["daily","Outlet closing reports"],["today","To clear today"],["audits","Audit results"],["setup","Setup"],["staff","Staff & access"],["feedback","Problem reports"],["log","Corrections log"],["plan","Prep list · what to make"],["numbers","Numbers · made & waste"]];
-const TABGRP={deliveries:"Outlet Delivery",carry:"Outlet Delivery",billing:"Outlet Delivery",bills:"Outlet Delivery",daily:"Outlet Delivery",today:"Outlet Delivery",audits:"Outlet Delivery",setup:"Back office",staff:"Back office",feedback:"Back office",log:"Back office",plan:"Back office",numbers:"Back office"};
-const KLINKS=()=>[["Kitchen opening","kitchen.html#opening",can("kitchen")||can("kapprove")],["Kitchen closing","kitchen.html#closing",can("kitchen")||can("kapprove")],["Morning to-do · decorate & deliver","kitchen.html?team=am#today",can("kitchen")||can("kapprove")||can("todo")],["Noon to-do · production","kitchen.html?team=pm#today",can("kitchen")||can("kapprove")||can("todo")],["Kitchen reports","kitchen.html#history",true]].filter(x=>x[2]);
 const NCOL=8;
-let rq=false, MENU=false, MCLOSED=(()=>{ try{ return new Set(JSON.parse(localStorage.getItem("chaleur.deskmenu")||"[]")); }catch(e){ return new Set(); } })(); /* v21.13: every menu group can be minimised (Alfred) */
+let rq=false;
 const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null||d.doadd!=null)) return true; if(!can("deliv")) return false; return d.doadd!=null||d.made!=null||d.psend!=null||d.padd!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
 /* 28 Sep: a background tab never gets an animation frame (the page stayed on "Loading…"), so a timer draws it too;
    and a drawing error is shown on the page instead of leaving "Loading…" for ever. */
@@ -889,13 +990,8 @@ function doRender(){
   const a=document.activeElement, aid=a&&a.id, sel=a&&("selectionStart" in a)?[a.selectionStart,a.selectionEnd]:null;
   const att=(can("chase")||can("reports")||can("view"))?attention():[];
   { let tabs=TABS.filter(([k])=>TABOK[k]()); if(!tabs.length) tabs=[["none","No office pages"]]; if(!tabs.some(([k])=>k===S.tab)) S.tab=tabs[0][0]; const bad=att.filter(x=>x.sev==="bad").length, cur=(tabs.find(([k])=>k===S.tab)||tabs[0])[1];
-    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="true" aria-expanded="${MENU?"true":"false"}"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span><span class="mcur">${cur}</span><span class="car" aria-hidden="true">▾</span></button>${MENU?(()=>{ const mgl=(name,cnt)=>{ const cl=MCLOSED.has(name); return `<button type="button" class="mgl" data-mgrp="${esc(name)}" aria-expanded="${!cl}"><span>${esc(name)}</span><span class="mgc">${cl?`${cnt} ▾`:"▴"}</span></button>`; };
-      const grp=tabs.map(([k],i)=>TABGRP[k]&&(i===0||TABGRP[tabs[i-1][0]]!==TABGRP[k])?TABGRP[k]:null);
-      const cntOf=name=>tabs.filter(([k])=>TABGRP[k]===name).length+(name===TABGRP.audits&&tabs.some(([k])=>k==="audits")&&can("audit")?1:0);
-      let n=0, cur=""; const rows=tabs.map(([k,l],i)=>{ const nb=grp[i]; if(nb){ n=0; cur=nb; } n++; const hid=MCLOSED.has(cur); return `${nb?mgl(nb,cntOf(nb)):""}${hid?"":`<button role="menuitem" data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span><i class="mn">${n}</i>${l}</span>${k==="today"&&bad?`<span class="n">${bad}</span>`:""}</button>${k==="audits"&&can("audit")?`<button role="menuitem" data-go="audit.html"><span><i class="mn">${++n}</i>Spot audit ↗</span></button>`:""}`}`; }).join("");
-      const kl=KLINKS(); const kit=kl.length?`${mgl("Kitchen HQ",kl.length)}${MCLOSED.has("Kitchen HQ")?"":kl.map((x,i)=>`<button role="menuitem" data-go="${esc(x[1])}"><span><i class="mn">${i+1}</i>${esc(x[0])} ↗</span></button>`).join("")}`:"";
-      const help=`${mgl("Help & support",3)}${MCLOSED.has("Help & support")?"":`<button role="menuitem" data-go="index.html#guide"><span><i class="mn">1</i>How-to guide ↗</span></button><button role="menuitem" data-mhelp="ask"><span><i class="mn">2</i>Ask the helper</span></button><button role="menuitem" data-mhelp="fb"><span><i class="mn">3</i>Report a problem</span></button>`}`;
-      return `<div class="menu" role="menu">${rows}${kit}${help}<div class="mgo"><button role="menuitem" data-go="index.html"><span>‹ Home</span></button></div><div class="mwho">${CA.chip({name:AUTH.name,role:AUTH.role,label:AUTH.label})}</div></div>`; })():""}`; }
+    /* v22.7: the ☰ button opens the one shared menu (CA.menu), the same as on Home and the kitchen page */
+    $("#nav").innerHTML=`<button class="mbtn" data-menu="1" aria-haspopup="dialog"><span class="bars">☰${bad?`<span class="n" aria-label="${bad} urgent">${bad}</span>`:""}</span><span class="mcur">${cur}</span><span class="car" aria-hidden="true">▾</span></button>`; }
   $("#who").innerHTML=AUTH.pin?CA.chip({name:AUTH.name,role:AUTH.role,label:AUTH.label}):"";
   let html;
   if(!S.db) html=`<div class="empty">This view can't reach the consignment database. Sign in again with your office PIN.</div>`;
@@ -1313,16 +1409,16 @@ function vNumbers(){ const u=nmState(), rg=nmRange(u), D=numbersData(rg.from,rg.
   const worst=D.rows.filter(r=>(who==="hq"?r.hqWaste:one?0:r.waste)>0).sort((a,b)=>(who==="hq"?b.hqWaste-a.hqWaste:b.waste-a.waste)).slice(0,5);
   const pctCell=(w,base)=>{ const pc=base>0?Math.round(w*100/base):null; return pc==null?`<span class="muted">—</span>`:`<b style="color:${pc>=25?"var(--bad)":pc>=10?"var(--warn)":"var(--ok)"}">${pc}%</b>`; };
   const n=v=>v==null?`<span class="muted">—</span>`:`<span class="mono">${v}</span>`;
-  const head=who==="hq"?`<tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th><th class="r">Sent out</th><th class="r">HQ display plan</th><th class="r">HQ sold</th><th class="r">HQ left</th><th class="r">HQ waste</th><th class="r">Waste %</th></tr>`
-    :one?`<tr><th>Cake</th><th class="r">Sent</th><th class="r">Rejected</th><th class="r">Sold</th><th class="r">Left now</th><th class="r">Waste</th><th class="r">Waste % of sent</th></tr>`
-    :`<tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th>${outs.map(p=>`<th class="r">${esc(p.code)}</th>`).join("")}<th class="r">HQ</th><th class="r">Sold</th><th class="r">Left</th><th class="r">HQ waste</th><th class="r">Outlet waste</th><th class="r">Waste %</th></tr>`;
+  const head=who==="hq"?`<tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th><th class="r">Sent out</th><th class="r">HQ display plan</th><th class="r">HQ est. sold</th><th class="r">HQ left</th><th class="r">HQ waste</th><th class="r">Waste %</th></tr>`
+    :one?`<tr><th>Cake</th><th class="r">Sent</th><th class="r">Rejected</th><th class="r">Est. sold</th><th class="r">Left now</th><th class="r">Waste</th><th class="r">Waste % of sent</th></tr>`
+    :`<tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th>${outs.map(p=>`<th class="r">${esc(p.code)}</th>`).join("")}<th class="r">HQ</th><th class="r">Est. sold</th><th class="r">Left</th><th class="r">HQ waste</th><th class="r">Outlet waste</th><th class="r">Waste %</th></tr>`;
   const body=D.rows.map(r=>{ const w=who==="hq"?r.hqWaste:one?0:r.waste, hi=w>=2&&r.base>0&&w*4>=r.base;
     if(one){ const sent=r.sent[one.id]||0; if(!sent&&!r.oLeft[one.id]) return ""; const c=calcOne(one.id,r.id,rg.from,rg.to); return `<tr class="${c.waste>=3?"warnrow":""}"><td>${cake(r.id)}</td><td class="r">${n(sent)}</td><td class="r">${n(c.rej||0)}</td><td class="r">${n(c.sold)}</td><td class="r">${n(r.oLeft[one.id]??null)}</td><td class="r">${n(c.waste)}</td><td class="r">${pctCell(c.waste,sent)}</td></tr>`; }
     if(who==="hq") return `<tr class="${hi?"warnrow":""}"><td>${cake(r.id)}</td><td class="r">${n(r.toMake)}</td><td class="r">${n(r.made)}${r.made!=null&&r.made<r.toMake?` <span class="pill warn">short ${r.toMake-r.made}</span>`:r.made!=null&&r.made>r.toMake?` <span class="pill info">+${r.made-r.toMake}</span>`:""}</td><td class="r">${n(r.sentAll)}</td><td class="r">${n(r.hqPlan)}</td><td class="r">${n(r.hqSold)}${r.hqSold!=null&&r.hqSoldDays<r.days.size?`<span class="small muted"> · ${r.hqSoldDays} day${r.hqSoldDays===1?"":"s"}</span>`:""}</td><td class="r">${n(r.hqLeft)}</td><td class="r">${n(r.hqWaste)}</td><td class="r">${pctCell(r.hqWaste,r.base)}</td></tr>`;
     return `<tr class="${hi?"warnrow":""}"><td>${cake(r.id)}</td><td class="r">${n(r.toMake)}</td><td class="r">${n(r.made)}${r.made!=null&&r.made<r.toMake?` <span class="pill warn">short ${r.toMake-r.made}</span>`:r.made!=null&&r.made>r.toMake?` <span class="pill info">+${r.made-r.toMake}</span>`:""}</td>${outs.map(p=>`<td class="r">${n(r.sent[p.id]||0)}</td>`).join("")}<td class="r">${n(r.hqPlan)}</td><td class="r">${n(r.sold)}</td><td class="r">${n((r.hqLeft||0)+r.oLeftAll)}</td><td class="r">${n(r.hqWaste)}</td><td class="r">${n(r.oWaste)}</td><td class="r">${pctCell(r.waste,r.base)}</td></tr>`; }).join("");
   const tot=one?"":`<tr class="tot"><td><b>Total</b></td><td class="r mono"><b>${T.toMake}</b></td><td class="r mono"><b>${T.madeRows?T.made:"—"}</b></td>${who==="hq"?`<td class="r mono"><b>${T.sent}</b></td><td class="r mono"><b>${D.rows.reduce((a,r)=>a+r.hqPlan,0)}</b></td><td class="r mono"><b>${D.rows.some(r=>r.hqSold!=null)?D.rows.reduce((a,r)=>a+(r.hqSold||0),0):"—"}</b></td><td class="r mono"><b>${D.rows.reduce((a,r)=>a+(r.hqLeft||0),0)}</b></td><td class="r mono"><b>${T.hqW}</b></td>`:`${outs.map(p=>`<td class="r mono"><b>${D.rows.reduce((a,r)=>a+(r.sent[p.id]||0),0)}</b></td>`).join("")}<td class="r mono"><b>${D.rows.reduce((a,r)=>a+r.hqPlan,0)}</b></td><td class="r mono"><b>${T.sold}</b></td><td class="r mono"><b>${D.rows.reduce((a,r)=>a+(r.hqLeft||0)+r.oLeftAll,0)}</b></td><td class="r mono"><b>${T.hqW}</b></td><td class="r mono"><b>${T.oW}</b></td>`}<td class="r">${pctCell(wasteT,baseT)}</td></tr>`;
   const noMade=D.rows.length&&!T.madeRows;
-  return `<div class="head"><div><h1>Numbers · made &amp; waste</h1><p class="lede">What was planned, made, sent, sold, left and wasted, per cake. Waste % = waste ÷ made (or ÷ to make when no Made number was typed). Red rows: a quarter or more went to waste (2 cakes or more).</p></div></div>
+  return `<div class="head"><div><h1>Numbers · made &amp; waste</h1><p class="lede">What was planned, made, sent, sold (estimated from the counts), left and wasted, per cake. Waste % = waste ÷ made (or ÷ to make when no Made number was typed). Red rows: a quarter or more went to waste (2 cakes or more).</p></div></div>
     <div class="panel"><div class="spread"><div class="row" style="flex-wrap:wrap;gap:8px">
       <span class="seg" role="group" aria-label="Period">${[["day","Day"],["week","Week"],["month","Month"]].map(([k,l])=>`<button class="btn sm ${u.mode===k?"on":""}" data-nmmode="${k}" aria-pressed="${u.mode===k}">${l}</button>`).join("")}</span>
       <span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><button class="btn sm" data-nmstep="-1" aria-label="Previous">‹</button><b>${esc(rg.label)}</b><button class="btn sm" data-nmstep="1" aria-label="Next" ${nmStep(u,1)>t?"disabled":""}>›</button></span>${rg.to<t||rg.from>t?`<button class="btn sm" data-nmstep="0">Today</button>`:""}
@@ -1330,13 +1426,13 @@ function vNumbers(){ const u=nmState(), rg=nmRange(u), D=numbersData(rg.from,rg.
       <div class="stats" style="margin-top:12px">
         <div class="stat"><h3>${T.madeRows?"Made":"To make"}</h3><span class="v">${baseT}</span><span class="small muted">${T.madeRows?"cakes made · from the prep list":"cakes on the DOs · no Made typed yet"}</span></div>
         ${one?`<div class="stat"><h3>Sent to ${esc(one.name)}</h3><span class="v">${T.sent}</span><span class="small muted">on delivery orders</span></div>`:`<div class="stat"><h3>Sent to outlets</h3><span class="v">${T.sent}</span><span class="small muted">${outs.map(p=>`${esc(p.code)} ${D.rows.reduce((a,r)=>a+(r.sent[p.id]||0),0)}`).join(" · ")}</span></div>`}
-        ${one?"":`<div class="stat"><h3>Sold</h3><span class="v">${T.sold}</span><span class="small muted">${who==="hq"?"HQ, by the closing count":"outlets by their counts"+(D.rows.some(r=>r.hqSold!=null)?" + HQ":"")}</span></div>`}
+        ${one?"":`<div class="stat"><h3>Est. sold</h3><span class="v">${T.sold}</span><span class="small muted">${who==="hq"?"HQ, by the closing count":"outlets by their counts"+(D.rows.some(r=>r.hqSold!=null)?" + HQ":"")}</span></div>`}
         <div class="stat"><h3>Waste</h3><span class="v" style="color:${wasteT?(pctT>=10?"var(--bad)":"var(--warn)"):"var(--ok)"}">${one?calcOneTotal(one.id,rg.from,rg.to).waste:wasteT}</span><span class="small muted">${who==="hq"?"thrown away at HQ":one?"thrown away at the outlet":`HQ ${T.hqW} · outlets ${T.oW}`}${!one&&pctT!=null?` · ${pctT}% of ${T.madeRows?"made":"to make"}`:""}</span></div>
       </div>
       ${worst.length?`<p class="small" style="margin:10px 0 0"><b>Most wasted:</b> ${worst.map(r=>`${esc(prod(r.id).name)} ${who==="hq"?r.hqWaste:r.waste}`).join(" · ")}</p>`:""}
       ${noMade?`<p class="small muted" style="margin:8px 0 0">No Made numbers for this period: the prep list keeps Made for 30 days, and someone has to type it (or, soon, snap the prep sheet). Until then the table uses To make.</p>`:""}</div>
     <div class="panel">${D.rows.length?`<div class="tw"><table><thead>${head}</thead><tbody>${body}${tot}</tbody></table></div>`:`<div class="empty">Nothing recorded for ${esc(rg.label)}: no delivery orders, Made numbers or closing counts.</div>`}
-      <p class="small muted" style="margin:8px 0 0">To make = the day's delivery orders + HQ display plan. Made = the prep list's Made column. Sent = accepted quantity once delivered. Sold and waste at outlets come from their closing counts; HQ waste and left from the kitchen closing count. HQ sold = yesterday's left + made − sent out − waste − left, only on days with a Made number.</p></div>`;
+      <p class="small muted" style="margin:8px 0 0">To make = the day's delivery orders + HQ display plan. Made = the prep list's Made column. Sent = accepted quantity once delivered. Est. sold = available − waste − left, from the closing counts (not the till). HQ waste and left come from the kitchen closing count. HQ est. sold = yesterday's left + made − sent out − waste − left, only on days with a Made number.</p></div>`;
 }
 /* one outlet, one cake, over a range (for the outlet-only view) */
 function calcOne(pid,id,from,to){ let sold=0,waste=0,rej=0; const weeks=[...new Set((()=>{const a=[];for(let d=from;d<=to;d=add(d,1)) a.push(weekStartOf(d));return a;})())];
@@ -2049,15 +2145,12 @@ document.addEventListener("change",async e=>{
   if(t.dataset.psend){const [d,id,pid]=t.dataset.psend.split("|"); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); const q=v===""?null:Math.max(0,+v); await setSend(d,id,pid,q); return;}
 });
 document.addEventListener("click",async e=>{
-  if(MENU&&!e.target.closest("#nav")){MENU=false;render();}
   const b=e.target.closest("button,[data-close]"); if(!b) return;
   const d=b.dataset;
   if(b.id==="ca-hbtn"||d.caLogout||b.closest(".ca-hp,.ca-login")) return;
   if(d.go){location.href=d.go;return;}
-  if(d.mhelp){MENU=false;render();CA.openHelp(d.mhelp);return;}
-  if(d.menu){MENU=!MENU;render();return;}
+  if(d.mhelp){CA.openHelp(d.mhelp);return;}
   if(d.ochase){ const [pid,date]=d.ochase.split("|"); b.disabled=true; try{ const r=await GS("outletChaseNow",pid,date); if(r.ok) toast(`Asked ${partner(pid).name}: ${r.sent} of ${r.to} sent${r.names&&r.names.length?" — "+r.names.join(", "):""}`); else { const ph=((r.people||[]).find(x=>x.phone)||{}).phone||partner(pid).phone||""; toast(`${r.why} — WhatsApp opens with the message ready.`); window.open(wa(ph,r.text||""),"_blank","noopener"); } }catch(e){ toast(e.message); } b.disabled=false; return; }
-  if(d.mgrp){ if(MCLOSED.has(d.mgrp)) MCLOSED.delete(d.mgrp); else MCLOSED.add(d.mgrp); try{ localStorage.setItem("chaleur.deskmenu",JSON.stringify([...MCLOSED])); }catch(x){} render(); return; }
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
   if(RO()&&!(SUPK()&&(d.edo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.doadd!=null||d.dorm!=null))&&!(DELIV()&&(d.prm||d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"||d.act==="makeDOsGo"||d.act==="makeDOsNo"||d.dskip!=null))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.attnav||d.act==="attAll"||d.billsel||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF"||d.nmmode||d.nmstep!=null)){toast("View only — ask a manager to make changes");return;}
@@ -2066,7 +2159,7 @@ document.addEventListener("click",async e=>{
   if(d.prm){const [dd,id]=d.prm.split("|"); if(!confirm(`Take ${prod(id).name} off the prep list for ${nice(dd)}? Every outlet goes to 0.`)) return; b.disabled=true;
     for(const pl of planAll().plans.filter(x=>x.prepDate===dd&&x.pid)){ const l=pl.lines.find(x=>x.productId===id); if(l&&(l.send||l.base||(pl.planned||[]).length)) await setSend(dd,id,pl.pid,0,true); }
     if(S.ui.prepAdd&&S.ui.prepAdd[dd]) S.ui.prepAdd[dd]=S.ui.prepAdd[dd].filter(x=>x!==id); toast(`${prod(id).name} taken off the prep list`); render(); return;}
-  if(d.tab){MENU=false;S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;if(d.tab==="feedback")S.fb=null;try{history.replaceState(null,"","#"+d.tab);}catch(_){ } render();window.scrollTo(0,0);return;}
+  if(d.tab){S.tab=d.tab;S.ui.confirm=null;if(d.tab==="staff")S.team=null;if(d.tab==="feedback")S.fb=null;try{history.replaceState(null,"","#"+d.tab);}catch(_){ } render();window.scrollTo(0,0);return;}
   if(d.stnew){const C=S.stCat||{presets:{kitchen:{staff:[]}}}; S.ui.stEdit={row:0,name:"",phone:"",code:"",role:"kitchen",notes:"",area:"kitchen",level:"staff",perms:(C.presets.kitchen.staff||[]).slice()};render();return;}
   if(d.stcancel){S.ui.stEdit=null;render();return;}
   if(d.stedit){const x=(S.team||[]).find(r=>String(r.row)===d.stedit); if(x){S.ui.stEdit={...x,phone:x.phone&&/^60\d{8,10}$/.test(x.phone)?"0"+x.phone.slice(2):(x.phone||"")};render();window.scrollTo(0,0);} return;}
@@ -2119,7 +2212,7 @@ document.addEventListener("click",async e=>{
   if(d.oprm!==undefined){S.ui.opDraft.lines.splice(+d.oprm,1);render();return;}
   if(d.act) await act(d.act,b);
 });
-document.addEventListener("keydown",e=>{const t=e.target; if(e.key==="Escape"&&MENU){MENU=false;render();} if(t&&t.dataset&&t.dataset.doline&&/^[.,eE+\-]$/.test(e.key)) e.preventDefault();});
+document.addEventListener("keydown",e=>{const t=e.target; if(t&&t.dataset&&t.dataset.doline&&/^[.,eE+\-]$/.test(e.key)) e.preventDefault();});
 async function act(a,b){
   const t=today();
   switch(a){
@@ -2475,7 +2568,7 @@ function cardify(root){ if(!root) return; root.querySelectorAll("table").forEach
   tb.querySelectorAll("tbody tr, tfoot tr").forEach(tr=>{ let c=0; [...tr.children].forEach(td=>{ const l=lab[c]||""; if(!td.hasAttribute("data-l")) td.setAttribute("data-l",l); if(!td.textContent.trim()&&!td.querySelector("input,select,button,a,img")) td.classList.add("cfe"); c+=+(td.getAttribute("colspan")||1); }); }); }); }
 document.addEventListener("click",e=>{ const l=e.target&&e.target.closest&&e.target.closest(".lede"); if(l&&matchMedia("(max-width:640px)").matches) l.classList.toggle("open"); });
 function showLogin(msg){
-  MENU=false; S.ui.modal=null; $("#nav").innerHTML=""; $("#who").innerHTML=""; $("#testbar").innerHTML=""; $("#modal").innerHTML="";
+  CA.menu.close(); S.ui.modal=null; $("#nav").innerHTML=""; $("#who").innerHTML=""; $("#testbar").innerHTML=""; $("#modal").innerHTML="";
   CA.toLogin(msg);
 }
 async function start(){
@@ -2493,7 +2586,7 @@ async function start(){
   setInterval(()=>{ if(!AUTH.pin) return; const a=document.activeElement; if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; reload();},90000);
   render();
 }
-window.addEventListener("hashchange",()=>{ const h=(location.hash||"").slice(1); if(STARTED&&TABS.some(([k])=>k===h)&&S.tab!==h){ S.tab=h; MENU=false; S.ui.confirm=null; if(h==="staff") S.team=null; if(h==="feedback") S.fb=null; render(); window.scrollTo(0,0); } });
+window.addEventListener("hashchange",()=>{ const h=(location.hash||"").slice(1); if(STARTED&&TABS.some(([k])=>k===h)&&S.tab!==h){ S.tab=h; S.ui.confirm=null; if(h==="staff") S.team=null; if(h==="feedback") S.fb=null; render(); window.scrollTo(0,0); } });
 /* ---- Step-by-step guides (v21.7), one per office page that the team uses: To clear today, Plan & prep, Delivery orders, Weekly bills.
    Drawn by the shared CA.tour (Auth.html); each shows itself the first 3 times a person opens that page, then "❔ Show me how" replays it. ---- */
 const TOURS={
