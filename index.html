@@ -527,6 +527,8 @@ button{font-family:inherit;cursor:pointer}a{color:inherit}
 .logo{width:36px;height:36px;border-radius:9px;background:var(--deep);color:var(--gold);display:grid;place-items:center;flex:none}.logo svg{width:28px;height:auto;display:block}
 .hd .tt{flex:1;min-width:0}.hd h1{font:700 20px/1.05 var(--display);margin:0}.hd .sub{font-size:12px;color:var(--muted)}
 .hd .sub button{border:0;background:none;padding:6px 0;margin:-6px 0;font:inherit;color:inherit;text-decoration:underline dotted;min-height:36px}
+.hbtn.pdf{padding:0 11px;font-size:17px}
+@media print{.hd .hbtn,.hd .qbtn,.hd .back,.tabs,#camenu,.ca-hbtn,.ca-vabar,.tourshow,.cb,.asgbtn{display:none!important}.hd{position:static!important;box-shadow:none}.w{padding:0!important;max-width:none}body{background:#fff!important}.card{box-shadow:none;break-inside:avoid}@page{size:A4;margin:12mm}}
 .hbtn{height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-weight:600;font-size:14px;color:var(--ink);box-shadow:0 3px 0 var(--line);flex:none}
 .qbtn{width:44px;height:44px;border-radius:50%;border:0;background:var(--ink);color:var(--paper);font-weight:700;font-size:17px;flex:none}
 .back{width:44px;height:44px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-size:20px;color:var(--ink);flex:none;display:grid;place-items:center;text-decoration:none}
@@ -719,8 +721,8 @@ document.addEventListener("keydown",e=>{ if(!$(".si")) return; const a=document.
 /* ---------- header, tab bar, menu ---------- */
 function header(){ return `<div class="hd"><a class="logo" href="index.html" aria-label="Home" title="Home">${LOGO()}</a><div class="tt"><h1>${esc(hi())}, ${esc(first())}</h1>
     <div class="sub">${esc(dateTxt())} · ${isKit()?`<button type="button" data-team="1" aria-label="Switch team">${myTeam()==="am"?"Morning team":"Production team"}</button>`:esc(CA.labelOf(S))}</div></div>
-    <button class="hbtn" type="button" data-menu="1" aria-haspopup="true">☰ Menu</button><button class="qbtn" type="button" data-help="ask" aria-label="Ask the helper or report a problem">?</button></div>`; }
-function subHead(title,back){ return `<div class="hd"><a class="logo" href="index.html" aria-label="Home" title="Home">${LOGO()}</a>${back?`<a class="back" href="#${back==="home"?"":back}" aria-label="Back">‹</a>`:""}<div class="tt"><div class="ptitle">${esc(title)}</div></div><button class="hbtn" type="button" data-menu="1">☰ Menu</button><button class="qbtn" type="button" data-help="ask" aria-label="Ask the helper or report a problem">?</button></div>`; }
+    <button class="hbtn pdf" type="button" onclick="window.print()" title="Print, or save this page as a PDF" aria-label="Save as PDF">⤓</button><button class="hbtn" type="button" data-menu="1" aria-haspopup="true">☰ Menu</button><button class="qbtn" type="button" data-help="ask" aria-label="Ask the helper or report a problem">?</button></div>`; }
+function subHead(title,back){ return `<div class="hd"><a class="logo" href="index.html" aria-label="Home" title="Home">${LOGO()}</a>${back?`<a class="back" href="#${back==="home"?"":back}" aria-label="Back">‹</a>`:""}<div class="tt"><div class="ptitle">${esc(title)}</div></div><button class="hbtn pdf" type="button" onclick="window.print()" title="Print, or save this page as a PDF" aria-label="Save as PDF">⤓</button><button class="hbtn" type="button" data-menu="1">☰ Menu</button><button class="qbtn" type="button" data-help="ask" aria-label="Ask the helper or report a problem">?</button></div>`; }
 /* v22.3: Home (the two big buttons) · Today (your list) · Team · Me. Kitchen HQ and Outlet Delivery are on Home. */
 function tabs(){ const T=[["home","Home","#"],["today","Today","#today"],["team","Team","#team"],["me","Me","#me"]], cur=["","hq","out","bo"].includes(VIEW)?"home":VIEW==="treat"||VIEW==="qc"?"today":VIEW;
   $("#tabs").innerHTML=`<div class="tabs"><nav aria-label="Main">${T.map(([k,l,h])=>`<a href="${h}" ${cur===k?'aria-current="page"':""}>${TABI[k]}<span>${l}</span></a>`).join("")}</nav></div>`; }
@@ -864,7 +866,7 @@ function vTeam(){ const T=TEAMI; if(!T) return subHead("The team")+`<p class="hi
     <div class="eb" style="margin:4px 2px 0">Your badges · ${got} of ${T.badges.length}</div>
     <div class="card badges">${T.badges.map(b=>`<div class="${b.got?"got":"no"}"><span aria-hidden="true">${b.got?esc(b.icon):""}</span>${esc(b.name)}</div>`).join("")}</div>
     <p class="hint" style="margin:0 2px">Everyone's points also fill the one Team treat jar.</p></div>`; }
-function vMe(){ const M=ME; const sub=`<div style="display:flex;align-items:center;gap:14px;padding:10px 0 2px"><div class="av" aria-hidden="true">${esc(first().charAt(0)||"?")}</div><div><div style="font:700 26px/1 var(--display)">Good ${hi().toLowerCase()}, ${esc(first())}</div><div class="hint">Your path to chef (only you see this page)</div></div></div>`;
+function vMe(){ const M=ME; const sub=subHead("Me","home")+`<div style="display:flex;align-items:center;gap:14px;padding:10px 0 2px"><div class="av" aria-hidden="true">${esc(first().charAt(0)||"?")}</div><div><div style="font:700 26px/1 var(--display)">Good ${hi().toLowerCase()}, ${esc(first())}</div><div class="hint">Your path to chef (only you see this page)</div></div></div>`;
   if(!M) return sub+`<p class="hint">Loading…</p>`;
   const showPath=CA.areaOf(S)!=="office"||M.points>0||S.as;
   const next=M.next, pct=next?Math.min(100,Math.round((M.points-M.from)*100/Math.max(1,next-M.from))):100;
@@ -948,7 +950,7 @@ function guideSecs(){ const tpl=document.getElementById("guideTpl"), out=[]; if(
   [...d.children].forEach(el=>{ if(el.tagName==="H1") return; if(el.tagName==="H2"){ const m=el.textContent.match(/^(\d+)\.\s*(.*)$/); cur={n:m?+m[1]:0,title:m?m[2]:el.textContent,html:""}; out.push(cur); } else if(cur) cur.html+=el.outerHTML; });
   return out.sort((a,b)=>(GUIDE_ORDER.indexOf(a.n)+1||99)-(GUIDE_ORDER.indexOf(b.n)+1||99)); }
 function vGuide(){ const secs=guideSecs();
-  return `<div class="hd"><a class="back" href="#" aria-label="Home">‹</a><div class="ptitle">How-to guide</div></div>
+  return `<div class="hd"><a class="back" href="#" aria-label="Home">‹</a><div class="tt"><div class="ptitle">How-to guide</div></div><button class="hbtn pdf" type="button" onclick="window.print()" title="Print, or save this guide as a PDF" aria-label="Save as PDF">⤓</button><button class="hbtn" type="button" data-menu="1">☰ Menu</button></div>
     <p class="hint" style="margin:4px 2px 10px">Everything the app does, step by step. Start with <b>your job</b>, or look under <b>I'm stuck</b>. Still stuck? Ask the helper: it answers from this guide, and questions it can't answer go to Alfred every week.</p>
     <label class="gsearch"><span aria-hidden="true">⌕</span><input id="gq" type="search" placeholder="Search: fridge, PIN, DO, colour, bill…" value="${esc(GQ)}" autocomplete="off" aria-label="Search the guide"></label>
     <div class="gchips"><button type="button" class="cb sm" data-gopen="17">My job, step by step</button><button type="button" class="cb sm" data-gopen="16">I'm stuck</button><button type="button" class="cb sm ghost" data-help="ask">? Ask the helper</button><button type="button" class="cb sm ghost" data-help="fb">Report a problem</button></div>

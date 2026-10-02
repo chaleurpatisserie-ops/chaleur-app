@@ -669,7 +669,7 @@ label.f input,label.f select,label.f textarea{text-transform:none;letter-spacing
 [hidden]{display:none!important}
 .wrap{max-width:560px}
 body.flow .ca-hbtn{display:none!important}
-@media print{#tabs,#ktabs,#bar,.ca-hbtn,#acct,.foot,.hd .back,.hd .pill,button.cb,.cb.dash{display:none!important}.w{padding:0;max-width:none}.card{box-shadow:none;break-inside:avoid}body{background:#fff}}
+@media print{#tabs,#ktabs,#bar,.ca-hbtn,#acct,.foot,.hd .back,.hd .pill,.hd .hbtn,button.cb,.cb.dash,#camenu,.ca-vabar,.lnk{display:none!important}.w{padding:0;max-width:none}.card{box-shadow:none;break-inside:avoid}body{background:#fff}}
 .ca-hbtn{bottom:calc(84px + env(safe-area-inset-bottom,0px))!important;min-height:44px!important;padding:0 14px!important;font-size:14px!important}
 body:not(.flow) .foot{bottom:calc(72px + env(safe-area-inset-bottom,0px));padding-bottom:12px}body:not(.flow) #app:has(.foot){padding-bottom:calc(200px + env(safe-area-inset-bottom,0px))} /* v22.5 audit: the name + Log out chip sits after #main, so pad the whole page above a Save footer */
 body:not(.flow):has(#main .foot) .ca-hbtn{bottom:calc(170px + env(safe-area-inset-bottom,0px))!important}body.flow:has(#main .foot) .ca-hbtn{display:none!important}
@@ -835,6 +835,7 @@ body.dark #bar .cb.ghost{background:transparent;color:#fff;border-color:rgba(255
 .sec{margin-top:14px}
 .oleft{border-top:1px solid var(--line);padding:8px 0}.oleft summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}.oleft summary::-webkit-details-marker{display:none}
 .olr{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;margin-top:6px;font-size:14px}.olr .dt{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}.olr .dt i{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.3)}.olr b{text-align:right;min-width:2ch}
+.hd .hbtn.pdf{padding:0 10px;margin-right:-2px}
 .hd .tt{flex:1;min-width:0}.hd .hbtn{height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-weight:600;font-size:14px;color:var(--ink);box-shadow:0 3px 0 var(--line);flex:none;font-family:inherit}
 </style>
 </head><body>
@@ -988,7 +989,7 @@ const TABI={
  team:`<svg viewBox="0 0 28 26"><circle cx="9" cy="8" r="4.5" fill="currentColor"/><circle cx="19.5" cy="9" r="4" fill="currentColor" opacity=".6"/><path d="M1.5 23c0-5 3.5-8 7.5-8s7.5 3 7.5 8z" fill="currentColor"/><path d="M14 23c.5-4 3-7 5.5-7s5.8 3 6 7z" fill="currentColor" opacity=".6"/></svg>`,
  me:`<svg viewBox="0 0 28 26"><circle cx="14" cy="8" r="6" fill="currentColor"/><path d="M3 25c0-6.5 5-10 11-10s11 3.5 11 10z" fill="currentColor"/></svg>`};
 function hdr(title,opt){ opt=opt||{}; return `<div class="hd">${opt.back?`<${opt.back.href?`a href="${opt.back.href}"`:`button type="button" ${opt.back.attr||""}`} class="back" aria-label="${esc(opt.back.label||"Back")}">‹</${opt.back.href?"a":"button"}>`:""}
-  <div class="tt">${opt.eb?`<div class="eb">${esc(opt.eb)}</div>`:""}<div class="ptitle">${esc(title)}</div></div>${opt.right||""}${opt.noMenu||inFlow()?"":`<button class="hbtn" type="button" data-menu="1" aria-haspopup="dialog">☰ Menu</button>`}</div>`; }
+  <div class="tt">${opt.eb?`<div class="eb">${esc(opt.eb)}</div>`:""}<div class="ptitle">${esc(title)}</div></div>${opt.right||""}${opt.noMenu||inFlow()?"":`<button class="hbtn pdf" type="button" data-act="printList" title="Print, or save this page as a PDF" aria-label="Save as PDF">⤓ PDF</button><button class="hbtn" type="button" data-menu="1" aria-haspopup="dialog">☰ Menu</button>`}</div>`; }
 /* v22.7: ☰ Menu on the kitchen page too — the one shared menu (CA.menu), the same as Home and the office desk */
 function inFlow(){ return !!(V2||((TAB==="opening"||TAB==="closing")&&(PART||(RESULT&&RESULT.kind===TAB)))); }
 function render(){
@@ -1105,7 +1106,7 @@ function vToday(){
     <div class="kseg" role="group" aria-label="Team">${Object.entries(TEAMS()).map(([k,l])=>`<button type="button" data-team="${k}" aria-pressed="${TEAM===k}">${esc(String(l).split(" / ")[0])} · ${left(k)?left(k)+" left":"all done"}</button>`).join("")}</div>
     <div><div class="pbar"><i style="width:${cur.length?Math.round(dn*100/cur.length):0}%"></i></div><div class="lh"><span>${dn} of ${cur.length} done</span><span>${TEAM==="am"?"Plan, opening, orders, decorate, deliveries":"Production, closing report, plan"}</span></div></div>`;
   const extra=TEAM==="am"?outletsLeftCard(false):prodListCard()+prepCard()+planDaysCard()+outletsLeftCard(false);
-  const add=(can?`<button class="cb dash full" type="button" data-tadd="${TEAM==="am"?"order":"task"}|${TEAM}">+ Add a to-do</button>`:"")+`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px"><button class="lnk" type="button" data-act="printList">🖨 Print this list</button><a class="lnk" href="office.html#plan">Plan &amp; prep for all outlets ›</a></div>`;
+  const add=(can?`<button class="cb dash full" type="button" data-tadd="${TEAM==="am"?"order":"task"}|${TEAM}">+ Add a to-do</button>`:"")+`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px"><button class="lnk" type="button" data-act="printList">⤓ Print / PDF this list</button><a class="lnk" href="office.html#plan">Plan &amp; prep for all outlets ›</a></div>`;
   const mng=can&&all.length?`<details class="card"><summary style="font-weight:700;color:var(--accent);cursor:pointer">All to-dos for this team (${all.length})</summary>${all.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)"><span><span class="tag ${esc(x.type)}">${esc(TTYPE()[x.type]||"To-do")}</span> ${esc(x.title)} <span class="hint">· ${esc(x.date?niceD(x.date):dayList(x.days))}${x.ready?" · "+esc(x.ready):""}</span></span><button class="lnk" type="button" data-tedit="${esc(x.id)}">Edit</button></div>`).join("")}</details>`:"";
   const shared=`${INFO.proposals.length?`<div class="card info"><h3>Waiting for a supervisor (${INFO.proposals.length})</h3>${INFO.proposals.map(x=>`<div style="padding:8px 0;border-top:1px dashed var(--line)"><div>${esc(propText(x))}</div><div class="hint">${esc(x.by)} · ${esc(dtOf(x.at))}${x.why?` · “${esc(x.why)}”`:""}</div>${SUP()?`<div style="display:flex;gap:8px;margin-top:8px"><button class="cb sm ok" type="button" data-dec="${x.id}" data-ok="1">Approve</button><button class="cb sm ghost" type="button" data-dec="${x.id}" data-ok="0">Reject</button></div>`:""}</div>`).join("")}</div>`:""}
     ${INFO.brief&&(INFO.brief.warnings||[]).length?`<div class="card info"><h3>AI notes</h3><ul class="iss">${INFO.brief.warnings.map(w=>`<li>${esc(w)}</li>`).join("")}</ul><p class="hint">Updated ${esc(dtOf(INFO.brief.generatedAt))}</p></div>`:""}

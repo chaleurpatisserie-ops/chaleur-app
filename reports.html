@@ -698,6 +698,7 @@ body{background:var(--ground)}
 .chase a{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:46px;padding:0 14px;border-radius:12px;background:#1f7a3f;color:#fff;font:600 14px var(--body);text-decoration:none}
 .chase a small{font-weight:400;opacity:.85}
 .empty{background:var(--paper);border-radius:14px;padding:18px;text-align:center;color:var(--muted)}
+@media print{.rmenu,.rtop a,#camenu,.ca-hbtn,.ca-vabar,button{display:none!important}body{background:#fff!important}@page{size:A4;margin:12mm}}
 .rmenu{height:40px;padding:0 12px;border-radius:12px;border:1.5px solid var(--line,#e8dcd6);background:var(--paper,#fff);font:600 14px inherit;font-family:inherit;color:var(--ink,#2b1b1e);cursor:pointer}
 </style></head><body>
 <div class="rw" id="app"><p class="hint">Loading…</p></div>
@@ -736,14 +737,14 @@ function render(){
       <span><span class="t">${esc(r.title)}</span><span class="s ${r.done?"":"lt"}">${r.done?`✓ ${esc(r.by)}${r.at?" · "+esc(hm(r.at)):""}`:(r.late?"Late — due ":"Due ")+esc(r.due)+(r.left&&r.left.length?" · still: "+esc(r.left.join(", ")):"")}</span></span>
       ${r.done?"":`<span class="badge ${r.times?"":"warn"}">${r.times?`🔔 ${r.times}×`:"no reminder"}</span>`}</summary>
       <div class="body">${r.done?"":remHtml(r)}${r.detail.map(secHtml).join("")||(r.done?"":"")}</div></details>`;
-  a.innerHTML=`<div class="rtop"><h1>Reports</h1><span style="display:flex;gap:8px;align-items:center"><button type="button" data-menu="1" class="rmenu" aria-haspopup="dialog">☰ Menu</button><a href="index.html">‹ Home</a></span></div>
+  a.innerHTML=`<div class="rtop"><h1>Reports</h1><span style="display:flex;gap:8px;align-items:center"><button type="button" class="rmenu" onclick="window.print()" title="Print, or save this page as a PDF">⤓ PDF</button><button type="button" data-menu="1" class="rmenu" aria-haspopup="dialog">☰ Menu</button><a href="index.html">‹ Home</a></span></div>
     <div class="dstrip" role="group" aria-label="Day">${days.map((d,i)=>`<button type="button" data-date="${d}" aria-pressed="${D.date===d}">${i===0?"Today":i===1?"Yesterday":esc(niceD(d))}</button>`).join("")}<label>📅 <input type="date" id="pick" value="${esc(D.date)}" max="${esc(t)}" aria-label="Pick a day"></label></div>
     <div class="sum"><span><b>${D.rows.length}</b>reports</span><span><b style="color:var(--ok)">${done.length}</b>done</span><span><b style="color:${undone.length?"#b3261e":"var(--ink)"}">${undone.length}</b>not done</span></div>
     ${!D.rows.length?`<div class="empty">No reports needed on ${esc(D.day)} (closed, or before go-live).</div>`:""}
     ${undone.length?`<div class="grp">Not done · ${esc(D.day)}</div>${undone.map(card).join("")}`:""}
     ${done.length?`<div class="grp">Done · ${esc(D.day)}</div>${done.map(card).join("")}`:""}
     <p class="hint" style="margin-top:14px">Automatic reminders go out 1 hour before, on time and 1 hour after each report is due, only while it is missing. Photos open in Google Drive (you need to be signed in to the Chaleur Google account).</p>`; }
-async function load(date){ DATE=date||DATE; try{ D=await CA.run("reportsView",S.t,DATE); render(); }catch(e){ if(CA.isAuthErr(e)){ CA.clear(); return CA.toLogin(e.message); } $("#app").innerHTML=`<div class="rtop"><h1>Reports</h1><span style="display:flex;gap:8px;align-items:center"><button type="button" data-menu="1" class="rmenu" aria-haspopup="dialog">☰ Menu</button><a href="index.html">‹ Home</a></span></div><div class="empty">${esc(e.message)}</div>`; } }
+async function load(date){ DATE=date||DATE; try{ D=await CA.run("reportsView",S.t,DATE); render(); }catch(e){ if(CA.isAuthErr(e)){ CA.clear(); return CA.toLogin(e.message); } $("#app").innerHTML=`<div class="rtop"><h1>Reports</h1><span style="display:flex;gap:8px;align-items:center"><button type="button" class="rmenu" onclick="window.print()" title="Print, or save this page as a PDF">⤓ PDF</button><button type="button" data-menu="1" class="rmenu" aria-haspopup="dialog">☰ Menu</button><a href="index.html">‹ Home</a></span></div><div class="empty">${esc(e.message)}</div>`; } }
 document.addEventListener("toggle",e=>{ const d=e.target; if(d.matches&&d.matches("details.rep")){ if(d.open) OPEN.add(d.dataset.key); else OPEN.delete(d.dataset.key); } },true);
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-date]"); if(b){ OPEN.clear(); load(b.dataset.date); return; }
   const c=e.target.closest("[data-chase]"); if(c){ CA.run("reportsLogChase",S.t,c.dataset.chase,c.dataset.name).then(()=>load()).catch(()=>{}); } });
