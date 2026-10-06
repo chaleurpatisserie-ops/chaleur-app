@@ -620,6 +620,7 @@ th:first-child,td:first-child{text-align:left}td{padding:8px 4px;border-bottom:1
 .spin{width:22px;height:22px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp 1s linear infinite;display:inline-block;vertical-align:middle}@keyframes sp{to{transform:rotate(360deg)}}
 .empty{border:2px dashed var(--line);border-radius:14px;padding:16px;color:var(--muted);text-align:center}
 .ca-hbtn{bottom:calc(142px + env(safe-area-inset-bottom,0px))!important;min-height:44px!important;padding:0 14px!important;font-size:14px!important}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,#eee);cursor:pointer}.opt:first-of-type{border-top:0}.opt input[type=radio]{width:24px;height:24px;flex:0 0 24px;margin:0;accent-color:#7b1c2b}.opt span{flex:1;line-height:1.4}.opt .cq-why{width:100%;margin-top:8px;padding:10px;border:1px solid var(--line,#ccc);border-radius:10px;font:inherit}
 </style></head><body>
 <div class="w" id="app"><div class="empty"><span class="spin"></span> Loading…</div></div>
 <div class="foot" id="bar" hidden><div class="in"><div class="st" id="status"></div><button class="cb big full" id="next" type="button">Send tonight's count</button></div></div>
@@ -640,7 +641,7 @@ function dAdd(iso,n){ const d=new Date(iso+"T12:00:00Z"); d.setUTCDate(d.getUTCD
 function defaultDate(){ const q=(new URLSearchParams(location.search).get("d")||"").trim(), t=calToday(), y=dAdd(t,-1);
   if(/^\d{4}-\d{2}-\d{2}$/.test(q)&&q<=t&&q>=dAdd(t,-2)) return q; return new Date().getHours()<15?y:t; }
 let INFO=null, KEY=(PRESET||store.get("chaleur.key")||"").trim().toUpperCase(), DATE=defaultDate();
-let DRAFTED=false, ROWS={}, ORDER=[], SHOWN=[], EXP=new Set(), PH={sales:[],display:null,waste:null}, NOTE="", WHO=store.get("chaleur.who")||"", PREV=null, SENDING=false;
+let DRAFTED=false, ROWS={}, ORDER=[], SHOWN=[], EXP=new Set(), PH={sales:[],display:null,waste:null}, NOTE="", WHO=store.get("chaleur.who")||"", PREV=null, SENDING=false, COLOK={};
 const COL=()=>INFO.colours||CONFIG.colours;
 const colHex=n=>(COL().find(c=>c.name===n)||{}).hex||"#999";
 const colDay=n=>WD[COL().findIndex(c=>c.name===n)]||"";
@@ -706,7 +707,31 @@ function grouped(){
 }
 
 function stepper(k,f,label){const v=ROWS[k][f];return `<div class="stp2 f${f}"><button type="button" data-step="${esc(k)}" data-sf="${f}" data-sn="-1" aria-label="${label} minus one">−</button><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(v)}" data-k="${esc(k)}" data-f="${f}" aria-label="${label}"><button type="button" data-step="${esc(k)}" data-sf="${f}" data-sn="1" aria-label="${label} plus one">+</button></div>`;}
-function noteOf(r){ const q=sfOf(r.productId,r.colour); return q==="bad"?`<small class="bad">Past shelf life · throw away</small>`:q==="warn"?`<small class="warn">${esc(capw(r.colour))} · last day, sell first</small>`:`<small>${esc(capw(r.colour))} · ${esc(colDay(r.colour))}</small>`; }
+function noteOf(r){ const q=sfOf(r.productId,r.colour), k=K(r.productId,r.colour), nd=!EXP.has(k)&&ORDER.some(x=>x!==k&&EXP.has(x)&&ROWS[x].productId===r.productId);
+  const base=q==="bad"?`<small class="bad">Past shelf life · throw away</small>`:q==="warn"?`<small class="warn">${esc(capw(r.colour))} · last day, sell first</small>`:`<small>${esc(capw(r.colour))} · ${esc(colDay(r.colour))}</small>`;
+  return nd?base+`<small class="warn">Not on your delivery list — check the sticker</small>`:base; }
+/* v22.11 (Alfred 6 Oct, after Jiran re-entered Monday's cakes under each day's colour): a count under a colour that was never delivered
+   to this outlet, while the delivered colour of the same cake is left empty, gets one question before sending — with the likely answer
+   ready ("they're the ORANGE ones, move my count") and a second answer they fill in ("we really have YELLOW: because…"). */
+function colourSuspects(){ const out=[];
+  for(const k of ORDER){ const r=ROWS[k]; if(EXP.has(k)||COLOK[k]) continue; const n=(+r.w||0)+(+r.b||0); if(!n) continue;
+    const empties=ORDER.filter(x=>EXP.has(x)&&ROWS[x].productId===r.productId&&!(+ROWS[x].w||0)&&!(+ROWS[x].b||0));
+    if(!empties.length) continue; out.push({k,r,n,to:ROWS[empties[0]],toK:empties[0]}); }
+  return out; }
+function renderColourAsk(q){ window.scrollTo(0,0); $("#bar").hidden=true;
+  $("#app").innerHTML=`${head()}<div class="card stack"><h3 style="font:700 22px var(--display);margin:0">Quick check on colour dots</h3>
+    <p class="hint">The colour code is the <b>sticker on the cake</b> (the day it was made), not today's colour. ${q.length===1?"One row":q.length+" rows"} below ${q.length===1?"has":"have"} a colour our delivery record doesn't show for ${esc(INFO.outlet.name)}. Please look at the sticker and pick one:</p>
+    ${q.map((x,i)=>`<div class="card" style="padding:12px;margin:0" data-cq="${esc(x.k)}"><div style="font-weight:700;margin-bottom:6px">${esc(prod(x.r.productId).name)} · <i style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(colHex(x.r.colour))};vertical-align:-1px"></i> ${esc(capw(x.r.colour))} (${esc(colDay(x.r.colour))}) · ${+x.r.b||0} left${+x.r.w?`, ${+x.r.w} waste`:""}</div>
+      <label class="opt"><input type="radio" name="cq-${i}" value="move" checked><span>The colour code is <b><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${esc(colHex(x.to.colour))};vertical-align:-1px"></i> ${esc(capw(x.to.colour))} (${esc(colDay(x.to.colour))})</b> — I tapped the wrong dot. <b>Move my count to ${esc(capw(x.to.colour))}.</b></span></label>
+      <label class="opt"><input type="radio" name="cq-${i}" value="keep"><span>The colour code really is <b><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${esc(colHex(x.r.colour))};vertical-align:-1px"></i> ${esc(capw(x.r.colour))} (${esc(colDay(x.r.colour))})</b>.</span></label></div>`).join("")}
+    <div class="row2" style="margin-top:6px"><button class="cb ghost" type="button" id="cq-back">Back</button><button class="cb ok" type="button" id="cq-go">Continue</button></div><div class="st" id="status"></div></div>`;
+  $("#cq-back").onclick=()=>{ restoreBar(); render(); };
+  $("#cq-go").onclick=()=>{ let notes=[];
+    for(let i=0;i<q.length;i++){ const x=q[i], v=(document.querySelector(`input[name="cq-${i}"]:checked`)||{}).value;
+      if(v==="move"){ const to=ROWS[x.toK]; to.w=String((+to.w||0)+(+x.r.w||0)||""); to.b=String((+to.b||0)+(+x.r.b||0)||""); delete ROWS[x.k]; ORDER=ORDER.filter(z=>z!==x.k); }
+      else { COLOK[x.k]="sticker confirmed"; notes.push(`${prod(x.r.productId).name}: outlet says the sticker is ${x.r.colour} (${colDay(x.r.colour)}), our record says ${x.to.colour} (${colDay(x.to.colour)}) → check with the kitchen`); } }
+    if(notes.length){ const add="Colour check — "+notes.join("; "); NOTE=NOTE?NOTE+"\n"+add:add; }
+    saveDraft(); review(); }; }
 function render(){
   const ex=INFO.existing, g=grouped();
   $("#app").innerHTML=`${head()}
@@ -766,6 +791,7 @@ function collect(){ WHO=($("#who")||{value:WHO}).value.trim(); NOTE=($("#note")|
 
 async function review(){
   const m=missing(); if(m.length){ status("Still needed: "+m.join(", ")+".",true); const first=!PH.sales.length?"#shot-sales":!PH.display?"#shot-display":hasWaste()&&!PH.waste?"#shot-waste":"#who"; const el=$(first); if(el){el.classList&&el.classList.add("need"); el.scrollIntoView({behavior:"smooth",block:"center"});} return; }
+  keep(); { const q=colourSuspects(); if(q.length) return renderColourAsk(q); }
   const d=collect(); window.scrollTo(0,0);
   $("#app").innerHTML=`${head()}<div class="card" style="text-align:center;padding:26px"><span class="spin"></span><p style="margin:12px 0 0">Reading your sales photo and checking the numbers…</p><p class="hint">This takes a few seconds.</p></div>`;
   $("#bar").hidden=true;

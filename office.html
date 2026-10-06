@@ -1193,7 +1193,7 @@ function vDeliveries(){
         ${e.mode==="receive"?`<label class="f">Received by<input id="do-rb" data-do="receivedBy" value="${esc(e.receivedBy||"")}" placeholder="Outlet staff name"></label><label class="f">Received at<input id="do-ra" type="time" data-do="receivedAt" value="${esc(e.receivedAt||"")}"></label>`:""}
       </div>
       <div class="tw"><table><thead><tr><th>Cake</th><th>SKU</th>${KIT()?"":`<th class="r">Unit price</th>`}${e.mode==="receive"?"":`<th>At outlet</th>`}<th class="r">Qty sent</th>${e.mode==="receive"?`<th class="r">Accepted</th>`:dlv?`<th class="r">Accepted</th><th></th>`:`<th></th>`}</tr></thead><tbody>
-      ${e.mode==="receive"?rcvRows(e,pid):""}${(e.mode==="receive"?[]:doRowIds(e).map(prod)).map(p=>{const l=e.lines[p.id]||{};const pr=priceFor(pid,p.id,e.date);return `<tr><td>${cake(p.id)}</td><td class="mono small">${esc(p.sku)}</td>${KIT()?"":`<td class="r mono">${fm(pr.net)}${pr.approved?"":` <span class="pill warn" title="Default % of retail, no approved price">default</span>`}</td>`}${e.mode==="receive"?"":`<td class="small">${stockCell(SB,p.id)}</td>`}
+      ${e.mode==="receive"?rcvRows(e,pid):""}${(e.mode==="receive"?[]:doRowIds(e).map(prod)).map(p=>{const l=e.lines[p.id]||{};const pr=priceFor(pid,p.id,e.date);return `<tr><td>${cake(p.id)}${e.mode==="receive"?"":`<div class="small" style="margin-top:4px"><select class="sm" data-dolc="${p.id}" aria-label="Colour dot for ${esc(p.name)}" title="The sticker colour of these cakes (the day they were made)">${cfg().colours.map((c,i)=>opt(c.name,`${c.name} (${WD[i]})`,l.colour||e.colour||"")).join("")}</select></div>`}</td><td class="mono small">${esc(p.sku)}</td>${KIT()?"":`<td class="r mono">${fm(pr.net)}${pr.approved?"":` <span class="pill warn" title="Default % of retail, no approved price">default</span>`}</td>`}${e.mode==="receive"?"":`<td class="small">${stockCell(SB,p.id)}</td>`}
         <td class="r">${e.mode==="receive"?`<span class="mono">${l.qty||0}</span>`:`<input type="number" min="0" step="1" inputmode="numeric" id="dq-${p.id}" data-doline="${p.id}" data-k="qty" class="${(()=>{const R=e.date?limitFor(partner(pid),p.id,e.date):null, q=Math.round(+l.qty)||0; return R&&((R.max!=null&&q>R.max)||(R.min!=null&&q>0&&q<R.min))?"neg":"";})()}" value="${esc(l.qty??"")}">`}</td>${dlv?`<td class="r"><input type="number" min="0" step="1" inputmode="numeric" data-doline="${p.id}" data-k="accepted" value="${esc(l.accepted??l.qty??"")}" aria-label="Accepted ${esc(p.name)}" style="width:70px"></td>`:""}
         ${e.mode==="receive"?`<td class="r"><input type="number" min="0" step="1" inputmode="numeric" id="da-${p.id}" data-doline="${p.id}" data-k="accepted" value="${esc(l.accepted??l.qty??"")}" ${l.qty?"":"disabled"}></td>`:`<td><button class="btn sm" data-dorm="${p.id}" aria-label="Remove ${esc(p.name)}">✕ Remove</button></td>`}</tr>`}).join("")}
       </tbody></table></div>
@@ -1237,6 +1237,15 @@ function vDeliveries(){
 function doText(d){return `*${cfg().company.name}* — ${d.no}\nDelivery ${nice(d.date)} to ${partner(d.partnerId).name}\nColour dot: ${doColours(d).join(" + ")||d.colour}\n`+(d.lines||[]).filter(l=>+l.qty).map(l=>`• ${prod(l.productId).name} (${l.colour||d.colour}) × ${d.status==="delivered"?(l.accepted??l.qty):l.qty}`).join("\n")+`\nPlease count on arrival and reply with any shortfall or damage.`}
 
 /* ---- DAILY ---- */
+/* v22.11 (Alfred 6 Oct): rows counted under a colour that was never at the outlet (Jiran re-entered Monday's cakes as each day's colour).
+   Suggest the colour of the same cake that WAS in stock (an emptied one first); one tap moves the count, totals unchanged, logged. */
+function colourFixes(day){ const out=[], byP={}; for(const l of day.lines){ (byP[l.productId]||(byP[l.productId]=[])).push(l); }
+  const note=String((day.rep||{}).note||""), claim=(pid,col)=>new RegExp(String(prod(pid).name).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+":? outlet says the sticker is "+col,"i").test(note);
+  for(const l of day.lines){ const avail=(l.open??0)+(l.recv||0), n=(l.close||0)+(l.waste||0); if(avail>0||!n||l.close==null) continue;
+    const cands=(byP[l.productId]||[]).filter(x=>x!==l&&((x.open??0)+(x.recv||0))>0);
+    const empty=cands.find(x=>!(x.close||0)&&!(x.waste||0)), to=empty||cands.slice().sort((a,b)=>((b.open??0)+(b.recv||0))-((a.open??0)+(a.recv||0)))[0]||null, said=claim(l.productId,l.colour);
+    out.push({from:{productId:l.productId,colour:l.colour,b:l.close||0,w:l.waste||0},claim:said,to:to?{productId:to.productId,colour:to.colour,sure:!!empty&&!said}:null}); }
+  return out; }
 function vDaily(){
   const pid=curPartner(); if(!pid) return `<div class="empty">Add an outlet in Setup first.</div>`;
   const date=S.ui.date||today(), ws=weekStartOf(date), c=calcWeek(pid,ws), day=c.days.find(d=>d.date===date), rep=day.rep, p=partner(pid);
@@ -1250,6 +1259,10 @@ function vDaily(){
       <div class="row">${parsed.exists?`<span class="pill warn">A report for this outlet/date already exists — saving replaces it</span>`:""}${parsed.billed?`<span class="pill warn">That week is billed: the change will be flagged on the bill</span>`:""}<button class="btn pri" data-act="savePaste">Save ${parsed.type==="report"?`report for ${esc(partner(parsed.partnerId).name)}, ${nice(parsed.date)}`:"audit"}</button></div>`:""}
   </div>`;
   const lines=editing?editLines(day):day.lines;
+  const fixes=(!editing&&rep&&!RO())?colourFixes(day):[];
+  const fixBox=fixes.length?`<div class="box2" id="fixbox" style="border-color:var(--warn);margin:0 0 10px"><b>${fixes.length} row${fixes.length>1?"s":""} counted under a colour that was never at ${esc(p.name)}.</b> <span class="small muted">If the outlet tapped the wrong dot, tick and fix: the totals stay the same, only the colour moves (logged as “Wrong colour dot entered”). If the outlet says the sticker really is that colour, the delivery record is the suspect: check with the kitchen and correct the DO's colour dot. Fix the earliest day of the week first; later days follow.</span>
+    <div style="margin-top:6px">${fixes.map((f,i)=>`<label class="row small" style="gap:8px;margin:4px 0;align-items:center"><input type="checkbox" data-fx="${i}" ${f.to?(f.to.sure?"checked":""):"disabled"}> ${cake(f.from.productId)} ${dot(f.from.colour)} <span class="mono">${f.from.b?f.from.b+" left":""}${f.from.w?(f.from.b?", ":"")+f.from.w+" waste":""}</span> → ${f.to?dot(f.to.colour)+(f.claim?` <span class="pill bad" title="The outlet looked at the sticker and says it really is ${esc(f.from.colour)}. Ask the kitchen which colour went out; if the outlet is right, fix the DO's colour dot (Delivery orders › Edit) instead of this report.">outlet says the sticker IS ${esc(f.from.colour)} — check with the kitchen, fix the DO colour if so</span>`:f.to.sure?"":` <span class="pill warn" title="That colour still had cakes counted, so this is a guess">not sure — check</span>`):`<span class="pill warn">no colour of this cake was in stock — correct by hand</span>`}</label>`).join("")}</div>
+    <div class="row" style="margin-top:8px"><button class="btn sm pri" data-act="fixColours">Fix ticked colours</button></div></div>`:"";
   const tbl=lines.length?`<div class="tw"><table><thead><tr><th>Cake</th><th>Batch</th><th class="r">Age</th><th class="r">Opening</th><th class="r">Delivered</th><th class="r">Waste</th><th class="r">Balance</th><th class="r">Sold</th><th class="r">POS sold</th><th class="r">Variance</th></tr></thead><tbody>
     ${lines.map(l=>{const k=c.keys[l.productId+"|"+l.colour]||{};const age=k.batchDate?diffDays(date,k.batchDate)+1:"";const life=+prod(l.productId).shelfDays||3;
       const agePill=age===""?"":(age>life?`<span class="pill bad">day ${age}</span>`:age===life?`<span class="pill warn">day ${age}</span>`:`<span class="mono">day ${age}</span>`);
@@ -1273,7 +1286,7 @@ function vDaily(){
       ${editing?`<div class="row"><label class="f">Reported by<input id="dd-by" data-ui="dayBy" value="${esc(S.ui.dayBy||"")}"></label><label class="f">Add a cake/colour<span class="row"><select id="dd-ap">${products().map(x=>opt(x.id,x.name,"")).join("")}</select><select id="dd-ac">${cfg().colours.map(x=>opt(x.name,x.name,"")).join("")}</select><button class="btn sm" data-act="addDayLine">Add</button></span></label></div>
       <div class="fbar"><label class="f">Why are you changing this? (required)<select id="dd-why" data-ui="dayWhy">${opt("","Choose a reason…",S.ui.dayWhy||"")}${WHY.map(x=>opt(x,x,S.ui.dayWhy||"")).join("")}</select></label><label class="f" style="flex:2">Details<input id="dd-whyn" data-ui="dayWhyNote" value="${esc(S.ui.dayWhyNote||"")}" placeholder="e.g. 2 Pear found at the back of the chiller"></label></div>
       <p class="small muted" style="margin:0">Saved under <b>${esc(AUTH.name||"your name")}</b> with the time and reason. The change log keeps the old numbers and what the outlet first sent.${c.week.settlement?" This week is already billed: the change will be flagged on the bill for Alfred or Joscelyn to review.":""}</p>`:""}
-      ${tbl}
+      ${fixBox}${tbl}
       ${editing?soldEditor(day,rep):salesCheck(rep,pid,date)}
       ${photoFlags(rep)}${dayLog(rep)}
       ${rep&&rep.note?`<p class="small" style="margin:0"><b>Outlet note:</b> ${esc(rep.note)}</p>`:""}
@@ -2098,6 +2111,7 @@ document.addEventListener("input",e=>{
     if(d.do==="colour") E.colourTouched=true;
     if((d.do==="date"||d.do==="batchDate")&&!E.colourTouched&&(E.batchDate||E.date)) E.colour=colourOf(E.batchDate||E.date).name;
     if(d.do!=="note"&&d.do!=="why"&&d.do!=="cancelWhy") render(); return;}
+  if(d.dolc){const L=S.ui.doEdit.lines[d.dolc]||(S.ui.doEdit.lines[d.dolc]={}); L.colour=t.value; return;}
   if(d.doline){const L=S.ui.doEdit.lines[d.doline]||(S.ui.doEdit.lines[d.doline]={}); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); if(v!==t.value) t.value=v; L[d.k]=v;
     if(d.k==="qty"){const E=S.ui.doEdit, R=limitFor(partner(E.partnerId),d.doline,E.date), q=+v||0; t.classList.toggle("neg",!!R&&((R.max!=null&&q>R.max)||(R.min!=null&&q>0&&q<R.min))); const h=$("#do-lim"); if(h) h.innerHTML=doLimLine(E);} return;}
   if(d.dd){const v=S.ui.dayDraft[d.dd]||(S.ui.dayDraft[d.dd]={}); v[d.k]=t.value; render(); return;}
@@ -2217,7 +2231,7 @@ document.addEventListener("click",async e=>{
   if(d.rcv||d.edo||d.vdo){const [pid,ws,id]=(d.rcv||d.edo||d.vdo).split("|");const w=weekDoc(pid,ws);const x=clone(w.dos[id]);
     if(d.rcv&&!x.checkedAt){toast("Check the colours first (Check colours)");return;}
     if(d.vdo){S.ui.modal={kind:"do",html:docHTML("do",pid,ws,x),doc:x,pid,ws};render();return;}
-    const lines={};(x.lines||[]).forEach(l=>{const o=lines[l.productId]; lines[l.productId]={qty:(+(o&&o.qty)||0)+(+l.qty||0),accepted:x.status==="delivered"?(+(o&&o.accepted)||0)+(+(l.accepted??l.qty)||0):l.accepted};});
+    const lines={};(x.lines||[]).forEach(l=>{const o=lines[l.productId]; lines[l.productId]={qty:(+(o&&o.qty)||0)+(+l.qty||0),accepted:x.status==="delivered"?(+(o&&o.accepted)||0)+(+(l.accepted??l.qty)||0):l.accepted,colour:l.colour||(o&&o.colour)||x.colour||""};});
     S.ui.doEdit={...x,partnerId:pid,weekStart:ws,origPid:pid,origWs:ws,lines,mode:d.rcv?"receive":"edit",rl:(x.lines||[]).filter(l=>+l.qty).map(l=>({...l,colour:l.colour||x.colour,accepted:l.accepted??l.qty})),batchTouched:true,receivedAt:x.receivedAt||new Date().toTimeString().slice(0,5)};render();window.scrollTo(0,0);return;}
   if(d.doc){const pid=curPartner(); if(partner(pid).internal) return; const _x=0,ws=S.ui.week||weekStartOf(add(today(),-7));const st=weekDoc(pid,ws).settlement;S.ui.modal={kind:d.doc,html:docHTML(d.doc,pid,ws,st),st,pid};render();return;}
   if(d.auc){S.ui.auditDraft.checks[d.auc]=d.v;render();return;}
@@ -2240,6 +2254,34 @@ document.addEventListener("click",async e=>{
   if(d.act) await act(d.act,b);
 });
 document.addEventListener("keydown",e=>{const t=e.target; if(t&&t.dataset&&t.dataset.doline&&/^[.,eE+\-]$/.test(e.key)) e.preventDefault();});
+/* v22.10 (Alfred 3 Oct: seven identical DOs to Jiran were created in two minutes): one save at a time — the Create / Save button is disabled
+   while the save runs, and a second tap is ignored until it finishes. */
+async function saveDO_(){
+  const e=S.ui.doEdit; const lines=Object.entries(e.lines).filter(([k,v])=>Math.round(+v.qty)>0).map(([k,v])=>({productId:k,qty:Math.round(+v.qty),...(v.colour?{colour:v.colour}:{})}));
+    if(!e.partnerId||!e.date){toast("Choose outlet and date");return;} if(!lines.length){toast("Enter at least one quantity");return;}
+    {const age=diffDays(e.date,e.batchDate||e.date), mxA=+(cfg().maxDeliveryAge??1); if(age<0||age>mxA){toast(`Cakes made on ${nice(e.batchDate)} can't go out on ${nice(e.date)}. Only cakes made on the delivery day or the day before can be sent.`);return;}}
+    {const wl=lines.filter(l=>isWhole(l.productId)), wm=[], p0=partner(e.partnerId), W0=wholeOf(p0), wt=W0.max, wx=W0.each; if(wl.length){ const wd0=wholeDaysOf(p0); if(!wd0.includes(dow(e.date))) wm.push(`whole cakes only go out ${daysTxt(wd0)} for this outlet`); if(wl.length>wt) wm.push(`max ${wt} whole-cake kinds`); if(wl.some(l=>l.qty>wx)) wm.push(`max ${wx} of each whole cake`);}
+      if(wm.length&&!e.wholeOk){e.wholeOk=true; toast(`Whole-cake rule: ${wm.join(", ")}. Tap the button again to save anyway.`); return;}
+      const lm=limitCheck(p0,lines,e.date); if(lm.length&&!e.limitOk){e.limitOk=true; toast(`Outlet limit (Setup › Outlets): ${lm.slice(0,3).join("; ")}${lm.length>3?` and ${lm.length-3} more`:""}. Tap the button again to save anyway.`); return;}}
+    const ws=weekStartOf(e.date);
+    const w=clone(weekDoc(e.partnerId,ws));
+    if(e.id&&((e.origWs||e.weekStart)!==ws||(e.origPid||e.partnerId)!==e.partnerId)){const ow=clone(weekDoc(e.origPid||e.partnerId,e.origWs||e.weekStart)); delete ow.dos[e.id]; ow._delDos=[e.id]; await saveWeek(ow);}
+    const id=e.id||newId(), no=e.no||await nextNo("DO",e.date);
+    w.dos=w.dos||{}; w.days=w.days||{};
+    if(e.status==="delivered"){ /* v22.8 (Alfred 2 Oct: "make the DO editable even after delivered"): keep it delivered, carry accepted, log the correction */
+      const why=String(e.why||"").trim(); if(why.length<3){ toast("Type why you are correcting this delivered DO."); const i=$("#do-why"); if(i) i.focus(); return; }
+      const old=(weekDoc(e.origPid||e.partnerId,e.origWs||e.weekStart).dos||{})[id]||{}, oldL={}; (old.lines||[]).forEach(l=>{ const o=oldL[l.productId]||(oldL[l.productId]={qty:0,acc:0,col:l.colour||old.colour||""}); o.qty+=+l.qty||0; o.acc+=+(l.accepted??l.qty)||0; });
+      /* accepted follows the new qty when it was untouched and the delivery had been fully accepted; a typed accepted number wins */
+      const nl=lines.map(l=>{ const v=e.lines[l.productId]||{}, o=oldL[l.productId]||{qty:0,acc:0}, a=v.accepted===""||v.accepted==null?null:Math.round(+v.accepted); const follow=a==null||(a===o.acc&&o.acc===o.qty); return {productId:l.productId,qty:l.qty,accepted:follow?l.qty:Math.max(0,Math.min(l.qty,a)),...(l.colour?{colour:l.colour}:{})}; });
+      const ch=[]; const ids=[...new Set([...Object.keys(oldL),...nl.map(l=>l.productId)])];
+      for(const pid0 of ids){ const o=oldL[pid0]||{qty:0,acc:0,col:""}, n=nl.find(l=>l.productId===pid0)||{qty:0,accepted:0}; if(o.qty!==n.qty) ch.push({productId:pid0,field:"Qty sent",from:o.qty,to:n.qty}); if(o.acc!==n.accepted) ch.push({productId:pid0,field:"Accepted",from:o.acc,to:n.accepted}); if(n.qty&&o.qty&&(n.colour||e.colour||"")!==(o.col||"")) ch.push({productId:pid0,field:"Colour dot",from:o.col,to:n.colour||e.colour}); }
+      if(old.date!==e.date) ch.push({field:"Delivery date",from:old.date,to:e.date}); if((old.partnerId||e.origPid)!==e.partnerId) ch.push({field:"Outlet",from:partner(e.origPid||e.partnerId).name,to:partner(e.partnerId).name}); if((old.colour||"")!==(e.colour||"")) ch.push({field:"Colour dot",from:old.colour,to:e.colour}); if((old.note||"")!==(e.note||"")) ch.push({field:"Note",from:old.note||"",to:e.note||""});
+      if(!ch.length){ toast("Nothing changed."); S.ui.doEdit=null; render(); return; }
+      w.dos[id]={...old,id,no,date:e.date,batchDate:e.batchDate||e.date,colour:e.colour,lines:nl,status:"delivered",note:e.note||"",edits:((old.edits||[]).concat([{at:new Date().toISOString(),by:AUTH.name,role:AUTH.role,reason:why,changes:ch,afterBill:!!w.settlement,kind:"do"}])).slice(-50)};
+      await saveWeek(w); S.ui.doEdit=null; toast(`${no} corrected (${ch.length} change${ch.length===1?"":"s"}, logged)${w.settlement?" · the week is already billed, so the bill is flagged for review":""}${old.bukku&&old.bukku.id?" · remember to fix the Bukku draft "+(old.bukku.no||no):""}.`); return; }
+    w.dos[id]={id,no,date:e.date,batchDate:e.batchDate||e.date,colour:e.colour,lines,status:"planned",note:e.note||"",createdAt:new Date().toISOString()};
+    await saveWeek(w); S.ui.doEdit=null; toast(`${no} saved${w.settlement?" · the week is already billed, so the bill is flagged for review":""}. Check colours before it goes out.`); return;
+}
 async function act(a,b){
   const t=today();
   switch(a){
@@ -2289,30 +2331,7 @@ async function act(a,b){
   case "freshGo":{const ok=(($("#fresh-ok")||{}).value||"").trim(); if(ok.toUpperCase()!=="FRESH START"){toast("Type FRESH START in the box to confirm");return;} b.disabled=true; b.textContent="Deleting… keep this page open";
     try{const r=await GS("freshStart",ok); S.ui.freshPrev=null; S.ui.freshDone=r; S.ui.attIdx=0; toast("Fresh start done. A backup is in Drive › Backups."); await reload();}catch(e){toast((e&&e.message)||"Couldn't do the fresh start");} render(); return;}
   case "clearSample2":{b.disabled=true; try{const r=await GS("clearSampleData"); S.ui.sampleScan=null; S.ui.sampleDone=r.backup; toast("Removed. A backup is saved in Drive › Backups."); await reload();}catch(e){toast((e&&e.message)||"Couldn't remove");} render(); return;}
-  case "saveDO":{const e=S.ui.doEdit; const lines=Object.entries(e.lines).filter(([k,v])=>Math.round(+v.qty)>0).map(([k,v])=>({productId:k,qty:Math.round(+v.qty)}));
-    if(!e.partnerId||!e.date){toast("Choose outlet and date");return;} if(!lines.length){toast("Enter at least one quantity");return;}
-    {const age=diffDays(e.date,e.batchDate||e.date), mxA=+(cfg().maxDeliveryAge??1); if(age<0||age>mxA){toast(`Cakes made on ${nice(e.batchDate)} can't go out on ${nice(e.date)}. Only cakes made on the delivery day or the day before can be sent.`);return;}}
-    {const wl=lines.filter(l=>isWhole(l.productId)), wm=[], p0=partner(e.partnerId), W0=wholeOf(p0), wt=W0.max, wx=W0.each; if(wl.length){ const wd0=wholeDaysOf(p0); if(!wd0.includes(dow(e.date))) wm.push(`whole cakes only go out ${daysTxt(wd0)} for this outlet`); if(wl.length>wt) wm.push(`max ${wt} whole-cake kinds`); if(wl.some(l=>l.qty>wx)) wm.push(`max ${wx} of each whole cake`);}
-      if(wm.length&&!e.wholeOk){e.wholeOk=true; toast(`Whole-cake rule: ${wm.join(", ")}. Tap the button again to save anyway.`); return;}
-      const lm=limitCheck(p0,lines,e.date); if(lm.length&&!e.limitOk){e.limitOk=true; toast(`Outlet limit (Setup › Outlets): ${lm.slice(0,3).join("; ")}${lm.length>3?` and ${lm.length-3} more`:""}. Tap the button again to save anyway.`); return;}}
-    const ws=weekStartOf(e.date);
-    const w=clone(weekDoc(e.partnerId,ws));
-    if(e.id&&((e.origWs||e.weekStart)!==ws||(e.origPid||e.partnerId)!==e.partnerId)){const ow=clone(weekDoc(e.origPid||e.partnerId,e.origWs||e.weekStart)); delete ow.dos[e.id]; ow._delDos=[e.id]; await saveWeek(ow);}
-    const id=e.id||newId(), no=e.no||await nextNo("DO",e.date);
-    w.dos=w.dos||{}; w.days=w.days||{};
-    if(e.status==="delivered"){ /* v22.8 (Alfred 2 Oct: "make the DO editable even after delivered"): keep it delivered, carry accepted, log the correction */
-      const why=String(e.why||"").trim(); if(why.length<3){ toast("Type why you are correcting this delivered DO."); const i=$("#do-why"); if(i) i.focus(); return; }
-      const old=(weekDoc(e.origPid||e.partnerId,e.origWs||e.weekStart).dos||{})[id]||{}, oldL={}; (old.lines||[]).forEach(l=>{ const o=oldL[l.productId]||(oldL[l.productId]={qty:0,acc:0}); o.qty+=+l.qty||0; o.acc+=+(l.accepted??l.qty)||0; });
-      /* accepted follows the new qty when it was untouched and the delivery had been fully accepted; a typed accepted number wins */
-      const nl=lines.map(l=>{ const v=e.lines[l.productId]||{}, o=oldL[l.productId]||{qty:0,acc:0}, a=v.accepted===""||v.accepted==null?null:Math.round(+v.accepted); const follow=a==null||(a===o.acc&&o.acc===o.qty); return {productId:l.productId,qty:l.qty,accepted:follow?l.qty:Math.max(0,Math.min(l.qty,a))}; });
-      const ch=[]; const ids=[...new Set([...Object.keys(oldL),...nl.map(l=>l.productId)])];
-      for(const pid0 of ids){ const o=oldL[pid0]||{qty:0,acc:0}, n=nl.find(l=>l.productId===pid0)||{qty:0,accepted:0}; if(o.qty!==n.qty) ch.push({productId:pid0,field:"Qty sent",from:o.qty,to:n.qty}); if(o.acc!==n.accepted) ch.push({productId:pid0,field:"Accepted",from:o.acc,to:n.accepted}); }
-      if(old.date!==e.date) ch.push({field:"Delivery date",from:old.date,to:e.date}); if((old.partnerId||e.origPid)!==e.partnerId) ch.push({field:"Outlet",from:partner(e.origPid||e.partnerId).name,to:partner(e.partnerId).name}); if((old.colour||"")!==(e.colour||"")) ch.push({field:"Colour dot",from:old.colour,to:e.colour}); if((old.note||"")!==(e.note||"")) ch.push({field:"Note",from:old.note||"",to:e.note||""});
-      if(!ch.length){ toast("Nothing changed."); S.ui.doEdit=null; render(); return; }
-      w.dos[id]={...old,id,no,date:e.date,batchDate:e.batchDate||e.date,colour:e.colour,lines:nl,status:"delivered",note:e.note||"",edits:((old.edits||[]).concat([{at:new Date().toISOString(),by:AUTH.name,role:AUTH.role,reason:why,changes:ch,afterBill:!!w.settlement,kind:"do"}])).slice(-50)};
-      await saveWeek(w); S.ui.doEdit=null; toast(`${no} corrected (${ch.length} change${ch.length===1?"":"s"}, logged)${w.settlement?" · the week is already billed, so the bill is flagged for review":""}${old.bukku&&old.bukku.id?" · remember to fix the Bukku draft "+(old.bukku.no||no):""}.`); return; }
-    w.dos[id]={id,no,date:e.date,batchDate:e.batchDate||e.date,colour:e.colour,lines,status:"planned",note:e.note||"",createdAt:new Date().toISOString()};
-    await saveWeek(w); S.ui.doEdit=null; toast(`${no} saved${w.settlement?" · the week is already billed, so the bill is flagged for review":""}. Check colours before it goes out.`); return;}
+  case "saveDO":{ if(S.ui.doBusy) return; S.ui.doBusy=true; const lab=b?b.textContent:""; if(b){ b.disabled=true; b.textContent="Saving…"; } try{ await saveDO_(); } finally{ S.ui.doBusy=false; if(b&&b.isConnected){ b.disabled=false; b.textContent=lab; } } return; }
   case "receiveDO":{const e=S.ui.doEdit; const w=clone(weekDoc(e.partnerId,e.weekStart)); const x=w.dos[e.id];
     x.lines=(e.rl||x.lines).map(l=>({...l,accepted:Math.max(0,Math.round(+(l.accepted===""||l.accepted==null?l.qty:l.accepted)||0))}));
     x.status="delivered"; x.receivedBy=e.receivedBy||""; x.receivedAt=e.receivedAt||""; x.note=e.note||"";
@@ -2328,6 +2347,12 @@ async function act(a,b){
     S.ui.dayDraft={}; for(const l of day.lines){const k=l.productId+"|"+l.colour; S.ui.dayDraft[k]=day.rep?{s:l.pos??"",w:l.waste,b:l.close??""}:{s:"",w:"",b:""};}
     S.ui.dayBy=day.rep?.by||""; S.ui.dayWhy=""; S.ui.dayWhyNote=""; S.ui.soldDraft={}; if(day.rep&&day.rep.sold) for(const [k,v] of Object.entries(day.rep.sold)) S.ui.soldDraft[k]=String(v); S.ui.editDay=true; render(); return;}
   case "cancelDay": S.ui.editDay=false; render(); return;
+  case "fixColours":{ const pid=curPartner(),date=S.ui.date||t; const c=calcWeek(pid,weekStartOf(date)), day=c.days.find(x=>x.date===date); if(!day||!day.rep) return;
+    const fixes=colourFixes(day), picked=[...document.querySelectorAll('#fixbox input[data-fx]:checked')].map(i=>fixes[+i.dataset.fx]).filter(f=>f&&f.to); if(!picked.length){ toast("Tick at least one row"); return; }
+    const w=clone(weekDoc(pid,weekStartOf(date))), prev=w.days[date], lines=(prev.lines||[]).map(l=>({...l})), desc=[];
+    for(const f of picked){ const i=lines.findIndex(l=>l.productId===f.from.productId&&l.colour===f.from.colour); if(i<0) continue; const src=lines[i]; let tgt=lines.find(l=>l.productId===f.to.productId&&l.colour===f.to.colour); if(!tgt){ tgt={productId:f.to.productId,colour:f.to.colour,w:0,b:0}; lines.push(tgt); } tgt.w=(+tgt.w||0)+(+src.w||0); tgt.b=(+tgt.b||0)+(+src.b||0); lines.splice(i,1); desc.push(`${prod(f.from.productId).name} ${f.from.colour} → ${f.to.colour}`); }
+    w.days[date]={...prev,lines,_reason:"Wrong colour dot entered: "+desc.join(", ")}; b.disabled=true;
+    try{ await saveWeek(w); toast(`Colours fixed (${desc.length}) · logged under ${AUTH.name||"your name"}`); }catch(e){ toast((e&&e.message)||"Couldn't save the change"); b.disabled=false; } return; }
   case "addDayLine":{const k=$("#dd-ap").value+"|"+$("#dd-ac").value; if(!S.ui.dayDraft[k]) S.ui.dayDraft[k]={s:"",w:"",b:""}; render(); return;}
   case "saveDay":{const pid=curPartner(),date=S.ui.date||t; const lines=[];
     for(const [k,v] of Object.entries(S.ui.dayDraft)){ const [p,c]=k.split("|"); lines.push({productId:p,colour:c,w:+v.w||0,b:+v.b||0,...(v.s!==""&&v.s!=null?{s:+v.s}:{})});}
