@@ -905,10 +905,29 @@ function outletStockBefore(pid,date){ const p=partner(pid); if(!pid||!p||p.inter
 function stockCell(SB,id){ const a=(SB.by[id]||[]).slice().sort((x,y)=>(x.batchDate||"").localeCompare(y.batchDate||"")), n=a.reduce((t,x)=>t+x.qty,0);
   return n?`<span class="stk" style="display:inline-block;text-align:right;line-height:1.5"><b class="mono">${n}</b><span class="small"> · ${a.map(x=>`<span style="white-space:nowrap">${x.qty} ${dot(x.colour)}</span>`).join(" · ")}</span></span>`:`<span class="muted mono">0</span>`; }
 function sortLine(a,b){return prod(a.productId).name.localeCompare(prod(b.productId).name)||a.colour.localeCompare(b.colour)}
+/* v22.12 (Alfred 6 Oct: "billing is to tally numbers; the colour thing doesn't concern billing"): the tally is per CAKE, colours ignored.
+   opening + delivered − waste − left = sold. Counted more than there was = "extra" (the outlet claims cakes we never delivered) — the
+   office answers per cake: Bill them (an invoice line) or Count error (the report is corrected). Colour detail stays on the Outlet closing reports page. */
+function cakeTally(c){ const w=c.week, cur={}, out={}; const ens=p=>out[p]||(out[p]={productId:p,open:0,recv:0,dos:[],sold:0,waste:0,close:0,extra:0,extras:[]});
+  for(const l of c.opening.lines){ if(!(+l.qty>0)) continue; const o=ens(l.productId); o.open+=+l.qty; cur[l.productId]=(cur[l.productId]||0)+(+l.qty); }
+  const dos=Object.values(w.dos||{});
+  for(const day of c.days){ if(day.status==="pre") continue;
+    for(const d of dos.filter(d=>d.date===day.date&&d.status==="delivered")) for(const l of d.lines||[]){ const q=+(l.accepted??l.qty)||0; if(!q) continue; const o=ens(l.productId); o.recv+=q; if(!o.dos.includes(d.no)) o.dos.push(d.no); cur[l.productId]=(cur[l.productId]||0)+q; }
+    const rep=day.rep; if(!rep) continue; const cnt={};
+    for(const r of rep.lines||[]){ const x=cnt[r.productId]||(cnt[r.productId]={w:0,b:0,cols:[]}); x.w+=+r.w||0; x.b+=+r.b||0; if(((+r.w||0)+(+r.b||0))&&!x.cols.includes(r.colour)) x.cols.push(r.colour); }
+    for(const p of Object.keys(cnt)){ const o=ens(p), x=cnt[p], avail=cur[p]||0, over=Math.max(0,x.w+x.b-avail), sold=Math.max(0,avail-x.w-x.b);
+      o.waste+=x.w; o.sold+=sold; if(over) { o.extra+=over; o.extras.push({date:day.date,n:over,ref:rep.recId||"",by:rep.by||"",avail,w:x.w,b:x.b,cols:x.cols}); } cur[p]=x.b; } }
+  for(const p in out) out[p].close=cur[p]||0;
+  return out; }
 function buildSettlement(c,opts={}){
   const pa=partner(c.pid), warns=[], inv=[], cf=[], cn=[];
   for(const l of c.opening.lines.filter(l=>+l.qty>0)) inv.push({type:"B/F",productId:l.productId,colour:l.colour,qty:+l.qty,rate:+l.rate,ref:c.opening.srcNo||""});
   for(const k of Object.values(c.keys).sort(sortLine)) for(const g of Object.values(k.recvGroups)) inv.push({type:"NEW",productId:k.productId,colour:k.colour,qty:g.qty,rate:g.rate,ref:g.dos.join(", "),approved:g.approved});
+  const tally=cakeTally(c), decided=(c.week&&c.week.tally)||{}; let openTally=0;
+  for(const o of Object.values(tally).sort((a,b)=>prod(a.productId).name.localeCompare(prod(b.productId).name))){ if(!o.extra) continue; const dcs=decided[o.productId];
+    if(dcs&&dcs.decision==="bill"){ const k=Object.values(c.keys).find(k=>k.productId===o.productId), rate=(k&&k.rate)||priceFor(c.pid,o.productId,c.we).net, col=(o.extras[0]&&o.extras[0].cols[0])||(k&&k.colour)||"";
+      inv.push({type:"NEW",productId:o.productId,colour:col,qty:o.extra,rate,ref:"Counted at outlet · "+o.extras.map(x=>x.ref||nice(x.date)).join(", "),approved:true,tally:true}); }
+    else openTally++; }
   let shortQty=0,shortVal=0,soldVal=0,wasteCharged=0;
   for(const k of Object.values(c.keys).sort(sortLine)){
     if(k.close>0) cf.push({productId:k.productId,colour:k.colour,qty:k.close,rate:cfg().cfRate==="current"?priceFor(c.pid,k.productId,c.we).net:k.rate,batchDate:k.batchDate});
@@ -921,10 +940,11 @@ function buildSettlement(c,opts={}){
     }
     if(k.variance<0){shortQty+=-k.variance;shortVal+=-k.variance*k.rate;
       if(opts.creditShort) cn.push({reason:"Shortage (agreed)",productId:k.productId,colour:k.colour,qty:-k.variance,rate:k.rate});}
-    if(k.variance>0) warns.push(["warn",`${prod(k.productId).name} ${k.colour}: outlet counted ${k.variance} more than expected — check deliveries/reports.`]);
   }
+  if(openTally) warns.push(["warn",`Tally: ${openTally} cake${openTally===1?" doesn't":"s don't"} add up — the outlet counted more than we delivered. Answer below (Bill them / Count error) before issuing.`]);
   const sum=a=>r2(a.reduce((s,l)=>s+r2(l.qty*l.rate),0));
   const totals={inv:sum(inv),cf:sum(cf),cn:sum(cn)}; totals.net=r2(totals.inv-totals.cf-totals.cn);
+  const tallyLines=Object.values(tally).filter(o=>o.extra>0);
   const miss=c.days.filter(d=>d.status==="missing"), pend=c.days.filter(d=>d.status==="today"||d.status==="future");
   if(pend.length) warns.unshift(["info",`Week still running — reports still to come: ${pend.map(d=>nice(d.date)).join(", ")}. Bill after the week closes.`]);
   if(miss.length) warns.unshift(["bad",`Missing closing reports: ${miss.map(d=>nice(d.date)).join(", ")}. Stock for those days is assumed unchanged — chase the outlet before billing.`]);
@@ -933,7 +953,7 @@ function buildSettlement(c,opts={}){
   const unap=inv.filter(l=>l.type==="NEW"&&!l.approved);
   if(unap.length) warns.push(["warn",`${unap.length} line(s) use the default ${pa.pct}% of retail because no Active price is approved in the price register.`]);
   if(!inv.length) warns.push(["info","No stock movement for this outlet in this week."]);
-  return {inv,cf,cn,totals,warns,soldVal:r2(soldVal),shortQty,shortVal:r2(shortVal),wasteCharged:r2(wasteCharged)};
+  return {inv,cf,cn,totals,warns,soldVal:r2(soldVal),shortQty,shortVal:r2(shortVal),wasteCharged:r2(wasteCharged),tally:tallyLines,tallyDecided:decided};
 }
 /* ---------- db ---------- */
 async function put(path,data){
@@ -1246,6 +1266,13 @@ function colourFixes(day){ const out=[], byP={}; for(const l of day.lines){ (byP
     const empty=cands.find(x=>!(x.close||0)&&!(x.waste||0)), to=empty||cands.slice().sort((a,b)=>((b.open??0)+(b.recv||0))-((a.open??0)+(a.recv||0)))[0]||null, said=claim(l.productId,l.colour);
     out.push({from:{productId:l.productId,colour:l.colour,b:l.close||0,w:l.waste||0},claim:said,to:to?{productId:to.productId,colour:to.colour,sure:!!empty&&!said}:null}); }
   return out; }
+/* v22.12 (Alfred 6 Oct: "a list of reports showing date and ref number for easy referring") */
+function reportsList(pid,ws,date,c){ const p=partner(pid), T=cakeTally(c); const extraOn={}; for(const o of Object.values(T)) for(const x of o.extras) extraOn[x.date]=(extraOn[x.date]||0)+x.n;
+  const rows=c.days.filter(d=>d.status!=="pre").map(d=>{ const r=d.rep, waste=r?(r.lines||[]).reduce((a,l)=>a+(+l.w||0),0):null, left=r?(r.lines||[]).reduce((a,l)=>a+(+l.b||0),0):null, cur=d.date===date;
+    const dos=Object.values(c.week.dos||{}).filter(o=>o.date===d.date&&o.status!=="cancelled").map(o=>o.no);
+    return `<tr${cur?' style="background:var(--accent-soft)"':""}><td><b>${nice(d.date)}</b></td><td class="mono small">${r?esc(r.recId||"—"):""}</td><td>${r?`${esc(r.by||"")}<div class="small muted">${esc(r.source||"")}${r.at?` · ${esc(fmtTs(r.at))}`:""}</div>`:d.status==="missing"?`<span class="pill bad">Missing</span>`:d.status==="closed"?`<span class="pill mute">Closed</span>`:d.status==="today"?`<span class="pill info">Tonight</span>`:`<span class="muted small">—</span>`}</td><td class="mono small">${dos.map(esc).join("<br>")||""}</td><td class="r mono">${waste??""}</td><td class="r mono">${left??""}</td><td>${extraOn[d.date]?`<span class="pill warn" title="Counted more than there was — see the Tally on the bill">+${extraOn[d.date]} extra</span>`:""}${r&&(r.edits||[]).length?` <span class="pill info">Changed ${r.edits.length}×</span>`:""}</td><td class="r">${cur?`<span class="small muted">shown below</span>`:`<button class="btn sm" data-go-daily="${esc(pid)}|${d.date}">Open</button>`}</td></tr>`; }).join("");
+  return `<div class="panel"><div class="spread"><h2>Reports · ${esc(p.name)} · week of ${nice(ws)}</h2><span class="small muted">Ref = the report number (also on its PDF and photos in Drive). DO = deliveries that day.</span></div>
+    <div class="tw"><table><thead><tr><th>Night</th><th>Ref</th><th>Sent by</th><th>DOs</th><th class="r">Waste</th><th class="r">Left</th><th></th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
 function vDaily(){
   const pid=curPartner(); if(!pid) return `<div class="empty">Add an outlet in Setup first.</div>`;
   const date=S.ui.date||today(), ws=weekStartOf(date), c=calcWeek(pid,ws), day=c.days.find(d=>d.date===date), rep=day.rep, p=partner(pid);
@@ -1279,9 +1306,10 @@ function vDaily(){
     </tbody></table></div>`:`<div class="empty">No stock recorded at ${esc(p.name)} on this day.</div>`;
   return `<div class="head"><div><h1>Outlet closing reports</h1><p class="lede">Outlets send <b>waste and balance</b> for each colour dot. Sold is worked out: opening + delivered − waste − balance. Key in the <b>POS sold</b> figure from their own closing report to cross-check. Any difference shows as a variance (missing or unrecorded cakes).</p></div></div>
     ${pasteBox}
+    ${reportsList(pid,ws,date,c)}
     <div class="panel">
       <div class="spread"><div class="row">${partnerSelect("d-p",pid)}<button class="btn sm" data-day="-1" aria-label="Previous day">‹</button><input type="date" id="d-d" data-ui="date" value="${date}"><button class="btn sm" data-day="1" aria-label="Next day">›</button></div>
-        <div class="row">${rep&&(rep.edits||[]).length?`<span class="pill warn" title="See the change log below">Changed ${rep.edits.length}× · last by ${esc(rep.edits[rep.edits.length-1].by||"")}</span>`:""}${rep?`<span class="pill ok">Reported${rep.by?` by ${esc(rep.by)}`:""} · ${esc(rep.source||"")}</span>`:day.status==="missing"?`<span class="pill bad">Missing</span>${p.internal?`<a class="btn sm" href="kitchen.html#closing">Kitchen closing report</a>`:`<a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(p.phone,chaseText(p,[date])))}">Chase on WhatsApp</a>`}`:`<span class="pill mute">${day.status==="today"?"Due at closing":"Upcoming"}</span>`}
+        <div class="row">${rep&&(rep.edits||[]).length?`<span class="pill warn" title="See the change log below">Changed ${rep.edits.length}× · last by ${esc(rep.edits[rep.edits.length-1].by||"")}</span>`:""}${rep?`<span class="pill ok">Reported${rep.by?` by ${esc(rep.by)}`:""} · ${esc(rep.source||"")}${rep.recId?` · <span class="mono">${esc(rep.recId)}</span>`:""}</span>`:day.status==="missing"?`<span class="pill bad">Missing</span>${p.internal?`<a class="btn sm" href="kitchen.html#closing">Kitchen closing report</a>`:`<a class="btn sm wa" target="_blank" rel="noopener" href="${esc(wa(p.phone,chaseText(p,[date])))}">Chase on WhatsApp</a>`}`:`<span class="pill mute">${day.status==="today"?"Due at closing":"Upcoming"}</span>`}
         ${editing?`<button class="btn sm" data-act="cancelDay">Cancel</button><button class="btn sm pri" data-act="saveDay">Save report</button>`:`${c.week.settlement?`<span class="pill info" title="Changes are logged and flagged on the bill">Week billed</span>`:""}${RO()?"":`<button class="btn sm" data-act="editDay">${rep?"Correct report":"Enter report"}</button>`}`}</div></div>
       ${editing?`<div class="row"><label class="f">Reported by<input id="dd-by" data-ui="dayBy" value="${esc(S.ui.dayBy||"")}"></label><label class="f">Add a cake/colour<span class="row"><select id="dd-ap">${products().map(x=>opt(x.id,x.name,"")).join("")}</select><select id="dd-ac">${cfg().colours.map(x=>opt(x.name,x.name,"")).join("")}</select><button class="btn sm" data-act="addDayLine">Add</button></span></label></div>
       <div class="fbar"><label class="f">Why are you changing this? (required)<select id="dd-why" data-ui="dayWhy">${opt("","Choose a reason…",S.ui.dayWhy||"")}${WHY.map(x=>opt(x,x,S.ui.dayWhy||"")).join("")}</select></label><label class="f" style="flex:2">Details<input id="dd-whyn" data-ui="dayWhyNote" value="${esc(S.ui.dayWhyNote||"")}" placeholder="e.g. 2 Pear found at the back of the chiller"></label></div>
@@ -1511,7 +1539,7 @@ function vBilling(){
   if(!st){
     actions=`<div class="row"><label class="row small"><input type="checkbox" id="cs" data-f="creditShort_${wid(pid,ws)}" ${S.f["creditShort_"+wid(pid,ws)]?"checked":""} style="width:auto"> Credit shortage (outlet not charged for missing units)</label></div>
       ${conf==="issue"?`<div class="confirm">Issue ${esc(cfg().prefixes.INV)}, ${esc(cfg().prefixes.CF)}${live.cn.length?` and ${esc(cfg().prefixes.CN)}`:""} for ${esc(p.name)}? Numbers are assigned. Later changes to this week are logged and flagged here.<button class="btn sm pri" data-act="issue">Issue documents</button><button class="btn sm" data-act="noconfirm">Cancel</button></div>`
-      :`<div class="row">${can("bills")?`<button class="btn pri" data-act="askIssue" ${live.inv.length?"":"disabled"}>Approve & issue invoice, CF${live.cn.length?" and CN":""}</button>`:`<span class="pill info">Draft ready: waiting for Alfred or Joscelyn to approve</span>`}${!ended?`<span class="pill warn">Week still running</span>`:""}</div>`}`;
+      :`<div class="row">${can("bills")?`<button class="btn pri" data-act="askIssue" ${live.inv.length&&!(live.tally||[]).some(o=>!(live.tallyDecided||{})[o.productId])?"":"disabled"} title="${(live.tally||[]).some(o=>!(live.tallyDecided||{})[o.productId])?"Answer the tally questions above first":""}">Approve & issue invoice, CF${live.cn.length?" and CN":""}</button>`:`<span class="pill info">Draft ready: waiting for Alfred or Joscelyn to approve</span>`}${!ended?`<span class="pill warn">Week still running</span>`:""}</div>`}`;
   } else {
     const nextBilled=(S.weeks[wid(pid,add(ws,7))]||{}).settlement;
     actions=`<div class="fgrid">
@@ -1533,6 +1561,7 @@ function vBilling(){
         <div class="row">${st?`<span class="pill ok">Issued ${esc(st.issuedAt.slice(0,10))}</span>${st.bukku&&st.bukku.inv?`<span class="pill info">In Bukku</span>`:`<span class="pill warn">Not in Bukku yet</span>`}${st.paid&&st.paid.date?`<span class="pill ok">Paid</span>`:""}`:`<span class="pill mute">Draft</span>`}</div></div>
       <p class="small muted" style="margin:0">Opening stock from: ${esc(c.opening.src)} · Terms: ${p.pct}% to Chaleur · Wastage: ${({credit:"Chaleur bears (full credit)",half:"Outlet pays 50% of retail",none:"Outlet bears (no credit)"})[p.wasteRule||"credit"]}</p>
       ${(st?[]:live.warns).length?`<div class="warns">${live.warns.map(([k,m])=>`<div class="${k}">${esc(m)}</div>`).join("")}</div>`:""}
+      ${st?"":tallyBox(c,live,pid,ws)}
       ${afterBillBanner(w,st,live)}${cards}
       ${actions}
     </div>
@@ -1541,6 +1570,16 @@ function vBilling(){
     ${billingHistory()}`;
 }
 
+/* v22.12: the per-cake tally with its trace (report refs, DO numbers) and the two answers */
+function tallyBox(c,live,pid,ws){ const L=live.tally||[]; if(!L.length) return "";
+  const dec=live.tallyDecided||{}, bills=can("bills");
+  const row=o=>{ const d=dec[o.productId], k=Object.values(c.keys).find(k=>k.productId===o.productId), rate=(k&&k.rate)||priceFor(pid,o.productId,c.we).net;
+    const where=o.extras.map(x=>`${nice(x.date)}${x.ref?` · <span class="mono">${esc(x.ref)}</span>`:""}${x.by?` by ${esc(x.by)}`:""}: counted ${x.b} left${x.w?` + ${x.w} waste`:""} = ${x.w+x.b}, only ${x.avail} ${x.avail===1?"was":"were"} there (+${x.n}) <button class="btn sm" data-go-daily="${esc(pid)}|${x.date}">Open report</button>`).join("<br>");
+    const src=`${o.open?`${o.open} opening`:""}${o.open&&o.recv?" + ":""}${o.recv?`${o.recv} delivered (${o.dos.map(esc).join(", ")})`:""}`||"nothing delivered";
+    return `<div class="tl" style="padding:8px 0;border-top:1px solid var(--line)"><div><b>${esc(prod(o.productId).name)}</b>: counted <b>${o.extra} more</b> than we ever had — ${src}.</div><div class="small muted" style="margin:4px 0">${where}</div>
+      ${d?`<div class="row small"><span class="pill ${d.decision==="bill"?"ok":"info"}">${d.decision==="bill"?`Billed as delivered (+${o.extra} × RM ${fm(rate)} on the invoice)`:"Count error"} · ${esc(d.by||"")} ${esc(String(d.at||"").slice(0,10))}</span>${bills?`<button class="btn sm" data-tally="${esc(o.productId)}|undo">Undo</button>`:""}</div>`
+        :bills?`<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm pri" data-tally="${esc(o.productId)}|bill" title="The delivery really was ${o.extra} more: add ${o.extra} × RM ${fm(rate)} to the invoice">Bill them (+RM ${fm(o.extra*rate)})</button><button class="btn sm" data-tally="${esc(o.productId)}|error" title="The outlet over-counted: the report is corrected (waste first, then left), logged">Count error — fix the report</button></div>`:`<span class="pill info">Waiting for Alfred or Joscelyn</span>`}</div>`; };
+  return `<div class="box2" id="tallybox" style="border-color:var(--warn);margin:8px 0 10px"><b>Tally · ${L.length} cake${L.length===1?"":"s"} ${L.length===1?"doesn't":"don't"} add up.</b> <span class="small muted">Per cake, colours ignored: opening + delivered − waste − left = sold. These were counted higher than anything we delivered, so right now the CF/CN would credit the outlet for cakes we never sent. Answer each one; the bill can be issued after that.</span>${L.map(row).join("")}</div>`; }
 function billCards(ws,cur){
   const t=today(), outs=partners().filter(p=>!p.internal), ended=add(ws,6)<t, co=cfg().cutoffDate||"";
   const cards=outs.map(p=>{ const c=calcWeek(p.id,ws), w=c.week, st=w.settlement, live=buildSettlement(c,{creditShort:st?!!st.shortageCredited:!!S.f["creditShort_"+wid(p.id,ws)]}), sset=st||live;
@@ -2203,6 +2242,16 @@ document.addEventListener("click",async e=>{
   if(d.stsave){const x=S.ui.stEdit; { const c=String((x&&x.code)||""); if(x&&c&&c!=="••••"&&!/^[0-9]{4}$/.test(c)){ toast("The PIN must be 4 digits."); return; } } /* v22.5: new and changed PINs are 4 digits */ if(x){b.disabled=true; await stSave({...x,active:x.row?x.active:true}); b.disabled=false;} return;}
   if(d.sttog){const x=(S.team||[]).find(r=>String(r.row)===d.sttog); if(x){b.disabled=true; await stSave({...x,active:!x.active});} return;}
   if(d.goDaily){const [p,dt]=d.goDaily.split("|");S.ui.partner=p;S.ui.date=dt;S.tab="daily";S.ui.editDay=false;render();return;}
+  if(d.tally){ if(!can("bills")){ toast("You need \"Approve bills\" access to answer the tally"); return; } const [prodId,what]=d.tally.split("|"); const pid=curPartner(), ws=S.ui.week||weekStartOf(add(t,-7)); memo=new Map(); const c=calcWeek(pid,ws); const o=cakeTally(c)[prodId]; if(!o) return;
+    const w=clone(weekDoc(pid,ws)); w.tally=w.tally||{}; b.disabled=true;
+    if(what==="undo"){ delete w.tally[prodId]; if(!Object.keys(w.tally).length) delete w.tally; try{ await saveWeek(w); toast(`${prod(prodId).name}: tally answer removed`); }catch(e){ toast(e.message||"Couldn't save"); b.disabled=false; } return; }
+    if(what==="bill"){ w.tally[prodId]={decision:"bill",n:o.extra,at:new Date().toISOString(),by:AUTH.name||"",refs:o.extras.map(x=>x.ref||x.date)}; try{ await saveWeek(w); toast(`${prod(prodId).name}: ${o.extra} extra billed as delivered`); }catch(e){ toast(e.message||"Couldn't save"); b.disabled=false; } return; }
+    if(what==="error"){ /* correct each report that over-counted: waste first, then left, on this cake's rows */ let fixed=[];
+      for(const x of o.extras){ const day=w.days[x.date]; if(!day) continue; let left=x.n; const rows=(day.lines||[]).filter(l=>l.productId===prodId).sort((a,b)=>((+b.w||0)-(+a.w||0))||((+b.b||0)-(+a.b||0)));
+        for(const l of rows){ if(left<=0) break; const dw=Math.min(+l.w||0,left); l.w=(+l.w||0)-dw; left-=dw; } for(const l of rows){ if(left<=0) break; const db=Math.min(+l.b||0,left); l.b=(+l.b||0)-db; left-=db; }
+        day._reason=`Count error (tally): ${x.n} ${prod(prodId).name} counted but only ${x.avail} ${x.avail===1?"was":"were"} there${x.ref?" ("+x.ref+")":""} — waste/left reduced by ${x.n}`; fixed.push(nice(x.date)); }
+      delete w.tally[prodId]; if(!Object.keys(w.tally).length) delete w.tally;
+      try{ await saveWeek(w); toast(`${prod(prodId).name}: report${fixed.length>1?"s":""} corrected (${fixed.join(", ")}) · logged`); }catch(e){ toast(e.message||"Couldn't save"); b.disabled=false; } return; } }
   if(d.tip){S.ui.tipOpen=S.ui.tipOpen===d.tip?null:d.tip;render();return;}
   if(d.attnav){S.ui.attIdx=Math.max(0,(S.ui.attIdx||0)+(+d.attnav));render();return;}
   if(d.act==="attAll"){S.ui.attAll=!S.ui.attAll;render();return;}
