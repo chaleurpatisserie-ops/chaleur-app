@@ -965,10 +965,11 @@ async function del(path){try{await S.db.doc(path).delete()}catch(e){toast("Could
 const saveWeek=w=>put(`weeks/${wid(w.partnerId,w.weekStart)}`,w);
 async function nextNo(kind,date){
   /* v22.9 (Alfred 2 Oct): delivery orders are numbered DO-C-YYNNN (C = consignment; one running number per year), so they never clash with
-     DOs typed straight into Bukku and the number is the same in both. Bills keep the old YYMM form. */
-  const pre=cfg().prefixes[kind]||kind, yy=date.slice(2,4), ym=yy+date.slice(5,7), key=kind==="DO"?`${kind}_${yy}`:`${kind}_${ym}`; let n;
+     DOs typed straight into Bukku and the number is the same in both. v22.13 (Alfred 6 Oct, after Bukku refused INV-2610001 "the invoice
+     number is used"): invoices, CF and CN notes follow the same idea with 4 digits — INV-C-YYNNNN, CF-C-YYNNNN, CN-C-YYNNNN. */
+  const pre=cfg().prefixes[kind]||kind, yy=date.slice(2,4), key=`${kind}_${yy}`; let n;
   try{ const r=await GS("nextNumber",key); n=r.n; (DBX.cache.config=DBX.cache.config||{}).counters=r.counters; }catch(e){ toast((e&&e.message)||"Couldn't get a number, try again"); throw e; }
-  return kind==="DO"?`${pre}-C-${yy}${String(n).padStart(3,"0")}`:`${pre}-${ym}${String(n).padStart(3,"0")}`;
+  return `${pre}-C-${yy}${String(n).padStart(kind==="DO"?3:4,"0")}`;
 }
 function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3200)}
 const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -1529,9 +1530,9 @@ function vBilling(){
     ${Object.values(c.keys).sort(sortLine).map(k=>`<tr><td>${cake(k.productId)}</td><td>${dot(k.colour)}</td><td class="r mono">${k.open||""}</td><td class="r mono">${k.recv||""}</td><td class="r mono">${k.sold||""}</td><td class="r mono">${k.waste||""}</td><td class="r mono ${k.variance<0?"neg":k.variance>0?"pos":""}">${k.variance?(k.variance>0?"+":"")+k.variance:""}</td><td class="r mono">${k.close||""}</td><td class="r mono">${fm(k.rate)}</td><td class="r mono">${fm(k.sold*k.rate)}</td></tr>`).join("")||`<tr><td colspan="10" class="muted">No stock this week.</td></tr>`}
     </tbody></table></div>`;
   const cards=`<div class="docs">
-    <div class="doccard"><h3>Invoice</h3><span class="code">${st?esc(st.invNo):"issued as "+esc(cfg().prefixes.INV)+"-…"}</span><span class="amt">RM ${fm(s.totals.inv)}</span><span class="small muted">B/F stock rebilled + this week's deliveries</span>${st?`<button class="btn sm" data-doc="inv">View</button>`:""}</div>
-    <div class="doccard"><h3>Carry forward (credit)</h3><span class="code">${st?esc(st.cfNo):esc(cfg().prefixes.CF)+"-…"}</span><span class="amt">− RM ${fm(s.totals.cf)}</span><span class="small muted">Unsold stock, rebilled next week at the same rate</span>${st?`<button class="btn sm" data-doc="cf">View</button>`:""}</div>
-    <div class="doccard"><h3>Credit note</h3><span class="code">${st?(st.cnNo?esc(st.cnNo):"not needed"):esc(cfg().prefixes.CN)+"-…"}</span><span class="amt">− RM ${fm(s.totals.cn)}</span><span class="small muted">Wastage per ${esc(p.name)}'s terms${s.cn.some(l=>l.reason!=="Wastage")?" + agreed shortage":""}</span>${st&&st.cnNo?`<button class="btn sm" data-doc="cn">View</button>`:""}</div>
+    <div class="doccard"><h3>Invoice</h3><span class="code">${st?esc(st.invNo):"issued as "+esc(cfg().prefixes.INV)+"-C-…"}</span><span class="amt">RM ${fm(s.totals.inv)}</span><span class="small muted">B/F stock rebilled + this week's deliveries</span>${st?`<button class="btn sm" data-doc="inv">View</button>`:""}</div>
+    <div class="doccard"><h3>Carry forward (credit)</h3><span class="code">${st?esc(st.cfNo):esc(cfg().prefixes.CF)+"-C-…"}</span><span class="amt">− RM ${fm(s.totals.cf)}</span><span class="small muted">Unsold stock, rebilled next week at the same rate</span>${st?`<button class="btn sm" data-doc="cf">View</button>`:""}</div>
+    <div class="doccard"><h3>Credit note</h3><span class="code">${st?(st.cnNo?esc(st.cnNo):"not needed"):esc(cfg().prefixes.CN)+"-C-…"}</span><span class="amt">− RM ${fm(s.totals.cn)}</span><span class="small muted">Wastage per ${esc(p.name)}'s terms${s.cn.some(l=>l.reason!=="Wastage")?" + agreed shortage":""}</span>${st&&st.cnNo?`<button class="btn sm" data-doc="cn">View</button>`:""}</div>
     <div class="doccard" style="background:var(--accent-soft)"><h3>Net payable by outlet</h3><span class="code">${p.pct}% terms</span><span class="amt">RM ${fm(s.totals.net)}</span><span class="small muted">= sold RM ${fm(s.soldVal)}${s.wasteCharged?` + waste charged RM ${fm(s.wasteCharged)}`:""}${s.shortVal&&!(st?st.shortageCredited:S.f["creditShort_"+wid(pid,ws)])?` + shortage RM ${fm(s.shortVal)}`:""}</span></div>
   </div>`;
   const conf=S.ui.confirm;
@@ -1543,7 +1544,7 @@ function vBilling(){
   } else {
     const nextBilled=(S.weeks[wid(pid,add(ws,7))]||{}).settlement;
     actions=`<div class="fgrid">
-      <label class="f">Bukku invoice no.<input id="bk-inv" data-bk="inv" value="${esc(st.bukku?.inv||"")}" placeholder="e.g. INV-2609012"></label>
+      <label class="f">Bukku invoice no.<input id="bk-inv" data-bk="inv" value="${esc(st.bukku?.inv||"")}" placeholder="e.g. INV-C-260001"></label>
       <label class="f">Bukku CF / CN no.<input id="bk-cf" data-bk="cf" value="${esc(st.bukku?.cf||"")}"></label>
       <label class="f">Paid on<input id="pd-d" type="date" data-bk="paidDate" value="${esc(st.paid?.date||"")}"></label>
       <label class="f">Amount received (RM)<input id="pd-a" data-bk="paidAmt" inputmode="decimal" value="${esc(st.paid?.amount??"")}"></label></div>
