@@ -621,6 +621,7 @@ th:first-child,td:first-child{text-align:left}td{padding:8px 4px;border-bottom:1
 .empty{border:2px dashed var(--line);border-radius:14px;padding:16px;color:var(--muted);text-align:center}
 .ca-hbtn{bottom:calc(142px + env(safe-area-inset-bottom,0px))!important;min-height:44px!important;padding:0 14px!important;font-size:14px!important}
 .opt{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,#eee);cursor:pointer}.opt:first-of-type{border-top:0}.opt input[type=radio]{width:24px;height:24px;flex:0 0 24px;margin:0;accent-color:#7b1c2b}.opt span{flex:1;line-height:1.4}.opt .cq-why{width:100%;margin-top:8px;padding:10px;border:1px solid var(--line,#ccc);border-radius:10px;font:inherit}
+.decl{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line,#ddd);border-radius:12px;padding:12px;margin-top:10px;font-size:14px;line-height:1.45;cursor:pointer}.decl input{width:22px;height:22px;flex:0 0 22px;margin-top:2px;accent-color:var(--ok,#1d7a3c)}.decl.on{border-color:var(--ok,#1d7a3c);background:rgba(29,122,60,.06)}.decl.need{border-color:var(--bad,#b3261e);box-shadow:0 0 0 3px rgba(179,38,30,.15)}
 </style></head><body>
 <div class="w" id="app"><div class="empty"><span class="spin"></span> Loading…</div></div>
 <div class="foot" id="bar" hidden><div class="in"><div class="st" id="status"></div><button class="cb big full" id="next" type="button">Send tonight's count</button></div></div>
@@ -817,11 +818,16 @@ function renderPreview(d){
     ${r.ok&&r.date&&r.date!==DATE?`<div class="banner warn">The sales report looks like it's for <b>${esc(niceDate(r.date))}</b>, not ${esc(niceDate(DATE))}. Please check the photo.</div>`:""}
     <div class="thumbs">${d.photos.sales.concat([d.photos.display]).concat(d.photos.waste?[d.photos.waste]:[]).map(u=>`<img src="${u}" alt="">`).join("")}</div>
     ${d.note?`<p class="hint">Note: ${esc(d.note)}</p>`:""}
+    <label class="decl" id="decl-box"><input type="checkbox" id="decl"><span><b>${esc(d.who)}</b>, on behalf of ${esc(INFO.outlet.name)}: ${esc(INFO.declaration||DECL_DEFAULT)}</span></label>
   </div>`;
-  $("#bar").hidden=false; $("#bar .in").innerHTML=`<div class="st" id="status"></div><div class="row2"><button class="cb ghost" id="edit" type="button">Edit</button><button class="cb ok" id="send" type="button">${(PREV.photos||[]).some(x=>!x.ok)?"Send anyway":"Confirm &amp; send"}</button></div>`;
+  $("#bar").hidden=false; $("#bar .in").innerHTML=`<div class="st" id="status"></div><div class="row2"><button class="cb ghost" id="edit" type="button">Edit</button><button class="cb ok" id="send" type="button" disabled>${(PREV.photos||[]).some(x=>!x.ok)?"Send anyway":"Confirm &amp; send"}</button></div>`;
   $("#edit").onclick=()=>{restoreBar();render();};
-  $("#send").onclick=()=>send(d);
+  $("#decl").onchange=()=>{ $("#send").disabled=!$("#decl").checked; $("#decl-box").classList.toggle("on",$("#decl").checked); if($("#decl").checked) status(""); };
+  $("#send").onclick=()=>{ if(!$("#decl").checked){ status("Please tick the confirmation first.",true); $("#decl-box").classList.add("need"); $("#decl-box").scrollIntoView({behavior:"smooth",block:"center"}); return; } send({...d,declaration:{by:d.who,text:INFO.declaration||DECL_DEFAULT,ua:navigator.userAgent.slice(0,120)}}); };
 }
+/* v22.16 (Alfred 7 Oct): "outlet partner will need to tick a box, inside is some terms that protect us" — the text comes from the server
+   (Setup › Go-live & rules › Closing declaration); this is the fallback when the server is older. */
+const DECL_DEFAULT="I confirm that this closing count — waste, cakes left and the sales report photo — is true and complete for tonight. I understand that cakes not accounted for are charged as sold, and that false or misleading information may be charged back (reverse charge) to the outlet under the consignment terms.";
 function aggregate(lines){const by={};lines.forEach(l=>{const x=by[l.productId]||(by[l.productId]={productId:l.productId,waste:0,balance:0});x.waste+=l.w;x.balance+=l.b;});return Object.values(by);}
 
 function restoreBar(){$("#bar .in").innerHTML=`<div class="st" id="status"></div><button class="cb big full" id="next" type="button">Send tonight's count</button>`;$("#next").onclick=review;}
