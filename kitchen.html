@@ -2,8 +2,14 @@
 <html><head><meta charset="utf-8"><title>Chaleur Atelier · Kitchen HQ</title><meta name="theme-color" content="#780a13"><meta name="apple-mobile-web-app-title" content="Chaleur Atelier"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
-function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new AbortController():null,tm=ac?setTimeout(function(){ac.abort();},150000):null,done=function(){if(tm)clearTimeout(tm);};
- fetch(API,{method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args}),signal:ac?ac.signal:undefined})
+function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new AbortController():null,tm=null,done=function(){if(tm)clearTimeout(tm);};
+ var opt={method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})};
+ var go=function(sig){var o={};for(var k in opt)o[k]=opt[k];if(sig)o.signal=sig;try{return fetch(API,o);}catch(e){return Promise.reject(e);}};
+ /* 7 Oct 2026: a browser add-on that wraps fetch and posts the request to another window crashed on the timeout signal
+    ("Failed to execute 'postMessage' on 'Window': AbortSignal object could not be cloned") — sign-in failed. Retry once without it. */
+ var first=go(ac?ac.signal:null).catch(function(e){if(e&&/could not be cloned|DataCloneError|postMessage/i.test(String(e.message||"")+" "+String(e.name||"")))return go(null);throw e;});
+ var late=new Promise(function(_,rej){tm=setTimeout(function(){try{if(ac)ac.abort();}catch(x){}var e=new Error("timeout");e.name="AbortError";rej(e);},150000);});
+ Promise.race([first,late])
  .then(function(r){if(!r.ok)throw new Error("Server busy ("+r.status+"). Please try again.");return r.text();})
  .then(function(t){done();var j;try{j=JSON.parse(t);}catch(x){throw new Error("The server sent an unexpected reply. Please try again.");}if(j.ok){ok&&ok(j.result);}else{fail&&fail(new Error(j.error||"Something went wrong."));}})
  .catch(function(e){done();fail&&fail(new Error(e&&e.name==="AbortError"?"This is taking too long. Check your internet and try again.":(e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"No connection. Check your internet and try again.")));});}
