@@ -567,7 +567,7 @@ label.f input,label.f select,label.f textarea{text-transform:none;letter-spacing
 .fgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:13px}
-th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;text-align:left;background:var(--raise);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;text-align:left;background:var(--raise);padding:8px 10px;border-bottom:1px solid var(--line);white-space:normal} /* v22.20: headers may wrap so a table fits its frame */
 td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
 tr:last-child td{border-bottom:0}
 td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
@@ -640,7 +640,7 @@ textarea.paste{width:100%;min-height:110px;font-family:var(--mono);font-size:12p
 .stsee{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;color:var(--muted)}.stsee input{width:16px;height:16px;margin:0}.stpg{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;padding:6px 8px;border-radius:8px;margin-bottom:4px;font-size:13.5px}.stpg.ed{background:var(--ok-soft)}.stpg.ro{background:var(--raise)}.stpg.no{opacity:.55}.stpg small{color:var(--muted);display:block;font-size:12px}.stpg .pill{min-width:74px;justify-content:center}.stg h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted,#6f5f62)}
 .stp{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:9px 10px;border:1px solid var(--line,#e8dcd6);border-radius:10px;margin-bottom:6px;cursor:pointer}.stp input{width:20px;height:20px;margin-top:2px}.stp.on{background:var(--accent-soft,#f3e4e5);border-color:color-mix(in srgb,var(--accent) 35%,transparent)}.stp.on b{color:var(--ink)}
 .stdl{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:4px 14px;margin:0}.stdl dt{font-weight:600}.stdl dd{margin:0;color:var(--muted,#6f5f62)}@media (max-width:640px){.stdl{grid-template-columns:1fr}.stdl dd{margin-bottom:6px}}
-.stmx td.c,.stmx th.c{text-align:center}.stmx th.c{min-width:74px}.stmx td:first-child{min-width:170px}
+.stmx td.c,.stmx th.c{text-align:center}.stmx th.c{min-width:0;font-size:10px;letter-spacing:.02em;padding:6px 4px;vertical-align:bottom}.stmx td.c{padding:6px 4px}.stmx td:first-child{min-width:140px}
 .empty{color:var(--muted);padding:18px;text-align:center;border:1px dashed var(--line);border-radius:10px}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--warn-soft);color:var(--warn);padding:8px 10px;border-radius:8px}
 details.help summary{cursor:pointer;color:var(--muted);font-size:13px}
@@ -683,24 +683,65 @@ input.made{width:70px;text-align:right}
   .lede:not(.open)::after{content:""}
   .testbar{font-size:11.5px;padding:4px 12px}
   .panel{padding:12px}
-  .btn{min-height:40px}.btn.sm{min-height:36px;padding:6px 12px}.stabs button,.setup-tabs button,[data-setup]{min-height:36px}.cell{height:34px}
+  .btn{min-height:40px;white-space:normal;text-align:center}.btn.sm{min-height:36px;padding:6px 12px}.stabs button,.setup-tabs button,[data-setup]{min-height:36px}.cell{height:34px}
   .focus .nav button{min-height:40px;padding:4px 8px}.pill button,.chip{min-height:32px}
   .item{grid-template-columns:6px minmax(0,1fr);gap:4px 10px}.item>:nth-child(n+3){grid-column:2;justify-content:flex-start}
   .matrix{min-width:0!important}
   .tw{border:0;overflow:visible}
-  table.cf thead{display:none}
-  table.cf,table.cf tbody,table.cf tfoot,table.cf tr{display:block;width:100%}
-  table.cf tr{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0 0 8px;background:var(--paper)}
-  table.cf td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;padding:3px 0;text-align:right;min-height:0}
-  table.cf td::before{content:attr(data-l);flex:none;max-width:48%;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
-  table.cf td:first-child{font-weight:600;font-size:15px;text-align:left;justify-content:flex-start}table.cf td:first-child::before{content:none}
-  table.cf td[data-l=""]::before{content:none}table.cf td.cfe{display:none}
-  table.cf td.sel{width:auto;padding:3px 0 6px;justify-content:space-between}table.cf td.sel::before{content:"Pick for Bukku"}table.cf td.sel:empty{display:none}table.cf td.sel+td{font-weight:600;font-size:15px;text-align:left;justify-content:flex-start}table.cf td.sel+td::before{content:none}
-  table.cf td[data-l=""]{justify-content:flex-start;flex-wrap:wrap;padding-top:6px}table.cf td .row{flex-wrap:wrap}table.cf td>.row{flex:1 1 100%;min-width:0;max-width:100%}
-  table.cf td.r{text-align:right}
-  table.cf tr.catrow{border:0;background:none;padding:10px 2px 2px;margin:0}table.cf tr.catrow td{font:700 12px var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-  table.cf td.psend{flex-wrap:wrap;justify-content:flex-start;gap:6px 10px}table.cf td.psend::before{flex:1 1 100%;max-width:none}
   .psend label{margin:0;flex:0 0 auto}.psend input{width:3.2em;font-size:16px}
+}
+/* v22.20 prep list: the outlet box keeps its "N HQ" / "→N" under the number (narrower columns); when the table does not fit
+   (phones, narrow windows) every cake becomes one card: name + display dots on top, then one small box per column with its label. */
+table.prep td.psend label{display:inline-flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:2px 4px;max-width:5.6em;margin:0}
+.cols.cols-even{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+@media screen{
+table.prep.cards thead{display:none}
+table.prep.cards,table.prep.cards tbody{display:block;width:100%;min-width:0}
+table.prep.cards tr{display:grid;grid-template-columns:repeat(var(--pn,6),minmax(0,1fr));gap:4px 6px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:8px 10px 10px;margin:0 0 8px;background:var(--paper)}
+table.prep.cards td{display:block;border:0;padding:0;min-width:0;max-width:none;text-align:center;white-space:normal;background:none}
+table.prep.cards td.pcake{grid-column:1/-2;text-align:left;align-self:center;font-weight:600}
+table.prep.cards td.pact{grid-column:-2/-1;grid-row:1;justify-self:end;align-self:center}
+table.prep.cards td.pact:empty{display:none}
+table.prep.cards td.pact:has(select){grid-column:1/-1;grid-row:auto;display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-top:4px}
+table.prep.cards td.lots{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;text-align:left;margin:0 0 2px}
+table.prep.cards td.lots::before{content:"Display left";font:700 10px var(--body);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+table.prep.cards td.lots:empty,table.prep.cards td.lots.nolots{display:none}
+table.prep.cards td.pn{display:flex;flex-direction:column;align-items:center;gap:2px;border-top:1px solid var(--line);padding-top:4px}
+table.prep.cards td.pn::before{content:attr(data-l);font:700 9.5px/1.15 var(--body);letter-spacing:0;text-transform:uppercase;color:var(--muted);white-space:normal;overflow-wrap:normal;word-break:keep-all;min-height:2.3em;display:flex;align-items:flex-end;justify-content:center;text-align:center}
+@media (max-width:400px){table.prep.cards tr{padding-inline:8px;column-gap:5px}table.prep.cards td.pn::before{font-size:9px}}
+table.prep.cards td.pn .pv{display:block;line-height:36px;font-size:17px;font-weight:700}
+table.prep.cards td.pn input{width:100%;max-width:3.6em;min-width:0;text-align:center;font-size:16px;padding:6px 2px}
+table.prep.cards td.psend label{display:flex;flex-direction:column;align-items:center;gap:2px;max-width:none;width:100%}
+table.prep.cards td.pn .small,table.prep.cards td.pn .pleft{font-size:10.5px;line-height:1.25;margin:0}
+table.prep.cards td.pn .pill{font-size:10px;padding:1px 5px;white-space:nowrap}
+table.prep.cards tr.catrow{display:block;border:0;background:none;padding:10px 2px 4px;margin:0}
+table.prep.cards tr.catrow td{display:block;text-align:left;font:700 12px var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:0}
+table.prep.cards tr:has(+tr.alloc){border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0}
+table.prep.cards tr.alloc{display:block;margin:0 0 8px;border:1px solid var(--line);border-top:1px dashed var(--line);border-radius:0 0 12px 12px;padding:6px 10px;background:var(--paper)}
+table.prep.cards tr.alloc td{display:block;text-align:left;padding:0;border:0}table.prep.cards tr.alloc td:first-child{display:none}
+table.prep.cards tr.ptot{background:var(--raise)}
+table.prep.cards tr.warnrow{border-color:var(--bad)}
+table.pmr.cards td.pmade{grid-column:span 2}
+table.pmr.cards td.pmade .row{justify-content:center!important}
+table.pmr.cards td.pmade input.made{width:3.4em;max-width:none}
+table.pmr.cards td.pnote{grid-column:1/-1;text-align:left;margin-top:2px}
+}
+/* v22.20 (Alfred 7 Oct: "I want to be able see all in the column or frame … both web and phone"): a wide table becomes one card per
+   row on a phone, and on any screen where it does not fit its frame (fitTables adds .cards) — nothing hidden off to the side. */
+@media screen{
+.tw:has(>table.cards){border:0;overflow:visible}
+  table.cf.cards thead{display:none}
+  table.cf.cards,table.cf.cards tbody,table.cf.cards tfoot,table.cf.cards tr{display:block;width:100%}
+  table.cf.cards tr{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0 0 8px;background:var(--paper)}
+  table.cf.cards td{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 12px;border:0;padding:3px 0;text-align:right;min-height:0}
+  table.cf.cards td::before{content:attr(data-l);flex:none;max-width:48%;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+  table.cf.cards td:first-child{font-weight:600;font-size:15px;text-align:left;justify-content:flex-start}table.cf.cards td:first-child::before{content:none}
+  table.cf.cards td[data-l=""]::before{content:none}table.cf.cards td.cfe{display:none}
+  table.cf.cards td.sel{width:auto;padding:3px 0 6px;justify-content:space-between}table.cf.cards td.sel::before{content:"Pick for Bukku"}table.cf.cards td.sel:empty{display:none}table.cf.cards td.sel+td{font-weight:600;font-size:15px;text-align:left;justify-content:flex-start}table.cf.cards td.sel+td::before{content:none}
+  table.cf.cards td[data-l=""]{justify-content:flex-start;flex-wrap:wrap;padding-top:6px}table.cf.cards td .row{flex-wrap:wrap}table.cf.cards td>.row{flex:1 1 100%;min-width:0;max-width:100%}
+  table.cf.cards td.r{text-align:right}
+  table.cf.cards tr.catrow{border:0;background:none;padding:10px 2px 2px;margin:0}table.cf.cards tr.catrow td{font:700 12px var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  table.cf.cards td.psend{flex-wrap:wrap;justify-content:flex-start;gap:6px 10px}table.cf.cards td.psend::before{flex:1 1 100%;max-width:none}
 }
 </style>
 </head><body>
@@ -1043,7 +1084,7 @@ function doRender(){
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
-  cardify(document.getElementById("main")); cardify(document.getElementById("modal"));
+  cardify(document.getElementById("main")); cardify(document.getElementById("modal")); fitTables(document.getElementById("main")); fitTables(document.getElementById("modal"));
   if(RO()&&S.tab!=="none"){ const dv=DELIV()&&(S.tab==="plan"||S.tab==="deliveries"); $("#testbar").innerHTML=`<div class="testbar">${dv?`You can ${SUPK()?"create and edit delivery orders, ":""}change To make, snap the filled prep sheet, check colours and mark deliveries delivered here; the rest is view only.`:`This page is view only for you (${esc(AUTH.label||"your access")}). Ask Alfred or Joscelyn if you need to change it.`} Kitchen reports are in <a href="kitchen.html">Kitchen HQ</a>.</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!el.dataset.stp&&!el.dataset.st&&!(DELIV()&&kitOK(el))) el.disabled=true; }); }
   if(aid){const e=document.getElementById(aid); if(e){e.focus({preventScroll:true}); if(sel&&"setSelectionRange" in e){try{e.setSelectionRange(sel[0],sel[1])}catch(_){}}}}
   tourFor(); if(S.loaded.size>=NCOL) setTimeout(()=>CA.tour.maybeStart(),300);
@@ -1178,7 +1219,7 @@ function vToday(att){
   const t=today(), al=S.alerts;
   const days=[...Array(7)].map((_,i)=>add(t,i-6));
   const ps=partners();
-  const matrix=`<div class="tw" style="border:0"><div class="matrix" style="grid-template-columns:minmax(76px,1.2fr) repeat(7,minmax(30px,1fr));min-width:340px">
+  const matrix=`<div class="tw" style="border:0"><div class="matrix" style="grid-template-columns:minmax(62px,1.2fr) repeat(7,minmax(26px,1fr));min-width:0">
     <div></div>${days.map(d=>`<div class="small muted" style="text-align:center">${WD[dow(d)]}<br><span class="mono">${P(d).getUTCDate()}</span></div>`).join("")}
     ${ps.map(p=>`<div class="small" style="font-weight:600">${esc(p.name)}</div>${days.map(d=>{const w=S.weeks[wid(p.id,weekStartOf(d))];const got=w&&w.days&&w.days[d];const closed=!got&&isClosed(p.id,d);const pre=cfg().cutoffDate&&d<cfg().cutoffDate;const cls=got?"got":(closed||pre||d>=t?"wait":"miss");return `<button class="cell ${cls}" data-go-daily="${p.id}|${d}" title="${esc(p.name)} ${nice(d)}${closed?" (closed)":""}">${got?((w.days[d].photos||[]).length?"✓":"✓·"):(closed?"closed":(d>=t?"·":"!"))}</button>`}).join("")}`).join("")}
   </div></div>`;
@@ -2217,21 +2258,21 @@ function prepTable(d,PA,prepX,prep){ const plans=PA.plans, ORD=PA.orders||{}, P=
   const chg=l=>l&&l.send!=null&&l.send!==(l.base||0)?`<span class="chg" title="After To make / Made: ${l.send}">→<b>${l.send}</b></span>`:"";
   const cell=(pl,id,pm)=>{ const l=pl.lines.find(x=>x.productId===id), q=pm[pl.pid]||0, done=(pl.planned||[]).some(o=>o.status==="delivered"), P0=partner(pl.pid);
     const lt=l?`${P0.internal?"On the HQ display":"Left at "+esc(P0.name)}${l.refDate?` after ${nice(l.refDate)}`:""}: ${l.stockRep||0}${l.perDay!=null?` · sells about ${(Math.round(l.perDay*10)/10).toFixed(1)}/day`:""}`:"";
-    return `<td class="r psend"><label title="${esc(P0.name)} · ${nice(pl.d1)}${l&&l.why?` · ${esc(l.why)}`:""}${l&&l.over?` · suggested ${l.suggest}`:""}${l&&l.fromHQ?` · ${l.fromHQ} from the HQ display`:""}${(pl.planned||[]).length?` · on ${pl.planned.map(o=>esc(o.no)).join(", ")}`:""}"><input type="number" min="0" step="1" inputmode="numeric" class="mono${l&&l.over?" over":""}" data-psend="${d}|${id}|${pl.pid}" value="${l?(l.base||0):q}" ${done?"disabled":""} aria-label="${esc(P0.name)} quantity">${l&&l.fromHQ?`<span class="pill info" style="font-size:10px;padding:1px 6px" title="${l.fromHQ} come from the HQ display (${l.fromLots.map(x=>x.qty+" "+x.colour).join(", ")}), ${l.fresh} to make">${l.fromHQ} HQ</span>`:""}${chg(l)}</label>${P0.internal?"":`<div class="small muted pleft" title="${lt}">left ${l?l.stockNow:((pl.stock||{})[id]||0)}</div>`}</td>`; };
-  const ordCell=id=>{ if(!hasOrd) return ""; const l=ordL[id]; if(!l) return `<td class="r mono muted">·</td>`;
+    return `<td class="r psend pn" data-l="${esc(P0.code)}"><label title="${esc(P0.name)} · ${nice(pl.d1)}${l&&l.why?` · ${esc(l.why)}`:""}${l&&l.over?` · suggested ${l.suggest}`:""}${l&&l.fromHQ?` · ${l.fromHQ} from the HQ display`:""}${(pl.planned||[]).length?` · on ${pl.planned.map(o=>esc(o.no)).join(", ")}`:""}"><input type="number" min="0" step="1" inputmode="numeric" class="mono${l&&l.over?" over":""}" data-psend="${d}|${id}|${pl.pid}" value="${l?(l.base||0):q}" ${done?"disabled":""} aria-label="${esc(P0.name)} quantity">${l&&l.fromHQ?`<span class="pill info" style="font-size:10px;padding:1px 6px" title="${l.fromHQ} come from the HQ display (${l.fromLots.map(x=>x.qty+" "+x.colour).join(", ")}), ${l.fresh} to make">${l.fromHQ} HQ</span>`:""}${chg(l)}</label>${P0.internal?"":`<div class="small muted pleft" title="${lt}">left ${l?l.stockNow:((pl.stock||{})[id]||0)}</div>`}</td>`; };
+  const ordCell=id=>{ if(!hasOrd) return ""; const l=ordL[id]; if(!l) return `<td class="r mono muted pn" data-l="Order"><span class="pv">·</span></td>`;
     const who=(ORD.counted||[]).filter(o=>(o.items||[]).some(it=>(olBreakdown(it)||[]).some(x=>x.productId===id))).map(o=>`#${o.code} ${o.slot||""}`).join(", ");
-    return `<td class="r psend"><span class="mono" title="Online orders for ${nice(ORD.date)}: ${esc(who)}${l.fromHQ?` · ${l.fromHQ} from the HQ display`:""}"><b>${l.base}</b></span>${l.fromHQ?`<span class="pill info" style="font-size:10px;padding:1px 6px" title="${l.fromHQ} come from the HQ display (${l.fromLots.map(x=>x.qty+" "+x.colour).join(", ")}), ${l.fresh} to make">${l.fromHQ} HQ</span>`:""}${chg(l)}</td>`; };
+    return `<td class="r psend pn" data-l="Order"><span class="mono pv" title="Online orders for ${nice(ORD.date)}: ${esc(who)}${l.fromHQ?` · ${l.fromHQ} from the HQ display`:""}"><b>${l.base}</b></span>${l.fromHQ?`<span class="pill info" style="font-size:10px;padding:1px 6px" title="${l.fromHQ} come from the HQ display (${l.fromLots.map(x=>x.qty+" "+x.colour).join(", ")}), ${l.fresh} to make">${l.fromHQ} HQ</span>`:""}${chg(l)}</td>`; };
   const madeLine=P.madeAt?`<span class="pill ok" title="${esc(P.madeSrc==="photo"?"Read from the snapped prep sheet and checked":"Typed")}">Made submitted · ${esc(P.madeBy||"")} · ${esc(fmtTs(P.madeAt))}</span>${P.madePhotoUrl?` <a class="small" href="${esc(P.madePhotoUrl)}" target="_blank" rel="noopener">photo</a>`:""}`:`<span class="pill warn" title="Print the sheet, write the real Made numbers, then Snap filled sheet">Made not submitted yet</span>`;
   const canSnap=!(RO()&&!DELIV());
   return `<div><div class="spread"><h3>Prep on ${nice(d)}</h3><div class="row" style="flex-wrap:wrap">${dot(colourOf(d).name)}<button class="btn sm" data-pprint="${d}">Print prep sheet</button>${canSnap?`<button class="btn sm pri" data-act="prepSnap" data-d="${d}" title="Photo of the printed sheet with the Made column filled in — the app reads it and shows it to check">📷 Snap filled sheet</button>`:""}<button class="btn sm" data-dnprint="${d}">Print delivery notes</button></div></div>
     <div class="row small" style="margin:4px 0">${madeLine}</div>
     ${prepReadPanel(d,rows)}
-    <div class="tw" style="margin-top:6px"><table class="prep"><thead><tr><th>Cake</th><th title="What is on the HQ display now, by colour dot (oldest first)">Display left</th><th class="r" title="Everything needed on the delivery day: online orders + the HQ display top-up + each outlet">Require</th><th class="r" title="Fresh cakes to bake = Require minus what comes off the HQ display. Suggested by the app — change it if the kitchen will make a different number (stock, staff…): orders are filled first, the HQ display takes any extra.">To make <span class="small muted" style="font-weight:400;text-transform:none;letter-spacing:0">(edit)</span></th>${hasOrd?`<th class="r" title="Online orders (Orderla) to pick up or deliver on ${nice(ORD.date)}, broken down into cakes">Order</th>`:""}${cols.map(pl=>`<th class="r" title="${esc(partner(pl.pid).name)}${partner(pl.pid).internal?" · display top-up, no delivery":" · delivery "+nice(pl.d1)}">${esc(partner(pl.pid).code)}</th>`).join("")}<th></th></tr></thead><tbody>
+    <div class="tw nocard" style="margin-top:6px"><table class="prep" data-fit="1" style="--pn:${2+(hasOrd?1:0)+cols.length}"><thead><tr><th>Cake</th><th title="What is on the HQ display now, by colour dot (oldest first)">Display left</th><th class="r" title="Everything needed on the delivery day: online orders + the HQ display top-up + each outlet">Require</th><th class="r" title="Fresh cakes to bake = Require minus what comes off the HQ display. Suggested by the app — change it if the kitchen will make a different number (stock, staff…): orders are filled first, the HQ display takes any extra.">To make <span class="small muted" style="font-weight:400;text-transform:none;letter-spacing:0">(edit)</span></th>${hasOrd?`<th class="r" title="Online orders (Orderla) to pick up or deliver on ${nice(ORD.date)}, broken down into cakes">Order</th>`:""}${cols.map(pl=>`<th class="r" title="${esc(partner(pl.pid).name)}${partner(pl.pid).internal?" · display top-up, no delivery":" · delivery "+nice(pl.d1)}">${esc(partner(pl.pid).code)}</th>`).join("")}<th></th></tr></thead><tbody>
     ${rows.map(r=>{const {id,pm,tot,req,fromD}=r, ct=catOf(prod(id)), hd=ct!==lastCat?`<tr class="catrow"><td colspan="${ncol}">${esc(CATL[ct]||ct)}</td></tr>`:""; lastCat=ct; const short=r.made!=null&&r.made<r.make;
-      return `${hd}<tr><td>${cake(id)}</td><td class="small lots">${lotsTxt(id)}</td><td class="r mono" title="${fromD>0?`${req} needed: ${fromD} from the display + ${tot} to bake`:`${req} needed, all to bake`}">${req}</td>
-      <td class="r"><input class="mono tomake${r.over?" over":""}" type="number" min="0" step="1" inputmode="numeric" data-make="${d}|${id}" value="${r.make}" title="Suggested ${tot}${r.over?` — changed to ${r.make}`:""}. Change it if the kitchen will make a different number." aria-label="To make ${esc(prod(id).name)}">${fromD>0?`<div class="small muted">+${fromD} display</div>`:""}${r.made!=null?`<div><span class="pill ${short?"warn":"ok"}" style="font-size:10px;padding:1px 6px" title="${short?`Made ${r.made} of ${r.make}${(P.reason||{})[id]?" — "+esc(P.reason[id]):""}`:"Made as planned"}">made ${r.made}</span></div>`:""}</td>${ordCell(id)}${cols.map(pl=>cell(pl,id,pm)).join("")}
-      <td>${RO()&&!DELIV()?"":`<button class="btn sm" data-prm="${d}|${id}" title="Take this cake off the prep list (every outlet 0)" aria-label="Remove ${esc(prod(id).name)}">✕</button>`}${short?`<select data-short="${d}|${id}" aria-label="Why short">${opt("","Why short?",(P.reason||{})[id]||"")}${["Ingredient out","Short staff","Quality reject","Equipment","Other"].concat((P.reason||{})[id]&&!["Ingredient out","Short staff","Quality reject","Equipment","Other"].includes(P.reason[id])?[P.reason[id]]:[]).map(x=>opt(x,x,(P.reason||{})[id]||"")).join("")}</select>`:""}</td></tr>${alloc(id)}`}).join("")}
-    <tr><td><b>Total</b></td><td></td>${(()=>{const n=rows.reduce((a,r)=>a+r.fromD,0); return `<td class="r mono">${rows.reduce((a,r)=>a+r.req,0)}</td><td class="r mono"><b>${rows.reduce((a,r)=>a+r.make,0)}</b>${n?`<div class="small muted" style="font-weight:400" title="Cakes taken from the HQ display for orders and outlets — not baked">+${n} display</div>`:""}${rows.some(r=>r.made!=null)?`<div class="small muted" style="font-weight:400">made ${rows.reduce((a,r)=>a+(r.made!=null?r.made:0),0)}</div>`:""}</td>`;})()}${hasOrd?`<td class="r mono"><b>${Object.values(ordL).reduce((a,l)=>a+(l.base||0),0)||""}</b></td>`:""}${cols.map(pl=>`<td class="r mono"><b>${pl.lines.reduce((a,l)=>a+(l.base||0),0)||""}</b></td>`).join("")}<td></td></tr></tbody></table></div>
+      return `${hd}<tr><td class="pcake">${cake(id)}</td><td class="small lots${hqPl&&((hqPl.lots||{})[id]||[]).some(x=>x.qty>0)?"":" nolots"}">${lotsTxt(id)}</td><td class="r mono pn preq" data-l="Require" title="${fromD>0?`${req} needed: ${fromD} from the display + ${tot} to bake`:`${req} needed, all to bake`}"><span class="pv">${req}</span></td>
+      <td class="r pn" data-l="To make"><input class="mono tomake${r.over?" over":""}" type="number" min="0" step="1" inputmode="numeric" data-make="${d}|${id}" value="${r.make}" title="Suggested ${tot}${r.over?` — changed to ${r.make}`:""}. Change it if the kitchen will make a different number." aria-label="To make ${esc(prod(id).name)}">${fromD>0?`<div class="small muted">+${fromD} display</div>`:""}${r.made!=null?`<div><span class="pill ${short?"warn":"ok"}" style="font-size:10px;padding:1px 6px" title="${short?`Made ${r.made} of ${r.make}${(P.reason||{})[id]?" — "+esc(P.reason[id]):""}`:"Made as planned"}">made ${r.made}</span></div>`:""}</td>${ordCell(id)}${cols.map(pl=>cell(pl,id,pm)).join("")}
+      <td class="pact">${RO()&&!DELIV()?"":`<button class="btn sm" data-prm="${d}|${id}" title="Take this cake off the prep list (every outlet 0)" aria-label="Remove ${esc(prod(id).name)}">✕</button>`}${short?`<select data-short="${d}|${id}" aria-label="Why short">${opt("","Why short?",(P.reason||{})[id]||"")}${["Ingredient out","Short staff","Quality reject","Equipment","Other"].concat((P.reason||{})[id]&&!["Ingredient out","Short staff","Quality reject","Equipment","Other"].includes(P.reason[id])?[P.reason[id]]:[]).map(x=>opt(x,x,(P.reason||{})[id]||"")).join("")}</select>`:""}</td></tr>${alloc(id)}`}).join("")}
+    <tr class="ptot"><td class="pcake"><b>Total</b></td><td class="lots"></td>${(()=>{const n=rows.reduce((a,r)=>a+r.fromD,0); return `<td class="r mono pn preq" data-l="Require"><span class="pv">${rows.reduce((a,r)=>a+r.req,0)}</span></td><td class="r mono pn" data-l="To make"><b class="pv">${rows.reduce((a,r)=>a+r.make,0)}</b>${n?`<div class="small muted" style="font-weight:400" title="Cakes taken from the HQ display for orders and outlets — not baked">+${n} display</div>`:""}${rows.some(r=>r.made!=null)?`<div class="small muted" style="font-weight:400">made ${rows.reduce((a,r)=>a+(r.made!=null?r.made:0),0)}</div>`:""}</td>`;})()}${hasOrd?`<td class="r mono pn" data-l="Order"><b class="pv">${Object.values(ordL).reduce((a,l)=>a+(l.base||0),0)||""}</b></td>`:""}${cols.map(pl=>`<td class="r mono pn" data-l="${esc(partner(pl.pid).code)}"><b class="pv">${pl.lines.reduce((a,l)=>a+(l.base||0),0)||""}</b></td>`).join("")}<td class="pact"></td></tr></tbody></table></div>
     ${RO()&&!DELIV()?"":`<div class="row" style="margin-top:6px;flex-wrap:wrap"><select data-padd="${d}" aria-label="Add a cake to the prep list"><option value="">＋ Add a cake…</option>${Object.values(S.products).filter(x=>x.active!==false&&!prepX[d][x.id]).sort((a,b)=>catRank(a.id)-catRank(b.id)||a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select><span class="small muted">then type how many to prepare for each outlet</span></div>`}
     ${hasOrd?ordersPanel(ORD):""}</div>`; }
 /* v22.18: the snapped sheet, read by the AI, for the kitchen to check before submitting Made */
@@ -2244,9 +2285,9 @@ function prepReadPanel(d,rows){ const R=S.ui.prepRead; if(!R||R.d!==d) return ""
     ${res.aiError?`<p class="pill warn" style="margin:6px 0">${esc(res.aiError)}</p>`:`<p class="small muted" style="margin:4px 0 8px">Read from the photo. Check every number against the sheet, fix any that are wrong, then Submit.</p>`}
     ${res.printedDate&&res.printedDate!==d?`<p class="pill bad" style="margin:6px 0">This sheet looks like it is for ${nice(res.printedDate)}, not ${nice(d)}. Check you snapped today's sheet.</p>`:""}
     ${(res.unclear||[]).length?`<p class="small muted" style="margin:4px 0">Could not read: ${res.unclear.map(esc).join(" · ")}</p>`:""}
-    <div class="tw"><table class="prep"><thead><tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th><th>Note</th><th></th></tr></thead><tbody>
+    <div class="tw nocard"><table class="prep pmr" data-fit="1" style="--pn:3"><thead><tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th><th>Note</th><th></th></tr></thead><tbody>
     ${ids.map(id=>{ const r=byId[id], v=V[id]||{}, mv=v.made===""||v.made==null?null:+v.made, st=mv==null?`<span class="pill bad">type it</span>`:mv<r.make?`<span class="pill warn">${r.make-mv} short</span>`:mv>r.make?`<span class="pill info">${mv-r.make} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
-      return `<tr class="${mv==null?"warnrow":""}"><td>${cake(id)}</td><td class="r mono">${r.make}</td><td class="r"><span class="row" style="gap:4px;justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-pmrstep="${id}|-1" aria-label="Less">−</button><input class="mono made" type="number" min="0" step="1" inputmode="numeric" data-pmr="${id}" value="${mv==null?"":mv}" aria-label="Made ${esc(prod(id).name)}"><button class="btn sm" data-pmrstep="${id}|1" aria-label="More">+</button></span></td><td><input data-pmrn="${id}" value="${esc(v.note||"")}" placeholder="${mv!=null&&mv<r.make?"why short?":""}" style="width:100%;min-width:120px" aria-label="Note"></td><td>${st}</td></tr>`; }).join("")}
+      return `<tr class="${mv==null?"warnrow":""}"><td class="pcake">${cake(id)}</td><td class="r mono pn preq" data-l="To make"><span class="pv">${r.make}</span></td><td class="r pn pmade" data-l="Made"><span class="row" style="gap:4px;justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-pmrstep="${id}|-1" aria-label="Less">−</button><input class="mono made" type="number" min="0" step="1" inputmode="numeric" data-pmr="${id}" value="${mv==null?"":mv}" aria-label="Made ${esc(prod(id).name)}"><button class="btn sm" data-pmrstep="${id}|1" aria-label="More">+</button></span></td><td class="pnote"><input data-pmrn="${id}" value="${esc(v.note||"")}" placeholder="${mv!=null&&mv<r.make?"why short?":"note (optional)"}" style="width:100%;min-width:120px" aria-label="Note"></td><td class="pact">${st}</td></tr>`; }).join("")}
     </tbody></table></div>
     ${(res.extra||[]).length?`<p class="small muted">Also written on the sheet (not a printed row): ${res.extra.map(x=>`${esc(x.name)} ${x.made}`).join(", ")} — add the cake with ＋ Add a cake if it is real.</p>`:""}
     <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn pri" data-act="prepMadeGo" data-d="${d}" ${missing?"disabled":""}>Submit made${missing?` (${missing} to type)`:""}</button><button class="btn" data-act="prepSnap" data-d="${d}">Snap again</button><button class="btn sm" data-act="prepReadNo">Cancel</button></div></div>`; }
@@ -2269,12 +2310,13 @@ function vPlan(){
   const regionPill=r=>`<span class="pill ${r==="SG"?"info":"mute"}">${r==="SG"?"Singapore":r==="MY-JHR"?"Johor":esc(r||"")}</span>`;
   return `<div class="head"><div><h1>Prep list</h1><p class="lede noprint"><b>Kitchen HQ · what to make.</b> For every cake: what is left at each outlet (last closing count) and how many to prepare for the HQ display and each outlet. Suggestions come from the last 28 days of closing reports. Sold is worked out from balance and waste. Weekdays and Fri–Sun are averaged separately, adjusted for Johor and Singapore holidays, and nothing is planned past a cake's shelf life. Stock that will still be sellable is subtracted.</p></div>
     <div class="row"><button class="btn" data-act="printPage" title="Print this page (or choose Save as PDF in the print window)">🖨 Print</button><button class="btn pri" data-act="makeDOs">Draft DOs from suggestions…</button></div></div>
-    ${draftPanel()}<div class="cols">
-      <div class="panel"><div class="spread"><h2>Kitchen prep list</h2><span class="small muted">all outlets combined</span></div>
+    ${draftPanel()}
+      <div class="panel prep-panel"><div class="spread"><h2>Kitchen prep list</h2><span class="small muted">all outlets combined</span></div>
         ${prepDays.length?prepDays.map(d=>prepTable(d,PA,prepX,prep)).join(""):`<div class="empty">Nothing to prep — no suggestions yet.</div>`}
         <input type="file" accept="image/*" capture="environment" id="prep-snap-in" data-snap="${esc(prepDays[0]||"")}" hidden aria-hidden="true">
         <p class="small muted" style="margin:0"><b>HQ</b> = cakes for our own display: made and displayed at HQ, never delivered (no DO, no delivery note). <b>From the HQ display</b> (blue badge): before anything is baked, display cakes with at least 2 days of life left go to the outlets first, oldest first, keeping what HQ itself needs; they travel on the DO with their own colour dot and come off HQ's count. <b>Minimums</b> (Setup › Outlets) are counter minimums for cakes that sell at that place; a cake with ≤1 sold in 14 days or over 40% waste there gets no forced minimum (see "Not selling"), and a minimum above what the place sells within the cake's shelf life is capped there (the note says so) — more would only expire. <b>Require</b> = everything needed on the delivery day (online orders + the HQ display top-up + each outlet). <b>To make</b> = the fresh cakes to bake = Require minus what comes off the HQ display ("+N display"); the app suggests it and the kitchen can change it (their stock, staff…) — an underlined number is a changed one, the suggestion stays in the tooltip. <b>Made</b>: the kitchen writes the real number on the printed sheet, taps <b>📷 Snap filled sheet</b>, checks what the app read and taps Submit made ("made N" then shows under To make). <b>Display left</b> = what is on the HQ display now, by colour dot (from the kitchen's display count); the line under a cake says where those display cakes go — online orders first, then the outlets, the display keeps the freshest. <b>Order</b> = online orders (Orderla) to pick up or deliver on the delivery day, broken down into the cakes inside each box (Setup › Orderla); it comes from the Orderla API every hour and is not typed. <b>left</b> under an outlet = what its last closing report says is left there; a wrong number is corrected in Outlet reports. <b>Sells/day</b> = the forecast for the delivery day. <b>Send</b>: type a number per outlet to change what goes where — it updates the outlet's delivery order if one exists, otherwise it is used when the DOs are drafted (a changed number is underlined; the suggestion stays in the tooltip). When To make or Made is lower than the suggestion, online orders are filled first; then every outlet gets at least one of each flavour it carries and the rest goes to the place that sells it faster ("→N" beside a box shows the new number). When it is higher, the extra goes to the HQ display. Whole cakes follow each outlet's whole-cake setting in Setup › Outlets (usually Fri–Sun, 1–2 kinds, 1 of each, every ticked whole cake taking its turn). Mark every prepared/thawed cake with the dot of the prep day. Lead time: ${+cfg().prepLeadDays||0} day(s) before delivery (change in Setup › Go-live & rules). ${(+cfg().prepLeadDays||0)>0?"":`Until ${+(cfg().planSwitchHour??14)}:00 this page shows today's delivery; after that, the next one.`}</p>
       </div>
+    <div class="cols cols-even">
       ${dropList(plans)}
       <div class="panel"><div class="spread"><h2>Holidays & events</h2><span class="small muted">next 75 days</span></div>
         ${up.length?`<div class="items">${up.map(e=>`<div class="item"><span class="sev ${e.type==="public"?"warn":e.type==="event"?"bad":"info"}"></span><div><b>${esc(e.name)}</b> ${regionPill(e.region)}<div class="small muted">${nice(e.date)}${e.end&&e.end!==e.date?` – ${nice(e.end)}`:""} · ${esc(e.type)} · demand ${effUp(e)>=0?"+":""}${effUp(e)}%${e.source?` · ${esc(e.source)}`:""}</div></div>${RO()?"":`<button class="btn sm" data-evdel="${esc(e.id)}" aria-label="Remove">✕</button>`}</div>`).join("")}</div>`:`<div class="empty">No holidays in the next 75 days.</div>`}
@@ -2990,6 +3032,17 @@ function cardify(root){ if(!root) return; root.querySelectorAll("table").forEach
   const lab=hs.map(h=>h.textContent.trim()); tb.classList.add("cf"); tb.dataset.cf="1";
   tb.querySelectorAll("tbody tr, tfoot tr").forEach(tr=>{ let c=0; [...tr.children].forEach(td=>{ const l=lab[c]||""; if(!td.hasAttribute("data-l")) td.setAttribute("data-l",l); if(!td.textContent.trim()&&!td.querySelector("input,select,button,a,img")) td.classList.add("cfe"); c+=+(td.getAttribute("colspan")||1); }); }); }); }
 document.addEventListener("click",e=>{ const l=e.target&&e.target.closest&&e.target.closest(".lede"); if(l&&matchMedia("(max-width:640px)").matches) l.classList.toggle("open"); });
+/* v22.20 (Alfred 7 Oct: "I want to be able see all in the column or frame … both web and phone"): on a phone every wide table is
+   shown as cards; on a bigger screen a table that is wider than its frame becomes cards too, instead of hiding columns off to the side. */
+function fitTables(root){ if(!root) return; const phone=matchMedia("(max-width:640px)").matches;
+  const tbs=[...root.querySelectorAll("table.cf, table[data-fit]")]; tbs.forEach(tb=>tb.classList.remove("cards"));
+  for(const tb of tbs){ if(phone){ tb.classList.add("cards"); continue; } const w=tb.parentElement; if(!w||!tb.offsetWidth) continue;
+    if(tb.offsetWidth>w.clientWidth+2||w.scrollWidth>w.clientWidth+2) tb.classList.add("cards"); } }
+{ let ft=null; const refit=()=>{ clearTimeout(ft); ft=setTimeout(()=>{ fitTables(document.getElementById("main")); fitTables(document.getElementById("modal")); },120); };
+  window.addEventListener("resize",refit); window.addEventListener("orientationchange",refit);
+  document.addEventListener("toggle",e=>{ if(e.target&&e.target.tagName==="DETAILS"&&e.target.open) fitTables(e.target); },true);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(refit); }
+
 function showLogin(msg){
   CA.menu.close(); S.ui.modal=null; $("#nav").innerHTML=""; $("#who").innerHTML=""; $("#testbar").innerHTML=""; $("#modal").innerHTML="";
   CA.toLogin(msg);
@@ -3020,7 +3073,7 @@ const TOURS={
     {sel:"#nav .mbtn",title:"Step 4 of 5 · Every office page",text:"This menu has the rest: Plan &amp; prep, Delivery orders, Outlet closing reports, Weekly bills, Setup, Staff…",noScroll:true},
     {sel:"#ca-hbtn",title:"Step 5 of 5 · Stuck?",text:"Tap <b>? Ask</b> any time: how-to answers in English, Malay or Chinese, or report a problem. That's it, you're set.",last:true,noScroll:true}],
   plan:[
-    {sel:"#main .cols .panel",title:"Step 1 of 3 · Kitchen prep list",text:"What to make, all outlets combined, for each prep day. Made fewer than planned? Type the real number in <b>Made</b> and the app shares them out fairly. <b>Print prep sheet</b> for the wall."},
+    {sel:"#main .prep-panel",title:"Step 1 of 3 · Kitchen prep list",text:"What to make for each prep day: <b>Require</b>, <b>To make</b> (change it if the kitchen will make a different number), online <b>Order</b>s and each place. <b>Print prep sheet</b>, write the real Made numbers on it, then <b>📷 Snap filled sheet</b>."},
     {sel:"#main .cols ~ .panel",title:"Step 2 of 3 · Each outlet's next delivery",text:"Suggested quantities from the last 28 days of closing reports: forecast, buffer and <b>Send</b>. Holidays and stock still sellable are already counted in."},
     {sel:"#main [data-act=makeDOs]",title:"Step 3 of 3 · Make the delivery orders",text:"When the numbers look right, tap <b>Draft DOs from suggestions…</b> It shows every DO first, then creates them for the kitchen to pack.",last:true}],
   deliveries:[

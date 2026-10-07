@@ -677,7 +677,7 @@ body{background:var(--ground)}
 .rtop{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:4px 0 10px}
 .rtop h1{font:700 28px/1.1 var(--display);margin:0}
 .rtop a{color:var(--accent);font-weight:600;text-decoration:none;font-size:14px}
-.dstrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}
+.dstrip{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;padding-bottom:4px;margin-bottom:10px} /* v22.20: every day button and the date picker in view (no sideways scroll) */.dstrip label{grid-column:span 2;display:flex;align-items:center;justify-content:center;gap:4px}.dstrip input{width:10em;min-width:0}
 .dstrip button,.dstrip label{flex:none;border:1.5px solid var(--line);background:var(--paper);border-radius:12px;padding:8px 12px;font:600 13px var(--body);color:var(--ink);cursor:pointer;min-height:40px}
 .dstrip button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .dstrip input{border:0;font:inherit;background:none;color:inherit;width:8.2em}

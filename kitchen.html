@@ -679,7 +679,7 @@ body.flow .ca-hbtn{display:none!important}
 .ca-hbtn{bottom:calc(84px + env(safe-area-inset-bottom,0px))!important;min-height:44px!important;padding:0 14px!important;font-size:14px!important}
 body:not(.flow) .foot{bottom:calc(72px + env(safe-area-inset-bottom,0px));padding-bottom:12px}body:not(.flow) #app:has(.foot){padding-bottom:calc(200px + env(safe-area-inset-bottom,0px))}body.flow #app:has(.foot){padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))} /* v22.19 audit: on the Opening/Closing steps the Log out chip sat under the Send bar */ /* v22.5 audit: the name + Log out chip sits after #main, so pad the whole page above a Save footer */
 body:not(.flow):has(#main .foot) .ca-hbtn{bottom:calc(170px + env(safe-area-inset-bottom,0px))!important}body.flow:has(#main .foot) .ca-hbtn{display:none!important}
-.kchips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;margin:0 -16px;padding-inline:16px;scrollbar-width:none}.kchips::-webkit-scrollbar{display:none}
+.kchips{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0 10px;margin:0;scrollbar-width:none} /* v22.20 (Alfred 7 Oct: "see all"): the tabs wrap onto a second line instead of hiding off the side */.kchips::-webkit-scrollbar{display:none}
 .kchips button{flex:none;min-height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);font:700 14px var(--body);color:var(--ink);white-space:nowrap}
 .kchips button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .kchips a.pchip{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--accent);background:var(--accent);font:700 14px var(--body);color:#fff;white-space:nowrap;text-decoration:none}
@@ -841,7 +841,7 @@ body.dark #bar .cb.ghost{background:transparent;color:#fff;border-color:rgba(255
 .sec{margin-top:14px}
 .oleft{border-top:1px solid var(--line);padding:8px 0}.oleft summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}.oleft summary::-webkit-details-marker{display:none}
 .olr{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;margin-top:6px;font-size:14px}.olr .dt{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}.olr .dt i{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.3)}.olr b{text-align:right;min-width:2ch}
-.hd .hbtn.pdf{padding:0 10px;margin-right:-2px}
+.hd .hbtn.pdf{padding:0 10px;margin-right:-2px}@media (max-width:480px){.hbtn.pdf .pl{display:none}.hbtn.pdf{padding:0 12px}.kchips{gap:6px}.kchips button,.kchips a.pchip{padding:0 12px}}
 body.ro #main input:not([type=date]),body.ro #main select,body.ro #main textarea,body.ro #main label.cb,body.ro #main button.cb:not([data-tab]):not([data-part]):not([data-partback]):not([data-date]):not([data-team]):not([data-v2]):not([data-v2back]):not([data-plan]):not([data-eqstep]),body.ro #bar,body.ro .foot{pointer-events:none;opacity:.55}
 .hd .tt{flex:1;min-width:0}.hd .hbtn{height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-weight:600;font-size:14px;color:var(--ink);box-shadow:0 3px 0 var(--line);flex:none;font-family:inherit}
 </style>
@@ -996,7 +996,7 @@ const TABI={
  team:`<svg viewBox="0 0 28 26"><circle cx="9" cy="8" r="4.5" fill="currentColor"/><circle cx="19.5" cy="9" r="4" fill="currentColor" opacity=".6"/><path d="M1.5 23c0-5 3.5-8 7.5-8s7.5 3 7.5 8z" fill="currentColor"/><path d="M14 23c.5-4 3-7 5.5-7s5.8 3 6 7z" fill="currentColor" opacity=".6"/></svg>`,
  me:`<svg viewBox="0 0 28 26"><circle cx="14" cy="8" r="6" fill="currentColor"/><path d="M3 25c0-6.5 5-10 11-10s11 3.5 11 10z" fill="currentColor"/></svg>`};
 function hdr(title,opt){ opt=opt||{}; return `<div class="hd">${opt.back?`<${opt.back.href?`a href="${opt.back.href}"`:`button type="button" ${opt.back.attr||""}`} class="back" aria-label="${esc(opt.back.label||"Back")}">‹</${opt.back.href?"a":"button"}>`:""}
-  <div class="tt">${opt.eb?`<div class="eb">${esc(opt.eb)}</div>`:""}<div class="ptitle">${esc(title)}</div></div>${opt.right||""}${opt.noMenu||inFlow()?"":`<button class="hbtn pdf" type="button" data-act="printList" title="Print this page (or choose Save as PDF in the print window)" aria-label="Print">🖨 Print</button><button class="hbtn" type="button" data-menu="1" aria-haspopup="dialog">☰ Menu</button>`}</div>`; }
+  <div class="tt">${opt.eb?`<div class="eb">${esc(opt.eb)}</div>`:""}<div class="ptitle">${esc(title)}</div></div>${opt.right||""}${opt.noMenu||inFlow()?"":`<button class="hbtn pdf" type="button" data-act="printList" title="Print this page (or choose Save as PDF in the print window)" aria-label="Print">🖨<span class="pl"> Print</span></button><button class="hbtn" type="button" data-menu="1" aria-haspopup="dialog">☰ Menu</button>`}</div>`; }
 /* v22.7: ☰ Menu on the kitchen page too — the one shared menu (CA.menu), the same as Home and the office desk */
 function inFlow(){ return !!(V2||((TAB==="opening"||TAB==="closing")&&(PART||(RESULT&&RESULT.kind===TAB)))); }
 function render(){
