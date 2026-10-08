@@ -1191,7 +1191,7 @@ const PHINT={opening:{eq:"temp, door and photo, one at a time",display:"by colou
 const partPts=(kind,p)=>{ const P=INFO.pts||{part:50,unit:5}; return p==="eq"?P.part+INFO.conf.equipment.length*2*0+INFO.conf.equipment.length*P.unit:P.part; };
 function st(kind){ const s0=K[kind]||st0(kind); INFO.conf.equipment.forEach(e=>{ if(!s0.equip[e.id]) s0.equip[e.id]={t:"",neg:e.type==="freezer",door:false}; }); return s0; }
 function st0(kind){ const d=loadDraft(kind)||{};
-  const s={prep:d.prep||null,equip:d.equip||{},step:+d.step||0,rows:d.rows||null,order:d.order||[],shown:d.shown||[],ev:d.ev||[],later:d.later||{},notes:d.notes||{},nonce:d.nonce||{},pre:d.pre||{},cstep:+d.cstep||0,cmode:d.cmode||""};
+  const s={prep:d.prep||null,prepPh:d.prepPh||null,equip:d.equip||{},step:+d.step||0,rows:d.rows||null,order:d.order||[],shown:d.shown||[],ev:d.ev||[],later:d.later||{},notes:d.notes||{},nonce:d.nonce||{},pre:d.pre||{},cstep:+d.cstep||0,cmode:d.cmode||""};
   if(!s.rows){ s.rows={}; s.order=[]; s.shown=[]; s.pre={};
     const add=(pid,c,v)=>{ const k=pid+"|"+c; if(!s.rows[k]){ s.rows[k]=v; s.order.push(k); if(v.q!=null) s.pre[k]=v.q; } if(!s.shown.includes(pid)) s.shown.push(pid); };
     if(kind==="opening"){ const r=INFO.day.opening&&INFO.day.opening.display;
@@ -1208,38 +1208,39 @@ function clearPart(kind,part){ const s=st(kind), p=pre(kind);
   if(part==="eq"){ s.equip={}; s.step=0; }
   if(part==="display"||part==="count"){ s.rows=null; s.order=[]; s.shown=[]; s.ev=[]; s.cstep=0; s.cmode=""; }
   if(part==="deliveries") s.later={};
-  if(part==="prep") s.prep=null;
+  if(part==="prep"){ s.prep=null; s.prepPh=null; }
   delete s.notes[part]; delete s.nonce[part];
   const keys=part==="eq"?[p+"eq_"]:part==="display"?["op_display","op_waste"]:part==="prep"?["op_prep"]:part==="deliveries"?["op_do_"]:part==="count"?["cl_display","cl_waste"]:["cl_l"];
   Object.keys(P2).forEach(k=>{ if(keys.some(x=>k.indexOf(x)===0)){ delete P2[k]; savePh(k);} });
-  K[kind]=null; const n=st0(kind); Object.assign(n,{prep:part==="prep"?null:s.prep,equip:part==="eq"?{}:s.equip,step:part==="eq"?0:s.step,later:part==="deliveries"?{}:s.later,notes:s.notes,nonce:s.nonce});
+  K[kind]=null; const n=st0(kind); Object.assign(n,{prep:part==="prep"?null:s.prep,prepPh:part==="prep"?null:s.prepPh,equip:part==="eq"?{}:s.equip,step:part==="eq"?0:s.step,later:part==="deliveries"?{}:s.later,notes:s.notes,nonce:s.nonce});
   if(part!=="display"&&part!=="count"){ n.rows=s.rows; n.order=s.order; n.shown=s.shown; n.ev=s.ev; n.pre=s.pre; n.cstep=s.cstep; n.cmode=s.cmode; }
   K[kind]=n; saveDraft(kind); }
 /* photo: a big tile to take it (camera), with "choose from phone" underneath */
-function mini(k,label){ const has=!!P2[k]; return `<span class="mini" id="mi-${esc(k)}">${has?`<img src="${P2[k]}" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:cover">`:""}<label class="tk2">📷 ${has?"Retake":esc(label||"Take photo")}<input type="file" accept="image/&#42;" capture="environment" data-kshot="${esc(k)}" hidden></label><label class="alt">or choose from phone<input type="file" accept="image/&#42;" data-kshot="${esc(k)}" hidden></label></span>`; }
+const MULTI=k=>k==="op_prep"||/^cl_l[td]/.test(k); /* v22.23: these boxes take several photos from the gallery at once */
+function mini(k,label){ const has=!!P2[k]; return `<span class="mini" id="mi-${esc(k)}">${has?`<img src="${P2[k]}" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:cover">`:""}<label class="tk2">📷 ${has?"Retake":esc(label||"Take photo")}<input type="file" accept="image/&#42;" capture="environment" data-kshot="${esc(k)}" hidden></label><label class="alt">or choose from phone${MULTI(k)?" (several at once)":""}<input type="file" accept="image/&#42;" ${MULTI(k)?"multiple":""} data-kshot="${esc(k)}" hidden></label></span>`; }
 function shotBox(k,title,hint){ const has=!!P2[k]; return `<div class="ptile ${has?"on":""}" id="sb-${esc(k)}"><div class="pl">${has?"✓ ":""}${esc(title)}${hint?`<small>${esc(hint)}</small>`:""}</div>${mini(k)}</div>`; }
 const noteBox=(kind,part)=>`<label class="f sec">Note (optional)<textarea rows="2" data-pnote="${kind}|${part}">${esc(st(kind).notes[part]||"")}</textarea></label>`;
 function vReport(kind){
   if(RESULT&&RESULT.kind===kind) return vResult();
   if(PART) return vPart(kind,PART);
   const s0=INFO.state[kind], r=INFO.day[kind], due=kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=!s0.done&&DATE===INFO.today&&INFO.now>due, legacy=r&&r.legacy;
-  const list=PARTS()[kind].filter(([p])=>s0.need.includes(p)||partOf(kind,p)), sent=list.filter(([p])=>partOf(kind,p)).length;
-  const curP=(list.find(([p])=>!partOf(kind,p))||[])[0];
+  const list=PARTS()[kind].filter(([p])=>s0.need.includes(p)||partOf(kind,p)||(kind==="opening"&&p==="prep")), sent=list.filter(([p])=>partOf(kind,p)).length;
+  const needed=list.filter(([p])=>s0.need.includes(p)||partOf(kind,p)); /* v22.23: the prep sheet part is always offered; it only counts once a sheet was printed */
+  const curP=(list.find(([p])=>!partOf(kind,p)&&s0.need.includes(p))||list.find(([p])=>!partOf(kind,p))||[])[0];
   return `<div class="stack">
     <div class="kseg" role="tablist" aria-label="Report"><button type="button" data-tab="opening" aria-selected="${kind==="opening"}">Opening</button><button type="button" data-tab="closing" aria-selected="${kind==="closing"}">Closing · due ${esc(INFO.conf.closeBy)}</button></div>
-    <div><div class="pbar"><i style="width:${list.length?Math.round(sent*100/list.length):0}%"></i></div><div class="lh"><span>${s0.done?"✓ "+(kind==="opening"?"Opening":"Closing")+" report complete":`${sent} of ${list.length} parts sent`}</span><span>${DATE!==INFO.today?esc(niceD(DATE)):""}</span></div></div>
+    <div><div class="pbar"><i style="width:${needed.length?Math.round(needed.filter(([p])=>partOf(kind,p)).length*100/needed.length):0}%"></i></div><div class="lh"><span>${s0.done?"✓ "+(kind==="opening"?"Opening":"Closing")+" report complete":`${needed.filter(([p])=>partOf(kind,p)).length} of ${needed.length} parts sent`}</span><span>${DATE!==INFO.today?esc(niceD(DATE)):""}</span></div></div>
     ${late?`<p class="err">Late: still to do ${esc(s0.names.join(", "))}.</p>`:""}
     ${legacy?`<div class="card"><b>Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}</b>. Sending a part now starts a new report.</div>`:""}
     ${list.map(([p,label],i)=>{ const x=partOf(kind,p), iss=(x&&x.issues)||[], bad=iss.some(z=>z.sev==="bad"), cur=!x&&p===curP;
-      return `<div class="card pc ${x?"sent":""} ${cur?"cur":""}"><span class="no">${x?"✓":i+1}</span><div><div class="nm">${esc(label)}</div><div class="sb">${x?`${esc(x.by)} · ${esc(hmOf(x.at))}`:esc(p==="eq"?INFO.conf.equipment.length+" units · "+PHINT[kind][p]:PHINT[kind][p]||"")}</div></div>
+      return `<div class="card pc ${x?"sent":""} ${cur?"cur":""}"><span class="no">${x?"✓":i+1}</span><div><div class="nm">${esc(label)}</div><div class="sb">${x?`${esc(x.by)} · ${esc(hmOf(x.at))}`:esc(p==="eq"?INFO.conf.equipment.length+" units · "+PHINT[kind][p]:PHINT[kind][p]||"")}${!x&&!s0.need.includes(p)?` · <i>optional today</i>`:""}</div></div>
         <span class="pt">${x?(bad?`<span class="pill bad">Act now</span>`:""):"+"+partPts(kind,p)}</span>
         ${iss.length?`<ul class="iss go">${iss.map(z=>`<li class="${esc(z.sev)}">${esc(z.text)}</li>`).join("")}</ul>`:""}
         <div class="go">${x?`<button class="lnk" type="button" data-part="${p}">Send again</button>`:`<button class="cb ${cur?"big":"sm ghost"} ${cur?"full":""}" type="button" data-part="${p}">Start</button>`}</div></div>`; }).join("")}
     ${kind==="opening"?qcCard():""}
-    ${kind==="opening"&&INFO.prep&&!s0.need.includes("prep")&&!partOf(kind,"prep")?`<div class="card flat"><b>Prep sheet (made)</b><p class="hint" style="margin:4px 0 8px">No prep sheet printed for ${esc(niceD(DATE))} yet. Print it on the Prep list (office page) — it then becomes a part of this report: write the Made numbers on it and snap it here.</p><a class="cb sm ghost" href="office.html#plan">Open the Prep list</a></div>`:""}
     ${!s0.need.includes("deliveries")&&kind==="opening"?`<p class="hint">No outlet deliveries today, so there is no delivery part.</p>`:""}
     ${!s0.done&&(SUP()||CA.can("chase"))&&DATE===INFO.today&&INFO.now>due?`<button class="cb ghost full" type="button" data-chase="${kind}">Remind the kitchen team on WhatsApp</button>`:""}
-    <p class="hint" style="text-align:center">Send ${list.length>1?"all "+list.length:"it"} by ${esc(due)} to keep the team's on-time streak. Each part can be done by a different person at the same time; your answers stay on this phone until you send.</p>
+    <p class="hint" style="text-align:center">Send ${needed.length>1?"all "+needed.length:"it"} by ${esc(due)} to keep the team's on-time streak. Each part can be done by a different person at the same time; your answers stay on this phone until you send.</p>
     <details class="card flat"><summary style="cursor:pointer;font-weight:600">Report for another day</summary><label class="f" style="margin-top:8px">Report date<input type="date" data-rdate="1" value="${esc(DATE)}" min="${esc(addD(INFO.today,-1))}" max="${esc(INFO.today)}"></label></details></div>`; }
 function partIdx(kind,part){ return PARTS()[kind].findIndex(x=>x[0]===part)+1; }
 function partHead(kind,part,right){ const x=partOf(kind,part);
@@ -1254,25 +1255,27 @@ function vPart(kind,part){
   return ""; }
 /* v22.21 (Alfred 7 Oct): the filled prep sheet in the opening report — "so they can do it all at once". Snap it, the AI reads the
    handwritten MADE numbers (same reader as the office page), the kitchen checks every number, then Send = Made saved for the day. */
+/* v22.23 (Alfred 8 Oct: "I don't see it"): the part works even when the app has no printed record of the sheet (printed before the
+   update, or an older day) — the reader finds the cake names on the photo; several photos at once are fine (2-page sheet, gallery). */
+const psRows=(sh,R)=>sh&&(sh.rows||[]).length?sh.rows:((R&&R.res&&R.res.rows)||[]);
 function vPrepPart(kind){ const s=st(kind), I=INFO.prep||{}, sh=I.sheet, R=s.prep||{};
-  if(!sh) return `<div class="card"><h3>No prep sheet for ${esc(niceD(DATE))}</h3><p class="hint" style="margin:6px 0 10px">Print it first on the office page: Prep list › Print prep sheet. Write the real number made in MADE for every row, then come back here.</p><a class="cb full" href="office.html#plan">Open the Prep list</a></div>`;
-  const rows=sh.rows||[];
   if(PSBUSY) return `<div class="card"><b>Reading the prep sheet…</b><p class="hint">This takes a few seconds. Keep this page open.</p></div>`;
-  if(!R.res) return `<p class="hint">1. On the printed sheet write how many you <b>actually made</b> in MADE for every row (0 if none), and why under NOTE when it is fewer. 2. Take one photo of the whole sheet. The app reads it, then you check each number.</p>
-    <div class="stack" style="margin-top:10px">${shotBox("op_prep","Filled prep sheet","The whole sheet, flat, every row readable.")}
+  const n=(s.prepPh||[]).length||(P2.op_prep?1:0);
+  if(!R.res) return `<p class="hint">1. On the printed sheet write how many you <b>actually made</b> in MADE for every row (0 if none), and why under NOTE when it is fewer. 2. Take a photo of the whole sheet (two if it has two pages — you can pick both from the gallery at once). The app reads it, then you check each number.</p>
+    <div class="stack" style="margin-top:10px">${shotBox("op_prep",n>1?`Filled prep sheet · ${n} photos`:"Filled prep sheet","The whole sheet, flat, every row readable.")}
     ${P2.op_prep?`<button class="cb big full" type="button" data-act="psRead">Read the sheet ›</button>`:""}
-    <div class="card flat"><b>On the sheet</b> <span class="hint">· printed ${esc(hmOf(sh.at))}${sh.by?" by "+esc(sh.by):""}</span><ul class="items" style="margin-top:6px">${rows.map((r,i)=>`<li>${i+1}. ${esc(r.name)} · To make <b>${r.toMake}</b></li>`).join("")}</ul></div></div>${noteBox(kind,"prep")}`;
-  const res=R.res, V=R.vals||{};
+    ${sh?`<div class="card flat"><b>On the sheet</b> <span class="hint">· printed ${esc(hmOf(sh.at))}${sh.by?" by "+esc(sh.by):""}</span><ul class="items" style="margin-top:6px">${(sh.rows||[]).map((r,i)=>`<li>${i+1}. ${esc(r.name)} · To make <b>${r.toMake}</b></li>`).join("")}</ul></div>`:`<p class="hint">No printed record of ${esc(niceD(DATE))}'s sheet in the app — that is fine: the reader finds the cake names on the photo.</p>`}</div>${noteBox(kind,"prep")}`;
+  const res=R.res, V=R.vals||{}, rows=psRows(sh,R);
   const msg=[res.aiError?`<p class="err">${esc(res.aiError)}</p>`:`<p class="hint">Read from the photo. Check every number against the sheet and fix any that are wrong.</p>`,
     res.printedDate&&res.printedDate!==DATE?`<p class="err">This sheet looks like it is for ${esc(niceD(res.printedDate))}, not ${esc(niceD(DATE))}. Check you snapped today's sheet.</p>`:"",
     (res.unclear||[]).length?`<p class="hint">Could not read: ${res.unclear.map(esc).join(" · ")}</p>`:"",
     (res.extra||[]).length?`<p class="hint">Also written on the sheet (not a printed row): ${res.extra.map(x=>esc(x.name)+" "+x.made).join(", ")} — tell the supervisor to add it on the Prep list if it is real.</p>`:""].join("");
-  return msg+`<div class="card" style="padding:4px 14px">${rows.map(r=>{ const v=V[r.id]||{}, mv=v.made===""||v.made==null?null:+v.made, short=mv!=null&&mv<r.toMake;
+  return msg+(res.free?`<p class="hint">Read without a printed record: check the cake names too.</p>`:"")+`<div class="card" style="padding:4px 14px">${rows.map(r=>{ const v=V[r.id]||{}, mv=v.made===""||v.made==null?null:+v.made, short=mv!=null&&mv<r.toMake;
       const pill=mv==null?`<span class="pill bad">type it</span>`:short?`<span class="pill warn">${r.toMake-mv} short</span>`:mv>r.toMake?`<span class="pill info">${mv-r.toMake} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
       return `<div style="border-top:1px solid var(--cline);padding:10px 0"><div class="ln2 c1"><div><b>${esc(r.name)}</b><small style="display:block" class="hint">To make ${r.toMake} · ${pill}</small></div>
         <div class="stp"><span class="lb">Made</span><div class="ctl"><button type="button" data-psq="${esc(r.id)}|-1" aria-label="One less">−</button><input type="number" inputmode="numeric" value="${mv==null?"":mv}" data-psv="${esc(r.id)}" aria-label="Made ${esc(r.name)}"><button type="button" data-psq="${esc(r.id)}|1" aria-label="One more">+</button></div></div></div>
         <input data-psn="${esc(r.id)}" value="${esc(v.note||"")}" placeholder="${short?"why short?":"note (optional)"}" aria-label="Note ${esc(r.name)}" style="width:100%;margin-top:6px"></div>`; }).join("")}</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"><label class="cb sm ghost">📷 Retake the photo<input type="file" accept="image/&#42;" capture="environment" data-kshot="op_prep" hidden></label>${res.photo&&res.photo.url?`<a class="cb sm ghost" href="${esc(res.photo.url)}" target="_blank" rel="noopener">Open the photo</a>`:""}</div>${noteBox(kind,"prep")}`; }
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"><label class="cb sm ghost">📷 Retake the photo<input type="file" accept="image/&#42;" capture="environment" data-kshot="op_prep" hidden></label>${(res.photos&&res.photos.length?res.photos:(res.photo&&res.photo.url?[res.photo]:[])).map((ph,i,arr)=>ph&&ph.url?`<a class="cb sm ghost" href="${esc(ph.url)}" target="_blank" rel="noopener">Open ${arr.length>1?"photo "+(i+1):"the photo"}</a>`:"").join("")}</div>${noteBox(kind,"prep")}`; }
 /* fridges & freezers (3f): one unit per screen, keypad */
 function eqState(e,x,k){ const t=String(x.t).replace(",","."), ok=t!==""&&isFinite(+t), v=ok?(x.neg?-1:1)*Math.abs(+t):null; return {ok,v,door:!!x.door,photo:!!P2[k]}; }
 function eqPill(e,v){ return v==null?"":v>+e.max+3?`<span class="pill bad">${v}°C too warm · Good catch, tell the supervisor</span>`:v>+e.max?`<span class="pill warn">${v}°C warm · Good catch</span>`:`<span class="pill ok">${v}°C ✓</span>`; }
@@ -1346,8 +1349,8 @@ function missingPart(kind,part){ const s=st(kind), p=pre(kind), m=[];
   if(part==="display"){ const any=Object.values(s.rows).some(x=>+x.q>0||+x.w>0)||s.ev.some(x=>x.name.trim()&&+x.q>0); if(any&&!P2.op_display) m.push("HQ display photo"); }
   if(part==="count"){ if(!P2.cl_display) m.push("HQ display photo"); const w=Object.values(s.rows).some(x=>+x.w>0)||s.ev.some(x=>+x.w>0); if(w&&!P2.cl_waste) m.push("waste photo"); }
   if(part==="deliveries") INFO.dos.filter(d=>!d.internal).forEach(d=>{ if(!s.later[d.id]&&!P2["op_do_"+d.id]) m.push(d.outlet+" delivery photo"); });
-  if(part==="prep"){ const sh=(INFO.prep||{}).sheet, R=s.prep; if(!sh) m.push("print the prep sheet first"); else if(!(R&&R.res)) m.push(P2.op_prep?"tap Read the sheet":"photo of the filled prep sheet");
-    else sh.rows.forEach(r=>{ const v=(R.vals||{})[r.id]; if(!v||v.made===""||v.made==null) m.push("Made for "+r.name); }); }
+  if(part==="prep"){ const sh=(INFO.prep||{}).sheet, R=s.prep; if(!(R&&R.res)) m.push(P2.op_prep?"tap Read the sheet":"photo of the filled prep sheet");
+    else { const rows=psRows(sh,R); if(!rows.length) m.push("no cake rows read — snap again"); rows.forEach(r=>{ const v=(R.vals||{})[r.id]; if(!v||v.made===""||v.made==null) m.push("Made for "+r.name); }); } }
   if(part==="lists"){ if(!P2.cl_lt1) m.push("today's list photo"); [1,2,3].forEach(i=>{ if(!P2["cl_ld"+i+"_1"]) m.push(niceD(addD(DATE,i))+" list photo"); }); }
   return m; }
 function tidyGate(){ const k=TAB==="opening"?"op_display":"cl_display"; const t=TIDY[k]; if(!t||!P2[k]) return ""; if(t.state==="checking") return "Checking the display photo…"; if(t.state==="messy"&&!t.sendAnyway) return "Please tidy the display and take the photo again"; return ""; }
@@ -1369,7 +1372,7 @@ function partStats(kind,part){ const s=st(kind), mins=Math.max(1,Math.round((Dat
   if(part==="display"){ const n=Object.values(s.rows).reduce((a,x)=>a+(+x.q||0),0)+s.ev.reduce((a,x)=>a+(+x.q||0),0), w=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0); return [[n,"available"],[w,"wasted"],[mins,"minutes"]]; }
   if(part==="count"){ const w=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0), l=Object.values(s.rows).reduce((a,x)=>a+(+x.b||0),0); return [[w,"waste"],[l,"left"],[mins,"minutes"]]; }
   if(part==="deliveries"){ const o=INFO.dos.filter(d=>!d.internal); return [[o.length,"deliveries"],[o.filter(d=>P2["op_do_"+d.id]).length,"photos"],[mins,"minutes"]]; }
-  if(part==="prep"){ const rows=((INFO.prep||{}).sheet||{}).rows||[], V=(s.prep||{}).vals||{}; return [[rows.length,"cakes"],[rows.reduce((a,r)=>a+(+((V[r.id]||{}).made)||0),0),"made"],[mins,"minutes"]]; }
+  if(part==="prep"){ const rows=psRows((INFO.prep||{}).sheet,s.prep), V=(s.prep||{}).vals||{}; return [[rows.length,"cakes"],[rows.reduce((a,r)=>a+(+((V[r.id]||{}).made)||0),0),"made"],[mins,"minutes"]]; }
   return [[Object.keys(P2).filter(k=>/^cl_l/.test(k)).length,"photos"],[3,"days planned"],[mins,"minutes"]]; }
 async function send(replace){ const kind=TAB, part=PART; if(SENDING||!part||missingPart(kind,part).length) return; const s=st(kind), p=pre(kind);
   SENDING=true; const b=$("#send"); b.disabled=true; $("#status").textContent="Sending "+partName(kind,part).toLowerCase()+"… keep this page open (up to a minute).";
@@ -1378,7 +1381,7 @@ async function send(replace){ const kind=TAB, part=PART; if(SENDING||!part||miss
   if(part==="display"){ d.counts=s.order.map(k=>{const [pid,c]=k.split("|"); return {productId:pid,colour:c,qty:+s.rows[k].q||0,w:+s.rows[k].w||0};}).filter(x=>x.qty>0||x.w>0); d.events=s.ev.filter(x=>x.name.trim()&&+x.q>0).map(x=>({name:x.name,colour:x.colour,qty:+x.q})); d.photo=P2.op_display; if(P2.op_waste) d.photoWaste=P2.op_waste; if(TIDY.op_display&&TIDY.op_display.state==="messy") d.tidy={tidy:false,problems:TIDY.op_display.problems}; }
   if(part==="count"){ d.lines=s.order.map(k=>{const [pid,c]=k.split("|"), r=s.rows[k]; return {productId:pid,colour:c,w:+r.w||0,b:+r.b||0};}); d.events=s.ev.filter(x=>x.name.trim()).map(x=>({name:x.name,colour:x.colour,w:+x.w||0,b:+x.b||0})); d.photos={display:P2.cl_display,waste:P2.cl_waste}; } if(TIDY.cl_display&&TIDY.cl_display.state==="messy") d.tidy={tidy:false,problems:TIDY.cl_display.problems};
   if(part==="deliveries"){ d.deliveries={}; INFO.dos.filter(x=>!x.internal).forEach(x=>{ d.deliveries[x.id]=s.later[x.id]?"later":P2["op_do_"+x.id]; }); }
-  if(part==="prep"){ const R=s.prep||{}, rows=((INFO.prep||{}).sheet||{}).rows||[]; d.made={}; d.notes={}; rows.forEach(r=>{ const v=(R.vals||{})[r.id]||{}; d.made[r.id]=+v.made||0; const n=String(v.note||"").trim(); if(n) d.notes[r.id]=n; }); d.photo=(R.res||{}).photo||{}; d.src=(R.res||{}).aiError?"typed":"photo"; }
+  if(part==="prep"){ const R=s.prep||{}, rows=psRows((INFO.prep||{}).sheet,R); d.made={}; d.notes={}; d.rows=rows.map(r=>({id:r.id,toMake:+r.toMake||0})); rows.forEach(r=>{ const v=(R.vals||{})[r.id]||{}; d.made[r.id]=+v.made||0; const n=String(v.note||"").trim(); if(n) d.notes[r.id]=n; }); d.photo=(R.res||{}).photo||{}; d.src=(R.res||{}).aiError?"typed":"photo"; }
   if(part==="lists"){ d.today=[1,2,3].map(j=>P2["cl_lt"+j]).filter(Boolean); d.days=[1,2,3].map(i=>[1,2].map(j=>P2["cl_ld"+i+"_"+j]).filter(Boolean)); }
   saveDraft(kind); const stats=partStats(kind,part);
   try{ const r=await run("hqSubmitPart",kind,part,d); RESULT={kind,part,r,stats}; clearPart(kind,part); SENDING=false; PART=null; PARTT=0; HIST=null; INFO=await run("hqInfo",DATE).catch(()=>INFO); render(); window.scrollTo(0,0); }
@@ -1549,8 +1552,8 @@ document.addEventListener("click",async e=>{
   if(d.act==="pleSave"){ const lines=PLE.lines.map(x=>String(x).trim()).filter(Boolean); if(!lines.length&&!PLE.photoId){ toast("Add at least one line"); return; } if(!lines.length&&PLE.listId){ toast("Keep at least one line, or remove the list"); return; }
     b.disabled=true; try{ const r=await run("hqSave","planList",{date:PLE.date,listId:PLE.listId,token:PLE.token,lines},PLE.why||""); toast(r.msg); NEWD=PLE.date; PLE=null; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.pok){ b.disabled=true; try{ const r=await run("hqSave","approvePlan",{date:d.pok}); toast(r.msg); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
-  if(d.act==="psRead"){ const s0=st("opening"), sh=(INFO.prep||{}).sheet; if(!sh||!P2.op_prep||PSBUSY) return; PSBUSY=true; render(); refresh();
-    try{ const res=await run("prepSheetRead",DATE,P2.op_prep,sh.rows.map(r=>({id:r.id,name:r.name,toMake:r.toMake}))); const vals={}; (res.rows||[]).forEach(x=>{ vals[x.id]={made:x.made==null?"":String(x.made),note:x.note||""}; }); s0.prep={res,vals}; saveDraft("opening"); }
+  if(d.act==="psRead"){ const s0=st("opening"), sh=(INFO.prep||{}).sheet; if(!P2.op_prep||PSBUSY) return; PSBUSY=true; render(); refresh();
+    try{ const ph=(s0.prepPh&&s0.prepPh.length)?s0.prepPh:[P2.op_prep]; const res=await run("prepSheetRead",DATE,ph,sh?sh.rows.map(r=>({id:r.id,name:r.name,toMake:r.toMake})):[]); const vals={}; (res.rows||[]).forEach(x=>{ vals[x.id]={made:x.made==null?"":String(x.made),note:x.note||""}; }); s0.prep={res,vals}; saveDraft("opening"); }
     catch(err){ toast(err.message); }
     PSBUSY=false; const y=window.scrollY; render(); window.scrollTo(0,y); refresh(); return; }
   if(d.psq){ const [id,dl]=d.psq.split("|"), s0=st("opening"); if(!s0.prep) return; const V=s0.prep.vals||(s0.prep.vals={}), v=V[id]||(V[id]={made:"",note:""}); v.made=String(Math.max(0,(+v.made||0)+(+dl))); saveDraft("opening"); const y=window.scrollY; render(); window.scrollTo(0,y); refresh(); return; }
@@ -1598,7 +1601,12 @@ document.addEventListener("input",e=>{ const t=e.target, d=t.dataset; if(t.close
 document.addEventListener("change",async e=>{ const t=e.target, d=t.dataset; if(t.closest&&t.closest(".ca-hp,.ca-login")) return;
   if(d.psv&&K.opening&&K.opening.prep){ const y=window.scrollY; render(); window.scrollTo(0,y); refresh(); return; }
   if(d.kshot&&t.files&&t.files[0]){ const k=d.kshot, sp=document.getElementById("mi-"+k); if(sp) sp.insertAdjacentHTML("beforeend",' <span class="hint">processing…</span>'); if(TAB==="opening"||TAB==="closing"){ const b=$("#send"); b.disabled=true; }
-    let bad=false; try{ P2[k]=await shrink(t.files[0],k==="plan_read"||k==="op_prep"?1600:1200); savePh(k); if(k==="op_prep"){ const s0=st("opening"); s0.prep=null; saveDraft("opening"); } }catch(err){ bad=true; }
+    const files=[...t.files].slice(0,4);
+    let bad=false; try{
+      if(k==="op_prep"){ /* v22.23: the pages of one sheet */ const s0=st("opening"); s0.prepPh=[]; for(const f of files) s0.prepPh.push(await shrink(f,1600)); P2[k]=s0.prepPh[0]; savePh(k); s0.prep=null; saveDraft("opening"); }
+      else if(/^cl_l[td]/.test(k)&&files.length>1){ /* v22.23: several list photos at once fill the slots in order (today 3, a future day 2) */ const m=/^(cl_lt|cl_ld\d_)(\d)$/.exec(k); const base=m?m[1]:k, start=m?+m[2]:1, max=/^cl_lt/.test(k)?3:2;
+        for(let i=0;i<files.length&&start+i<=max;i++){ const kk=base+(start+i); P2[kk]=await shrink(files[i],1200); savePh(kk); } }
+      else { P2[k]=await shrink(files[0],k==="plan_read"?1600:1200); savePh(k); } }catch(err){ bad=true; }
     t.value=""; if(bad){ const el=document.getElementById("mi-"+k); if(el){ el.querySelectorAll(".hint").forEach(x=>x.remove()); el.insertAdjacentHTML("beforeend",' <span class="err">Photo not taken. Please try again.</span>'); } if(TAB==="opening"||TAB==="closing") refresh(); return; }
     const y=window.scrollY; render(); window.scrollTo(0,y); if(TAB==="opening"||TAB==="closing") refresh(); if(k==="op_display"||k==="cl_display") tidyCheck(k); return; }
   if(d.tk&&TK){ TK[d.tk]=t.value; return; }

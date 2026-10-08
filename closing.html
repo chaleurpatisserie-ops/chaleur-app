@@ -766,7 +766,7 @@ function render(){
   saveDraft(); $("#bar").hidden=false; $("#next").textContent="Send tonight's count"; $("#next").disabled=false; setBtn();
 }
 const canAdd=k=>k==="sales"?PH.sales.length<3:!PH[k];
-const plinks=()=>["sales","display"].concat(hasWaste()?["waste"]:[]).map(k=>canAdd(k)?`<label>🖼 ${k==="sales"?"Sales report":k==="display"?"Chiller":"Waste"} from phone<input type="file" accept="image/*" data-shot="${k}" hidden></label>`:"").join("");
+const plinks=()=>["sales","display"].concat(hasWaste()?["waste"]:[]).map(k=>canAdd(k)?`<label>🖼 ${k==="sales"?"Sales report":k==="display"?"Chiller":"Waste"} from phone<input type="file" accept="image/*" ${k==="sales"?"multiple":""} data-shot="${k}" hidden></label>`:"").join("");
 function tile(key,title){ const v=PH[key], has=key==="sales"?v.length>0:!!v, first=key==="sales"?v[0]:v, n=key==="sales"?v.length:0;
   const lbl=has?(key==="sales"?(n<3?`${n} photo${n>1?"s":""} · add more`:`${n} photos`):"Done · tap to retake"):title;
   return `<label class="pt ${has?"on":""}" id="shot-${key}" data-tile="${key}">${has&&first?`<img src="${first}" alt="">`:""}<span class="mk">${has?"✓":"📷"}</span><span class="lb">${esc(lbl)}</span>${canAdd(key)||key!=="sales"?`<input type="file" accept="image/*" capture="environment" data-shot="${key}" hidden>`:""}</label>`; }
@@ -878,7 +878,8 @@ document.addEventListener("input",e=>{const t=e.target;
 document.addEventListener("change",async e=>{const t=e.target;
   if(t.id==="date"&&t.value){keep();DATE=t.value;PH={sales:[],display:null,waste:null};NOTE="";PREV=null;PHSIG="";return load();}
   if(t.dataset.shot&&t.files&&t.files[0]){const key=t.dataset.shot; keep(); status("Processing photo…"); const nx=$("#next"); if(nx) nx.disabled=true;
-    try{const u=await shrink(t.files[0],key==="sales"?2000:1400); if(key==="sales") PH.sales.push(u); else PH[key]=u;}catch(err){status("That photo couldn't be read. Please try again.",true);}
+    /* v22.23: the sales report can be several photos picked at once from the gallery (up to 3 in all) */
+    try{ const files=key==="sales"?[...t.files].slice(0,Math.max(0,3-PH.sales.length)):[t.files[0]]; for(const f of files){ const u=await shrink(f,key==="sales"?2000:1400); if(key==="sales") PH.sales.push(u); else PH[key]=u; } }catch(err){status("That photo couldn't be read. Please try again.",true);}
     const y=window.scrollY; render(); window.scrollTo(0,y);}
 });
 /* ---- First-time guide (step-by-step, auto-advances, skippable) ----
