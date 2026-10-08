@@ -422,33 +422,30 @@ const CA=(function(){
   /* ===== v22.7 ONE MENU for every page (Alfred 1 Oct: "both this interface should be the same … only one for each thing").
      The pages, their areas, access and search words live here once; Home, the office desk and the kitchen page all draw the same menu. ===== */
   const AREAS=["Kitchen HQ","Outlet Delivery","Back office","Help & support"];
-  const AREAD={"Kitchen HQ":"Opening and closing, prep list, morning and noon to-do, kitchen reports, numbers","Outlet Delivery":"Delivery orders, carry forward, bills, outlet reports, audits","Back office":"Reports, setup, staff, problem reports, corrections","Help & support":"How-to guide, the helper, report a problem, team treat"};
+  const AREAD={"Kitchen HQ":"Opening and closing, prep list, morning and noon to-do, kitchen reports, numbers","Outlet Delivery":"Today, deliveries, outlet reports, bills, audits","Back office":"Reports, setup, staff, problem reports","Help & support":"How-to guide, the helper, report a problem, team treat"};
   /* [area, title, description, link, access (ticks: any of; or a function of can), search words, daily-for] */
 const PAGES=[
  /* v22.4 (Alfred 29 Sep): 6 clear Kitchen HQ pages. "Decoration & delivery list" → Morning to-do, "Production list" → Noon to-do;
     the production plan (lists for the next days) is inside the Noon to-do (and the Plan chip on the kitchen page), no longer its own page here. */
  ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries · due 10:30","kitchen.html#opening",["kitchen","kapprove","see_kitchen"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
  ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists · due 19:30","kitchen.html#closing",["kitchen","kapprove","see_kitchen"],"closing report waste left lists evening",["kitchen:pm"]],
- ["Kitchen HQ","Prep list · what to make","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports","see_plan"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
+ ["Kitchen HQ","Prep list","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports","see_plan"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
  ["Kitchen HQ","Morning to-do · decorate & deliver","Morning team: today's cakes, custom & Grab orders, finish & decorate, pack & deliver the DOs","kitchen.html?team=am#today",["kitchen","kapprove","todo","see_kitchen"],"morning decoration decorate delivery list to-do custom order grab pack deliver",["kitchen:am"]],
  ["Kitchen HQ","Noon to-do · production","Noon team: today's production list, prep reminders, and the plan for the next days","kitchen.html?team=pm#today",["kitchen","kapprove","todo","see_kitchen"],"noon production list plan mise en place photo next days to-do reminders",["kitchen:pm"]],
  ["Kitchen HQ","Kitchen reports","Past reports, temperatures and photos · fridges, display cakes and reminders","kitchen.html#history",["kitchen","kapprove","view","see_khist"],"history temperature fridge freezer streak calendar setup display list reminder limit",[]],
- ["Kitchen HQ","Numbers · made & waste","To make, made, sent, sold, left and waste per cake · day, week or month","office.html#numbers",["reports","view","kapprove","see_numbers"],"numbers waste wastage made produced prepared sold left figures report",[]],
- ["Outlet Delivery","Delivery orders","Check colours, mark delivered, edit before it goes out","office.html#deliveries",["deliv","doedit","see_do"],"do delivery order colour dot",["kitchen","office"]],
- ["Outlet Delivery","Carry forward","Stock held at each outlet and what rolls into this week's bill","office.html#carry",(c)=>c("see_carry")||(c("money")&&(c("reports")||c("view")||c("bills"))),"carry forward b/f stock held unsold cf note",["office"]],
- ["Outlet Delivery","Weekly billing","Invoice, carry forward and credit note per outlet week","office.html#billing",(c)=>c("see_billing")||(c("money")&&(c("reports")||c("bills"))),"invoice bill cf cn credit bukku payment weekly",["office"]],
- ["Outlet Delivery","All bills","Every invoice, carry forward and credit note: amount, paid, Bukku","office.html#bills",(c)=>c("see_bills")||(c("money")&&(c("reports")||c("view")||c("bills"))),"all bills invoices list paid bukku history",["office"]],
- ["Outlet Delivery","Outlet closing reports","Each outlet's nightly count, and corrections","office.html#daily",["reports","view","see_daily"],"closing report correction paste waste balance sold",["office","outlets"]],
- ["Outlet Delivery","To clear today","Missing reports, chase outlets, bills to approve","office.html#today",["chase","view","see_today"],"attention chase whatsapp missing report board",["office","outlets"]],
+ ["Kitchen HQ","Numbers","To make, made, sent, sold, left and waste per cake · day, week or month","office.html#numbers",["reports","view","kapprove","see_numbers"],"numbers waste wastage made produced prepared sold left figures report",[]],
+ ["Outlet Delivery","Today","Clear the board: missing reports, chase outlets, bills to approve","office.html#today",["chase","view","see_today"],"attention chase whatsapp missing report board",["office","outlets"]],
+ ["Outlet Delivery","Deliveries","Check colours, mark delivered, edit before it goes out","office.html#deliveries",["deliv","doedit","see_do"],"do delivery order colour dot",["kitchen","office"]],
+ ["Outlet Delivery","Outlet reports","Each outlet's nightly count, corrections and all changes","office.html#daily",["reports","view","see_daily","see_log"],"closing report correction paste waste balance sold",["office","outlets"]],
+ ["Outlet Delivery","Bills","Each week's invoice, carry forward and credit note; what the outlet still holds; every past bill","office.html#billing",(c)=>c("see_billing")||c("see_carry")||c("see_bills")||(c("money")&&(c("reports")||c("bills"))),"invoice bill cf cn credit bukku payment weekly",["office"]],
  ["Outlet Delivery","Spot audit","Visit an outlet: display, prices, chiller","audit.html",["audit"],"audit visit outlet check",["outlets"]],
- ["Outlet Delivery","Audit results","Every spot audit and taste check, with photos and PDF","office.html#audits",["audit","kapprove","see_audits"],"spot audit results qc history pdf score taste check",[]],
+ ["Outlet Delivery","Audits","Every spot audit and taste check, with photos and PDF","office.html#audits",["audit","kapprove","see_audits"],"spot audit results qc history pdf score taste check",[]],
  ["Back office","Reports","Every report: done and not done, what was sent, photos, reminders and Chase on WhatsApp","reports.html",(c,s)=>c("see_reports")||/owner|manager/i.test(labelOf(s)||""),"reports report done undone missing photos chase reminder whatsapp",[]],
  ["Back office","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup","see_setup"],"outlet cake product price shelf life whatsapp wasapbot bukku key go-live fresh start holiday limits",[]],
  ["Back office","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
  ["Back office","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems","see_feedback"],"feedback problem report reply urgent helper questions",[]],
- ["Back office","Corrections log","Every change to a report: who, when and why","office.html#log",["reports","view","see_log"],"edit log correction history",[]],
 ];
-const HELP=[["How-to guide","Step by step for your job, and I'm stuck answers","#guide"],["Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat & points","This month's treat, the jar and the leaderboard","#treat"]];
+const HELP=[["How-to guide","Step by step for your job, and I'm stuck answers","#guide"],["Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat & points","This month's treat, the jar and the leaderboard","#team"]];
 const ICON={
  "Kitchen HQ":["#f3e4e5",`<svg viewBox="0 0 30 30"><circle cx="15" cy="5" r="3" fill="#c0392b"/><path d="M7 12h16v4H7z" fill="#e0707a"/><path d="M5 16h20v9H5z" fill="#7b1c2b"/><path d="M5 19h20v2H5z" fill="#e3c466"/></svg>`],
  "Quality checks":["#fbecd2",`<svg viewBox="0 0 30 30"><circle cx="12" cy="12" r="7" fill="none" stroke="#a0620a" stroke-width="3"/><circle cx="10" cy="10" r="2.5" fill="#f2c230"/><path d="M17 17l8 8" stroke="#a0620a" stroke-width="4" stroke-linecap="round"/></svg>`],
@@ -466,7 +463,7 @@ const ICON={
   const isHere=href=>{ const h=here(); if(href===h) return true; const base=href.split("#")[0]; return !href.includes("#")&&base===h.split("#")[0]&&!/^index\.html/.test(base); };
   const icon=sec=>ICON[sec]||ICON["Help & support"];
   const row=it=>{ const ic=icon(it.sec), inner=`<span class="mi" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="mt"><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span>`;
-    return it.help?`<button type="button" class="mrow" data-help="${esc(it.help)}">${inner}</button>`:`<a class="mrow" href="${esc(it.href)}" data-mgo="1" ${isHere(it.href)?'aria-current="page"':""}>${inner}</a>`; };
+    return it.help?`<button type="button" class="mrow" data-help="${esc(it.help)}">${inner}</button>`:it.menu?`<button type="button" class="mrow" data-mopen="${esc(it.sec)}">${inner}</button>`:`<a class="mrow" href="${esc(it.href)}" data-mgo="1" ${isHere(it.href)?'aria-current="page"':""}>${inner}</a>`; };
   let MOPEN=(()=>{ try{ const v=localStorage.getItem("chaleur.menu"); return v==null?null:v; }catch(e){ return null; } })(), MQ="", MINE=null, MON=false;
   function menuBody(){ const s=get(), q=MQ.trim().toLowerCase(), secs=sections(s);
     if(q){ const words=q.split(/\s+/), all=secs.flatMap(x=>x.items), hit=all.filter(it=>{ const hay=(it.t+" "+it.d+" "+it.k+" "+it.sec).toLowerCase(); return words.every(w=>hay.includes(w)); });
@@ -484,12 +481,12 @@ const ICON={
       <div class="mf"><button type="button" class="cb ink" data-help="ask">? Ask / Report</button><button type="button" class="cb ghost" data-ca-logout="1">Log out</button></div>
       <div class="mlinks">${/^index\.html/.test(here())?"":`<a class="lnk" href="index.html">‹ Home</a>`}${mc?`<button type="button" class="lnk" data-help="mine">My reports (${mc} open)</button>`:""}</div>
       <div class="mwho">${chip(s)}</div></div></div>`; }
-  function menuOpen(){ const s=get(); if(!s) return; MON=true; MQ=""; drawMenu(); if(!MINE){ run("feedbackMine",s.t).then(r=>{ MINE=r||[]; if(MON) drawMenu(); }).catch(()=>{ MINE=[]; }); } }
+  function menuOpen(area){ const s=get(); if(!s) return; if(area&&AREAS.includes(area)) MOPEN=area; MON=true; MQ=""; drawMenu(); if(!MINE){ run("feedbackMine",s.t).then(r=>{ MINE=r||[]; if(MON) drawMenu(); }).catch(()=>{ MINE=[]; }); } }
   function menuClose(){ if(!MON) return; MON=false; MQ=""; drawMenu(); }
   document.addEventListener("input",e=>{ if(e.target&&e.target.id==="msq"&&e.target.closest("#camenu")){ MQ=e.target.value; const r=document.querySelector("#camenu #mres"); if(r) r.innerHTML=menuBody(); } });
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&MON) menuClose(); });
   document.addEventListener("click",e=>{ const t=e.target; if(!t||!t.closest) return;
-    const mb=t.closest("[data-menu]"); if(mb&&!t.closest("#camenu")){ e.preventDefault(); e.stopImmediatePropagation(); menuOpen(); return; }
+    const mb=t.closest("[data-menu],[data-mopen]"); if(mb&&!t.closest("#camenu")){ e.preventDefault(); e.stopImmediatePropagation(); menuOpen(mb.dataset.mopen||mb.dataset.marea||""); return; }
     if(!t.closest("#camenu")) return;
     e.stopImmediatePropagation(); /* the menu handles its own taps; the page's handlers stay out */
     if(t.closest("[data-mclose]")){ menuClose(); return; }
