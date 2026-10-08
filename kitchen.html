@@ -16,6 +16,15 @@ function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new A
 function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
 window.google={script:{run:mk(null,null)}};})();
 </script><style>
+/* v22.24: one 📷 button → "Take a photo" or "Choose from album" (Alfred: "pop up option with icon, take photo or select from album") */
+.ca-pick{position:fixed;inset:0;z-index:10050;background:rgba(43,27,30,.45);display:flex;align-items:flex-end;justify-content:center;padding:12px;box-sizing:border-box}
+.ca-pick-box{width:100%;max-width:420px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:18px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.25);box-sizing:border-box}
+.ca-pick-t{font-weight:700;font-size:15px;margin:2px 4px 10px}
+.ca-pick-b{display:flex;align-items:center;gap:14px;width:100%;min-height:62px;padding:10px 14px;border:1.5px solid var(--line,#e8dcd6);border-radius:14px;background:transparent;color:inherit;font:inherit;font-weight:700;font-size:16px;text-align:left;cursor:pointer;margin:0 0 8px;box-sizing:border-box}
+.ca-pick-b:active{background:var(--bg,#f6efe9)}
+.ca-pick-b .ic{flex:none;width:40px;height:40px;border-radius:12px;background:var(--bg,#f6efe9);display:inline-flex;align-items:center;justify-content:center;font-size:22px}
+.ca-pick-b span small{display:block;font-weight:400;font-size:12.5px;color:var(--muted,#6f5f62);margin-top:1px}
+.ca-pick-x{width:100%;min-height:44px;border:0;background:transparent;color:var(--muted,#6f5f62);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
 .ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
 @media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:40px;padding:4px 14px}}
@@ -484,8 +493,28 @@ const ICON={
   function menuOpen(area){ const s=get(); if(!s) return; if(area&&AREAS.includes(area)) MOPEN=area; MON=true; MQ=""; drawMenu(); if(!MINE){ run("feedbackMine",s.t).then(r=>{ MINE=r||[]; if(MON) drawMenu(); }).catch(()=>{ MINE=[]; }); } }
   function menuClose(){ if(!MON) return; MON=false; MQ=""; drawMenu(); }
   document.addEventListener("input",e=>{ if(e.target&&e.target.id==="msq"&&e.target.closest("#camenu")){ MQ=e.target.value; const r=document.querySelector("#camenu #mres"); if(r) r.innerHTML=menuBody(); } });
-  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&MON) menuClose(); });
+  /* v22.24 photo chooser: pick("kshot=op_prep","Filled prep sheet") finds the page's hidden file inputs input[data-kshot="op_prep"] — the one with
+     `capture` opens the camera, the one without opens the album (several at once when it has `multiple`) — and asks which one. A button with
+     data-pick="kshot=op_prep" opens it on tap. One input only → it is clicked straight away. */
+  let PICKEL=null;
+  function pickClose(){ if(PICKEL){ PICKEL.remove(); PICKEL=null; } }
+  function pick(spec,title){ pickClose(); const m=/^([a-z][a-z0-9-]*)=(.*)$/i.exec(String(spec||"")); if(!m) return false;
+    const key=m[1].replace(/[A-Z]/g,c=>"-"+c.toLowerCase()), val=m[2].replace(/"/g,'\\"'), sel=`input[type="file"][data-${key}="${val}"]`;
+    const cam=document.querySelector(sel+"[capture]"), alb=document.querySelector(sel+":not([capture])"); if(!cam&&!alb) return false;
+    if(!cam||!alb){ const one=cam||alb; one.value=""; one.click(); return true; }
+    const multi=alb.hasAttribute("multiple");
+    const el=document.createElement("div"); el.className="ca-pick"; el.setAttribute("role","dialog"); el.setAttribute("aria-label",title||"Add a photo");
+    el.innerHTML=`<div class="ca-pick-box"><div class="ca-pick-t">${esc(title||"Add a photo")}</div>
+      <button type="button" class="ca-pick-b" data-pk="cam"><span class="ic">📷</span><span>Take a photo<small>opens the camera</small></span></button>
+      <button type="button" class="ca-pick-b" data-pk="alb"><span class="ic">🖼️</span><span>Choose from album<small>${multi?"you can pick several at once":"a photo already on this phone"}</small></span></button>
+      <button type="button" class="ca-pick-x" data-pk="x">Cancel</button></div>`;
+    el.addEventListener("click",ev=>{ const b=ev.target.closest("[data-pk]"); const which=b?b.dataset.pk:(ev.target===el?"x":""); if(!which) return; ev.stopPropagation();
+      const inp=which==="cam"?cam:which==="alb"?alb:null; pickClose(); if(inp){ inp.value=""; inp.click(); } });
+    document.body.appendChild(el); const fb=el.querySelector("[data-pk=cam]"); if(fb) fb.focus(); PICKEL=el;
+    [cam,alb].forEach(i=>i.addEventListener("change",()=>{ if(PICKEL===el) pickClose(); },{once:true})); return true; }
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(PICKEL){ pickClose(); return; } if(MON) menuClose(); } });
   document.addEventListener("click",e=>{ const t=e.target; if(!t||!t.closest) return;
+    const pk=t.closest("[data-pick]"); if(pk&&!pk.disabled){ e.preventDefault(); e.stopImmediatePropagation(); pick(pk.dataset.pick,pk.dataset.pickTitle||pk.getAttribute("aria-label")||"Add a photo"); return; }
     const mb=t.closest("[data-menu],[data-mopen]"); if(mb&&!t.closest("#camenu")){ e.preventDefault(); e.stopImmediatePropagation(); menuOpen(mb.dataset.mopen||mb.dataset.marea||""); return; }
     if(!t.closest("#camenu")) return;
     e.stopImmediatePropagation(); /* the menu handles its own taps; the page's handlers stay out */
@@ -495,7 +524,7 @@ const ICON={
     const g=t.closest("[data-mgo]"); if(g){ const href=g.getAttribute("href")||""; menuClose(); if(href.split("#")[0]===here().split("#")[0]&&href.includes("#")){ e.preventDefault(); location.hash=href.slice(href.indexOf("#")); } return; }
     if(t.closest("[data-ca-logout]")){ e.preventDefault(); logout(); return; } });
   const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose};
 })();
 </script>
 
@@ -719,14 +748,14 @@ h2.sech{font:700 22px/1.15 var(--display);margin:18px 0 2px;padding-top:14px;bor
 .eqx{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .eqx .dr{display:flex;align-items:center;gap:10px;background:var(--night2);border-radius:14px;padding:12px 14px;font-weight:600;min-height:58px;color:#fff}.eqx .dr input{width:24px;height:24px;accent-color:var(--ok);flex:none}
 .eqx .ph{background:var(--night2);border-radius:14px;min-height:58px;display:flex;align-items:center;justify-content:center;gap:8px;padding:6px;color:#fff;font-weight:600;font-size:14px;position:relative;overflow:hidden}
-.eqx .ph img{width:46px;height:46px;border-radius:10px;object-fit:cover}.eqx .ph label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.eqx .ph img{width:46px;height:46px;border-radius:10px;object-fit:cover}.eqx .ph label,.eqx .ph button.phb{display:flex;align-items:center;gap:8px;cursor:pointer;font:inherit;font-weight:600;color:#fff;background:transparent;border:0;min-height:44px;padding:0 8px}
 .eqx .ph .alt{position:absolute;right:6px;bottom:4px;font-size:11px;color:#cdbfc1;cursor:pointer}
 /* photo tiles */
 .ptile{display:flex;align-items:center;gap:12px;background:var(--paper);border:2px dashed var(--line);border-radius:18px;padding:10px 12px;min-height:72px}
 .ptile.on{border:2px solid var(--ok);background:var(--ok-bg)}.ptile img{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none}
 .ptile .pl{flex:1;min-width:0;font-weight:600}.ptile .pl small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
-.ptile label.tk2{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;font-size:14px;box-shadow:0 3px 0 var(--acc-sh);cursor:pointer;white-space:nowrap}
-.ptile.on label.tk2{background:var(--paper);color:var(--ink);border:1.5px solid var(--line);box-shadow:0 2px 0 var(--line)}
+.ptile .tk2{font:inherit;border:0;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;font-size:14px;box-shadow:0 3px 0 var(--acc-sh);cursor:pointer;white-space:nowrap}
+.ptile.on .tk2{background:var(--paper);color:var(--ink);border:1.5px solid var(--line);box-shadow:0 2px 0 var(--line)}
 .ptile label.alt{font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline}
 .mini{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 /* display count (3g) */
@@ -1217,8 +1246,8 @@ function clearPart(kind,part){ const s=st(kind), p=pre(kind);
   K[kind]=n; saveDraft(kind); }
 /* photo: a big tile to take it (camera), with "choose from phone" underneath */
 const MULTI=k=>k==="op_prep"||/^cl_l[td]/.test(k); /* v22.23: these boxes take several photos from the gallery at once */
-function mini(k,label){ const has=!!P2[k]; return `<span class="mini" id="mi-${esc(k)}">${has?`<img src="${P2[k]}" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:cover">`:""}<label class="tk2">📷 ${has?"Retake":esc(label||"Take photo")}<input type="file" accept="image/&#42;" capture="environment" data-kshot="${esc(k)}" hidden></label><label class="alt">or choose from phone${MULTI(k)?" (several at once)":""}<input type="file" accept="image/&#42;" ${MULTI(k)?"multiple":""} data-kshot="${esc(k)}" hidden></label></span>`; }
-function shotBox(k,title,hint){ const has=!!P2[k]; return `<div class="ptile ${has?"on":""}" id="sb-${esc(k)}"><div class="pl">${has?"✓ ":""}${esc(title)}${hint?`<small>${esc(hint)}</small>`:""}</div>${mini(k)}</div>`; }
+function mini(k,label,title){ const has=!!P2[k]; return `<span class="mini" id="mi-${esc(k)}">${has?`<img src="${P2[k]}" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:cover">`:""}<button type="button" class="tk2" data-pick="kshot=${esc(k)}" data-pick-title="${esc(title||label||"Photo")}">📷 ${has?"Retake":esc(label||"Take photo")}</button><input type="file" accept="image/&#42;" capture="environment" data-kshot="${esc(k)}" hidden><input type="file" accept="image/&#42;" ${MULTI(k)?"multiple":""} data-kshot="${esc(k)}" hidden></span>`; }
+function shotBox(k,title,hint){ const has=!!P2[k]; return `<div class="ptile ${has?"on":""}" id="sb-${esc(k)}"><div class="pl">${has?"✓ ":""}${esc(title)}${hint?`<small>${esc(hint)}</small>`:""}</div>${mini(k,"",title)}</div>`; }
 const noteBox=(kind,part)=>`<label class="f sec">Note (optional)<textarea rows="2" data-pnote="${kind}|${part}">${esc(st(kind).notes[part]||"")}</textarea></label>`;
 function vReport(kind){
   if(RESULT&&RESULT.kind===kind) return vResult();
@@ -1257,7 +1286,14 @@ function vPart(kind,part){
    handwritten MADE numbers (same reader as the office page), the kitchen checks every number, then Send = Made saved for the day. */
 /* v22.23 (Alfred 8 Oct: "I don't see it"): the part works even when the app has no printed record of the sheet (printed before the
    update, or an older day) — the reader finds the cake names on the photo; several photos at once are fine (2-page sheet, gallery). */
-const psRows=(sh,R)=>sh&&(sh.rows||[]).length?sh.rows:((R&&R.res&&R.res.rows)||[]);
+/* v22.24 (Alfred 8 Oct, screenshot "The AI could not read the photo"): nothing read and no record → every cake, Made left empty = not made today */
+const psFB=(sh,R)=>!(sh&&(sh.rows||[]).length)&&!((R&&R.res&&R.res.rows)||[]).length;
+const psRows=(sh,R)=>sh&&(sh.rows||[]).length?sh.rows:((R&&R.res&&R.res.rows)||[]).length?R.res.rows:(R&&R.res?(INFO.products||[]).filter(p=>p.active!==false).map(p=>({id:p.id,name:p.name,toMake:0,fb:true})):[]);
+const psTyped=(R,r)=>{ const v=((R&&R.vals)||{})[r.id]; return !!v&&v.made!==""&&v.made!=null; };
+const psPill=(r,mv,fb)=>fb?(mv==null?`<span class="pill">not made</span>`:`<span class="pill ok">✓</span>`):mv==null?`<span class="pill bad">type it</span>`:mv<r.toMake?`<span class="pill warn">${r.toMake-mv} short</span>`:mv>r.toMake?`<span class="pill info">${mv-r.toMake} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
+/* v22.24: a typed Made updates its own pill — no full redraw, so the next box keeps the keyboard */
+function psPillUpd(id){ const s0=st("opening"), R=s0.prep||{}, sh=(INFO.prep||{}).sheet, rows=psRows(sh,R), r=rows.find(x=>x.id===id); if(!r) return; const v=(R.vals||{})[id]||{}, mv=v.made===""||v.made==null?null:+v.made;
+  const el=document.querySelector(`[data-pspill="${id}"]`); if(el) el.innerHTML=psPill(r,mv,psFB(sh,R)); const nt=document.querySelector(`input[data-psn="${id}"]`); if(nt) nt.placeholder=!psFB(sh,R)&&mv!=null&&mv<r.toMake?"why short?":"note (optional)"; }
 function vPrepPart(kind){ const s=st(kind), I=INFO.prep||{}, sh=I.sheet, R=s.prep||{};
   if(PSBUSY) return `<div class="card"><b>Reading the prep sheet…</b><p class="hint">This takes a few seconds. Keep this page open.</p></div>`;
   const n=(s.prepPh||[]).length||(P2.op_prep?1:0);
@@ -1265,17 +1301,17 @@ function vPrepPart(kind){ const s=st(kind), I=INFO.prep||{}, sh=I.sheet, R=s.pre
     <div class="stack" style="margin-top:10px">${shotBox("op_prep",n>1?`Filled prep sheet · ${n} photos`:"Filled prep sheet","The whole sheet, flat, every row readable.")}
     ${P2.op_prep?`<button class="cb big full" type="button" data-act="psRead">Read the sheet ›</button>`:""}
     ${sh?`<div class="card flat"><b>On the sheet</b> <span class="hint">· printed ${esc(hmOf(sh.at))}${sh.by?" by "+esc(sh.by):""}</span><ul class="items" style="margin-top:6px">${(sh.rows||[]).map((r,i)=>`<li>${i+1}. ${esc(r.name)} · To make <b>${r.toMake}</b></li>`).join("")}</ul></div>`:`<p class="hint">No printed record of ${esc(niceD(DATE))}'s sheet in the app — that is fine: the reader finds the cake names on the photo.</p>`}</div>${noteBox(kind,"prep")}`;
-  const res=R.res, V=R.vals||{}, rows=psRows(sh,R);
-  const msg=[res.aiError?`<p class="err">${esc(res.aiError)}</p>`:`<p class="hint">Read from the photo. Check every number against the sheet and fix any that are wrong.</p>`,
+  const res=R.res, V=R.vals||{}, rows=psRows(sh,R), fb=psFB(sh,R);
+  const msg=[res.aiError?`<p class="err">${esc(res.aiError)}${res.aiDetail?` <small class="hint">(${esc(res.aiDetail)})</small>`:""}</p>`:`<p class="hint">Read from the photo. Check every number against the sheet and fix any that are wrong.</p>`,
+    fb?`<p class="hint"><b>Type it from the sheet:</b> Made for every cake you made today. Leave the others empty.</p>`:"",
     res.printedDate&&res.printedDate!==DATE?`<p class="err">This sheet looks like it is for ${esc(niceD(res.printedDate))}, not ${esc(niceD(DATE))}. Check you snapped today's sheet.</p>`:"",
     (res.unclear||[]).length?`<p class="hint">Could not read: ${res.unclear.map(esc).join(" · ")}</p>`:"",
     (res.extra||[]).length?`<p class="hint">Also written on the sheet (not a printed row): ${res.extra.map(x=>esc(x.name)+" "+x.made).join(", ")} — tell the supervisor to add it on the Prep list if it is real.</p>`:""].join("");
-  return msg+(res.free?`<p class="hint">Read without a printed record: check the cake names too.</p>`:"")+`<div class="card" style="padding:4px 14px">${rows.map(r=>{ const v=V[r.id]||{}, mv=v.made===""||v.made==null?null:+v.made, short=mv!=null&&mv<r.toMake;
-      const pill=mv==null?`<span class="pill bad">type it</span>`:short?`<span class="pill warn">${r.toMake-mv} short</span>`:mv>r.toMake?`<span class="pill info">${mv-r.toMake} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
-      return `<div style="border-top:1px solid var(--cline);padding:10px 0"><div class="ln2 c1"><div><b>${esc(r.name)}</b><small style="display:block" class="hint">To make ${r.toMake} · ${pill}</small></div>
+  return msg+(res.free?`<p class="hint">Read without a printed record: check the cake names too.</p>`:"")+`<div class="card" style="padding:4px 14px">${rows.map(r=>{ const v=V[r.id]||{}, mv=v.made===""||v.made==null?null:+v.made, short=!fb&&mv!=null&&mv<r.toMake;
+      return `<div style="border-top:1px solid var(--cline);padding:10px 0"><div class="ln2 c1"><div><b>${esc(r.name)}</b><small style="display:block" class="hint">${fb?"":`To make ${r.toMake} · `}<span data-pspill="${esc(r.id)}">${psPill(r,mv,fb)}</span></small></div>
         <div class="stp"><span class="lb">Made</span><div class="ctl"><button type="button" data-psq="${esc(r.id)}|-1" aria-label="One less">−</button><input type="number" inputmode="numeric" value="${mv==null?"":mv}" data-psv="${esc(r.id)}" aria-label="Made ${esc(r.name)}"><button type="button" data-psq="${esc(r.id)}|1" aria-label="One more">+</button></div></div></div>
         <input data-psn="${esc(r.id)}" value="${esc(v.note||"")}" placeholder="${short?"why short?":"note (optional)"}" aria-label="Note ${esc(r.name)}" style="width:100%;margin-top:6px"></div>`; }).join("")}</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"><label class="cb sm ghost">📷 Retake the photo<input type="file" accept="image/&#42;" capture="environment" data-kshot="op_prep" hidden></label>${(res.photos&&res.photos.length?res.photos:(res.photo&&res.photo.url?[res.photo]:[])).map((ph,i,arr)=>ph&&ph.url?`<a class="cb sm ghost" href="${esc(ph.url)}" target="_blank" rel="noopener">Open ${arr.length>1?"photo "+(i+1):"the photo"}</a>`:"").join("")}</div>${noteBox(kind,"prep")}`; }
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"><button type="button" class="cb sm ghost" data-pick="kshot=op_prep" data-pick-title="Filled prep sheet">📷 Retake the photo</button><input type="file" accept="image/&#42;" capture="environment" data-kshot="op_prep" hidden><input type="file" accept="image/&#42;" multiple data-kshot="op_prep" hidden>${(res.photos&&res.photos.length?res.photos:(res.photo&&res.photo.url?[res.photo]:[])).map((ph,i,arr)=>ph&&ph.url?`<a class="cb sm ghost" href="${esc(ph.url)}" target="_blank" rel="noopener">Open ${arr.length>1?"photo "+(i+1):"the photo"}</a>`:"").join("")}</div>${noteBox(kind,"prep")}`; }
 /* fridges & freezers (3f): one unit per screen, keypad */
 function eqState(e,x,k){ const t=String(x.t).replace(",","."), ok=t!==""&&isFinite(+t), v=ok?(x.neg?-1:1)*Math.abs(+t):null; return {ok,v,door:!!x.door,photo:!!P2[k]}; }
 function eqPill(e,v){ return v==null?"":v>+e.max+3?`<span class="pill bad">${v}°C too warm · Good catch, tell the supervisor</span>`:v>+e.max?`<span class="pill warn">${v}°C warm · Good catch</span>`:`<span class="pill ok">${v}°C ✓</span>`; }
@@ -1294,7 +1330,7 @@ function vEq(kind){ const s=st(kind), p=pre(kind), E=INFO.conf.equipment, n=E.le
     <div class="ask">Type what the thermometer says</div>
     <div class="kp" role="group" aria-label="Number pad">${["1","2","3","4","5","6","7","8","9","±","0","⌫"].map(c=>`<button type="button" data-kp="${c==="±"?"pm":c==="⌫"?"bs":c}" aria-label="${c==="±"?"Plus or minus":c==="⌫"?"Delete":c}">${c}</button>`).join("")}</div>
     <div class="eqx"><label class="dr"><input type="checkbox" data-door="${kind}|${esc(e.id)}" ${x.door?"checked":""}><span>Door shut</span></label>
-      <div class="ph" id="mi-${esc(k)}">${P2[k]?`<img src="${P2[k]}" alt="">`:""}<label>📷 ${P2[k]?"Retake":"Photo"}<input type="file" accept="image/&#42;" capture="environment" data-kshot="${esc(k)}" hidden></label><label class="alt">phone<input type="file" accept="image/&#42;" data-kshot="${esc(k)}" hidden></label></div></div></div>`; }
+      <div class="ph" id="mi-${esc(k)}">${P2[k]?`<img src="${P2[k]}" alt="">`:""}<button type="button" class="phb" data-pick="kshot=${esc(k)}" data-pick-title="${esc(e.name||"Photo")}">📷 ${P2[k]?"Retake":"Photo"}</button><input type="file" accept="image/&#42;" capture="environment" data-kshot="${esc(k)}" hidden><input type="file" accept="image/&#42;" data-kshot="${esc(k)}" hidden></div></div></div>`; }
 /* HQ display count (3g): one cake + colour per screen, then review & send */
 const CDAY=c=>WDL[CONFIG.colours.findIndex(x=>x.name===c)]||"";
 const picH=p=>p.photo?`<img class="pic" src="${esc(p.photo)}" alt="" loading="lazy">`:`<span class="pic ph" aria-hidden="true">${esc((p.name||"?").slice(0,2))}</span>`;
@@ -1350,7 +1386,7 @@ function missingPart(kind,part){ const s=st(kind), p=pre(kind), m=[];
   if(part==="count"){ if(!P2.cl_display) m.push("HQ display photo"); const w=Object.values(s.rows).some(x=>+x.w>0)||s.ev.some(x=>+x.w>0); if(w&&!P2.cl_waste) m.push("waste photo"); }
   if(part==="deliveries") INFO.dos.filter(d=>!d.internal).forEach(d=>{ if(!s.later[d.id]&&!P2["op_do_"+d.id]) m.push(d.outlet+" delivery photo"); });
   if(part==="prep"){ const sh=(INFO.prep||{}).sheet, R=s.prep; if(!(R&&R.res)) m.push(P2.op_prep?"tap Read the sheet":"photo of the filled prep sheet");
-    else { const rows=psRows(sh,R); if(!rows.length) m.push("no cake rows read — snap again"); rows.forEach(r=>{ const v=(R.vals||{})[r.id]; if(!v||v.made===""||v.made==null) m.push("Made for "+r.name); }); } }
+    else { const rows=psRows(sh,R); if(!rows.length) m.push("no cake rows read — snap again"); else if(psFB(sh,R)){ if(!rows.some(r=>psTyped(R,r))) m.push("Made for at least one cake"); } else rows.forEach(r=>{ if(!psTyped(R,r)) m.push("Made for "+r.name); }); } }
   if(part==="lists"){ if(!P2.cl_lt1) m.push("today's list photo"); [1,2,3].forEach(i=>{ if(!P2["cl_ld"+i+"_1"]) m.push(niceD(addD(DATE,i))+" list photo"); }); }
   return m; }
 function tidyGate(){ const k=TAB==="opening"?"op_display":"cl_display"; const t=TIDY[k]; if(!t||!P2[k]) return ""; if(t.state==="checking") return "Checking the display photo…"; if(t.state==="messy"&&!t.sendAnyway) return "Please tidy the display and take the photo again"; return ""; }
@@ -1381,7 +1417,7 @@ async function send(replace){ const kind=TAB, part=PART; if(SENDING||!part||miss
   if(part==="display"){ d.counts=s.order.map(k=>{const [pid,c]=k.split("|"); return {productId:pid,colour:c,qty:+s.rows[k].q||0,w:+s.rows[k].w||0};}).filter(x=>x.qty>0||x.w>0); d.events=s.ev.filter(x=>x.name.trim()&&+x.q>0).map(x=>({name:x.name,colour:x.colour,qty:+x.q})); d.photo=P2.op_display; if(P2.op_waste) d.photoWaste=P2.op_waste; if(TIDY.op_display&&TIDY.op_display.state==="messy") d.tidy={tidy:false,problems:TIDY.op_display.problems}; }
   if(part==="count"){ d.lines=s.order.map(k=>{const [pid,c]=k.split("|"), r=s.rows[k]; return {productId:pid,colour:c,w:+r.w||0,b:+r.b||0};}); d.events=s.ev.filter(x=>x.name.trim()).map(x=>({name:x.name,colour:x.colour,w:+x.w||0,b:+x.b||0})); d.photos={display:P2.cl_display,waste:P2.cl_waste}; } if(TIDY.cl_display&&TIDY.cl_display.state==="messy") d.tidy={tidy:false,problems:TIDY.cl_display.problems};
   if(part==="deliveries"){ d.deliveries={}; INFO.dos.filter(x=>!x.internal).forEach(x=>{ d.deliveries[x.id]=s.later[x.id]?"later":P2["op_do_"+x.id]; }); }
-  if(part==="prep"){ const R=s.prep||{}, rows=psRows((INFO.prep||{}).sheet,R); d.made={}; d.notes={}; d.rows=rows.map(r=>({id:r.id,toMake:+r.toMake||0})); rows.forEach(r=>{ const v=(R.vals||{})[r.id]||{}; d.made[r.id]=+v.made||0; const n=String(v.note||"").trim(); if(n) d.notes[r.id]=n; }); d.photo=(R.res||{}).photo||{}; d.src=(R.res||{}).aiError?"typed":"photo"; }
+  if(part==="prep"){ const R=s.prep||{}, sh=(INFO.prep||{}).sheet, rows=psRows(sh,R).filter(r=>!psFB(sh,R)||psTyped(R,r)); d.made={}; d.notes={}; d.rows=rows.map(r=>({id:r.id,toMake:r.fb?null:(+r.toMake||0)})); rows.forEach(r=>{ const v=(R.vals||{})[r.id]||{}; d.made[r.id]=+v.made||0; const n=String(v.note||"").trim(); if(n) d.notes[r.id]=n; }); d.photo=(R.res||{}).photo||{}; d.src=(R.res||{}).aiError?"typed":"photo"; }
   if(part==="lists"){ d.today=[1,2,3].map(j=>P2["cl_lt"+j]).filter(Boolean); d.days=[1,2,3].map(i=>[1,2].map(j=>P2["cl_ld"+i+"_"+j]).filter(Boolean)); }
   saveDraft(kind); const stats=partStats(kind,part);
   try{ const r=await run("hqSubmitPart",kind,part,d); RESULT={kind,part,r,stats}; clearPart(kind,part); SENDING=false; PART=null; PARTT=0; HIST=null; INFO=await run("hqInfo",DATE).catch(()=>INFO); render(); window.scrollTo(0,0); }
@@ -1434,9 +1470,10 @@ function vPlan(){ const t=INFO.today, days=planDaysList(), tiles=days.slice(0,4)
     <div class="card" id="pladd"><label class="f">Add a list for<select data-newd="1">${days.map(d=>`<option value="${d}" ${d===sel?"selected":""}>${esc(niceD(d))}${d===t?" · today":d===addD(t,1)?" · tomorrow":""}${INFO.plan[d]?" · has "+(INFO.plan[d].lists||[]).length+" list"+((INFO.plan[d].lists||[]).length===1?"":"s"):""}</option>`).join("")}</select></label>
       <div class="vf" style="margin-top:10px">${P2.plan_read?`<img src="${P2.plan_read}" alt="Photo of the list">`:`<span class="hint">Put the paper list flat and take the photo</span>`}</div>
       <div id="mi-plan_read" style="display:flex;flex-direction:column;gap:8px;margin-top:10px">${P2.plan_read?`<img src="${P2.plan_read}" alt="" hidden>`:""}
-        ${P2.plan_read?`<button class="cb big full" type="button" data-act="readPlan">Read ${esc(dn)}'s list</button><label class="lnk" style="text-align:center">Retake the photo<input type="file" accept="image/&#42;" capture="environment" data-kshot="plan_read" hidden></label>`
-          :`<label class="cb big full">📷 Snap ${esc(dn)}'s list<input type="file" accept="image/&#42;" capture="environment" data-kshot="plan_read" hidden></label><button class="cb big full" type="button" data-act="readPlan" disabled hidden>Read it</button>`}
-        <div style="display:flex;justify-content:space-between;gap:8px"><label class="lnk">Choose from phone<input type="file" accept="image/&#42;" data-kshot="plan_read" hidden></label><button class="lnk" type="button" data-act="typePlan">Type it instead</button></div></div>
+        ${P2.plan_read?`<button class="cb big full" type="button" data-act="readPlan">Read ${esc(dn)}'s list</button><button type="button" class="lnk" style="text-align:center" data-pick="kshot=plan_read" data-pick-title="${esc(dn)}'s list">Retake the photo</button>`
+          :`<button type="button" class="cb big full" data-pick="kshot=plan_read" data-pick-title="${esc(dn)}'s list">📷 Snap ${esc(dn)}'s list</button><button class="cb big full" type="button" data-act="readPlan" disabled hidden>Read it</button>`}
+        <input type="file" accept="image/&#42;" capture="environment" data-kshot="plan_read" hidden><input type="file" accept="image/&#42;" data-kshot="plan_read" hidden>
+        <div style="display:flex;justify-content:flex-end;gap:8px"><button class="lnk" type="button" data-act="typePlan">Type it instead</button></div></div>
       <p class="hint" style="margin-top:6px">We read the photo and write the list out line by line. Check it, then save. Anyone can add a list; changing or removing one needs a kitchen supervisor.</p></div>
     <p class="hint">Reminders the app learned from the plan are under Reports › Reminders.</p></div>`; }
 function vRules(){ const rs=INFO.rules||[];
@@ -1508,7 +1545,7 @@ document.addEventListener("click",async e=>{
     b.disabled=true; try{ const r=await run("hqSave","task",{task:{id:TK.id,remove:true}},""); toast(r.msg); TK=null; drawTask(); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.act==="printList"){ window.print(); return; }
   if(d.act==="reload"){ boot2(); return; }
-  if(d.tidyretake){ const k=d.tidyretake; delete P2[k]; savePh(k); TIDY[k]={state:"skip",tries:(TIDY[k]||{}).tries||0}; $("#sheet").innerHTML=""; render(); const inp=document.querySelector(`input[data-kshot="${k}"]`); if(inp) inp.click(); return; }
+  if(d.tidyretake){ const k=d.tidyretake; delete P2[k]; savePh(k); TIDY[k]={state:"skip",tries:(TIDY[k]||{}).tries||0}; $("#sheet").innerHTML=""; render(); if(!CA.pick("kshot="+k,"HQ display chiller now")){ const inp=document.querySelector(`input[data-kshot="${k}"]`); if(inp) inp.click(); } return; }
   if(d.tidysend){ const k=d.tidysend; TIDY[k].sendAnyway=true; $("#sheet").innerHTML=""; refresh(); return; }
   if(d.chase){ b.disabled=true; let r=null; try{ r=await run("hqChaseNow",d.chase); }catch(err){ b.disabled=false; if(/not set up|WhatsApp|WasapBot/i.test(err.message||"")) r={ok:false,manual:true,why:"Automatic WhatsApp is not set up"}; else { toast(err.message); return; } }
     b.disabled=false; if(r&&r.ok){ toast(`Reminder sent on WhatsApp to ${r.sent} ${r.sent===1?"person":"people"}${r.group?" and the kitchen group":""}${r.missed&&r.missed.length?" · not delivered: "+r.missed.join(", "):""}.`); return; }
@@ -1584,7 +1621,7 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("click",e=>{ if(e.target.classList&&e.target.classList.contains("sheet")){ const h=e.target.parentElement; if(h) h.innerHTML=""; if(h&&h.id==="tksheet") TK=null; if(h&&h.id==="sheet"&&EQE!=null){ EQE=null; render(); } } });
 document.addEventListener("input",e=>{ const t=e.target, d=t.dataset; if(t.closest&&t.closest(".ca-hp,.ca-login")) return;
-  if((d.psv||d.psn)&&K.opening&&K.opening.prep){ const V=K.opening.prep.vals||(K.opening.prep.vals={}), id=d.psv||d.psn, v=V[id]||(V[id]={made:"",note:""}); if(d.psv) v.made=String(t.value).replace(/[^0-9]/g,"").slice(0,3); else v.note=t.value.slice(0,120); saveDraft("opening"); refresh(); return; }
+  if((d.psv||d.psn)&&K.opening&&K.opening.prep){ const V=K.opening.prep.vals||(K.opening.prep.vals={}), id=d.psv||d.psn, v=V[id]||(V[id]={made:"",note:""}); if(d.psv) v.made=String(t.value).replace(/[^0-9]/g,"").slice(0,3); else v.note=t.value.slice(0,120); saveDraft("opening"); if(d.psv) psPillUpd(d.psv); refresh(); return; }
   if(d.temp){ const [k,id]=d.temp.split("|"); if(/[-−]/.test(t.value)){ st(k).equip[id].neg=true; document.querySelectorAll(`[data-sign^="${k}|${id}|"]`).forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.sign.endsWith("|1")))); } let v=t.value.replace(/[^0-9.,]/g,""); if(v!==t.value) t.value=v; st(k).equip[id].t=v; saveDraft(k); refresh(); return; }
   if(d.kv){ const a=d.kv.split("|"), f=a.pop(), k=a.shift(), key=a.join("|"), s=st(k), r=key.indexOf("ev")===0&&key.indexOf("|")<0?s.ev[+key.slice(2)]:s.rows[key]; if(!r) return; const v=t.value.replace(/[^0-9]/g,"").slice(0,3); if(v!==t.value) t.value=v; r[f]=v; saveDraft(k); if(f==="w") wasteBox(k); refresh(); return; }
   if(d.evn){ const [k,i]=d.evn.split("|"), s=st(k); if(s.ev[+i]){ s.ev[+i].name=t.value.slice(0,40); saveDraft(k); refresh(); } return; }
@@ -1599,7 +1636,7 @@ document.addEventListener("input",e=>{ const t=e.target, d=t.dataset; if(t.close
   if(d.rcvnote&&RCV){ RCV.note=t.value; return; }
 });
 document.addEventListener("change",async e=>{ const t=e.target, d=t.dataset; if(t.closest&&t.closest(".ca-hp,.ca-login")) return;
-  if(d.psv&&K.opening&&K.opening.prep){ const y=window.scrollY; render(); window.scrollTo(0,y); refresh(); return; }
+  if(d.psv&&K.opening&&K.opening.prep){ psPillUpd(d.psv); refresh(); return; }
   if(d.kshot&&t.files&&t.files[0]){ const k=d.kshot, sp=document.getElementById("mi-"+k); if(sp) sp.insertAdjacentHTML("beforeend",' <span class="hint">processing…</span>'); if(TAB==="opening"||TAB==="closing"){ const b=$("#send"); b.disabled=true; }
     const files=[...t.files].slice(0,4);
     let bad=false; try{

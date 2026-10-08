@@ -16,6 +16,15 @@ function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new A
 function mk(s,f){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(h){return mk(h,f)};if(k==="withFailureHandler")return function(h){return mk(s,h)};return function(){call(k,[].slice.call(arguments),s,f)};}});}
 window.google={script:{run:mk(null,null)}};})();
 </script><style>
+/* v22.24: one 📷 button → "Take a photo" or "Choose from album" (Alfred: "pop up option with icon, take photo or select from album") */
+.ca-pick{position:fixed;inset:0;z-index:10050;background:rgba(43,27,30,.45);display:flex;align-items:flex-end;justify-content:center;padding:12px;box-sizing:border-box}
+.ca-pick-box{width:100%;max-width:420px;background:var(--paper,#fff);color:var(--ink,#2b1b1e);border-radius:18px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.25);box-sizing:border-box}
+.ca-pick-t{font-weight:700;font-size:15px;margin:2px 4px 10px}
+.ca-pick-b{display:flex;align-items:center;gap:14px;width:100%;min-height:62px;padding:10px 14px;border:1.5px solid var(--line,#e8dcd6);border-radius:14px;background:transparent;color:inherit;font:inherit;font-weight:700;font-size:16px;text-align:left;cursor:pointer;margin:0 0 8px;box-sizing:border-box}
+.ca-pick-b:active{background:var(--bg,#f6efe9)}
+.ca-pick-b .ic{flex:none;width:40px;height:40px;border-radius:12px;background:var(--bg,#f6efe9);display:inline-flex;align-items:center;justify-content:center;font-size:22px}
+.ca-pick-b span small{display:block;font-weight:400;font-size:12.5px;color:var(--muted,#6f5f62);margin-top:1px}
+.ca-pick-x{width:100%;min-height:44px;border:0;background:transparent;color:var(--muted,#6f5f62);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .ca-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted,#6f5f62);flex-wrap:wrap}
 .ca-chip b{color:var(--ink,#2b1b1e);font-weight:600}
 @media (max-width:640px){.ca-chip .ca-si{display:none}.ca-chip{gap:6px;font-size:12.5px}.ca-chip button{min-height:40px;padding:4px 14px}}
@@ -484,8 +493,28 @@ const ICON={
   function menuOpen(area){ const s=get(); if(!s) return; if(area&&AREAS.includes(area)) MOPEN=area; MON=true; MQ=""; drawMenu(); if(!MINE){ run("feedbackMine",s.t).then(r=>{ MINE=r||[]; if(MON) drawMenu(); }).catch(()=>{ MINE=[]; }); } }
   function menuClose(){ if(!MON) return; MON=false; MQ=""; drawMenu(); }
   document.addEventListener("input",e=>{ if(e.target&&e.target.id==="msq"&&e.target.closest("#camenu")){ MQ=e.target.value; const r=document.querySelector("#camenu #mres"); if(r) r.innerHTML=menuBody(); } });
-  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&MON) menuClose(); });
+  /* v22.24 photo chooser: pick("kshot=op_prep","Filled prep sheet") finds the page's hidden file inputs input[data-kshot="op_prep"] — the one with
+     `capture` opens the camera, the one without opens the album (several at once when it has `multiple`) — and asks which one. A button with
+     data-pick="kshot=op_prep" opens it on tap. One input only → it is clicked straight away. */
+  let PICKEL=null;
+  function pickClose(){ if(PICKEL){ PICKEL.remove(); PICKEL=null; } }
+  function pick(spec,title){ pickClose(); const m=/^([a-z][a-z0-9-]*)=(.*)$/i.exec(String(spec||"")); if(!m) return false;
+    const key=m[1].replace(/[A-Z]/g,c=>"-"+c.toLowerCase()), val=m[2].replace(/"/g,'\\"'), sel=`input[type="file"][data-${key}="${val}"]`;
+    const cam=document.querySelector(sel+"[capture]"), alb=document.querySelector(sel+":not([capture])"); if(!cam&&!alb) return false;
+    if(!cam||!alb){ const one=cam||alb; one.value=""; one.click(); return true; }
+    const multi=alb.hasAttribute("multiple");
+    const el=document.createElement("div"); el.className="ca-pick"; el.setAttribute("role","dialog"); el.setAttribute("aria-label",title||"Add a photo");
+    el.innerHTML=`<div class="ca-pick-box"><div class="ca-pick-t">${esc(title||"Add a photo")}</div>
+      <button type="button" class="ca-pick-b" data-pk="cam"><span class="ic">📷</span><span>Take a photo<small>opens the camera</small></span></button>
+      <button type="button" class="ca-pick-b" data-pk="alb"><span class="ic">🖼️</span><span>Choose from album<small>${multi?"you can pick several at once":"a photo already on this phone"}</small></span></button>
+      <button type="button" class="ca-pick-x" data-pk="x">Cancel</button></div>`;
+    el.addEventListener("click",ev=>{ const b=ev.target.closest("[data-pk]"); const which=b?b.dataset.pk:(ev.target===el?"x":""); if(!which) return; ev.stopPropagation();
+      const inp=which==="cam"?cam:which==="alb"?alb:null; pickClose(); if(inp){ inp.value=""; inp.click(); } });
+    document.body.appendChild(el); const fb=el.querySelector("[data-pk=cam]"); if(fb) fb.focus(); PICKEL=el;
+    [cam,alb].forEach(i=>i.addEventListener("change",()=>{ if(PICKEL===el) pickClose(); },{once:true})); return true; }
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(PICKEL){ pickClose(); return; } if(MON) menuClose(); } });
   document.addEventListener("click",e=>{ const t=e.target; if(!t||!t.closest) return;
+    const pk=t.closest("[data-pick]"); if(pk&&!pk.disabled){ e.preventDefault(); e.stopImmediatePropagation(); pick(pk.dataset.pick,pk.dataset.pickTitle||pk.getAttribute("aria-label")||"Add a photo"); return; }
     const mb=t.closest("[data-menu],[data-mopen]"); if(mb&&!t.closest("#camenu")){ e.preventDefault(); e.stopImmediatePropagation(); menuOpen(mb.dataset.mopen||mb.dataset.marea||""); return; }
     if(!t.closest("#camenu")) return;
     e.stopImmediatePropagation(); /* the menu handles its own taps; the page's handlers stay out */
@@ -495,7 +524,7 @@ const ICON={
     const g=t.closest("[data-mgo]"); if(g){ const href=g.getAttribute("href")||""; menuClose(); if(href.split("#")[0]===here().split("#")[0]&&href.includes("#")){ e.preventDefault(); location.hash=href.slice(href.indexOf("#")); } return; }
     if(t.closest("[data-ca-logout]")){ e.preventDefault(); logout(); return; } });
   const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose};
 })();
 </script>
 
@@ -1061,7 +1090,7 @@ const TAB_ALIAS={carry:"billing",bills:"billing",log:"daily"};
 function tabOfHash(h){ if(TAB_ALIAS[h]){ if(h==="log") S.ui.showLog=true; return TAB_ALIAS[h]; } return h; }
 const NCOL=8;
 let rq=false;
-const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null||d.doadd!=null)) return true; if(!can("deliv")) return false; return d.doadd!=null||d.made!=null||d.make!=null||d.pmr!=null||d.pmrn!=null||el.id==="prep-snap-in"||d.psend!=null||d.pskip!=null||d.padd!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
+const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null||d.doadd!=null)) return true; if(!can("deliv")) return false; return d.doadd!=null||d.made!=null||d.make!=null||d.pmr!=null||d.pmrn!=null||el.id==="prep-snap-in"||d.prepsnap!=null||d.psend!=null||d.pskip!=null||d.padd!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
 /* 28 Sep: a background tab never gets an animation frame (the page stayed on "Loading…"), so a timer draws it too;
    and a drawing error is shown on the page instead of leaving "Loading…" for ever. */
 function render(){ if(rq||!AUTH.pin) return; rq=true; let done=false; const run=()=>{ if(done) return; done=true; rq=false; safeRender(); }; requestAnimationFrame(run); setTimeout(run,150); }
@@ -1837,7 +1866,7 @@ function vSetup(){
         <label class="f">Report deadline<input type="time" id="g-dl" data-g="reportDeadline" value="${esc(g.reportDeadline||"")}"></label></div>
       <div class="row"><button class="btn pri" data-act="saveGeneral">Save settings</button></div></div>
       ${MGR()?`<div class="panel"><h2>Sales photo reader</h2><p class="small muted" style="margin:0">Reads the outlet's sales-report photo when they submit the closing form, so sold, waste and missing cakes are checked straight away. It uses your OpenAI or Anthropic API key (about a sen per report). The key is kept in the Google backend and is never shown again.</p>
-        <div class="row">${S.ui.readerOn==null?(S.ui.readerAsk||(S.ui.readerAsk=GS("readerStatus").then(r=>{S.ui.readerOn=r.on;S.ui.readerProv=r.provider;render();}).catch(()=>{S.ui.readerOn=false;render();})),`<span class="pill mute">Checking…</span>`):(S.ui.readerOn?`<span class="pill ok">On${S.ui.readerProv?` (${S.ui.readerProv==="openai"?"OpenAI":"Anthropic"})`:""}</span>`:`<span class="pill warn">Off: outlets' sales photos are checked by hand</span>`)}</div>
+        <div class="row">${S.ui.readerOn==null?(S.ui.readerAsk||(S.ui.readerAsk=GS("readerStatus").then(r=>{S.ui.readerOn=r.on;S.ui.readerProv=r.provider;S.ui.readerErr=r.lastError||"";render();}).catch(()=>{S.ui.readerOn=false;render();})),`<span class="pill mute">Checking…</span>`):(S.ui.readerOn?`<span class="pill ok">On${S.ui.readerProv?` (${S.ui.readerProv==="openai"?"OpenAI":"Anthropic"})`:""}</span>`:`<span class="pill warn">Off: outlets' sales photos are checked by hand</span>`)}${S.ui.readerErr?`<span class="small muted">Last read problem: ${esc(S.ui.readerErr)}</span>`:""}</div>
         <div class="fgrid"><label class="f">OpenAI or Anthropic API key<input id="rd-key" type="password" autocomplete="off" placeholder="sk-…"></label></div>
         <div class="row"><button class="btn pri" data-act="saveReader">${S.ui.readerOn?"Replace key":"Switch on"}</button>${S.ui.readerOn?`<button class="btn sm" data-act="readerOff">Switch off</button>`:""}</div></div>`:""}
       <div class="panel"><h2>Sample & test data</h2><p class="small muted" style="margin:0">Removes the sample outlet and anything marked sample, reports and audits entered as "Testing" or "Test", and the "Example Staff" login. You see the full list first. A backup of everything removed is saved to Drive (Backups folder).</p>
@@ -2260,23 +2289,33 @@ function prepTable(d,PA,prepX,prep){ const plans=PA.plans, ORD=PA.orders||{}, P=
     ${RO()&&!DELIV()?"":`<div class="row" style="margin-top:6px;flex-wrap:wrap"><select data-padd="${d}" aria-label="Add a cake to the prep list"><option value="">＋ Add a cake…</option>${Object.values(S.products).filter(x=>x.active!==false&&!prepX[d][x.id]).sort((a,b)=>catRank(a.id)-catRank(b.id)||a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select><span class="small muted">then type how many to prepare for each outlet</span></div>`}
     ${hasOrd?ordersPanel(ORD):""}</div>`; }
 /* v22.18: the snapped sheet, read by the AI, for the kitchen to check before submitting Made */
+const pmrPill=(r,mv,fb)=>fb?(mv==null?`<span class="pill mute">not made</span>`:`<span class="pill ok">✓</span>`):mv==null?`<span class="pill bad">type it</span>`:mv<r.make?`<span class="pill warn">${r.make-mv} short</span>`:mv>r.make?`<span class="pill info">${mv-r.make} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
+/* v22.24: a typed Made updates its own pill and the Submit button in place — no full redraw, so the next box keeps the keyboard */
+function pmrUpd(id){ const R=S.ui.prepRead; if(!R) return; const V=R.vals||{}, cell=document.querySelector(`[data-pmrpill="${id}"]`), btn=document.querySelector('button[data-act="prepMadeGo"]'); if(!cell||!btn) return;
+  const fb=btn.dataset.fb==="1", mk=cell.dataset.make===""?null:+cell.dataset.make, v=V[id]||{}, mv=v.made===""||v.made==null?null:+v.made; cell.innerHTML=pmrPill({make:mk},mv,fb);
+  const tr=cell.closest("tr"); if(tr) tr.classList.toggle("warnrow",mv==null&&!fb); const nt=tr&&tr.querySelector("input[data-pmrn]"); if(nt) nt.placeholder=!fb&&mv!=null&&mv<mk?"why short?":"note (optional)";
+  const cells=[...document.querySelectorAll("[data-pmrpill]")], typed=c=>{ const x=V[c.dataset.pmrpill]; return !!x&&x.made!==""&&x.made!=null; }, missing=fb?(cells.some(typed)?0:1):cells.filter(c=>!typed(c)).length;
+  btn.disabled=!!missing; btn.textContent="Submit made"+(missing?(fb?" (type at least one)":` (${missing} to type)`):""); }
 function prepReadPanel(d,rows){ const R=S.ui.prepRead; if(!R||R.d!==d) return "";
   if(R.busy) return `<div class="panel" style="margin:8px 0;border:2px solid var(--accent)"><span class="spin"></span> Reading the prep sheet… this takes a few seconds.</div>`;
   const res=R.res||{}, V=R.vals||{}, byId=Object.fromEntries(rows.map(r=>[r.id,r]));
   for(const x of res.rows||[]) if(x&&x.id&&S.products[x.id]&&!byId[x.id]) byId[x.id]={id:x.id,make:+x.toMake||0}; /* v22.23: rows the reader found (earlier day / no printed record) */
-  const ids=(res.rows||[]).map(x=>x.id).filter(id=>byId[id]).concat(rows.map(r=>r.id).filter(id=>!(res.rows||[]).some(x=>x.id===id)));
-  const missing=ids.filter(id=>V[id]==null||V[id].made===""||V[id].made==null).length;
+  let ids=(res.rows||[]).map(x=>x.id).filter(id=>byId[id]).concat(rows.map(r=>r.id).filter(id=>!(res.rows||[]).some(x=>x.id===id)));
+  /* v22.24 (Alfred 8 Oct, "The AI could not read the photo" with nothing to type): no rows at all → every cake, Made left empty = not made today */
+  const fb=!ids.length&&!R.busy; if(fb){ ids=Object.values(S.products).filter(x=>x.active!==false).sort((a,b)=>catRank(a.id)-catRank(b.id)||a.name.localeCompare(b.name)).map(x=>x.id); ids.forEach(id=>{ byId[id]={id,make:null}; }); }
+  const typed=id=>!(V[id]==null||V[id].made===""||V[id].made==null), missing=fb?(ids.some(typed)?0:1):ids.filter(id=>!typed(id)).length;
   return `<div class="panel" id="prep-read" style="margin:8px 0;border:2px solid var(--accent)"><div class="spread"><h3 style="margin:0">Check the made numbers · ${nice(d)}</h3>${(res.photos||(res.photo?[res.photo]:[])).map((ph,i,a)=>ph&&ph.url?`<a class="btn sm" href="${esc(ph.url)}" target="_blank" rel="noopener">${a.length>1?"Photo "+(i+1):"Open the photo"}</a>`:"").join("")}</div>
     ${res.free?`<p class="small muted" style="margin:4px 0">No printed record of this sheet in the app — the reader found the cake names on the photo. Check the names too.</p>`:""}
-    ${res.aiError?`<p class="pill warn" style="margin:6px 0">${esc(res.aiError)}</p>`:`<p class="small muted" style="margin:4px 0 8px">Read from the photo. Check every number against the sheet, fix any that are wrong, then Submit.</p>`}
+    ${res.aiError?`<p class="pill warn" style="margin:6px 0">${esc(res.aiError)}${res.aiDetail?` <span class="small" style="font-weight:400">(${esc(res.aiDetail)})</span>`:""}</p>`:`<p class="small muted" style="margin:4px 0 8px">Read from the photo. Check every number against the sheet, fix any that are wrong, then Submit.</p>`}
+    ${fb?`<p class="small" style="margin:4px 0 8px"><b>Type it from the sheet:</b> Made for every cake you made today. Leave the others empty.</p>`:""}
     ${res.printedDate&&res.printedDate!==d?`<p class="pill bad" style="margin:6px 0">This sheet looks like it is for ${nice(res.printedDate)}, not ${nice(d)}. Check you snapped today's sheet.</p>`:""}
     ${(res.unclear||[]).length?`<p class="small muted" style="margin:4px 0">Could not read: ${res.unclear.map(esc).join(" · ")}</p>`:""}
     <div class="tw nocard"><table class="prep pmr" data-fit="1" style="--pn:3"><thead><tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th><th>Note</th><th></th></tr></thead><tbody>
-    ${ids.map(id=>{ const r=byId[id], v=V[id]||{}, mv=v.made===""||v.made==null?null:+v.made, st=mv==null?`<span class="pill bad">type it</span>`:mv<r.make?`<span class="pill warn">${r.make-mv} short</span>`:mv>r.make?`<span class="pill info">${mv-r.make} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
-      return `<tr class="${mv==null?"warnrow":""}"><td class="pcake">${cake(id)}</td><td class="r mono pn preq" data-l="To make"><span class="pv">${r.make}</span></td><td class="r pn pmade" data-l="Made"><span class="row" style="gap:4px;justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-pmrstep="${id}|-1" aria-label="Less">−</button><input class="mono made" type="number" min="0" step="1" inputmode="numeric" data-pmr="${id}" value="${mv==null?"":mv}" aria-label="Made ${esc(prod(id).name)}"><button class="btn sm" data-pmrstep="${id}|1" aria-label="More">+</button></span></td><td class="pnote"><input data-pmrn="${id}" value="${esc(v.note||"")}" placeholder="${mv!=null&&mv<r.make?"why short?":"note (optional)"}" style="width:100%;min-width:120px" aria-label="Note"></td><td class="pact">${st}</td></tr>`; }).join("")}
+    ${ids.map(id=>{ const r=byId[id], v=V[id]||{}, mv=v.made===""||v.made==null?null:+v.made, st=pmrPill(r,mv,fb);
+      return `<tr class="${mv==null&&!fb?"warnrow":""}"><td class="pcake">${cake(id)}</td><td class="r mono pn preq" data-l="To make"><span class="pv">${r.make==null?"—":r.make}</span></td><td class="r pn pmade" data-l="Made"><span class="row" style="gap:4px;justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-pmrstep="${id}|-1" aria-label="Less">−</button><input class="mono made" type="number" min="0" step="1" inputmode="numeric" data-pmr="${id}" value="${mv==null?"":mv}" aria-label="Made ${esc(prod(id).name)}"><button class="btn sm" data-pmrstep="${id}|1" aria-label="More">+</button></span></td><td class="pnote"><input data-pmrn="${id}" value="${esc(v.note||"")}" placeholder="${mv!=null&&mv<r.make?"why short?":"note (optional)"}" style="width:100%;min-width:120px" aria-label="Note"></td><td class="pact" data-pmrpill="${id}" data-make="${r.make==null?"":r.make}">${st}</td></tr>`; }).join("")}
     </tbody></table></div>
     ${(res.extra||[]).length?`<p class="small muted">Also written on the sheet (not a printed row): ${res.extra.map(x=>`${esc(x.name)} ${x.made}`).join(", ")} — add the cake with ＋ Add a cake if it is real.</p>`:""}
-    <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn pri" data-act="prepMadeGo" data-d="${d}" ${missing?"disabled":""}>Submit made${missing?` (${missing} to type)`:""}</button><button class="btn" data-act="prepSnap" data-d="${d}">Snap again</button><button class="btn sm" data-act="prepReadNo">Cancel</button></div></div>`; }
+    <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn pri" data-act="prepMadeGo" data-d="${d}" data-fb="${fb?1:""}" ${missing?"disabled":""}>Submit made${missing?(fb?" (type at least one)":` (${missing} to type)`):""}</button><button class="btn" data-act="prepSnap" data-d="${d}">Snap again</button><button class="btn sm" data-act="prepReadNo">Cancel</button></div></div>`; }
 /* the online orders behind the Order column */
 function ordersPanel(ORD){ const st=S.orders||{}, canRef=can("deliv")||can("setup")||can("reports");
   const line=o=>`<div class="item"><span class="sev ${olCounted(o)?"ok":"warn"}"></span><div><b>#${esc(o.code)}</b> · ${esc(o.slot||(o.od?"as soon as possible":"no time slot"))} · ${esc(/pick ?up/i.test(o.how)?"Pick up at HQ":/deliver/i.test(o.how)?"Delivery":o.how||"")}${o.name?` · ${esc(o.name)}`:""} <span class="small muted">· ${esc(o.formTitle.replace(/^Menu-?/,"").replace(/Chaleur Atelier Patisserie\s*/,"").trim()||o.form)} · ${esc(o.status)}${o.pay==="paid"?"":" · unpaid"}</span>
@@ -2300,7 +2339,7 @@ function vPlan(){
       <div class="panel prep-panel"><div class="spread"><h2>Kitchen prep list</h2><span class="small muted">all outlets combined</span></div>
         ${S.ui.prepRead&&!prepDays.includes(S.ui.prepRead.d)?prepReadPanel(S.ui.prepRead.d,[]):""}
         ${prepDays.length?prepDays.map(d=>prepTable(d,PA,prepX,prep)).join(""):`<div class="empty">Nothing to prep — no suggestions yet.</div>`}
-        <input type="file" accept="image/*" multiple id="prep-snap-in" data-snap="${esc(prepDays[0]||"")}" hidden aria-hidden="true">
+        <input type="file" accept="image/*" capture="environment" data-prepsnap="1" data-snap="${esc(prepDays[0]||"")}" hidden aria-hidden="true"><input type="file" accept="image/*" multiple id="prep-snap-in" data-prepsnap="1" data-snap="${esc(prepDays[0]||"")}" hidden aria-hidden="true">
         <p class="small muted" style="margin:0"><b>HQ</b> = cakes for our own display: made and displayed at HQ, never delivered (no DO, no delivery note). <b>From the HQ display</b> (blue badge): before anything is baked, display cakes with at least 2 days of life left go to the outlets first, oldest first, keeping what HQ itself needs; they travel on the DO with their own colour dot and come off HQ's count. <b>Minimums</b> (Setup › Outlets) are counter minimums for cakes that sell at that place; a cake with ≤1 sold in 14 days or over 40% waste there gets no forced minimum (see "Not selling"), and a minimum above what the place sells within the cake's shelf life is capped there (the note says so) — more would only expire. <b>Require</b> = everything needed on the delivery day (online orders + the HQ display top-up + each outlet). <b>To make</b> = the fresh cakes to bake = Require minus what comes off the HQ display ("+N display"); the app suggests it and the kitchen can change it (their stock, staff…) — an underlined number is a changed one, the suggestion stays in the tooltip. <b>Made</b>: the kitchen writes the real number on the printed sheet, taps <b>📷 Snap filled sheet</b>, checks what the app read and taps Submit made ("made N" then shows under To make). <b>Display left</b> = what is on the HQ display now, by colour dot (from the kitchen's display count); the line under a cake says where those display cakes go — online orders first, then the outlets, the display keeps the freshest. <b>Order</b> = online orders (Orderla) to pick up or deliver on the delivery day, broken down into the cakes inside each box (Setup › Orderla); it comes from the Orderla API every hour and is not typed. <b>left</b> under an outlet = what its last closing report says is left there; a wrong number is corrected in Outlet reports. <b>Sells/day</b> = the forecast for the delivery day. <b>Send</b>: type a number per outlet to change what goes where — it updates the outlet's delivery order if one exists, otherwise it is used when the DOs are drafted (a changed number is underlined; the suggestion stays in the tooltip). When To make or Made is lower than the suggestion, online orders are filled first; then every outlet gets at least one of each flavour it carries and the rest goes to the place that sells it faster ("→N" beside a box shows the new number). When it is higher, the extra goes to the HQ display. Whole cakes follow each outlet's whole-cake setting in Setup › Outlets (usually Fri–Sun, 1–2 kinds, 1 of each, every ticked whole cake taking its turn). Mark every prepared/thawed cake with the dot of the prep day. Lead time: ${+cfg().prepLeadDays||0} day(s) before delivery (change in Setup › Go-live & rules). ${(+cfg().prepLeadDays||0)>0?"":`Until ${+(cfg().planSwitchHour??14)}:00 this page shows today's delivery; after that, the next one.`}</p>
       </div>
     <div class="cols cols-even">
@@ -2374,7 +2413,7 @@ document.addEventListener("input",e=>{
   const t=e.target, d=t.dataset;
   if(t.closest&&t.closest(".ca-login,.ca-hp")) return;
   if(d.hq){(S.ui.hqd=S.ui.hqd||{})[d.hq]=t.value;return;}
-  if(d.pmr!=null&&S.ui.prepRead){ const V=S.ui.prepRead.vals||(S.ui.prepRead.vals={}); (V[d.pmr]||(V[d.pmr]={})).made=String(t.value).replace(/[^0-9]/g,""); return;}
+  if(d.pmr!=null&&S.ui.prepRead){ const V=S.ui.prepRead.vals||(S.ui.prepRead.vals={}); (V[d.pmr]||(V[d.pmr]={})).made=String(t.value).replace(/[^0-9]/g,""); pmrUpd(d.pmr); return;}
   if(d.pmrn!=null&&S.ui.prepRead){ const V=S.ui.prepRead.vals||(S.ui.prepRead.vals={}); (V[d.pmrn]||(V[d.pmrn]={})).note=t.value.slice(0,120); return;}
   if(d.f!==undefined){S.f[d.f]=t.type==="checkbox"?t.checked:t.value; if(t.type==="checkbox") render(); return;}
   if(d.ui==="paste"){S.ui.paste=t.value;return;}
@@ -2434,7 +2473,7 @@ document.addEventListener("change",async e=>{
   const t=e.target;
   if(t.closest&&t.closest(".ca-login,.ca-hp")) return;
   if(t.dataset.hq!==undefined){(S.ui.hqd=S.ui.hqd||{})[t.dataset.hq]=t.value;return;}
-  if(t.dataset.pmr!=null&&S.ui.prepRead){ render(); return;} /* status pills and the Submit button follow the typed numbers */
+  if(t.dataset.pmr!=null&&S.ui.prepRead){ pmrUpd(t.dataset.pmr); return;} /* status pill and the Submit button follow the typed number (v22.24: in place) */
   if(t.dataset.make){ const [d,id]=t.dataset.make.split("|"); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); const PA=planAll(), r=prepRows(d,PA).find(x=>x.id===id), sug=r?r.tot:0;
     await savePrep(d,x=>{ x.make=x.make||{}; if(v===""||+v===sug) delete x.make[id]; else x.make[id]=+v; (x.makeLog||(x.makeLog=[])).push({at:new Date().toISOString(),by:(CA.get()||{}).name||"",id,to:v===""?sug:+v,sug}); x.makeLog=x.makeLog.slice(-40); });
     toast(v===""||+v===sug?`${prod(id).name}: back to the suggestion (${sug})`:`${prod(id).name}: make ${+v} (suggested ${sug})${+v<sug?" — orders first, the rest shared":+v>sug?" — the extra goes to the HQ display":""}`); return;}
@@ -2448,7 +2487,7 @@ document.addEventListener("change",async e=>{
       await savePrep(d,x=>{ x.skip=x.skip||{}; if(on) x.skip[pid]={by:who,at,d1}; else delete x.skip[pid]; (x.skipLog||(x.skipLog=[])).push({at,by:who,pid,on,cancelled:gone}); x.skipLog=x.skipLog.slice(-40); });
       toast(on?`${P0.name}: no delivery on ${nice(d1)} — its cakes are off the prep list${gone.length?` · ${gone.join(", ")} cancelled`:""}.`:`${P0.name}: delivery on ${nice(d1)} is back — its cakes are on the prep list again. Draft its DO when ready.`); }
     catch(e){ toast((e&&e.message)||"Couldn't save"); } render(); return;}
-  if(t.id==="prep-snap-in"&&t.files&&t.files[0]){ const d=t.dataset.snap||Object.keys(planAll().prep).sort()[0]||today(); S.ui.prepRead={d,busy:true}; render(); const el=document.getElementById("prep-read"); if(el) el.scrollIntoView({block:"center"});
+  if(t.dataset.prepsnap&&t.files&&t.files[0]){ const d=t.dataset.snap||Object.keys(planAll().prep).sort()[0]||today(); S.ui.prepRead={d,busy:true}; render(); const el=document.getElementById("prep-read"); if(el) el.scrollIntoView({block:"center"});
     try{ const dus=[]; for(const f of [...t.files].slice(0,4)){ const blob=await shrink(f,1600); dus.push(await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob);})); }
       /* the printed sheet also lists cakes that are only in stock: send the same rows, in the same order; an earlier day uses the sheet recorded
          when it was printed (v22.23), and with no record at all the server reads the cake names off the photo */
@@ -2727,9 +2766,11 @@ async function act(a,b){
       for(const k of keys){ const [pid,ws,id]=k.split("|"); b.textContent=`Sending ${done+1} of ${n}…`; try{ await GS("bukkuSendDO",wid(pid,ws),id); done++; (S.ui.bkSelDO||new Set()).delete(k); }catch(e){ fails.push(((weekDoc(pid,ws).dos||{})[id]||{}).no+": "+((e&&e.message)||"failed")); } }
       await reload(); toast(fails.length?`Sent ${done} of ${n}. ${fails.join(" · ")}`:`Sent ${done} DO${done===1?"":"s"} to Bukku as drafts.`); render(); return; }
   case "bkDO":{const m=S.ui.modal; if(!m) return; b.disabled=true; b.textContent="Sending…"; try{const r=await GS("bukkuSendDO",wid(m.pid,m.ws),m.doc.id); toast(r.msg); await reload(); m.doc=clone((weekDoc(m.pid,m.ws).dos||{})[m.doc.id]||m.doc);}catch(e){toast((e&&e.message)||"Couldn't send to Bukku"); b.disabled=false; b.textContent="Send to Bukku (draft)";} render(); return;}
-  case "prepSnap":{ const inp=document.getElementById("prep-snap-in"); if(!inp){toast("Reload the page and try again");return;} inp.dataset.snap=b.dataset.d||today(); inp.value=""; inp.click(); return;}
+  case "prepSnap":{ const ins=[...document.querySelectorAll('input[data-prepsnap]')]; if(!ins.length){toast("Reload the page and try again");return;} ins.forEach(i=>{ i.dataset.snap=b.dataset.d||today(); i.value=""; });
+    /* v22.24 (Alfred): one tap → "Take a photo" or "Choose from album" */ if(!CA.pick("prepsnap=1","Filled prep sheet · "+nice(b.dataset.d||today()))) ins[ins.length-1].click(); return;}
   case "prepReadNo":{ S.ui.prepRead=null; render(); return;}
-  case "prepMadeGo":{ const R=S.ui.prepRead; if(!R||!R.res) return; const d=b.dataset.d||R.d, V=R.vals||{}, ids=Object.keys(V).concat((R.rows||[]).filter(id=>!V[id]));
+  case "prepMadeGo":{ const R=S.ui.prepRead; if(!R||!R.res) return; const d=b.dataset.d||R.d, V=R.vals||{}; let ids=Object.keys(V).concat((R.rows||[]).filter(id=>!V[id]));
+    const fb=!(R.rows||[]).length&&!((R.res||{}).rows||[]).length; if(fb) ids=ids.filter(id=>V[id]&&V[id].made!==""&&V[id].made!=null); if(fb&&!ids.length){ toast("Type the made number for at least one cake"); return; }
     const empty=ids.filter(id=>V[id]==null||V[id].made===""||V[id].made==null); if(empty.length){ toast(`Type the made number for ${empty.map(id=>prod(id).name).join(", ")}`); return;}
     b.disabled=true; b.textContent="Saving…"; const who=(CA.get()||{}).name||"";
     try{ await savePrep(d,x=>{ const before=JSON.stringify(x.made||{}); x.made=x.made||{}; x.reason=x.reason||{}; for(const id of ids){ x.made[id]=Math.max(0,+V[id].made||0); const n=String(V[id].note||"").trim(); if(n) x.reason[id]=n.slice(0,120); else if(x.made[id]>=((x.make||{})[id]??-1)) delete x.reason[id]; }
