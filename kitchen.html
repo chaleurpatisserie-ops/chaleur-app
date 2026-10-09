@@ -836,7 +836,7 @@ body.res{background:var(--deep)}body.res .hd{background:var(--deep)}
 .dtile small{font-size:11.5px;color:var(--muted);text-transform:uppercase}.dtile b{font:700 24px var(--display)}.dtile span{font-size:11.5px;font-weight:700;color:var(--ok-tx)}
 .dtile.miss{border-color:var(--warn);background:var(--warn-bg)}.dtile.miss span{color:var(--warn-tx)}.dtile.unc span{color:var(--warn-tx)}
 .dtile.sel{background:var(--ink);border-color:var(--ink);color:var(--paper)}.dtile.sel small{color:#cdbfc1}.dtile.sel span{color:#8fd3a5}
-.pli{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--cline);font-size:16px}.pli:first-of-type{border-top:0}.pli b{font-variant-numeric:tabular-nums}
+.pli{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--cline);font-size:16px}.pli .who{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted);vertical-align:middle}.pli .who.me{background:var(--ok-bg);color:var(--ok-tx);border-color:var(--ok)}.pli:first-of-type{border-top:0}.pli b{font-variant-numeric:tabular-nums}
 .vf{border:2px dashed var(--line);border-radius:18px;min-height:120px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,transparent 0 10px,rgba(123,28,43,.04) 10px 20px);padding:10px}
 .vf img{max-width:100%;max-height:220px;border-radius:12px}
 .plph{display:inline-block;border-radius:10px;overflow:hidden;border:1px solid var(--line);max-width:220px;margin:6px 6px 0 0}.plph img{display:block;width:100%;height:auto}.plph.sm{width:72px}
@@ -1067,6 +1067,8 @@ const dId=pid=>("auto_d_"+String(pid).replace(/[^A-Za-z0-9]/g,"")).slice(0,30);
 const dayList=days=>{ const d=(days||[]).map(Number).sort(); return d.length===7?"every day":d.join(",")==="1,2,3,4,5"?"Mon–Fri":d.map(i=>WDL[i]).join(", "); };
 const autoTick=on=>`<span class="tick auto ${on?"on":""}" aria-hidden="true">${on?"✓":""}</span>`;
 const niceName=n=>String(n||"").toLowerCase().replace(/\b[a-z]/g,c=>c.toUpperCase());
+/* v22.25 (Alfred): initials at the end of a list line = who does it ("- T, E", "(Tx)"); the server matched them to team names */
+const whoChips=it=>(it&&it.who||[]).map(w=>{ const me=INFO&&INFO.me&&String(INFO.me.name||"").toUpperCase()===String(w).toUpperCase(); return `<span class="who ${me?"me":""}">${me?"you":esc(niceName(String(w).split(/\s+/)[0]))}</span>`; }).join("");
 const boxTick=(id,on,label)=>`<label class="tick ${on?"on":""}" aria-label="${esc((on?"Done: ":"Tick when done: ")+label)}"><input type="checkbox" data-tdone="${esc(id)}" ${on?"checked":""} ${canTick()?"":"disabled"}>${on?"✓":""}</label>`;
 function tkCard(o){ return `<div class="card tk ${o.done?"done":""} ${o.cur?"cur":""}">${o.circle}<div class="tb">${o.tag?`<div><span class="tag ${o.tagc||""}">${o.tag}</span></div>`:""}${o.due?`<div class="due ${o.late?"late":""}">${o.due}</div>`:""}<div class="tt">${o.title}</div>${o.sub?`<div class="ts">${o.sub}</div>`:""}${o.by?`<div class="tby">✓ ${o.by}</div>`:""}${o.extra||""}</div>${o.act?`<div class="act">${o.act}</div>`:"<span></span>"}</div>`; }
 function repItem(kind){ const s0=INFO.state[kind], r=INFO.day[kind], due=kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=!s0.done&&DATE===INFO.today&&INFO.now>due;
@@ -1095,7 +1097,7 @@ function displayItem(){ const op=INFO.day.opening, disp=op&&op.parts&&op.parts.d
   return {count:true,done:false,html:tkCard({circle:autoTick(false),tag:"HQ display",title:"Count the HQ display",sub:plan?"Put out today: "+(plan.lines||[]).map(l=>esc(prodOf(l.productId).name)+" "+l.qty).join(" · "):"Fill the gaps, oldest colour at the front.",act:`<button class="cb sm" type="button" data-gopart="opening|display">Count</button>`})}; }
 function prodListCard(){ const p=INFO.plan[DATE], lists=(p&&p.lists)||[];
   return `<div class="card info"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Production list · ${esc(niceD(DATE))}</h3>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${p.approvedBy?"✓ Checked":"Not checked yet"}</span>`:""}</div>
-    ${lists.length?lists.map(l=>`<div style="margin-top:6px">${(l.items||[]).map(i=>`<div class="pli"><span>${esc(i.name)}</span><b>${esc(i.qty||"")}</b></div>`).join("")||`<p class="hint">Photo only</p>`}</div>`).join(""):`<p class="hint">No production list for this day yet.</p>`}
+    ${lists.length?lists.map(l=>`<div style="margin-top:6px">${(l.items||[]).map(i=>`<div class="pli"><span>${esc(i.name)}${whoChips(i)}</span><b>${esc(i.qty||"")}</b></div>`).join("")||`<p class="hint">Photo only</p>`}</div>`).join(""):`<p class="hint">No production list for this day yet.</p>`}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="cb sm ghost" type="button" data-tab="plan">Open the plan</button><button class="cb sm ghost" type="button" data-plan="${DATE}">Add a list</button></div>
     <p class="hint" style="margin-top:8px">Tick the paper list as you go. The closing report takes its photo tonight.</p></div>`; }
 function prepCard(){ const t=INFO.today, rem=INFO.reminders||[], r0=rem.filter(r=>r.date===t), r1=rem.filter(r=>r.date===addD(t,1));
@@ -1290,7 +1292,7 @@ function vPart(kind,part){
 const psFB=(sh,R)=>!(sh&&(sh.rows||[]).length)&&!((R&&R.res&&R.res.rows)||[]).length;
 const psRows=(sh,R)=>sh&&(sh.rows||[]).length?sh.rows:((R&&R.res&&R.res.rows)||[]).length?R.res.rows:(R&&R.res?(INFO.products||[]).filter(p=>p.active!==false).map(p=>({id:p.id,name:p.name,toMake:0,fb:true})):[]);
 const psTyped=(R,r)=>{ const v=((R&&R.vals)||{})[r.id]; return !!v&&v.made!==""&&v.made!=null; };
-const psPill=(r,mv,fb)=>fb?(mv==null?`<span class="pill">not made</span>`:`<span class="pill ok">✓</span>`):mv==null?`<span class="pill bad">type it</span>`:mv<r.toMake?`<span class="pill warn">${r.toMake-mv} short</span>`:mv>r.toMake?`<span class="pill info">${mv-r.toMake} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
+const psPill=(r,mv,fb)=>fb?(mv==null?`<span class="pill">not made</span>`:`<span class="pill ok">✓</span>`):mv==null?`<span class="pill">blank = 0</span>`:mv<r.toMake?`<span class="pill warn">${r.toMake-mv} short</span>`:mv>r.toMake?`<span class="pill info">${mv-r.toMake} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
 /* v22.24: a typed Made updates its own pill — no full redraw, so the next box keeps the keyboard */
 function psPillUpd(id){ const s0=st("opening"), R=s0.prep||{}, sh=(INFO.prep||{}).sheet, rows=psRows(sh,R), r=rows.find(x=>x.id===id); if(!r) return; const v=(R.vals||{})[id]||{}, mv=v.made===""||v.made==null?null:+v.made;
   const el=document.querySelector(`[data-pspill="${id}"]`); if(el) el.innerHTML=psPill(r,mv,psFB(sh,R)); const nt=document.querySelector(`input[data-psn="${id}"]`); if(nt) nt.placeholder=!psFB(sh,R)&&mv!=null&&mv<r.toMake?"why short?":"note (optional)"; }
@@ -1302,7 +1304,7 @@ function vPrepPart(kind){ const s=st(kind), I=INFO.prep||{}, sh=I.sheet, R=s.pre
     ${P2.op_prep?`<button class="cb big full" type="button" data-act="psRead">Read the sheet ›</button>`:""}
     ${sh?`<div class="card flat"><b>On the sheet</b> <span class="hint">· printed ${esc(hmOf(sh.at))}${sh.by?" by "+esc(sh.by):""}</span><ul class="items" style="margin-top:6px">${(sh.rows||[]).map((r,i)=>`<li>${i+1}. ${esc(r.name)} · To make <b>${r.toMake}</b></li>`).join("")}</ul></div>`:`<p class="hint">No printed record of ${esc(niceD(DATE))}'s sheet in the app — that is fine: the reader finds the cake names on the photo.</p>`}</div>${noteBox(kind,"prep")}`;
   const res=R.res, V=R.vals||{}, rows=psRows(sh,R), fb=psFB(sh,R);
-  const msg=[res.aiError?`<p class="err">${esc(res.aiError)}${res.aiDetail?` <small class="hint">(${esc(res.aiDetail)})</small>`:""}</p>`:`<p class="hint">Read from the photo. Check every number against the sheet and fix any that are wrong.</p>`,
+  const msg=[res.aiError?`<p class="err">${esc(res.aiError)}${res.aiDetail?` <small class="hint">(${esc(res.aiDetail)})</small>`:""}</p>`:`<p class="hint">Read from the photo. Check every number against the sheet and fix any that are wrong. A blank box counts as 0 made.</p>`,
     fb?`<p class="hint"><b>Type it from the sheet:</b> Made for every cake you made today. Leave the others empty.</p>`:"",
     res.printedDate&&res.printedDate!==DATE?`<p class="err">This sheet looks like it is for ${esc(niceD(res.printedDate))}, not ${esc(niceD(DATE))}. Check you snapped today's sheet.</p>`:"",
     (res.unclear||[]).length?`<p class="hint">Could not read: ${res.unclear.map(esc).join(" · ")}</p>`:"",
@@ -1386,7 +1388,7 @@ function missingPart(kind,part){ const s=st(kind), p=pre(kind), m=[];
   if(part==="count"){ if(!P2.cl_display) m.push("HQ display photo"); const w=Object.values(s.rows).some(x=>+x.w>0)||s.ev.some(x=>+x.w>0); if(w&&!P2.cl_waste) m.push("waste photo"); }
   if(part==="deliveries") INFO.dos.filter(d=>!d.internal).forEach(d=>{ if(!s.later[d.id]&&!P2["op_do_"+d.id]) m.push(d.outlet+" delivery photo"); });
   if(part==="prep"){ const sh=(INFO.prep||{}).sheet, R=s.prep; if(!(R&&R.res)) m.push(P2.op_prep?"tap Read the sheet":"photo of the filled prep sheet");
-    else { const rows=psRows(sh,R); if(!rows.length) m.push("no cake rows read — snap again"); else if(psFB(sh,R)){ if(!rows.some(r=>psTyped(R,r))) m.push("Made for at least one cake"); } else rows.forEach(r=>{ if(!psTyped(R,r)) m.push("Made for "+r.name); }); } }
+    else { const rows=psRows(sh,R); if(!rows.length) m.push("no cake rows read — snap again"); else if(psFB(sh,R)){ if(!rows.some(r=>psTyped(R,r))) m.push("Made for at least one cake"); } /* v22.24c (Alfred): a blank Made = 0 — nothing forced */ } }
   if(part==="lists"){ if(!P2.cl_lt1) m.push("today's list photo"); [1,2,3].forEach(i=>{ if(!P2["cl_ld"+i+"_1"]) m.push(niceD(addD(DATE,i))+" list photo"); }); }
   return m; }
 function tidyGate(){ const k=TAB==="opening"?"op_display":"cl_display"; const t=TIDY[k]; if(!t||!P2[k]) return ""; if(t.state==="checking") return "Checking the display photo…"; if(t.state==="messy"&&!t.sendAnyway) return "Please tidy the display and take the photo again"; return ""; }
@@ -1462,7 +1464,7 @@ function vPlan(){ const t=INFO.today, days=planDaysList(), tiles=days.slice(0,4)
     <div class="dtiles">${tiles.map(d=>{const q=INFO.plan[d]; return `<button type="button" class="dtile ${d===sel?"sel":!q?"miss":!q.approvedBy?"unc":""}" data-plan="${d}"><small>${WDL[dw(d)]}</small><b>${+d.slice(8)}</b><span>${q?(q.approvedBy?"✓ list":"to check"):"missing"}</span></button>`;}).join("")}</div>
     <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:17px">${esc(niceD(sel))}${sel===t?" · today":""}</b>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${p.approvedBy?"✓ Checked by "+esc(p.approvedBy):"Not checked yet"}</span>`:`<span class="pill warn">No plan yet</span>`}</div>
       ${ls.map((l,n)=>`<div style="margin-top:10px;${n?"border-top:1px dashed var(--line);padding-top:10px":""}"><div class="hint" style="margin-bottom:4px">${l.src==="closing"?"From the closing report":"List "+(n+1)}${l.by?" · "+esc(l.by):""} · ${esc(dtOf(l.editedAt||l.at))}</div>
-        ${(l.items||[]).map(it=>`<div class="pli"><span>${esc(it.name)}${it.note?` <span class="hint">(${esc(it.note)})</span>`:""}</span><b>${esc(it.qty||"")}</b></div>`).join("")||`<p class="hint">Photo only</p>`}
+        ${(l.items||[]).map(it=>`<div class="pli"><span>${esc(it.name)}${it.note?` <span class="hint">(${esc(it.note)})</span>`:""}${whoChips(it)}</span><b>${esc(it.qty||"")}</b></div>`).join("")||`<p class="hint">Photo only</p>`}
         <div>${((l.photos&&l.photos.length)?l.photos:(l.photo&&l.photo.id?[l.photo]:[])).map(ph=>`<a href="${viewOf(ph.id)}" target="_blank" rel="noopener" class="plph sm"><img src="${thumbOf(ph.id)}" alt="Photo of list ${n+1}" loading="lazy"></a>`).join("")}</div>
         <div class="plist" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="cb sm ghost" type="button" data-ple="${sel}|${esc(l.id)}">${SUP()?"Edit":"Propose a change"}</button>${SUP()?`<button class="cb sm ghost" type="button" data-plrm="${sel}|${esc(l.id)}">Remove</button>`:""}${(l.photos||[]).length||(l.photo&&l.photo.id)?`<span class="plph" hidden><img alt=""></span>`:""}</div></div>`).join("")}
       ${p&&!p.approvedBy&&SUP()?`<button class="cb sm ok" type="button" data-pok="${sel}" style="margin-top:10px">Mark as checked</button>`:""}</div>
@@ -1510,6 +1512,7 @@ function vHistory(){ if(!HIST){ if(HISTERR){ const m=HISTERR; HISTERR=""; return
   const days=(HIST.days||[]).slice().reverse(); if(!HSEL||!days.some(x=>x.date===HSEL)) HSEL=(days.slice().reverse().find(x=>x.opening||x.closing)||days[days.length-1]||{}).date||"";
   const first=days.length?dw(days[0].date):0, lab={ok:"on time",late:"late",missed:"missed",open:"today",closed:"closed"};
   const h=days.find(x=>x.date===HSEL)||{};
+  const madeL=h.made?`<div class="hl"><span>✓ Prep sheet (made) · ${esc(h.made.by||"")}${h.made.src==="desk"?" · office page":""}</span><span>${esc(hmOf(h.made.at))} · ${h.made.n} cake${h.made.n===1?"":"s"}, ${h.made.total} made</span></div>`:"";
   const rep=(r,k)=>!r?`<div class="hl"><span>○ ${k==="opening"?"Opening":"Closing"}</span><span class="hint">not sent</span></div>`:`<div class="hl"><span>✓ ${k==="opening"?"Opening":"Closing"} · ${esc(r.by)}</span><span>${esc(hmOf(r.at))}</span></div>
     ${(r.issues||[]).map(i=>`<div class="hl ${i.sev==="bad"||i.sev==="warn"?"bad":""}"><span>${esc(i.text)}</span></div>`).join("")}
     <details><summary>Details, temperatures and photos</summary>${r.parts?`<ul class="items">${Object.keys(r.parts).map(p=>`<li>✓ ${esc(partName(k,p))} · ${esc(r.parts[p].by)} ${esc(hmOf(r.parts[p].at))}</li>`).join("")}</ul>`:""}
@@ -1519,7 +1522,7 @@ function vHistory(){ if(!HIST){ if(HISTERR){ const m=HISTERR; HISTERR=""; return
     <div class="card"><div class="cal">${[0,1,2,3,4,5,6].map(i=>`<span class="wd">${"SMTWTFS"[(first+i)%7]}</span>`).join("")}
       ${days.map(x=>`<button type="button" class="${x.st||""} ${x.date===HSEL?"sel":""}" data-hday="${x.date}" aria-label="${esc(niceD(x.date))}: ${esc(lab[x.st]||"")}">${+x.date.slice(8)}</button>`).join("")}</div>
       <div class="leg"><span><i style="background:var(--ok)"></i>on time</span><span><i style="background:var(--warn)"></i>late</span><span><i style="background:var(--bad)"></i>missed</span></div></div>
-    ${h.date?`<div class="card"><h3 style="font-size:18px">${esc(niceD(h.date))}${h.closed?" · kitchen closed":""}</h3>${rep(h.opening,"opening")}${rep(h.closing,"closing")}</div>`:""}
+    ${h.date?`<div class="card"><h3 style="font-size:18px">${esc(niceD(h.date))}${h.closed?" · kitchen closed":""}</h3>${rep(h.opening,"opening")}${madeL}${rep(h.closing,"closing")}</div>`:""}
     <p class="hint">Every temperature is also kept in the office records.</p>
     <h2 class="sech" id="ksetup">Fridges, display cakes and reminders</h2>
     <p class="hint">What every opening and closing report checks (fridges and freezers are checked morning and evening, every day), the cakes on the HQ display, and the prep reminders.</p>
@@ -1583,7 +1586,7 @@ document.addEventListener("click",async e=>{
   if(d.act==="pleAdd"){ PLE.lines.push(""); render(); setTimeout(()=>{const x=document.querySelector(`[data-pli="${PLE.lines.length-1}"]`); x&&x.focus();},30); return; }
   if(d.plirm!=null){ PLE.lines.splice(+d.plirm,1); render(); return; }
   if(d.act==="typePlan"){ const nd=($("[data-newd]")||{}).value||NEWD||addD(INFO.today,1); PLE={date:nd,listId:"",token:"",photoId:"",lines:["","",""],why:"",fromAi:false}; render(); setTimeout(()=>{const y=$("#planed"); y&&y.scrollIntoView({behavior:"smooth"});},50); return; }
-  if(d.ple){ const [dt,id]=d.ple.split("|"), l=(((INFO.plan[dt]||{}).lists)||[]).find(x=>x.id===id); if(!l) return; PLE={date:dt,listId:id,token:"",photoId:(l.photo&&l.photo.id)||"",lines:(l.items||[]).map(x=>[x.name,x.qty,x.note].filter(Boolean).join(" ")),why:"",fromAi:false}; render(); setTimeout(()=>{const y=$("#planed"); y&&y.scrollIntoView({behavior:"smooth"});},50); return; }
+  if(d.ple){ const [dt,id]=d.ple.split("|"), l=(((INFO.plan[dt]||{}).lists)||[]).find(x=>x.id===id); if(!l) return; PLE={date:dt,listId:id,token:"",photoId:(l.photo&&l.photo.id)||"",lines:(l.items||[]).map(x=>x.raw||[x.name,x.qty,x.note].filter(Boolean).join(" ")),why:"",fromAi:false}; render(); setTimeout(()=>{const y=$("#planed"); y&&y.scrollIntoView({behavior:"smooth"});},50); return; }
   if(d.plrm){ if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Tap again to remove"; setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="Remove"; } },4000); return; }
     const [dt,id]=d.plrm.split("|"); b.disabled=true; try{ const r=await run("hqSave","planList",{date:dt,listId:id,remove:true},""); toast(r.msg); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.act==="pleSave"){ const lines=PLE.lines.map(x=>String(x).trim()).filter(Boolean); if(!lines.length&&!PLE.photoId){ toast("Add at least one line"); return; } if(!lines.length&&PLE.listId){ toast("Keep at least one line, or remove the list"); return; }
