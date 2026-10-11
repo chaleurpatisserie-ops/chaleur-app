@@ -154,6 +154,12 @@ body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bot
 #camenu .mlinks{display:flex;justify-content:center;gap:22px;padding:2px 0 4px;flex-wrap:wrap}#camenu .lnk{min-height:40px;display:inline-flex;align-items:center;font-size:14px;border:0;background:none;box-shadow:none;padding:0 4px;color:var(--m-accent);font-weight:600;text-decoration:underline;text-underline-offset:3px;font-family:inherit}
 #camenu .mwho{display:flex;justify-content:center;padding:4px 0}#camenu .mwho .ca-chip{justify-content:center}
 @media (prefers-color-scheme:dark){#camenu .cb.ink{box-shadow:0 4px 0 rgba(0,0,0,.6)}}
+.ca-pw{position:fixed;inset:0;z-index:2147483000;background:rgba(30,18,20,.45);display:flex;align-items:center;justify-content:center;padding:18px}
+.ca-pw-box{background:var(--card,#fff);color:var(--ink,#2b1b1e);border-radius:18px;max-width:360px;width:100%;padding:22px 20px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);text-align:center}
+.ca-pw-dot{width:40px;height:40px;border-radius:50%;margin:0 auto 10px;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.ca-pw-t{font:700 22px Georgia,serif;margin:0 0 6px}.ca-pw-s{font-size:14px;opacity:.8;margin:0 0 8px;line-height:1.4}.ca-pw-s.w{opacity:1;color:#9a5a12;font-weight:600}
+.ca-pw-b{display:block;width:100%;margin-top:12px;padding:14px;border:0;border-radius:12px;background:var(--accent,#7b1c2b);color:#fff;font:700 16px inherit;cursor:pointer}
+.ca-pw-x{display:block;width:100%;margin-top:6px;padding:10px;border:0;background:none;color:inherit;opacity:.7;font:600 14px inherit;cursor:pointer}
 </style>
 <script>
 /* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
@@ -523,8 +529,31 @@ const ICON={
     const h=t.closest("[data-help]"); if(h){ menuClose(); openHelp(h.dataset.help); return; }
     const g=t.closest("[data-mgo]"); if(g){ const href=g.getAttribute("href")||""; menuClose(); if(href.split("#")[0]===here().split("#")[0]&&href.includes("#")){ e.preventDefault(); location.hash=href.slice(href.indexOf("#")); } return; }
     if(t.closest("[data-ca-logout]")){ e.preventDefault(); logout(); return; } });
+  /* v22.29 (Alfred 11 Oct): "it should be a window within the app, title Daily prep is out, with a button Open and print". Mornings
+     (06:00–13:59), for people who can print the prep sheet, on every page, until today's sheet is printed (by anyone); again when online
+     orders for today came in after it was printed. "Later" hides it for 15 minutes. On the office Prep list the button prints straight
+     away (window.caPrintPrep); elsewhere it opens the Prep list, where the same window prints with one more tap. */
+  let PW=null;
+  const pwClose=()=>{ if(PW){ PW.remove(); PW=null; } };
+  async function prepWin(force){ try{ if(window.CHALEUR_NO_GUIDE&&!window.CHALEUR_PREP_WIN) return; /* automated tests opt in */ const s=get(); if(!s||!s.t) return; const P=permsOf(s); if(!["kitchen","deliv","doedit","reports"].some(k=>P.includes(k))) return;
+      const h=new Date().getHours(); if(!force&&(h<6||h>=14)) return;
+      let sn=0; try{ sn=+sessionStorage.getItem("ca.pwLater")||0; }catch(e){} if(!force&&Date.now()<sn) return;
+      const r=await run("prepOut",s.t); if(!r||!r.show) return; if(r.printed&&!r.newOrders) { pwClose(); return; }
+      if(typeof window.caPrepWinOK==="function"&&!window.caPrepWinOK(r)) return;
+      pwClose(); const d=new Date(r.date+"T12:00:00"), day=d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}), onDesk=typeof window.caPrintPrep==="function";
+      const el=document.createElement("div"); el.className="ca-pw"; el.id="ca-pw"; el.setAttribute("role","dialog"); el.setAttribute("aria-label","Daily prep is out");
+      el.innerHTML=`<div class="ca-pw-box"><div class="ca-pw-dot" style="background:${esc(r.hex||"#888")}"></div><p class="ca-pw-t">Daily prep is out</p>
+        <p class="ca-pw-s">${esc(day)} · ${esc(String(r.dot||"").charAt(0)+String(r.dot||"").slice(1).toLowerCase())} dot. Check it, print it, then start your day.</p>
+        ${r.printed&&r.newOrders?`<p class="ca-pw-s w">${r.newOrders} new online order${r.newOrders===1?"":"s"} since it was printed by ${esc(r.printed.by||"someone")} — print it again.</p>`:""}
+        <button type="button" class="ca-pw-b" data-pw="go">${onDesk?"Print":"Open and print"}</button><button type="button" class="ca-pw-x" data-pw="later">Later</button></div>`;
+      el.addEventListener("click",ev=>{ const b=ev.target.closest("[data-pw]"); if(!b) return; ev.stopPropagation(); ev.preventDefault();
+        if(b.dataset.pw==="later"){ try{ sessionStorage.setItem("ca.pwLater",String(Date.now()+15*60000)); }catch(e){} pwClose(); return; }
+        if(typeof window.caPrintPrep==="function"){ pwClose(); window.caPrintPrep(r.date); return; }
+        try{ sessionStorage.setItem("ca.pwGo",r.date); }catch(e){} location.href="office.html#plan"; });
+      document.body.appendChild(el); PW=el; const fb=el.querySelector("[data-pw=go]"); if(fb) fb.focus(); }catch(e){} }
+  if(!/closing|audit/.test(location.pathname)) { if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",()=>setTimeout(prepWin,1800)); else setTimeout(prepWin,1800); }
   const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose()};
 })();
 </script>
 
@@ -1096,9 +1125,13 @@ const TAB_ALIAS={carry:"billing",bills:"billing",log:"daily"};
 function tabOfHash(h){ if(TAB_ALIAS[h]){ if(h==="log") S.ui.showLog=true; return TAB_ALIAS[h]; } return h; }
 const NCOL=8;
 let rq=false;
-const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null||d.doadd!=null)) return true; if(!can("deliv")) return false; return d.doadd!=null||d.made!=null||d.make!=null||d.pmr!=null||d.pmrn!=null||el.id==="prep-snap-in"||d.prepsnap!=null||d.psend!=null||d.pskip!=null||d.padd!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
+const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null||d.doadd!=null)) return true; if(!can("deliv")) return false; return d.doadd!=null||d.made!=null||d.make!=null||d.pmr!=null||d.pmrn!=null||el.id==="prep-snap-in"||d.prepsnap!=null||d.psend!=null||d.pskip!=null||d.frz!=null||d.padd!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
 /* 28 Sep: a background tab never gets an animation frame (the page stayed on "Loading…"), so a timer draws it too;
    and a drawing error is shown on the page instead of leaving "Loading…" for ever. */
+let prepWinAsked=false;
+window.caPrepWinOK=()=>S.loaded.size>=NCOL;
+window.caPrintPrep=d=>{ if(S.loaded.size<NCOL){ toast("Still loading — try again in a moment"); return; } if(S.tab!=="plan"){ S.tab="plan"; try{ history.replaceState(null,"","#plan"); }catch(e){} render(); }
+  const PA=planAll(); if(!PA.prep[d]||!Object.keys(PA.prep[d]).length){ const nd=Object.keys(PA.prep).sort().find(x=>x>=d); if(!nd){ toast("Nothing to prep today"); return; } d=nd; } printPrep(d); };
 function render(){ if(rq||!AUTH.pin) return; rq=true; let done=false; const run=()=>{ if(done) return; done=true; rq=false; safeRender(); }; requestAnimationFrame(run); setTimeout(run,150); }
 function safeRender(){ try{ doRender(); }catch(e){ console.error(e); const m=document.getElementById("main"); if(m) m.innerHTML=`<div class="empty">Something went wrong drawing this page: ${esc(String(e&&e.message||e))}. Please send a screenshot to Alfred.</div>`; } }
 function doRender(){
@@ -1123,6 +1156,8 @@ function doRender(){
   if(RO()&&S.tab!=="none"){ const dv=DELIV()&&(S.tab==="plan"||S.tab==="deliveries"); $("#testbar").innerHTML=`<div class="testbar">${dv?`You can ${SUPK()?"create and edit delivery orders, ":""}change To make, snap the filled prep sheet, check colours and mark deliveries delivered here; the rest is view only.`:`This page is view only for you (${esc(AUTH.label||"your access")}). Ask Alfred or Joscelyn if you need to change it.`} Kitchen reports are in <a href="kitchen.html">Kitchen HQ</a>.</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!el.dataset.stp&&!el.dataset.st&&!(DELIV()&&kitOK(el))) el.disabled=true; }); }
   if(aid){const e=document.getElementById(aid); if(e){e.focus({preventScroll:true}); if(sel&&"setSelectionRange" in e){try{e.setSelectionRange(sel[0],sel[1])}catch(_){}}}}
   tourFor(); if(S.loaded.size>=NCOL) setTimeout(()=>CA.tour.maybeStart(),300);
+  /* v22.29 "Daily prep is out": the window on this page prints straight away, so it only shows once the data is in */
+  if(S.loaded.size>=NCOL&&!prepWinAsked){ prepWinAsked=true; let go=""; try{ go=sessionStorage.getItem("ca.pwGo")||""; sessionStorage.removeItem("ca.pwGo"); }catch(e){} if(CA.prepWin) setTimeout(()=>CA.prepWin(!!go),go?200:600); }
 }
 const F=(k,d="")=>S.f[k]??d;
 const opt=(v,l,cur)=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`;
@@ -1771,6 +1806,7 @@ function vSetup(){
         <label class="f">Mon–Fri hours<span class="row"><input type="time" id="pe-wo" data-peh="wkOpen" value="${esc(e.hours?.wkOpen||"10:00")}"><input type="time" id="pe-wc" data-peh="wkClose" value="${esc(e.hours?.wkClose||"22:00")}"></span></label>
         <label class="f">Sat–Sun hours<span class="row"><input type="time" id="pe-eo" data-peh="weOpen" value="${esc(e.hours?.weOpen||"10:00")}"><input type="time" id="pe-ec" data-peh="weClose" value="${esc(e.hours?.weClose||"22:00")}"></span></label>
         <label class="f">Starting par (cakes/day per flavour, before data)<input id="pe-par" data-pe="parDay" inputmode="numeric" value="${esc(e.parDay??3)}"></label>
+        ${e.internal?"":`<label class="f" title="A day's delivery under this many cakes is skipped on the prep list (Send anyway is still possible). Never two skips in a row. Empty = ${MIN_DROP_DEF}, 0 = never skip.">Smallest delivery (cakes)<input id="pe-mindrop" data-pe="minDrop" inputmode="numeric" placeholder="${MIN_DROP_DEF}" value="${esc(e.minDrop??"")}"></label>`}
       </div>
       <div class="fgrid"><div class="f"><span>Closed on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-cl-${i}" data-pearr="closed" data-v="${i}" ${((e.hours||{}).closed||[]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
       <div class="lim" style="margin-top:10px"><h3 style="margin:0 0 4px">People to remind on WhatsApp</h3>
@@ -2001,17 +2037,26 @@ function salesHistory(pid,days=28){
   return out;
 }
 function forecastFor(pid,prodId,hist){
-  const h=hist[prodId]||[], base=h.map(x=>({...x,b:x.sold/dayFactor(x.date)}));
-  const avg=a=>a.length?a.reduce((s,x)=>s+x.b,0)/a.length:null;
+  /* v22.29 (approved by Alfred 11 Oct, "ok we can go with your est"): the last 7 days count double, so a cake that suddenly sells more or less shows within a week */
+  const d7=add(today(),-7), h=hist[prodId]||[], base=h.map(x=>({...x,b:x.sold/dayFactor(x.date),w:x.date>=d7?2:1}));
+  const avg=a=>a.length?a.reduce((s,x)=>s+x.b*x.w,0)/a.reduce((s,x)=>s+x.w,0):null;
   const all=avg(base); let aw=avg(base.filter(x=>!tradesLikeWeekend(x.date))), ae=avg(base.filter(x=>tradesLikeWeekend(x.date)));
   const par=+partner(pid).parDay||3, source=h.length>=5?"history":(h.length?"thin history":"starting par");
   if(aw==null) aw=all!=null?all/1.15:par; if(ae==null) ae=all!=null?all*1.25:par*1.3;
   if(h.length<5&&h.length){aw=(aw+par)/2; ae=(ae+par*1.3)/2;}
   const so=h.length?h.filter(x=>x.stockout).length/h.length:0;
   const sold=h.reduce((s,x)=>s+x.sold,0), waste=h.reduce((s,x)=>s+x.waste,0), wr=(sold+waste)?waste/(sold+waste):0;
-  const boost=so>.3?1.15:1;
+  /* v22.29: one sold-out allowance only — the +20% buffer in planOutlet (as explained to Alfred 11 Oct); the extra ×1.15 here is retired */
+  const boost=1;
   return {aw,ae,so,wr,n:h.length,sold,waste,source,per:iso=>(tradesLikeWeekend(iso)?ae:aw)*dayFactor(iso)*boost};
 }
+/* v22.29 (Alfred 11 Oct: "if the delivery is too little then we will ignore … we need a minimum to deliver, you suggest"): the smallest
+   delivery per outlet, in cakes (Setup › Outlets; empty = 6, 0 = never skip). A planned top-up under it is skipped for the day, unless
+   the outlet got nothing on its previous delivery day (never two skips in a row), someone typed numbers for it, or "Send anyway". */
+const MIN_DROP_DEF=6;
+const minDropOf=p=>{ const v=p&&p.minDrop; if(v===""||v==null){ const g=cfg().minDrop; return g===""||g==null?MIN_DROP_DEF:Math.max(0,Math.round(+g)||0); } return Math.max(0,Math.round(+v)||0); };
+function prevDeliveryDay(pid,d1){ const dd=(partner(pid).deliveryDays||[1,3,5]).map(Number); for(let i=1;i<=14;i++){ const x=add(d1,-i); if(dd.includes(dow(x))&&!isClosed(pid,x)) return x; } return null; }
+const hadDelivery=(pid,date)=>Object.values((weekDoc(pid,weekStartOf(date))||{}).dos||{}).some(o=>o&&o.date===date&&o.status!=="cancelled");
 function nextDeliveries(pid,from){const dd=(partner(pid).deliveryDays||[1,3,5]).map(Number);const r=[];for(let i=0;i<28&&r.length<2;i++){const d=add(from,i);if(dd.includes(dow(d))&&!isClosed(pid,d))r.push(d);}return r;}
 function planOutlet(pid,taken){
   const t=today(), p=partner(pid), hist=salesHistory(pid,28), [d1,d2]=nextDeliveries(pid,add(t,((+cfg().prepLeadDays||0)>0||new Date().getHours()>=+(cfg().planSwitchHour??14))?1:0));
@@ -2030,6 +2075,10 @@ function planOutlet(pid,taken){
      delivery), and only for cakes that sell at that place. A cake that sold ≤1 in 14 days there, or wastes >40%, gets no forced
      minimum (it shows in the drop list). Sold-out often → +1 and the max lifts by 1. */
   const d14=add(t,-14);
+  /* v22.29 (Alfred 11 Oct: "we can have some buffer on good selling products"): the place's top 3 sellers (with 5+ days of history), or any
+     cake selling 3+ a day there, get +20% and at least 1 extra — unless they waste more than 15% */
+  const ranked=[...ids].filter(id=>S.products[id]&&S.products[id].active!==false).map(id=>{ const f=forecastFor(pid,id,hist); return {id,r:f.n>=5?f.per(d1):0}; }).filter(x=>x.r>0).sort((a,b)=>b.r-a.r);
+  const good=new Set(ranked.filter((x,i)=>i<3||x.r>=3).map(x=>x.id));
   for(const id of [...ids].filter(id=>S.products[id]&&S.products[id].active!==false).sort((a,b)=>prod(a).name.localeCompare(prod(b).name))){
     const f=forecastFor(pid,id,hist), life=+prod(id).shelfDays||3;
     let lots=(stock[id]||[]).map(x=>({...x})).sort((a,b)=>a.batch.localeCompare(b.batch));
@@ -2043,23 +2092,24 @@ function planOutlet(pid,taken){
     let demand=0; for(let i=0;i<span;i++) demand+=f.per(add(d1,i));
     const h14=(hist[id]||[]).filter(x=>x.date>=d14), sold14=h14.reduce((a,x)=>a+x.sold,0), waste14=h14.reduce((a,x)=>a+x.waste,0), wr14=(sold14+waste14)?waste14/(sold14+waste14):0;
     const dead=h14.length>=7&&sold14<=1, wasteful=h14.length>=5&&wr14>.4;
-    const buffer=(f.wr>.15||wasteful)?0:(f.so>.3?.2:.1);
-    const R=limitFor(p,id,d1); let counter=R&&R.min!=null?R.min:0; if(dead||wasteful) counter=0;
-    /* v22.19 (Alfred 7 Oct, HQ Pandan showed 10 with no sale ever): no counter minimum until the cake has sold at that place — a new cake gets the starting par only */
-    const neverSold=(hist[id]||[]).reduce((a,x)=>a+(x.sold||0),0)===0; if(neverSold&&counter){ counter=0; }
-    /* "not overly": a counter minimum above what the place sells within the cake's shelf life only turns into waste — cap it (with real history) */
-    const lifeCap=Math.max(1,Math.ceil(f.per(d1)*life)), counterSet=counter; if(counter>lifeCap&&f.n>=5) counter=lifeCap;
+    const isGood=good.has(id)&&!(f.wr>.15||wasteful), buffer=(f.wr>.15||wasteful)?0:((f.so>.3||isGood)?.2:.1);
+    /* v22.29 (Alfred 11 Oct: "yes always min" — HQ 6, cheesecake 4 each, Jiran 2, Knocknock 3): the Setup minimum is kept for EVERY cake the
+       place carries, every day — no more dropping it for slow, wasteful or never-sold cakes, and no shelf-life cap (v22.15/v22.19 rules
+       retired). To stop a cake at a place, untick it under Setup › Outlets › Cakes this outlet carries. Small top-ups are skipped by the
+       outlet's "smallest delivery" instead (planAll). */
+    const R=limitFor(p,id,d1); let counter=R&&R.min!=null?R.min:0;
+    const neverSold=(hist[id]||[]).reduce((a,x)=>a+(x.sold||0),0)===0, counterSet=counter;
     let maxCap=R&&R.max!=null?R.max+(f.so>.3?1:0):null;
-    const need=Math.ceil(demand*(1+buffer)); let target=Math.max(need,counter); if(maxCap!=null) target=Math.min(target,Math.max(maxCap,counter));
+    const need=Math.max(Math.ceil(demand*(1+buffer)),isGood&&demand>0?Math.ceil(demand)+1:0); let target=Math.max(need,counter); if(maxCap!=null) target=Math.min(target,Math.max(maxCap,counter));
     let suggest=Math.max(0,target-usable);
     const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
-    if(neverSold&&R&&R.min) notes.push(`not sold here yet — no counter minimum (Setup min ${R.min} starts once it sells)`);
-    if(dead) notes.push(`sold ${sold14} in 14 days here — no counter minimum (drop list)`); else if(wasteful) notes.push(`waste ${Math.round(wr14*100)}% in 14 days — no minimum, no buffer`); else if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`);
-    if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — buffer +20%${R&&R.max!=null?", max lifted by 1":""}`);
-    if(counter&&target===counter&&need<counter) notes.push(counter<counterSet?`${R.day}: min ${counterSet} of each ${R.one} capped at ${counter} — sells ${(Math.round(f.per(d1)*10)/10).toFixed(1)}/day, ${life}-day life, more would expire`:`${R.day}: min ${counter} of each ${R.one} on the counter (Setup › Outlets)`); if(maxCap!=null&&need>maxCap) notes.push(`${R.day}: max ${maxCap} of each ${R.one} (Setup › Outlets)`);
+    if(neverSold&&counter&&!dead) notes.push(`not sold here yet — min ${counter} kept`);
+    if(dead) notes.push(`sold ${sold14} in 14 days here — min ${counter} kept (drop list)`); else if(wasteful) notes.push(`waste ${Math.round(wr14*100)}% in 14 days — no buffer, min ${counter} kept`); else if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`);
+    if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — buffer +20%${R&&R.max!=null?", max lifted by 1":""}`); else if(isGood) notes.push(`good seller here — buffer +20% (at least +1)`);
+    if(counter&&target===counter&&need<counter) notes.push(`${R.day}: min ${counter} of each ${R.one} on the counter (Setup › Outlets)`); if(maxCap!=null&&need>maxCap) notes.push(`${R.day}: max ${maxCap} of each ${R.one} (Setup › Outlets)`);
     if(d2&&diffDays(d2,d1)>life) notes.push(`gap to next delivery (${diffDays(d2,d1)}d) is longer than shelf life`);
-    const why=`sells ${(Math.round(f.per(d1)*10)/10).toFixed(1)}/day · ${span} day${span>1?"s":""} to cover → ${need}${counter&&counter>need?` · counter min ${counter}${counter<counterSet?` (set ${counterSet}, capped by ${life}-day life)`:""}`:""} · has ${stockNow} (${usable} still fresh) → ${suggest}`;
-    lines.push({productId:id,aw:f.aw,ae:f.ae,perDay:f.per(d1),stockNow,stockRep,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n,refDate:ref?ref.date:"",why,dead,wasteful,sold14,waste14,days14:h14.length,target,counter,counterSet});
+    const why=`sells ${(Math.round(f.per(d1)*10)/10).toFixed(1)}/day · ${span} day${span>1?"s":""} to cover → ${need}${counter&&counter>need?` · counter min ${counter}`:""} · has ${stockNow} (${usable} still fresh) → ${suggest}`;
+    lines.push({productId:id,good:isGood,aw:f.aw,ae:f.ae,perDay:f.per(d1),stockNow,stockRep,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n,refDate:ref?ref.date:"",why,dead,wasteful,sold14,waste14,days14:h14.length,target,counter,counterSet});
   }
   wholePick(p,lines,d1,taken);
   const hol=[]; for(let i=0;i<(d2?diffDays(d2,d1):3);i++){for(const e of dayEvents(add(d1,i))) if(!hol.includes(e)) hol.push(e);}
@@ -2093,7 +2143,12 @@ function planAll(){const taken={};
       if(partner(pl.pid).internal) for(const l of pl.lines){ l.suggestFresh=l.suggest; if(!(isWhole(l.productId)&&l.suggest===0)) l.suggest=Math.max(0,l.target||0); /* a whole cake the whole-cake rules left out stays out */ if(l.why) l.why=l.why.replace(/ · has .*$/,"")+` → display needs ${l.suggest} (has ${l.stockNow||0}; what is still sellable stays, the rest is made)`; }
       for(const l of pl.lines){ const o=(ov[l.productId]||{})[pl.pid]; l.over=o!=null&&o!==""&&+o!==l.suggest; l.base=l.over?Math.max(0,Math.round(+o)):l.suggest; }
       /* v22.21 (Alfred 7 Oct): "a tick box, today no delivery for knocknock or jiran … when is too little to prepare, we might skip it" */
-      const sk=!partner(pl.pid).internal&&(((S.prep||{})[pl.prepDate]||{}).skip||{})[pl.pid]; if(sk){ pl.skip=sk; for(const l of pl.lines){ l.over=false; l.base=0; } } } }
+      const sk=!partner(pl.pid).internal&&(((S.prep||{})[pl.prepDate]||{}).skip||{})[pl.pid]; if(sk){ pl.skip=sk; for(const l of pl.lines){ l.over=false; l.base=0; } }
+      if(!sk&&!partner(pl.pid).internal&&pl.d1){ const mn=minDropOf(partner(pl.pid)), tot=pl.lines.reduce((a,l)=>a+(l.base||0),0), typed=pl.lines.some(l=>l.over), forced=((((S.prep||{})[pl.prepDate]||{}).sendSmall)||{})[pl.pid];
+        if(mn>0&&tot>0&&tot<mn&&!typed){ const prev=prevDeliveryDay(pl.pid,pl.d1), had=!prev||hadDelivery(pl.pid,prev);
+          if(forced) pl.smallSent={tot,mn,by:forced.by||""};
+          else if(!had) pl.smallKeep={tot,mn,prev};
+          else { pl.small={tot,mn,prev}; for(const l of pl.lines){ l.smallWas=l.base; l.base=0; } } } } } }
   /* v22.15: HQ display stock goes to the outlets first. For each cake, HQ's lots that will still have TRANSFER_LIFE days of life on the
      delivery day, beyond what HQ itself needs (its target), are allocated (oldest eligible lot first). v22.16 (Alfred 7 Oct): online orders
      (Orderla) picked up at HQ on the delivery day come first — "yesterday's stock can be used for order or other outlets first to have more
@@ -2116,6 +2171,9 @@ function planAll(){const taken={};
       for(const {l} of (byProd[id]||[]).sort((a,b)=>(b.l.perDay||0)-(a.l.perDay||0))) take(l,x=>diffDays(hqPl.d1,x.batch)<=mxA&&lifeOn(x)>=TRANSFER_LIFE);
       if(hqLine&&hqLine.base>0){ take(hqLine,x=>lifeOn(x)>=1); hqLine.kept=hqLine.fromHQ;
         if(isWhole(id)&&hqLine.fromHQ>0&&hqLine.fresh>2){ hqLine.fresh=2; (hqLine.notes||(hqLine.notes=[])).push(`whole cake: ${hqLine.fromHQ} still on the display — at most 2 more`); hqLine.capped=true; } } } }
+  { const FZ=freezerState(); if(FZ.on) for(const [id,x] of Object.entries(FZ.left)){ let room=x.left;
+      const parts=[...(ordLines[id]?[ordLines[id]]:[]),...(hqPl?hqPl.lines.filter(l=>l.productId===id):[]),...plans.filter(pl=>!partner(pl.pid).internal).flatMap(pl=>pl.lines.filter(l=>l.productId===id))];
+      for(const l of parts){ const f=l.fresh||0, u=Math.max(0,Math.min(f,room)); l.frz=x.left; if(u<f){ const cut=f-u; l.fresh=u; l.base=Math.max(0,(l.base||0)-cut); l.frzCut=cut; (l.notes||(l.notes=[])).push(x.left?`freezer has ${x.left} — ${cut} fewer`:`freezer empty — stopped`); } room-=u; } } }
   if(hqPl) for(const l of Object.values(ordLines)){ const d=hqPl.prepDate; if(l.fresh>0) ((prep[d]||(prep[d]={}))[l.productId]||(prep[d][l.productId]={})).orders=l.fresh; else if(l.fromHQ>0) (prep[d]||(prep[d]={}))[l.productId]||(prep[d][l.productId]={}); }
   for(const pl of plans) for(const l of pl.lines) if(l.fresh>0){const d=pl.prepDate;((prep[d]||(prep[d]={}))[l.productId]||(prep[d][l.productId]={}))[pl.pid]=l.fresh;}
   for(const pl of plans) for(const l of pl.lines) if(l.fromHQ>0&&!partner(pl.pid).internal){const d=pl.prepDate; (prep[d]||(prep[d]={}))[l.productId]||(prep[d][l.productId]={});} /* a cake that only moves from the display still gets its row (To make 0); one that only stays on the display does not */
@@ -2202,7 +2260,7 @@ function printPrep(d){const PA=planAll(), {plans}=PA; const mk=(S.prep||{})[d]||
      back (📷 Snap filled sheet), so every row is numbered and the date is printed big. */
   const have=(pl,id)=>{ const ln=(pl.lines||[]).find(l=>l.productId===id); return ln?{now:+ln.stockNow||0,last:Math.max(0,(+ln.stockNow||0)-(+ln.usable||0))}:{now:0,last:0}; };
   const lotsTxt=id=>{ const lots=hqPl?((hqPl.lots||{})[id]||[]).filter(x=>x.qty>0).sort((a,b)=>a.batch.localeCompare(b.batch)):[]; return lots.map(x=>`<span class="dt"><b>${x.qty}</b><i style="background:${hexOf(x.colour)}"></i>${esc(x.colour)} ${esc(dayOfBatch(x.batch,x.colour))}</span>`).join("&nbsp; ")||""; };
-  const rows=sheetRows(d,PA);
+  const rows=sheetRows(d,PA), FZp=freezerState(), SV=showVal();
   if(!rows.length){toast("Nothing to prep for this day");return;}
   /* v22.21: remember what was printed (row order + To make) — the kitchen snaps this sheet in the opening report */
   if(!(RO()&&!DELIV())){ const who=(CA.get()||{}).name||AUTH.name||""; savePrep(d,x=>{ x.sheet={at:new Date().toISOString(),by:who,rows:rows.map(r=>({id:r.id,name:prod(r.id).name,toMake:r.make}))}; }).catch(()=>{}); }
@@ -2211,9 +2269,9 @@ function printPrep(d){const PA=planAll(), {plans}=PA; const mk=(S.prep||{})[d]||
   const colCell=(pl,id)=>{ const h=have(pl,id), ln=(pl.lines||[]).find(l=>l.productId===id), fr=ln&&ln.fromHQ?ln.fromHQ:0, P0=partner(pl.pid), n=sendOf(ln);
     return `<td class="r"><b>${n||""}</b>${fr?`<div class="sm"><b>${fr}</b> ${P0.internal?"on display":"from display"}</div>`:""}${!P0.internal&&h.now?`<div class="sm" style="color:#777">left ${h.now}${h.last?` · ${h.last} last day`:""}</div>`:""}</td>`; };
   printDoc(`Morning prep sheet ${d}`,`<div class="ph">${MARKH()}<div><div class="co">${esc(cfg().company.name)}</div><h1>Morning prep sheet</h1><div class="sm" style="font-weight:600;letter-spacing:.04em">For online orders · HQ counter · partner outlets</div><div>Prep on <b>${nice(d)} ${d.slice(0,4)}</b> · printed ${esc(new Date().toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}))}</div></div><div class="r"><div class="bigdot"><i style="background:${hexOf(col.name)}"></i><div><b>${esc(col.name)}</b><br><span class="sm">dot for this batch</span></div></div><div class="mono" style="font-size:15px;font-weight:700;margin-top:6px;letter-spacing:.06em">PREP ${esc(d)}</div></div></div>
-  <table><thead><tr><th class="r">#</th><th>Cake</th><th>Display left<br><span class="sm">by dot</span></th><th class="r">Require<br><span class="sm">total</span></th><th class="r">To make<br><span class="sm">fresh</span></th>${ORD?`<th class="r">Order<br><span class="sm">online · ${nice(ORD.date)}</span></th>`:""}${cols.map(pl=>`<th class="r">${esc(partner(pl.pid).code)}<br><span class="sm">${partner(pl.pid).internal?"display":pl.skip?"NO DELIVERY":nice(pl.d1)+" · send"}</span></th>`).join("")}<th class="r" style="min-width:70px">MADE</th><th style="min-width:110px">NOTE</th></tr></thead><tbody>
-  ${rows.map((r,i)=>{ const o=ordL[r.id]; return `<tr><td class="r sm">${i+1}</td><td>${esc(prod(r.id).name)}<div class="sm">${esc(prod(r.id).category||"")}</div></td><td class="sm">${lotsTxt(r.id)}</td><td class="r">${r.req||""}</td><td class="r b">${r.req>0||r.make>0?r.make:""}${r.fromD>0?`<div class="sm">+${r.fromD} display</div>`:""}</td>${ORD?`<td class="r"><b>${o?sendOf(o):""}</b>${o&&o.fromHQ?`<div class="sm"><b>${o.fromHQ}</b> from display</div>`:""}</td>`:""}${cols.map(pl=>colCell(pl,r.id)).join("")}<td class="r box">${r.made!=null?r.made:""}</td><td class="box">${esc((mk.reason||{})[r.id]||"")}</td></tr>`; }).join("")}
-  <tr class="tot"><td></td><td>Total</td><td></td><td class="r">${rows.reduce((a,r)=>a+r.req,0)}</td><td class="r">${rows.reduce((a,r)=>a+r.make,0)}</td>${ORD?`<td class="r">${Object.values(ordL).reduce((a,l)=>a+sendOf(l),0)||""}</td>`:""}${cols.map(pl=>`<td class="r">${rows.reduce((a,r)=>a+sendOf((pl.lines||[]).find(l=>l.productId===r.id)),0)||""}</td>`).join("")}<td></td><td></td></tr></tbody></table>
+  <table><thead><tr><th class="r">#</th><th>Cake</th><th>Display left<br><span class="sm">by dot</span></th><th class="r">Require<br><span class="sm">total</span></th><th class="r">To make<br><span class="sm">fresh</span></th>${SV?`<th class="r">Value<br><span class="sm">RM, retail</span></th>`:""}${ORD?`<th class="r">Order<br><span class="sm">online · ${nice(ORD.date)}</span></th>`:""}${cols.map(pl=>`<th class="r">${esc(partner(pl.pid).code)}<br><span class="sm">${partner(pl.pid).internal?"display":pl.skip?"NO DELIVERY":pl.small?"SKIP · only "+pl.small.tot:nice(pl.d1)+" · send"}</span></th>`).join("")}<th class="r" style="min-width:70px">MADE</th><th style="min-width:110px">NOTE</th></tr></thead><tbody>
+  ${rows.map((r,i)=>{ const o=ordL[r.id]; return `<tr><td class="r sm">${i+1}</td><td>${esc(prod(r.id).name)}<div class="sm">${esc(prod(r.id).category||"")}${isCheese(r.id)&&FZp.left[r.id]?` · ❄ ${FZp.left[r.id].left} in freezer`:""}</div></td><td class="sm">${lotsTxt(r.id)}</td><td class="r">${r.req||""}</td><td class="r b">${r.req>0||r.make>0?r.make:""}${r.fromD>0?`<div class="sm">+${r.fromD} display</div>`:""}</td>${SV?`<td class="r sm">${r.make>0&&retailOf(r.id)?"RM "+fm(r.make*retailOf(r.id)):""}</td>`:""}${ORD?`<td class="r"><b>${o?sendOf(o):""}</b>${o&&o.fromHQ?`<div class="sm"><b>${o.fromHQ}</b> from display</div>`:""}</td>`:""}${cols.map(pl=>colCell(pl,r.id)).join("")}<td class="r box">${r.made!=null?r.made:""}</td><td class="box">${esc((mk.reason||{})[r.id]||"")}</td></tr>`; }).join("")}
+  <tr class="tot"><td></td><td>Total</td><td></td><td class="r">${rows.reduce((a,r)=>a+r.req,0)}</td><td class="r">${rows.reduce((a,r)=>a+r.make,0)}</td>${SV?`<td class="r">RM ${fm(prodValue(rows.map(r=>({id:r.id,q:r.make}))).v)}</td>`:""}${ORD?`<td class="r">${Object.values(ordL).reduce((a,l)=>a+sendOf(l),0)||""}</td>`:""}${cols.map(pl=>`<td class="r">${rows.reduce((a,r)=>a+sendOf((pl.lines||[]).find(l=>l.productId===r.id)),0)||""}</td>`).join("")}<td></td><td></td></tr></tbody></table>
   ${tr.length?`<h3>From the HQ display → orders & outlets (not made today: take them off the display, keep their dot)</h3><table><thead><tr><th>Cake</th><th>Colour dot</th><th class="r">Qty</th><th>To</th><th>Taken</th></tr></thead><tbody>${tr.sort((a,b)=>catRank(a.id)-catRank(b.id)||prod(a.id).name.localeCompare(prod(b.id).name)||a.to.localeCompare(b.to)).map(({to,id,x})=>`<tr><td>${esc(prod(id).name)}</td><td><span class="dt"><i style="background:${hexOf(x.colour)}"></i>${esc(x.colour)} · made ${esc(dayOfColour(x.colour)||"")}</span></td><td class="r b">${x.qty}</td><td>${esc(to)}</td><td class="box"></td></tr>`).join("")}<tr class="tot"><td>Total from display</td><td></td><td class="r">${tr.reduce((a,t)=>a+t.x.qty,0)}</td><td></td><td></td></tr></tbody></table>`:""}
   ${ORD&&ORD.counted.length?`<h3>Online orders for ${nice(ORD.date)} (${ORD.counted.length})</h3><table><thead><tr><th>Order</th><th>Time</th><th>How</th><th>Name</th><th>Items → cakes</th><th>Packed</th></tr></thead><tbody>${ORD.counted.map(o=>`<tr><td class="mono">#${esc(o.code)}</td><td>${esc(o.slot||(o.od?"ASAP":""))}</td><td class="sm">${esc(/pick ?up/i.test(o.how)?"Pick up":/deliver/i.test(o.how)?"Delivery":o.how||"")}</td><td>${esc(o.name||"")}</td><td class="sm">${(o.items||[]).map(it=>{const b=olBreakdown(it); return `${(+it.qty||1)>1?it.qty+"× ":""}${esc(it.name)}${b===null?" <b>(not matched)</b>":b.length?" → "+b.map(x=>`${x.qty>1?x.qty+"× ":""}${esc(prod(x.productId).name)}`).join(", "):""}`;}).join("<br>")}</td><td class="box"></td></tr>`).join("")}</tbody></table>`:""}
   <p class="sm">Label every cake you make today with the <b>${esc(col.name)}</b> dot. <b>Write the real number you made in MADE for every row</b> (write 0 if none) and the reason under NOTE when it is fewer than To make. Then snap it in the opening report (<b>Kitchen HQ › Opening › Prep sheet (made)</b>) or on the Prep list (<b>📷 Snap filled sheet</b>): the app reads the sheet, you check it and send. Fewer than planned: orders are filled first, then the outlets and the display share the rest; more than planned goes to the HQ display.
@@ -2237,6 +2295,7 @@ function draftPlan(){ const PA=planAll(), out=[], skip=[];
   for(const pl of PA.plans){ const p=partner(pl.pid); if(!pl.d1||p.internal) continue; /* v22: HQ is produced and displayed at HQ — never a delivery order */
     if(pl.planned&&pl.planned.length){ skip.push({name:p.name,d1:pl.d1,why:"already has "+pl.planned.map(o=>o.no).join(", ")}); continue; }
     if(pl.skip){ skip.push({name:p.name,d1:pl.d1,why:"no delivery (ticked on the prep list)"}); continue; }
+    if(pl.small){ skip.push({name:p.name,d1:pl.d1,why:`only ${pl.small.tot} needed — under the smallest delivery (${pl.small.mn}); Send anyway on the prep list to draft it`}); continue; }
     const lines=[]; for(const l of pl.lines){ if((l.freshSend||0)>0) lines.push({productId:l.productId,qty:l.freshSend}); for(const x of l.fromLots||[]) if(x.qty>0) lines.push({productId:l.productId,qty:x.qty,colour:x.colour,batchDate:x.batch,fromHQ:true}); }
     if(!lines.length){ skip.push({name:p.name,d1:pl.d1,why:"nothing suggested"}); continue; }
     if(weekDoc(p.id,weekStartOf(pl.d1)).settlement){ skip.push({name:p.name,d1:pl.d1,why:"that week is already billed"}); continue; }
@@ -2264,13 +2323,41 @@ function dropList(plans){ const rows=[]; for(const pl of plans){ const p=partner
   if(!rows.length) return "";
   return `<div class="panel"><div class="spread"><h2>Not selling · consider dropping</h2><span class="small muted">≤1 sold in 14 days</span></div>
     ${rows.map(r=>`<div style="margin:6px 0"><b>${esc(r.p.name)}</b>: ${r.dead.map(l=>`${esc(prod(l.productId).name)} <span class="small muted">(${l.sold14} sold, ${l.waste14} wasted)</span>`).join(" · ")}</div>`).join("")}
-    <p class="small muted" style="margin:6px 0 0">The planner no longer forces a counter minimum for these; it only sends what sells. To stop sending them at all, untick the cake under Setup › Outlets › Cakes this outlet carries${can("setup")?` <a class="btn sm" href="#setup">Setup</a>`:""}.</p></div>`; }
+    <p class="small muted" style="margin:6px 0 0">The counter minimum is still kept for these (always min, since 11 Oct), so they keep turning into waste. To stop sending them, untick the cake under Setup › Outlets › Cakes this outlet carries${can("setup")?` <a class="btn sm" href="#setup">Setup</a>`:""}.</p></div>`; }
 /* v22.16–22.18 (Alfred 7 Oct): one row per cake — Require | To make (editable, suggested first) | Order | HQ | outlets — with the display
    allocation under it. The real Made is written on the printed sheet, snapped, read by the AI, checked and submitted (prepReadPanel). */
 const placeCols=(plans,d)=>{ const hq=plans.find(pl=>pl.prepDate===d&&partner(pl.pid).internal&&pl.d1), sells=pl=>pl.lines.reduce((a,l)=>a+(l.perDay||0),0);
   const outs=plans.filter(pl=>pl.prepDate===d&&pl.d1&&!partner(pl.pid).internal).sort((a,b)=>sells(b)-sells(a)||partner(a.pid).code.localeCompare(partner(b.pid).code));
   return {hq,outs,cols:(hq?[hq]:[]).concat(outs)}; }; /* HQ first, then the outlets, the one that sells more first */
 /* the rows of the printed prep sheet, in printed order: every cake to make, plus cakes only in stock somewhere (To make 0) */
+/* v22.29 (Alfred 11 Oct: "I need to know daily produce value in the prep sheet, each item and total value"): value = qty × the cake's
+   retail price (Setup › Cakes). A cake with no retail price counts 0 and is named in the total's tooltip. */
+const retailOf=id=>Math.max(0,+(prod(id)||{}).retail||0);
+const showVal=()=>Object.values(S.products||{}).some(p=>+p.retail>0); /* kitchen-only accounts don't receive prices (access rules): no value shown then */
+/* v22.29 (Alfred 11 Oct, freezer board photo: "once our stock finished, we will stop producing all cheesecake"): cheesecakes come out of
+   the freezer stock. config/freezer = {counts:{id:n}, date, at, by, log}; left = counted − Made (else To make) on each prep day after the
+   count (the count day too when Made was saved after the count). Planning never takes more than is left — 0 left = that cheesecake stops.
+   A cheesecake that was never counted is not limited. */
+const isCheese=id=>{ const c=catOf(prod(id)); return c==="Cheesecake"||c==="Whole cheesecake"; };
+function freezerState(){ const F=S.freezer||{}, C=F.counts||{}, d0=F.date||"", at=F.at||"", left={}; let on=false;
+  for(const [id,v] of Object.entries(C)){ if(v===""||v==null||!S.products[id]) continue; on=true; let used=0;
+    for(const [d,P] of Object.entries(S.prep||{})){ if(!d0||d<d0) continue; const m=(P.made||{})[id], k=(P.make||{})[id], q=m!=null&&m!==""?+m:(d<today()&&k!=null&&k!==""?+k:null); if(q==null) continue; if(d===d0&&!(m!=null&&m!==""&&String(P.madeAt||"")>at)) continue; used+=q; }
+    left[id]={counted:+v,used,left:Math.max(0,+v-used)}; }
+  return {on,left,date:d0,at,by:F.by||""}; }
+const frzBadge=(id,FZ)=>{ const x=FZ&&FZ.left[id]; if(!x) return ""; return `<div class="small ${x.left?"muted":""}" style="${x.left?"":"color:var(--bad,#b42318);font-weight:600"}" title="Freezer: counted ${x.counted} on ${esc(nice(FZ.date))}${x.used?`, ${x.used} taken out since`:""}">❄ ${x.left?`${x.left} in freezer`:"freezer empty — stopped"}</div>`; };
+const prodValue=rows=>{ let v=0; const miss=[]; for(const r of rows){ const q=+r.q||0; if(!q) continue; const p=retailOf(r.id); if(!p) miss.push(prod(r.id).name); v+=q*p; } return {v:r2(v),miss}; };
+/* v22.29b (Alfred 11 Oct: "we don't need this yet, you just need to remember it, remark on the cheesecake row and that's it — we will move
+   into the freezer stock check (production stock check) soon, for raw cakes out of the mould"): the count box is not shown; the app keeps
+   the board's numbers (config/freezer), counts down from Made and shows "❄ N in freezer" on the cheesecake rows. Kept for that stock check. */
+function freezerPanel(){ const sl=Object.values(S.products).filter(p=>p.active!==false&&catOf(p)==="Cheesecake").sort((a,b)=>a.name.localeCompare(b.name)); if(!sl.length) return "";
+  const wh=Object.values(S.products).filter(p=>p.active!==false&&catOf(p)==="Whole cheesecake"), pair=p=>wh.find(w=>w.name.toLowerCase().startsWith(p.name.toLowerCase())), FZ=freezerState(), E=S.ui.frz, can0=!(RO()&&!DELIV());
+  const cellV=id=>{ if(!id) return `<td class="r muted">—</td>`; const x=FZ.left[id]; if(E) return `<td class="r"><input type="number" min="0" step="1" inputmode="numeric" class="mono" style="width:4.2em" data-frz="${esc(id)}" value="${esc(E[id]??(x?x.left:""))}" aria-label="${esc(prod(id).name)} in the freezer"></td>`;
+    return x?`<td class="r mono" title="counted ${x.counted}${x.used?`, ${x.used} taken out since`:""}">${x.left?x.left:`<b style="color:var(--bad,#b42318)">0</b>`}</td>`:`<td class="r muted">not counted</td>`; };
+  const tot=k=>sl.reduce((a,p)=>{ const id=k?((pair(p)||{}).id):p.id, x=id&&FZ.left[id]; return a+(x?x.left:0); },0);
+  return `<div class="panel" id="freezer"><div class="spread"><h2>Cheesecake freezer</h2><div class="row">${E?`<button class="btn sm pri" data-act="frzSave">Save count</button><button class="btn sm" data-act="frzCancel">Cancel</button>`:can0?`<button class="btn sm" data-act="frzEdit">Count the freezer</button>`:""}</div></div>
+    <p class="small muted" style="margin:0 0 6px">${FZ.on?`Counted ${esc(nice(FZ.date))}${FZ.by?` by ${esc(FZ.by)}`:""}. Left = counted − Made (or To make) since then. The prep list never plans more than is left: at 0 that cheesecake stops.`:`Not counted yet — count the freezer board once; the app then takes off what the kitchen makes each day.`}${E?" Type what is in the freezer now (blank = not counted).":""}</p>
+    <div class="tw"><table class="cf"><thead><tr><th>Cheesecake</th><th class="r">Slices</th><th class="r">Whole 7-inch</th></tr></thead><tbody>${sl.map(p=>`<tr><td data-l="Cheesecake">${esc(p.name.replace(/\s*cheesecake$/i,""))}</td>${cellV(p.id).replace("<td",'<td data-l="Slices"')}${cellV((pair(p)||{}).id).replace("<td",'<td data-l="Whole"')}</tr>`).join("")}
+    ${E?"":`<tr class="tot"><td><b>Total</b></td><td class="r mono"><b>${tot(0)}</b></td><td class="r mono"><b>${tot(1)}</b></td></tr>`}</tbody></table></div></div>`; }
 function sheetRows(d,PA){ const {cols}=placeCols(PA.plans,d), pr=prepRows(d,PA), ids=new Set(pr.map(r=>r.id));
   for(const pl of cols) for(const l of pl.lines||[]) if((+l.stockNow||0)>0&&S.products[l.productId]&&!ids.has(l.productId)){ ids.add(l.productId); pr.push({id:l.productId,pm:{},tot:0,req:0,fromD:0,make:0,over:false,made:null}); }
   return pr.sort((a,b)=>catRank(a.id)-catRank(b.id)||prod(a.id).name.localeCompare(prod(b.id).name)); }
@@ -2280,7 +2367,7 @@ function prepRows(d,PA){ const {plans}=PA, prepX=PA.prep[d]||{}, ORD=PA.orders||
     const k=(P.make||{})[id], m=(P.made||{})[id]; return {id,pm,tot,req,fromD:Math.max(0,req-tot),make:k!=null&&k!==""?+k:tot,over:k!=null&&k!==""&&+k!==tot,made:m!=null&&m!==""?+m:null}; }); }
 function prepTable(d,PA,prepX,prep){ const plans=PA.plans, ORD=PA.orders||{}, P=(S.prep||{})[d]||{}, {hq:hqPl,outs,cols}=placeCols(plans,d);
   const addL=((S.ui.prepAdd||{})[d]||[]).filter(id=>!prepX[d][id]); addL.forEach(id=>{prepX[d][id]={}; prep[d][id]=0;});
-  const rows=prepRows(d,PA); let lastCat="";
+  const rows=prepRows(d,PA), FZ=freezerState(); let lastCat="";
   const hasOrd=ORD.prepDate===d, ordL=hasOrd?(ORD.lines||{}):{};
   const lotsTxt=id=>{ const lots=hqPl?((hqPl.lots||{})[id]||[]).filter(x=>x.qty>0).sort((a,b)=>a.batch.localeCompare(b.batch)):[]; return lots.length?lots.map(x=>`<span class="dt" title="${esc(x.colour)} · made ${nice(x.batch)}"><b>${x.qty}</b><i style="background:${hexOf(x.colour)}"></i>${esc(dayOfBatch(x.batch,x.colour))}</span>`).join(""):`<span class="muted">—</span>`; };
   const ncol=5+cols.length+(hasOrd?1:0);
@@ -2290,6 +2377,7 @@ function prepTable(d,PA,prepX,prep){ const plans=PA.plans, ORD=PA.orders||{}, P=
     return `<tr class="alloc"><td></td><td colspan="${ncol-1}" class="small muted">From the display: ${parts.join(" · ")}${hl&&hl.capped?` · <span class="pill warn" style="font-size:10px;padding:1px 6px">whole cake: at most 2 more while some are left</span>`:""}</td></tr>`; };
   const chg=l=>l&&l.send!=null&&l.send!==(l.base||0)?`<span class="chg" title="After To make / Made: ${l.send}">→<b>${l.send}</b></span>`:"";
   const cell=(pl,id,pm)=>{ const l=pl.lines.find(x=>x.productId===id), q=pm[pl.pid]||0, done=(pl.planned||[]).some(o=>o.status==="delivered"), P0=partner(pl.pid);
+    if(pl.small) return `<td class="r psend pn" data-l="${esc(P0.code)}"><span class="pv muted" title="Only ${pl.small.tot} cake${pl.small.tot===1?"":"s"} needed for ${esc(P0.name)} on ${nice(pl.d1)} — under the smallest delivery (${pl.small.mn}), so it is skipped; the next delivery covers it. Send anyway: the bar above the table.">—</span>${l&&l.smallWas?`<div class="small muted pleft">was ${l.smallWas}</div>`:""}</td>`;
     if(pl.skip) return `<td class="r psend pn" data-l="${esc(P0.code)}"><span class="pv muted" title="No delivery to ${esc(P0.name)} on ${nice(pl.d1)}">—</span><div class="small muted pleft">left ${l?l.stockNow:((pl.stock||{})[id]||0)}</div></td>`;
     const lt=l?`${P0.internal?"On the HQ display":"Left at "+esc(P0.name)}${l.refDate?` after ${nice(l.refDate)}`:""}: ${l.stockRep||0}${l.perDay!=null?` · sells about ${(Math.round(l.perDay*10)/10).toFixed(1)}/day`:""}`:"";
     return `<td class="r psend pn" data-l="${esc(P0.code)}"><label title="${esc(P0.name)} · ${nice(pl.d1)}${l&&l.why?` · ${esc(l.why)}`:""}${l&&l.over?` · suggested ${l.suggest}`:""}${l&&l.fromHQ?` · ${l.fromHQ} from the HQ display`:""}${(pl.planned||[]).length?` · on ${pl.planned.map(o=>esc(o.no)).join(", ")}`:""}"><input type="number" min="0" step="1" inputmode="numeric" class="mono${l&&l.over?" over":""}" data-psend="${d}|${id}|${pl.pid}" value="${l?(l.base||0):q}" ${done?"disabled":""} aria-label="${esc(P0.name)} quantity">${l&&l.fromHQ?`<span class="pill info" style="font-size:10px;padding:1px 6px" title="${P0.internal?`${l.fromHQ} already on the display`:`${l.fromHQ} come from the HQ display`} (${l.fromLots.map(x=>x.qty+" "+x.colour+" · "+dayOfBatch(x.batch,x.colour)).join(", ")}), ${l.fresh} to make">${l.fromHQ} ${P0.internal?"on display":"HQ"}</span>`:""}${chg(l)}</label>${P0.internal?"":`<div class="small muted pleft" title="${lt}">left ${l?l.stockNow:((pl.stock||{})[id]||0)}</div>`}</td>`; };
@@ -2300,20 +2388,25 @@ function prepTable(d,PA,prepX,prep){ const plans=PA.plans, ORD=PA.orders||{}, P=
   const canSnap=!(RO()&&!DELIV());
   const skOuts=outs.filter(pl=>pl.d1&&!partner(pl.pid).internal);
   const skipBar=skOuts.length?`<div class="row skipbar" style="margin:6px 0 2px;flex-wrap:wrap;gap:6px 8px"><span class="small muted">No delivery?</span>${skOuts.map(pl=>{ const P0=partner(pl.pid), on=!!pl.skip, live=(pl.planned||[]).filter(o=>o.status!=="cancelled");
-      return `<label class="pill ${on?"warn":""}" style="gap:6px;padding:6px 10px;cursor:pointer" title="${on?`No delivery to ${esc(P0.name)} on ${nice(pl.d1)}${pl.skip.by?` — ticked by ${esc(pl.skip.by)}`:""}. Untick to deliver again.`:`Tick when ${esc(P0.name)} gets no delivery on ${nice(pl.d1)} (e.g. too little to prepare): its cakes come off the prep list${live.length?` and ${live.map(o=>esc(o.no)).join(", ")} is cancelled`:""}.`}"><input type="checkbox" data-pskip="${d}|${pl.pid}" ${on?"checked":""} ${canSnap?"":"disabled"} style="width:18px;height:18px;margin:0"> ${esc(P0.name)} <span class="muted">· ${nice(pl.d1)}</span>${on?` <b>· no delivery</b>`:""}</label>`; }).join("")}</div>`:"";
+      return `<label class="pill ${on?"warn":""}" style="gap:6px;padding:6px 10px;cursor:pointer" title="${on?`No delivery to ${esc(P0.name)} on ${nice(pl.d1)}${pl.skip.by?` — ticked by ${esc(pl.skip.by)}`:""}. Untick to deliver again.`:`Tick when ${esc(P0.name)} gets no delivery on ${nice(pl.d1)} (e.g. too little to prepare): its cakes come off the prep list${live.length?` and ${live.map(o=>esc(o.no)).join(", ")} is cancelled`:""}.`}"><input type="checkbox" data-pskip="${d}|${pl.pid}" ${on?"checked":""} ${canSnap?"":"disabled"} style="width:18px;height:18px;margin:0"> ${esc(P0.name)} <span class="muted">· ${nice(pl.d1)}</span>${on?` <b>· no delivery</b>`:""}</label>`; }).join("")}${skOuts.map(pl=>{ const P0=partner(pl.pid);
+      if(pl.small) return `<span class="pill warn" style="gap:6px;padding:6px 10px" title="Smallest delivery for ${esc(P0.name)} is ${pl.small.mn} cakes (Setup › Outlets). The next delivery covers it; it never skips two days in a row.">${esc(P0.name)}: only ${pl.small.tot} needed → skipped ${canSnap?`<button class="btn sm" data-psmall="${d}|${pl.pid}|1">Send anyway</button>`:""}</span>`;
+      if(pl.smallSent) return `<span class="pill info" style="gap:6px;padding:6px 10px">${esc(P0.name)}: only ${pl.smallSent.tot} — sending anyway${pl.smallSent.by?` (${esc(pl.smallSent.by)})`:""} ${canSnap?`<button class="btn sm" data-psmall="${d}|${pl.pid}|0">Skip it</button>`:""}</span>`;
+      if(pl.smallKeep) return `<span class="pill info" style="padding:6px 10px" title="Under the smallest delivery (${pl.smallKeep.mn}), but nothing went on ${esc(nice(pl.smallKeep.prev))} — never two skips in a row.">${esc(P0.name)}: only ${pl.smallKeep.tot}, delivering (skipped ${esc(nice(pl.smallKeep.prev).split(" ")[0])})</span>`;
+      return ""; }).join("")}</div>`:"";
   /* v22.23 (Alfred 8 Oct, "I forget to send in the morning"): the snap can be for an earlier day's sheet — after 2pm this page shows the next delivery */
   const snapDays=[...new Set([d,today(),add(today(),-1)])].filter(x=>x>=add(today(),-3)&&x<=add(today(),3)), snapD=snapDays.includes(S.ui.snapDay)?S.ui.snapDay:d;
   return `<div><div class="spread"><h3>Prep on ${nice(d)}</h3><div class="row" style="flex-wrap:wrap">${dot(colourOf(d).name)}<button class="btn sm" data-pprint="${d}">Print prep sheet</button>${canSnap?`<button class="btn sm pri" data-act="prepSnap" data-d="${snapD}" title="Photo of the printed sheet with the Made column filled in (several photos at once are fine) — the app reads it and shows it to check">📷 Snap filled sheet</button><label class="small muted" style="display:inline-flex;align-items:center;gap:4px">for <select data-ui="snapDay" aria-label="Which day's sheet">${snapDays.map(x=>opt(x,x===d?nice(x):x===today()?"today · "+nice(x):nice(x),snapD)).join("")}</select></label>`:""}<button class="btn sm" data-dnprint="${d}">Print delivery notes</button></div></div>
-    <div class="row small" style="margin:4px 0">${madeLine}${snapD!==d?(()=>{ const Q=((S.prep||{})[snapD])||{}, n0=Object.keys(Q.made||{}).length, tot=Object.values(Q.made||{}).reduce((a,v)=>a+(+v||0),0);
+    <div class="row small" style="margin:4px 0">${madeLine}${!showVal()?"":(()=>{ const V=prodValue(rows.map(r=>({id:r.id,q:r.make}))), M=rows.some(r=>r.made!=null)?prodValue(rows.map(r=>({id:r.id,q:r.made||0}))):null;
+      return ` <span class="pill info" title="To make × retail price (Setup › Cakes)${V.miss.length?` · no retail price: ${esc(V.miss.join(", "))}`:""}">To make value · RM ${fm(V.v)}</span>${M?` <span class="pill ok" title="Made × retail price">Made value · RM ${fm(M.v)}</span>`:""}`; })()}${snapD!==d?(()=>{ const Q=((S.prep||{})[snapD])||{}, n0=Object.keys(Q.made||{}).length, tot=Object.values(Q.made||{}).reduce((a,v)=>a+(+v||0),0);
       return Q.madeAt?`<span class="pill ok" title="Shown here because the list already moved on to ${esc(nice(d))}. The numbers are in Numbers and in the kitchen's Opening report.">${esc(nice(snapD))}: Made submitted · ${esc(Q.madeBy||"")} · ${esc(fmtTs(Q.madeAt))} · ${n0} cake${n0===1?"":"s"}, ${tot} made</span> <a class="small" href="#numbers">see Numbers</a>`:`<span class="pill warn">${esc(nice(snapD))}: Made not submitted yet</span>`; })():""}</div>
     ${skipBar}
     ${prepReadPanel(d,rows)}
     <div class="tw nocard" style="margin-top:6px"><table class="prep" data-fit="1" style="--pn:${2+(hasOrd?1:0)+cols.length}"><thead><tr><th>Cake</th><th title="What is on the HQ display now, by colour dot (oldest first)">Display left</th><th class="r" title="Everything needed on the delivery day: online orders + the HQ display top-up + each outlet">Require</th><th class="r" title="Fresh cakes to bake = Require minus what comes off the HQ display. Suggested by the app — change it if the kitchen will make a different number (stock, staff…): orders are filled first, the HQ display takes any extra.">To make <span class="small muted" style="font-weight:400;text-transform:none;letter-spacing:0">(edit)</span></th>${hasOrd?`<th class="r" title="Online orders (Orderla) to pick up or deliver on ${nice(ORD.date)}, broken down into cakes">Order</th>`:""}${cols.map(pl=>`<th class="r" title="${esc(partner(pl.pid).name)}${partner(pl.pid).internal?" · display top-up, no delivery":pl.skip?" · no delivery on "+nice(pl.d1):" · delivery "+nice(pl.d1)}">${esc(partner(pl.pid).code)}${pl.skip?`<div class="small" style="text-transform:none;letter-spacing:0;color:var(--warn,#b7791f)">no delivery</div>`:""}</th>`).join("")}<th></th></tr></thead><tbody>
     ${rows.map(r=>{const {id,pm,tot,req,fromD}=r, ct=catOf(prod(id)), hd=ct!==lastCat?`<tr class="catrow"><td colspan="${ncol}">${esc(CATL[ct]||ct)}</td></tr>`:""; lastCat=ct; const short=r.made!=null&&r.made<r.make;
-      return `${hd}<tr><td class="pcake">${cake(id)}</td><td class="small lots${hqPl&&((hqPl.lots||{})[id]||[]).some(x=>x.qty>0)?"":" nolots"}">${lotsTxt(id)}</td><td class="r mono pn preq" data-l="Require" title="${fromD>0?`${req} needed: ${fromD} from the display + ${tot} to bake`:`${req} needed, all to bake`}"><span class="pv">${req}</span></td>
-      <td class="r pn" data-l="To make"><input class="mono tomake${r.over?" over":""}" type="number" min="0" step="1" inputmode="numeric" data-make="${d}|${id}" value="${r.make}" title="Suggested ${tot}${r.over?` — changed to ${r.make}`:""}. Change it if the kitchen will make a different number." aria-label="To make ${esc(prod(id).name)}">${fromD>0?`<div class="small muted">+${fromD} display</div>`:""}${r.made!=null?`<div><span class="pill ${short?"warn":"ok"}" style="font-size:10px;padding:1px 6px" title="${short?`Made ${r.made} of ${r.make}${(P.reason||{})[id]?" — "+esc(P.reason[id]):""}`:"Made as planned"}">made ${r.made}</span></div>`:""}</td>${ordCell(id)}${cols.map(pl=>cell(pl,id,pm)).join("")}
+      return `${hd}<tr><td class="pcake">${cake(id)}${isCheese(id)?frzBadge(id,FZ):""}</td><td class="small lots${hqPl&&((hqPl.lots||{})[id]||[]).some(x=>x.qty>0)?"":" nolots"}">${lotsTxt(id)}</td><td class="r mono pn preq" data-l="Require" title="${fromD>0?`${req} needed: ${fromD} from the display + ${tot} to bake`:`${req} needed, all to bake`}"><span class="pv">${req}</span></td>
+      <td class="r pn" data-l="To make"><input class="mono tomake${r.over?" over":""}" type="number" min="0" step="1" inputmode="numeric" data-make="${d}|${id}" value="${r.make}" title="Suggested ${tot}${r.over?` — changed to ${r.make}`:""}. Change it if the kitchen will make a different number." aria-label="To make ${esc(prod(id).name)}">${r.make>0&&retailOf(id)?`<div class="small muted" title="To make × retail RM ${fm(retailOf(id))}">RM ${fm(r.make*retailOf(id))}</div>`:""}${fromD>0?`<div class="small muted">+${fromD} display</div>`:""}${r.made!=null?`<div><span class="pill ${short?"warn":"ok"}" style="font-size:10px;padding:1px 6px" title="${short?`Made ${r.made} of ${r.make}${(P.reason||{})[id]?" — "+esc(P.reason[id]):""}`:"Made as planned"}">made ${r.made}</span></div>`:""}</td>${ordCell(id)}${cols.map(pl=>cell(pl,id,pm)).join("")}
       <td class="pact">${RO()&&!DELIV()?"":`<button class="btn sm" data-prm="${d}|${id}" title="Take this cake off the prep list (every outlet 0)" aria-label="Remove ${esc(prod(id).name)}">✕</button>`}${short?`<select data-short="${d}|${id}" aria-label="Why short">${opt("","Why short?",(P.reason||{})[id]||"")}${["Ingredient out","Short staff","Quality reject","Equipment","Other"].concat((P.reason||{})[id]&&!["Ingredient out","Short staff","Quality reject","Equipment","Other"].includes(P.reason[id])?[P.reason[id]]:[]).map(x=>opt(x,x,(P.reason||{})[id]||"")).join("")}</select>`:""}</td></tr>${alloc(id)}`}).join("")}
-    <tr class="ptot"><td class="pcake"><b>Total</b></td><td class="lots"></td>${(()=>{const n=rows.reduce((a,r)=>a+r.fromD,0); return `<td class="r mono pn preq" data-l="Require"><span class="pv">${rows.reduce((a,r)=>a+r.req,0)}</span></td><td class="r mono pn" data-l="To make"><b class="pv">${rows.reduce((a,r)=>a+r.make,0)}</b>${n?`<div class="small muted" style="font-weight:400" title="Cakes taken from the HQ display for orders and outlets — not baked">+${n} display</div>`:""}${rows.some(r=>r.made!=null)?`<div class="small muted" style="font-weight:400">made ${rows.reduce((a,r)=>a+(r.made!=null?r.made:0),0)}</div>`:""}</td>`;})()}${hasOrd?`<td class="r mono pn" data-l="Order"><b class="pv">${Object.values(ordL).reduce((a,l)=>a+(l.base||0),0)||""}</b></td>`:""}${cols.map(pl=>`<td class="r mono pn" data-l="${esc(partner(pl.pid).code)}"><b class="pv">${pl.lines.reduce((a,l)=>a+(l.base||0),0)||""}</b></td>`).join("")}<td class="pact"></td></tr></tbody></table></div>
+    <tr class="ptot"><td class="pcake"><b>Total</b></td><td class="lots"></td>${(()=>{const n=rows.reduce((a,r)=>a+r.fromD,0); return `<td class="r mono pn preq" data-l="Require"><span class="pv">${rows.reduce((a,r)=>a+r.req,0)}</span></td><td class="r mono pn" data-l="To make"><b class="pv">${rows.reduce((a,r)=>a+r.make,0)}</b>${n?`<div class="small muted" style="font-weight:400" title="Cakes taken from the HQ display for orders and outlets — not baked">+${n} display</div>`:""}${showVal()?`<div class="small muted" style="font-weight:400">RM ${fm(prodValue(rows.map(r=>({id:r.id,q:r.make}))).v)}</div>`:""}${rows.some(r=>r.made!=null)?`<div class="small muted" style="font-weight:400">made ${rows.reduce((a,r)=>a+(r.made!=null?r.made:0),0)}</div>`:""}</td>`;})()}${hasOrd?`<td class="r mono pn" data-l="Order"><b class="pv">${Object.values(ordL).reduce((a,l)=>a+(l.base||0),0)||""}</b></td>`:""}${cols.map(pl=>`<td class="r mono pn" data-l="${esc(partner(pl.pid).code)}"><b class="pv">${pl.lines.reduce((a,l)=>a+(l.base||0),0)||""}</b></td>`).join("")}<td class="pact"></td></tr></tbody></table></div>
     ${allocTable(d,rows,ordL,outs,hqPl)}
     ${RO()&&!DELIV()?"":`<div class="row" style="margin-top:6px;flex-wrap:wrap"><select data-padd="${d}" aria-label="Add a cake to the prep list"><option value="">＋ Add a cake…</option>${Object.values(S.products).filter(x=>x.active!==false&&!prepX[d][x.id]).sort((a,b)=>catRank(a.id)-catRank(b.id)||a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select><span class="small muted">then type how many to prepare for each outlet</span></div>`}
     ${hasOrd?ordersPanel(ORD):""}</div>`; }
@@ -2529,6 +2622,7 @@ document.addEventListener("change",async e=>{
   if(t.dataset.make){ const [d,id]=t.dataset.make.split("|"); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); const PA=planAll(), r=prepRows(d,PA).find(x=>x.id===id), sug=r?r.tot:0;
     await savePrep(d,x=>{ x.make=x.make||{}; if(v===""||+v===sug) delete x.make[id]; else x.make[id]=+v; (x.makeLog||(x.makeLog=[])).push({at:new Date().toISOString(),by:(CA.get()||{}).name||"",id,to:v===""?sug:+v,sug}); x.makeLog=x.makeLog.slice(-40); });
     toast(v===""||+v===sug?`${prod(id).name}: back to the suggestion (${sug})`:`${prod(id).name}: make ${+v} (suggested ${sug})${+v<sug?" — orders first, the rest shared":+v>sug?" — the extra goes to the HQ display":""}`); return;}
+  if(t.dataset.frz!=null&&S.ui.frz){ const v=String(t.value).replace(/[^0-9]/g,""); if(v!==t.value) t.value=v; S.ui.frz[t.dataset.frz]=v; return; }
   if(t.dataset.pskip){ const [d,pid]=t.dataset.pskip.split("|"), on=t.checked, P0=partner(pid), who=(CA.get()||{}).name||AUTH.name||"", at=new Date().toISOString();
     const pl=planAll().plans.find(x=>x.pid===pid&&x.prepDate===d), d1=pl&&pl.d1?pl.d1:d, live=((pl&&pl.planned)||[]).filter(o=>o.status!=="cancelled");
     if(on){ const stuck=live.filter(o=>o.status==="delivered"||o.checkedAt); if(stuck.length){ t.checked=false; toast(`${P0.name}: ${stuck.map(o=>o.no).join(", ")} is already ${stuck.some(o=>o.status==="delivered")?"delivered":"colour-checked (packed)"} — cancel it in Deliveries first if it is really not going.`); return; } }
@@ -2589,8 +2683,12 @@ document.addEventListener("click",async e=>{
   if(d.ochase){ const [pid,date]=d.ochase.split("|"); b.disabled=true; try{ const r=await GS("outletChaseNow",pid,date); if(r.ok) toast(`Asked ${partner(pid).name}: ${r.sent} of ${r.to} sent${r.names&&r.names.length?" — "+r.names.join(", "):""}`); else { const ph=((r.people||[]).find(x=>x.phone)||{}).phone||partner(pid).phone||""; toast(`${r.why} — WhatsApp opens with the message ready.`); window.open(wa(ph,r.text||""),"_blank","noopener"); } }catch(e){ toast(e.message); } b.disabled=false; return; }
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
-  if(RO()&&!(SUPK()&&(d.edo||d.rdo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.act==="doCancelAsk"||d.act==="doCancelGo"||d.act==="doCancelNo"||d.doadd!=null||d.dorm!=null))&&!(DELIV()&&(d.prm||d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"||d.act==="makeDOsGo"||d.act==="makeDOsNo"||d.act==="olPull"||d.act==="prepSnap"||d.act==="prepReadNo"||d.act==="prepMadeGo"||d.pmrstep||d.dskip!=null))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.attnav||d.act==="attAll"||d.billsel||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF"||d.nmmode||d.nmstep!=null||((can("bills")||can("reports"))&&(d.bkdo||d.act==="bkSendSel")))){toast("View only — ask a manager to make changes");return;}
+  if(RO()&&!(SUPK()&&(d.edo||d.rdo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.act==="doCancelAsk"||d.act==="doCancelGo"||d.act==="doCancelNo"||d.doadd!=null||d.dorm!=null))&&!(DELIV()&&(d.prm||d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"||d.act==="makeDOsGo"||d.act==="makeDOsNo"||d.act==="olPull"||d.act==="prepSnap"||d.act==="prepReadNo"||d.act==="prepMadeGo"||d.pmrstep||d.dskip!=null||d.psmall!=null||d.act==="frzEdit"||d.act==="frzSave"||d.act==="frzCancel"))&&!(d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.attnav||d.act==="attAll"||d.billsel||d.act==="printPage"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF"||d.nmmode||d.nmstep!=null||((can("bills")||can("reports"))&&(d.bkdo||d.act==="bkSendSel")))){toast("View only — ask a manager to make changes");return;}
   if(d.dorm&&S.ui.doEdit){const E=S.ui.doEdit; E.rows=doRowIds(E).filter(x=>x!==d.dorm); delete E.lines[d.dorm]; E.rowsTouched=true; render(); return;}
+  if(d.psmall){ const [dd,pid,on]=d.psmall.split("|"), who=(CA.get()||{}).name||AUTH.name||"", at=new Date().toISOString(); b.disabled=true;
+    try{ await savePrep(dd,x=>{ x.sendSmall=x.sendSmall||{}; if(on==="1") x.sendSmall[pid]={by:who,at}; else delete x.sendSmall[pid]; (x.skipLog||(x.skipLog=[])).push({at,by:who,pid,small:on==="1"?"send anyway":"skip again"}); x.skipLog=x.skipLog.slice(-40); });
+      toast(on==="1"?`${partner(pid).name}: sending the small delivery anyway.`:`${partner(pid).name}: small delivery skipped again.`); }catch(e){ toast((e&&e.message)||"Couldn't save"); }
+    render(); return; }
   if(d.dskip&&S.ui.doPrev){const P=S.ui.doPrev, x=P.out.find(o=>o.pid===d.dskip); P.out=P.out.filter(o=>o.pid!==d.dskip); if(x) P.skip.push({name:x.p.name,d1:x.d1,why:"removed by you"}); (S.ui.doSkip||(S.ui.doSkip=new Set())).add(d.dskip); render(); return;}
   if(d.pmrstep&&S.ui.prepRead){ const [id,st]=d.pmrstep.split("|"); const V=S.ui.prepRead.vals||(S.ui.prepRead.vals={}), v=V[id]||(V[id]={}); v.made=String(Math.max(0,(v.made===""||v.made==null?0:+v.made)+(+st))); render(); return;}
   if(d.olmap){ const x=olCatalog().find(c=>c.key===d.olmap); S.ui.olEdit=d.olmap; S.ui.olDraft=(x&&x.cakes?x.cakes:[]).map(c=>({productId:c.productId,qty:c.qty||1})); render(); return;}
@@ -2843,6 +2941,13 @@ async function act(a,b){
       S.ui.prepRead=null; toast("Made saved — the outlets and orders are updated"); }
     catch(e){ toast((e&&e.message)||"Couldn't save"); b.disabled=false; b.textContent="Submit made"; return;}
     render(); return;}
+  case "frzEdit": { const FZ=freezerState(), E={}; for(const [id,x] of Object.entries(FZ.left)) E[id]=String(x.left); S.ui.frz=E; render(); setTimeout(()=>{const e=document.getElementById("freezer"); if(e) e.scrollIntoView({block:"start"});},50); return; }
+  case "frzCancel": S.ui.frz=null; render(); return;
+  case "frzSave": { const E=S.ui.frz||{}, counts={}; for(const [id,v] of Object.entries(E)) if(v!==""&&v!=null&&S.products[id]) counts[id]=Math.max(0,Math.round(+v)||0);
+    if(!Object.keys(counts).length){ toast("Type at least one number"); return; }
+    const who=(CA.get()||{}).name||AUTH.name||"", at=new Date().toISOString(), F=clone(S.freezer||{}); b.disabled=true;
+    try{ await put("config/freezer",{counts,date:today(),at,by:who,log:((F.log||[]).concat([{at,by:who,counts}])).slice(-30)}); S.ui.frz=null; toast("Freezer count saved — the prep list follows it from now"); }
+    catch(e){ b.disabled=false; return; } render(); return; }
   case "showLog": S.ui.showLog=true; render(); setTimeout(()=>{const e=document.getElementById("all-changes"); if(e) e.scrollIntoView({behavior:"smooth",block:"start"});},60); return;
   case "hideLog": S.ui.showLog=false; render(); return;
   case "makeDOs":{S.ui.doDone=null; S.ui.doSkip=null; S.ui.doPrev=draftPlan(); render(); setTimeout(()=>{const e=document.getElementById("doprev"); if(e) e.scrollIntoView({behavior:"smooth",block:"start"});},60); return;}
@@ -2893,7 +2998,7 @@ async function act(a,b){
   case "newPartner": S.ui.pEdit={id:"",code:"",name:"",pct:75,termsStatus:"Proposed",wasteRule:"credit",terms:14,active:true}; render(); return;
   case "cancelPartner": S.ui.pEdit=null; render(); return;
   case "saveGame":{ const gd=S.ui.gd||{}; try{ S.ui.game=await GS("gameSettings",{target:gd.target??S.ui.game.target,unlock:gd.unlock??S.ui.game.unlock,qcOn:String(gd.qcOn??S.ui.game.qcOn)==="true",qcBy:gd.qcBy??S.ui.game.qcBy,ladder:(gd.ladder||S.ui.game.ladder).map(Number)}); S.ui.gd={}; toast("Points settings saved"); render(); }catch(e){ toast(e.message); } return; }
-  case "savePartner":{const e=S.ui.pEdit; e.parDay=+e.parDay||3; e.deliveryDays=(e.deliveryDays||[1,3,5]).map(Number); e.code=(e.code||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.code||!e.name){toast("Code and name are required");return;}
+  case "savePartner":{const e=S.ui.pEdit; e.parDay=+e.parDay||3; if(e.minDrop!=null&&e.minDrop!==""){ const v=Math.round(+String(e.minDrop).replace(/[^0-9]/g,"")); e.minDrop=isFinite(v)?Math.min(99,Math.max(0,v)):""; } e.deliveryDays=(e.deliveryDays||[1,3,5]).map(Number); e.code=(e.code||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.code||!e.name){toast("Code and name are required");return;}
     if(partners(true).some(p=>p.code===e.code&&p.id!==e.id)){toast("That code is already used");return;}
     if(!e.formKey) e.formKey=newFormKey(e.code);
     e.whole=wholeOf(e); e.wholeDays=wholeDaysOf(e); if(limitsSet(e)) e.limits=limitsOf(e); else delete e.limits;
@@ -3149,7 +3254,7 @@ async function start(){
   S.db=shimDB; S.assets=shimAssets; S.dl=null; S.mcp=null;
   const sub=(col,fn)=>shimDB.collection(col).onSnapshot(snap=>{fn(snap);S.loaded.add(col);render();});
   const into=(key)=>s=>{const o={};for(const d of s.docs)o[d.id]={...d.data(),id:d.data().id||d.id};S[key]=o;};
-  sub("config",s=>{S.cfg={};S.counters={};S.orders={};S.drive={folders:{}};for(const d of s.docs){if(d.id==="settings")S.cfg=d.data()||{};if(d.id==="counters")S.counters=d.data()||{};if(d.id==="handled")S.handled=d.data()||{};if(d.id==="prep")S.prep=d.data()||{};if(d.id==="orders")S.orders=d.data()||{};}});
+  sub("config",s=>{S.cfg={};S.counters={};S.orders={};S.drive={folders:{}};for(const d of s.docs){if(d.id==="settings")S.cfg=d.data()||{};if(d.id==="counters")S.counters=d.data()||{};if(d.id==="handled")S.handled=d.data()||{};if(d.id==="prep")S.prep=d.data()||{};if(d.id==="orders")S.orders=d.data()||{};if(d.id==="freezer")S.freezer=d.data()||{};}});
   sub("calendar",into("calendar"));
   sub("partners",into("partners")); sub("products",into("products")); sub("prices",into("prices"));
   sub("weeks",into("weeks")); sub("audits",into("audits"));

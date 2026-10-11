@@ -154,6 +154,12 @@ body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bot
 #camenu .mlinks{display:flex;justify-content:center;gap:22px;padding:2px 0 4px;flex-wrap:wrap}#camenu .lnk{min-height:40px;display:inline-flex;align-items:center;font-size:14px;border:0;background:none;box-shadow:none;padding:0 4px;color:var(--m-accent);font-weight:600;text-decoration:underline;text-underline-offset:3px;font-family:inherit}
 #camenu .mwho{display:flex;justify-content:center;padding:4px 0}#camenu .mwho .ca-chip{justify-content:center}
 @media (prefers-color-scheme:dark){#camenu .cb.ink{box-shadow:0 4px 0 rgba(0,0,0,.6)}}
+.ca-pw{position:fixed;inset:0;z-index:2147483000;background:rgba(30,18,20,.45);display:flex;align-items:center;justify-content:center;padding:18px}
+.ca-pw-box{background:var(--card,#fff);color:var(--ink,#2b1b1e);border-radius:18px;max-width:360px;width:100%;padding:22px 20px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);text-align:center}
+.ca-pw-dot{width:40px;height:40px;border-radius:50%;margin:0 auto 10px;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.ca-pw-t{font:700 22px Georgia,serif;margin:0 0 6px}.ca-pw-s{font-size:14px;opacity:.8;margin:0 0 8px;line-height:1.4}.ca-pw-s.w{opacity:1;color:#9a5a12;font-weight:600}
+.ca-pw-b{display:block;width:100%;margin-top:12px;padding:14px;border:0;border-radius:12px;background:var(--accent,#7b1c2b);color:#fff;font:700 16px inherit;cursor:pointer}
+.ca-pw-x{display:block;width:100%;margin-top:6px;padding:10px;border:0;background:none;color:inherit;opacity:.7;font:600 14px inherit;cursor:pointer}
 </style>
 <script>
 /* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
@@ -523,8 +529,31 @@ const ICON={
     const h=t.closest("[data-help]"); if(h){ menuClose(); openHelp(h.dataset.help); return; }
     const g=t.closest("[data-mgo]"); if(g){ const href=g.getAttribute("href")||""; menuClose(); if(href.split("#")[0]===here().split("#")[0]&&href.includes("#")){ e.preventDefault(); location.hash=href.slice(href.indexOf("#")); } return; }
     if(t.closest("[data-ca-logout]")){ e.preventDefault(); logout(); return; } });
+  /* v22.29 (Alfred 11 Oct): "it should be a window within the app, title Daily prep is out, with a button Open and print". Mornings
+     (06:00–13:59), for people who can print the prep sheet, on every page, until today's sheet is printed (by anyone); again when online
+     orders for today came in after it was printed. "Later" hides it for 15 minutes. On the office Prep list the button prints straight
+     away (window.caPrintPrep); elsewhere it opens the Prep list, where the same window prints with one more tap. */
+  let PW=null;
+  const pwClose=()=>{ if(PW){ PW.remove(); PW=null; } };
+  async function prepWin(force){ try{ if(window.CHALEUR_NO_GUIDE&&!window.CHALEUR_PREP_WIN) return; /* automated tests opt in */ const s=get(); if(!s||!s.t) return; const P=permsOf(s); if(!["kitchen","deliv","doedit","reports"].some(k=>P.includes(k))) return;
+      const h=new Date().getHours(); if(!force&&(h<6||h>=14)) return;
+      let sn=0; try{ sn=+sessionStorage.getItem("ca.pwLater")||0; }catch(e){} if(!force&&Date.now()<sn) return;
+      const r=await run("prepOut",s.t); if(!r||!r.show) return; if(r.printed&&!r.newOrders) { pwClose(); return; }
+      if(typeof window.caPrepWinOK==="function"&&!window.caPrepWinOK(r)) return;
+      pwClose(); const d=new Date(r.date+"T12:00:00"), day=d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}), onDesk=typeof window.caPrintPrep==="function";
+      const el=document.createElement("div"); el.className="ca-pw"; el.id="ca-pw"; el.setAttribute("role","dialog"); el.setAttribute("aria-label","Daily prep is out");
+      el.innerHTML=`<div class="ca-pw-box"><div class="ca-pw-dot" style="background:${esc(r.hex||"#888")}"></div><p class="ca-pw-t">Daily prep is out</p>
+        <p class="ca-pw-s">${esc(day)} · ${esc(String(r.dot||"").charAt(0)+String(r.dot||"").slice(1).toLowerCase())} dot. Check it, print it, then start your day.</p>
+        ${r.printed&&r.newOrders?`<p class="ca-pw-s w">${r.newOrders} new online order${r.newOrders===1?"":"s"} since it was printed by ${esc(r.printed.by||"someone")} — print it again.</p>`:""}
+        <button type="button" class="ca-pw-b" data-pw="go">${onDesk?"Print":"Open and print"}</button><button type="button" class="ca-pw-x" data-pw="later">Later</button></div>`;
+      el.addEventListener("click",ev=>{ const b=ev.target.closest("[data-pw]"); if(!b) return; ev.stopPropagation(); ev.preventDefault();
+        if(b.dataset.pw==="later"){ try{ sessionStorage.setItem("ca.pwLater",String(Date.now()+15*60000)); }catch(e){} pwClose(); return; }
+        if(typeof window.caPrintPrep==="function"){ pwClose(); window.caPrintPrep(r.date); return; }
+        try{ sessionStorage.setItem("ca.pwGo",r.date); }catch(e){} location.href="office.html#plan"; });
+      document.body.appendChild(el); PW=el; const fb=el.querySelector("[data-pw=go]"); if(fb) fb.focus(); }catch(e){} }
+  if(!/closing|audit/.test(location.pathname)) { if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",()=>setTimeout(prepWin,1800)); else setTimeout(prepWin,1800); }
   const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose()};
 })();
 </script>
 
@@ -1119,7 +1148,11 @@ function planItem(){ const tm=INFO.tomorrow; if(!tm||DATE!==INFO.today) return n
     return {count:true,done:!!dn,merged:true,html:tkCard({circle:boxTick("auto_decorate",!!dn,"All cakes finished and decorated"),tag:"Plan &amp; prep",title:`Plan &amp; prep · make ${tot} cakes`,sub:`DOs ready · today's dot <b style="color:${hex(c.name)}">●</b> ${esc(capw(c.name))} · ${ln} of ${rows.length} cakes finished`,by:dn?esc(dn.by)+" "+esc(hmOf(dn.at)):"",extra:(tm.none?"":lines)+pl+`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="cb" type="button" data-v2="deco">${dn?"Open":"Finish &amp; decorate"} ›</button><a class="cb ghost" href="office.html#plan">Full prep list ›</a></div>`,act:""})}; }
   const prep=rows.length?`<div class="prepl"><div class="prh"><span>Prep list · ${tot} cake${tot===1?"":"s"}</span><span>HQ display + outlets</span></div>${rows.map(r=>`<div class="prr"><b>${r.qty}</b><span class="nm">${esc(prodOf(r.pid).name)}</span><span class="to">${Object.entries(r.by).map(([k,q])=>`${esc(k)} ${q}`).join(" · ")}</span></div>`).join("")}</div>`:"";
   return {count:!tm.none,done:tm.done,html:tkCard({circle:autoTick(tm.done),tag:"Plan &amp; prep",due:tm.done?"":(late?"Late · was due "+esc(tm.due):"due "+esc(tm.due)),late,title:`Plan &amp; prep for ${tm.today?"today":"tomorrow"}`,sub,extra:lines+prep+`<a class="cb full" href="office.html#plan" style="margin-top:10px">${rows.length?"Open the full prep list":"Open Plan &amp; prep"} ›</a><div class="ts" style="margin-top:6px">Suggested quantities, Made numbers, prep sheet and draft DOs.</div>`,act:""})}; }
-function teamItems(team){ if(team!=="am") return [repItem("closing")].concat(taskItems("pm")); const pi=planItem(), T0=INFO.tomorrow||{}, usePlan=pi&&(pi.merged||!T0.none), hideDeco=pi&&(pi.merged||(T0.today&&!T0.none)); return [usePlan?pi:null,repItem("opening")].filter(Boolean).concat(taskItems("am"),hideDeco?[]:[decoItem()],packItems(),[displayItem()]); }
+/* v22.29 (Alfred 11 Oct): "if someone has printed it, the morning task will show a tick just like the freezer and chiller check, with the name" */
+function printItem(){ if(DATE!==INFO.today) return null; const sh=(INFO.prep||{}).sheet, done=!!(sh&&sh.at);
+  let when=""; if(done){ let d0=""; try{ d0=new Date(sh.at).toLocaleDateString("en-CA",TZO); }catch(e){} when=(d0&&d0<DATE?"last night ":"")+hmOf(sh.at); }
+  return {count:true,done,html:tkCard({circle:autoTick(done),tag:"Prep sheet",title:done?"Daily prep sheet printed":"Print the daily prep sheet",sub:done?`${(sh.rows||[]).length} cakes on the sheet · label today's cakes with the ${esc(capw(colOf(DATE).name))} dot`:"Check the numbers, then print it before you start.",by:done?esc(niceName(sh.by||""))+" "+esc(when):"",act:done?"":`<a class="cb sm" href="office.html#plan" data-pwopen="1">Open and print</a>`})}; }
+function teamItems(team){ if(team!=="am") return [repItem("closing")].concat(taskItems("pm")); const pi=planItem(), T0=INFO.tomorrow||{}, usePlan=pi&&(pi.merged||!T0.none), hideDeco=pi&&(pi.merged||(T0.today&&!T0.none)); return [printItem(),usePlan?pi:null,repItem("opening")].filter(Boolean).concat(taskItems("am"),hideDeco?[]:[decoItem()],packItems(),[displayItem()]); }
 function propText(x){ const d=x.data||{};
   if(x.kind==="plan") return `Production plan for ${niceD(d.date)}: ${(d.items||[]).map(i=>i.name+(i.qty?" x"+i.qty:"")).join(", ")}`;
   if(x.kind==="planList") return d.remove?`Remove a list from ${niceD(d.date)}`:`Change a list for ${niceD(d.date)}: ${(d.items||[]).map(i=>i.name).join(" · ")}`;
