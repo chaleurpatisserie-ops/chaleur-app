@@ -1806,14 +1806,14 @@ function vSetup(){
         <label class="f">Mon–Fri hours<span class="row"><input type="time" id="pe-wo" data-peh="wkOpen" value="${esc(e.hours?.wkOpen||"10:00")}"><input type="time" id="pe-wc" data-peh="wkClose" value="${esc(e.hours?.wkClose||"22:00")}"></span></label>
         <label class="f">Sat–Sun hours<span class="row"><input type="time" id="pe-eo" data-peh="weOpen" value="${esc(e.hours?.weOpen||"10:00")}"><input type="time" id="pe-ec" data-peh="weClose" value="${esc(e.hours?.weClose||"22:00")}"></span></label>
         <label class="f">Starting par (cakes/day per flavour, before data)<input id="pe-par" data-pe="parDay" inputmode="numeric" value="${esc(e.parDay??3)}"></label>
-        ${e.internal?"":`<label class="f" title="A day's delivery under this many cakes is skipped on the prep list (Send anyway is still possible). Never two skips in a row. Empty = ${MIN_DROP_DEF}, 0 = never skip.">Smallest delivery (cakes)<input id="pe-mindrop" data-pe="minDrop" inputmode="numeric" placeholder="${MIN_DROP_DEF}" value="${esc(e.minDrop??"")}"></label>`}
+        ${e.internal?"":`<label class="f" title="On a day that is not a regular delivery day, an extra drop goes when the outlet needs this % of its full counter (every cake it carries at that day's max) or more. Empty = ${LOW_PCT_DEF}, 0 = regular days only.">Extra drop when low (% of full counter)<input id="pe-lowpct" data-pe="lowPct" inputmode="numeric" placeholder="${LOW_PCT_DEF}" value="${esc(e.lowPct??"")}"></label>`}
       </div>
       <div class="fgrid"><div class="f"><span>Closed on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-cl-${i}" data-pearr="closed" data-v="${i}" ${((e.hours||{}).closed||[]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
       <div class="lim" style="margin-top:10px"><h3 style="margin:0 0 4px">People to remind on WhatsApp</h3>
         <p class="small muted" style="margin:0 0 8px">When the closing count is still missing at the chase time (Setup › Go-live & rules), the bot messages <b>each person here by name</b> — "Hi Aina, kindly send the closing count…". The "Ask on WhatsApp" button (To clear today, Home › Reports today) uses the same list and the same message. Add as many as you like.</p>
         ${(e.phones||[]).map((x,i)=>`<div class="row" style="gap:6px;margin-bottom:6px"><input class="ph-nm" data-pph="${i}|name" placeholder="Name" value="${esc(x.name||"")}" aria-label="Name" style="flex:1 1 40%"><input class="ph-no mono" data-pph="${i}|phone" inputmode="tel" placeholder="WhatsApp no. (60… or 01…)" value="${esc(x.phone||"")}" aria-label="WhatsApp number" style="flex:1 1 50%"><button class="btn sm" type="button" data-phdel="${i}" aria-label="Remove">✕</button></div>`).join("")}
         <button class="btn sm" type="button" data-act="phAdd">＋ Add a person</button></div>
-        <div class="f"><span>We deliver on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-dd-${i}" data-pearr="deliveryDays" data-v="${i}" ${(e.deliveryDays||[1,3,5]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
+        <div class="f"><span>${e.internal?"We deliver on":"Regular delivery days (always delivered)"}</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-dd-${i}" data-pearr="deliveryDays" data-v="${i}" ${(e.deliveryDays||[1,3,5]).map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
         <div style="grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-weight:600;margin-bottom:6px">Whole cakes</div>
         <div class="fgrid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))"><div class="f"><span>Go out on</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="pe-wd-${i}" data-pearr="wholeDays" data-v="${i}" ${wholeDaysOf(e).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
         ${(()=>{const W=wholeOf(e); return `<label class="f">How to choose<select id="pe-wm" data-pew="mode">${WHOLE_MODES.map(([v,l])=>opt(v,l,W.mode)).join("")}</select></label>
@@ -1822,10 +1822,10 @@ function vSetup(){
         <p class="small muted" style="margin:8px 0 0">Picked from the whole cakes ticked in "Cakes this outlet carries". <b>Take turns</b>: every ticked whole cake gets a turn before any repeats, in a mixed order, and outlets get different ones on the same day where possible. The number of kinds is picked between the two numbers for each delivery. A whole cake still sellable at the outlet counts as one of them.</p></div>
         <div style="grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-weight:600;margin-bottom:2px">Petit gâteaux and cheesecakes: min and max of each cake, per delivery day</div>
         <p class="small muted" style="margin:0 0 8px">How many of <b>each</b> petit gâteau, and of <b>each</b> cheesecake slice, this outlet takes on a delivery that day — e.g. petit gâteaux 3–4 each on Saturday means every petit gâteau flavour gets 3 to 4. Leave a box empty for no limit. Plan &amp; prep keeps every cake inside the range; a delivery order outside it warns before saving.</p>
-        ${(()=>{const L=limitsOf(e), dd=(e.deliveryDays||[1,3,5]).map(Number); return `<div class="tw"><table class="limt"><thead><tr><th></th>${WD.map((d,i)=>`<th class="r${dd.includes(i)?"":" muted"}">${d}</th>`).join("")}</tr></thead><tbody>
+        ${(()=>{const L=limitsOf(e), dd=(!e.internal&&lowPctOf(e)>0)?[0,1,2,3,4,5,6]:(e.deliveryDays||[1,3,5]).map(Number); return `<div class="tw"><table class="limt"><thead><tr><th></th>${WD.map((d,i)=>`<th class="r${dd.includes(i)?"":" muted"}">${d}</th>`).join("")}</tr></thead><tbody>
         ${LIM_KINDS.map(([k,l])=>["min","max"].map(mm=>`<tr><td class="small">${esc(l)} · <b>${mm} of each</b></td>${WD.map((d,i)=>`<td class="r"><input type="number" min="0" step="1" inputmode="numeric" id="pe-lim-${k}-${mm}-${i}" data-pelim="${k}|${mm}|${i}" value="${L[k][mm][i]==null?"":L[k][mm][i]}" aria-label="${esc(l)} ${mm} ${d}" style="width:4em${dd.includes(i)?"":";opacity:.55"}"></td>`).join("")}</tr>`).join("")).join("")}
         </tbody></table></div>`;})()}
-        <p class="small muted" style="margin:6px 0 0">Greyed days are not delivery days for this outlet (the limit still applies if a delivery is made). Whole cakes follow the box above.</p></div>
+        <p class="small muted" style="margin:6px 0 0">${!e.internal&&lowPctOf(e)>0?"Every day counts: regular days, and extra drops on the other days when the outlet runs low. A drop covering several days keeps the highest min of those days.":"Greyed days are not delivery days for this outlet (the limit still applies if a delivery is made)."} Whole cakes follow the box above.</p></div>
         <details class="help" style="grid-column:1/-1"><summary>Cakes this outlet carries (${(e.carries||[]).length||"not set"}), used by the Prep list</summary><div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px">${CATS.map(cat=>`<div style="flex-basis:100%;font-weight:600;margin-top:6px">${CATL[cat]}</div>${products().filter(pp=>catOf(pp)===cat).map(pp=>`<label class="chk"><input type="checkbox" data-pecarry="${pp.id}" ${(e.carries||[]).includes(pp.id)?"checked":""}>${esc(pp.name)}</label>`).join("")}`).join("")}</div></details>
         <label class="f">Active<select id="pe-act" data-pe="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label>
       </div><div class="row"><button class="btn pri" data-act="savePartner">Save outlet</button><button class="btn" data-act="cancelPartner">Cancel</button></div>`:""}
@@ -2068,14 +2068,19 @@ function forecastFor(pid,prodId,hist){
 /* v22.29 (Alfred 11 Oct: "if the delivery is too little then we will ignore … we need a minimum to deliver, you suggest"): the smallest
    delivery per outlet, in cakes (Setup › Outlets; empty = 6, 0 = never skip). A planned top-up under it is skipped for the day, unless
    the outlet got nothing on its previous delivery day (never two skips in a row), someone typed numbers for it, or "Send anyway". */
-const MIN_DROP_DEF=6;
-const minDropOf=p=>{ const v=p&&p.minDrop; if(v===""||v==null){ const g=cfg().minDrop; return g===""||g==null?MIN_DROP_DEF:Math.max(0,Math.round(+g)||0); } return Math.max(0,Math.round(+v)||0); };
-function prevDeliveryDay(pid,d1){ const dd=(partner(pid).deliveryDays||[1,3,5]).map(Number); for(let i=1;i<=14;i++){ const x=add(d1,-i); if(dd.includes(dow(x))&&!isClosed(pid,x)) return x; } return null; }
-const hadDelivery=(pid,date)=>Object.values((weekDoc(pid,weekStartOf(date))||{}).dos||{}).some(o=>o&&o.date===date&&o.status!=="cancelled");
+/* v22.32 (Alfred 12 Oct: "we can set Mon Wed Fri, but we need to deliver too if they run low" + "if an outlet needs 30% of their count —
+   10 is their cap, when we need to send 3 then we send" + "M/W/F always"): the ticked delivery days are REGULAR days — always delivered,
+   each cake filled for the days until the next regular day (between the highest min and max of those days). On the other days an EXTRA
+   drop goes only when the outlet runs low: what it needs to get back to its counter is 30% or more of its full counter (every cake it
+   carries at that day's max). Setup › Outlets "Extra drop when low (%)": empty = 30, 0 = regular days only. Replaces the v22.29
+   "smallest delivery (6) / never two skips in a row" rule. */
+const LOW_PCT_DEF=30;
+const lowPctOf=p=>{ const v=p&&p.lowPct; if(v===""||v==null){ const g=cfg().lowPct; return g===""||g==null?LOW_PCT_DEF:Math.max(0,Math.min(100,Math.round(+g)||0)); } return Math.max(0,Math.min(100,Math.round(+v)||0)); };
 function nextDeliveries(pid,from){const dd=(partner(pid).deliveryDays||[1,3,5]).map(Number);const r=[];for(let i=0;i<28&&r.length<2;i++){const d=add(from,i);if(dd.includes(dow(d))&&!isClosed(pid,d))r.push(d);}return r;}
 function planOutlet(pid,taken){
-  const t=today(), p=partner(pid), hist=salesHistory(pid,28), [d1,d2]=nextDeliveries(pid,add(t,((+cfg().prepLeadDays||0)>0||new Date().getHours()>=+(cfg().planSwitchHour??14))?1:0));
+  const t=today(), p=partner(pid), hist=salesHistory(pid,28), from=add(t,((+cfg().prepLeadDays||0)>0||new Date().getHours()>=+(cfg().planSwitchHour??14))?1:0); let [d1,d2]=nextDeliveries(pid,from), extra=false;
   if(!d1) return {pid,lines:[],note:"No delivery days set for this outlet (Setup › Outlets)."};
+  if(!p.internal&&lowPctOf(p)>0){ let x=from; for(let i=0;i<7&&isClosed(pid,x);i++) x=add(x,1); if(x<d1){ d2=d1; d1=x; extra=true; } }
   const c=calcWeek(pid,weekStartOf(t)); const ref=[...c.days].reverse().find(d=>d.date<=t&&d.rep)||[...c.days].reverse().find(d=>d.date<t)||c.days[0];
   const stock={}; for(const k of Object.values(c.keys)){const q=ref?ref.stock[k.key]:0; if(q>0)(stock[k.productId]||(stock[k.productId]=[])).push({colour:k.colour,qty:q,batch:k.batchDate||ref.date});}
   /* v22.25b (Alfred 9 Oct: "I couldn't fill in anything in the HQ row"): the HQ display's own bookkeeping doc (hqAuto, written by the morning
@@ -2103,7 +2108,8 @@ function planOutlet(pid,taken){
     const stockNow=lots.reduce((s,x)=>s+x.qty,0);
     for(let d=add(ref?ref.date:t,1); d<d1; d=add(d,1)){ lots=lots.filter(x=>diffDays(d,x.batch)<life); let need=f.per(d); for(const x of lots){const u=Math.min(x.qty,need);x.qty-=u;need-=u;} }
     const span=Math.max(1,Math.min(d2?diffDays(d2,d1):life,life));
-    const usable=Math.floor(lots.filter(x=>diffDays(d1,x.batch)<life-1).reduce((s,x)=>s+x.qty,0));
+    /* a lot counts if it lasts: 2+ days of life left on the delivery day (1 is enough when the cover is a single day) */
+    const usableF=lots.filter(x=>life-diffDays(d1,x.batch)>=Math.min(2,span)).reduce((s,x)=>s+x.qty,0), usable=Math.floor(usableF+1e-9);
     let demand=0; for(let i=0;i<span;i++) demand+=f.per(add(d1,i));
     const h14=(hist[id]||[]).filter(x=>x.date>=d14), sold14=h14.reduce((a,x)=>a+x.sold,0), waste14=h14.reduce((a,x)=>a+x.waste,0), wr14=(sold14+waste14)?waste14/(sold14+waste14):0;
     const dead=h14.length>=7&&sold14<=1, wasteful=h14.length>=5&&wr14>.4;
@@ -2112,24 +2118,26 @@ function planOutlet(pid,taken){
        place carries, every day — no more dropping it for slow, wasteful or never-sold cakes, and no shelf-life cap (v22.15/v22.19 rules
        retired). To stop a cake at a place, untick it under Setup › Outlets › Cakes this outlet carries. Small top-ups are skipped by the
        outlet's "smallest delivery" instead (planAll). */
-    const R=limitFor(p,id,d1); let counter=R&&R.min!=null?R.min:0;
-    const neverSold=(hist[id]||[]).reduce((a,x)=>a+(x.sold||0),0)===0, counterSet=counter;
-    let maxCap=R&&R.max!=null?R.max+(f.so>.3?1:0):null;
+    const R=limitFor(p,id,d1), RS=[...Array(span)].map((_,i)=>limitFor(p,id,add(d1,i))).filter(Boolean); /* v22.32: a drop covering several days keeps the highest min / max of those days */
+    let counter=RS.reduce((a,r)=>Math.max(a,r.min!=null?r.min:0),0);
+    const neverSold=(hist[id]||[]).reduce((a,x)=>a+(x.sold||0),0)===0, counterSet=counter, mxs=RS.filter(r=>r.max!=null).map(r=>r.max), full=R?(R.max!=null?R.max:(R.min||0)):0;
+    let maxCap=mxs.length?Math.max(...mxs)+(f.so>.3?1:0):null;
+    const dayLbl=span>1&&RS.length>1?`${WD[dow(d1)]}–${WD[dow(add(d1,span-1))]}`:(R?R.day:WD[dow(d1)]);
     const need=Math.max(Math.ceil(demand*(1+buffer)),isGood&&demand>0?Math.ceil(demand)+1:0); let target=Math.max(need,counter); if(maxCap!=null) target=Math.min(target,Math.max(maxCap,counter));
-    let suggest=Math.max(0,target-usable);
+    let suggest=Math.max(0,target-usable); const gapF=Math.max(0,target-usableF);
     const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
     if(p.internal){ const nf=(hist[id]||[]).filter(x=>x.fm).length; if(nf) notes.push(`HQ sales from FeedMe on ${nf} of ${(hist[id]||[]).length} days`); }
     if(neverSold&&counter&&!dead) notes.push(`not sold here yet — min ${counter} kept`);
     if(dead) notes.push(`sold ${sold14} in 14 days here — min ${counter} kept (drop list)`); else if(wasteful) notes.push(`waste ${Math.round(wr14*100)}% in 14 days — no buffer, min ${counter} kept`); else if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`);
     if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — buffer +20%${R&&R.max!=null?", max lifted by 1":""}`); else if(isGood) notes.push(`good seller here — buffer +20% (at least +1)`);
-    if(counter&&target===counter&&need<counter) notes.push(`${R.day}: min ${counter} of each ${R.one} on the counter (Setup › Outlets)`); if(maxCap!=null&&need>maxCap) notes.push(`${R.day}: max ${maxCap} of each ${R.one} (Setup › Outlets)`);
+    if(counter&&target===counter&&need<counter) notes.push(`${dayLbl}: min ${counter} of each ${(R||RS[0]).one} on the counter (Setup › Outlets)`); if(maxCap!=null&&need>maxCap) notes.push(`${dayLbl}: max ${maxCap} of each ${(R||RS[0]).one} (Setup › Outlets)`);
     if(d2&&diffDays(d2,d1)>life) notes.push(`gap to next delivery (${diffDays(d2,d1)}d) is longer than shelf life`);
     const why=`sells ${(Math.round(f.per(d1)*10)/10).toFixed(1)}/day · ${span} day${span>1?"s":""} to cover → ${need}${counter&&counter>need?` · counter min ${counter}`:""} · has ${stockNow} (${usable} still fresh) → ${suggest}`;
-    lines.push({productId:id,good:isGood,aw:f.aw,ae:f.ae,perDay:f.per(d1),stockNow,stockRep,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n,refDate:ref?ref.date:"",why,dead,wasteful,sold14,waste14,days14:h14.length,target,counter,counterSet});
+    lines.push({productId:id,good:isGood,aw:f.aw,ae:f.ae,perDay:f.per(d1),stockNow,stockRep,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n,refDate:ref?ref.date:"",why,dead,wasteful,sold14,waste14,days14:h14.length,target,counter,counterSet,full,gapF});
   }
   wholePick(p,lines,d1,taken);
   const hol=[]; for(let i=0;i<(d2?diffDays(d2,d1):3);i++){for(const e of dayEvents(add(d1,i))) if(!hol.includes(e)) hol.push(e);}
-  return {pid,d1,d2,lines,planned,hol,carryNote,stock:Object.fromEntries(Object.entries(stock).map(([k,a])=>[k,a.reduce((s,x)=>s+x.qty,0)])),lots:lotsAll,refDate:ref&&ref.rep?ref.date:"",prepDate:add(d1,-(+cfg().prepLeadDays||0))};
+  return {pid,d1,d2,extra,lines,planned,hol,carryNote,stock:Object.fromEntries(Object.entries(stock).map(([k,a])=>[k,a.reduce((s,x)=>s+x.qty,0)])),lots:lotsAll,refDate:ref&&ref.rep?ref.date:"",prepDate:add(d1,-(+cfg().prepLeadDays||0))};
 }
 function wasteStats(pid,days=28){
   const h=salesHistory(pid,days); let sold=0,waste=0,recv=0,wasteRM=0,soldRM=0; const byProd=[];
@@ -2160,11 +2168,13 @@ function planAll(){const taken={};
       for(const l of pl.lines){ const o=(ov[l.productId]||{})[pl.pid]; l.over=o!=null&&o!==""&&+o!==l.suggest; l.base=l.over?Math.max(0,Math.round(+o)):l.suggest; }
       /* v22.21 (Alfred 7 Oct): "a tick box, today no delivery for knocknock or jiran … when is too little to prepare, we might skip it" */
       const sk=!partner(pl.pid).internal&&(((S.prep||{})[pl.prepDate]||{}).skip||{})[pl.pid]; if(sk){ pl.skip=sk; for(const l of pl.lines){ l.over=false; l.base=0; } }
-      if(!sk&&!partner(pl.pid).internal&&pl.d1){ const mn=minDropOf(partner(pl.pid)), tot=pl.lines.reduce((a,l)=>a+(l.base||0),0), typed=pl.lines.some(l=>l.over), forced=((((S.prep||{})[pl.prepDate]||{}).sendSmall)||{})[pl.pid];
-        if(mn>0&&tot>0&&tot<mn&&!typed){ const prev=prevDeliveryDay(pl.pid,pl.d1), had=!prev||hadDelivery(pl.pid,prev);
-          if(forced) pl.smallSent={tot,mn,by:forced.by||""};
-          else if(!had) pl.smallKeep={tot,mn,prev};
-          else { pl.small={tot,mn,prev}; for(const l of pl.lines){ l.smallWas=l.base; l.base=0; } } } } } }
+      /* v22.32: regular day → always; other day → extra drop only when running low (needs ≥ 30% of the full counter) */
+      if(!sk&&!partner(pl.pid).internal&&pl.d1&&pl.extra){ const pct=lowPctOf(partner(pl.pid)), full=pl.lines.reduce((a,l)=>a+(l.full||0),0), thr=Math.max(1,Math.ceil(full*pct/100-1e-9)),
+          need=Math.round(pl.lines.reduce((a,l)=>a+(l.gapF||0),0)), tot=pl.lines.reduce((a,l)=>a+(l.base||0),0), typed=pl.lines.some(l=>l.over), forced=((((S.prep||{})[pl.prepDate]||{}).sendSmall)||{})[pl.pid];
+        pl.low={pct,full,thr,need,tot,next:pl.d2||""};
+        if(forced&&tot>0) pl.smallSent={tot,thr,by:forced.by||""};
+        else if(typed||(tot>0&&need>=thr)) pl.lowGo=true;
+        else { pl.small={tot,need,thr,full,pct,next:pl.d2||""}; for(const l of pl.lines){ l.smallWas=l.base; l.base=0; } } } } }
   /* v22.15: HQ display stock goes to the outlets first. For each cake, HQ's lots that will still have TRANSFER_LIFE days of life on the
      delivery day, beyond what HQ itself needs (its target), are allocated (oldest eligible lot first). v22.16 (Alfred 7 Oct): online orders
      (Orderla) picked up at HQ on the delivery day come first — "yesterday's stock can be used for order or other outlets first to have more
@@ -2328,7 +2338,7 @@ function draftPlan(){ const PA=planAll(), out=[], skip=[];
   for(const pl of PA.plans){ const p=partner(pl.pid); if(!pl.d1||p.internal) continue; /* v22: HQ is produced and displayed at HQ — never a delivery order */
     if(pl.planned&&pl.planned.length){ skip.push({name:p.name,d1:pl.d1,why:"already has "+pl.planned.map(o=>o.no).join(", ")}); continue; }
     if(pl.skip){ skip.push({name:p.name,d1:pl.d1,why:"no delivery (ticked on the prep list)"}); continue; }
-    if(pl.small){ skip.push({name:p.name,d1:pl.d1,why:`only ${pl.small.tot} needed — under the smallest delivery (${pl.small.mn}); Send anyway on the prep list to draft it`}); continue; }
+    if(pl.small){ skip.push({name:p.name,d1:pl.d1,why:`not a regular delivery day and not running low (needs ${pl.small.need} of ${pl.small.full}; an extra drop from ${pl.small.thr}) — Send anyway on the prep list to draft it`}); continue; }
     const lines=[]; for(const l of pl.lines){ if((l.freshSend||0)>0) lines.push({productId:l.productId,qty:l.freshSend}); for(const x of l.fromLots||[]) if(x.qty>0) lines.push({productId:l.productId,qty:x.qty,colour:x.colour,batchDate:x.batch,fromHQ:true}); }
     if(!lines.length){ skip.push({name:p.name,d1:pl.d1,why:"nothing suggested"}); continue; }
     if(weekDoc(p.id,weekStartOf(pl.d1)).settlement){ skip.push({name:p.name,d1:pl.d1,why:"that week is already billed"}); continue; }
@@ -2410,7 +2420,7 @@ function prepTable(d,PA,prepX,prep){ const plans=PA.plans, ORD=PA.orders||{}, P=
     return `<tr class="alloc"><td></td><td colspan="${ncol-1}" class="small muted">From the display: ${parts.join(" · ")}${hl&&hl.capped?` · <span class="pill warn" style="font-size:10px;padding:1px 6px">whole cake: at most 2 more while some are left</span>`:""}</td></tr>`; };
   const chg=l=>l&&l.send!=null&&l.send!==(l.base||0)?`<span class="chg" title="After To make / Made: ${l.send}">→<b>${l.send}</b></span>`:"";
   const cell=(pl,id,pm)=>{ const l=pl.lines.find(x=>x.productId===id), q=pm[pl.pid]||0, done=(pl.planned||[]).some(o=>o.status==="delivered"), P0=partner(pl.pid);
-    if(pl.small) return `<td class="r psend pn" data-l="${esc(P0.code)}"><span class="pv muted" title="Only ${pl.small.tot} cake${pl.small.tot===1?"":"s"} needed for ${esc(P0.name)} on ${nice(pl.d1)} — under the smallest delivery (${pl.small.mn}), so it is skipped; the next delivery covers it. Send anyway: the bar above the table.">—</span>${l&&l.smallWas?`<div class="small muted pleft">was ${l.smallWas}</div>`:""}</td>`;
+    if(pl.small) return `<td class="r psend pn" data-l="${esc(P0.code)}"><span class="pv muted" title="${nice(pl.d1)} is not a regular delivery day for ${esc(P0.name)} and it is not running low (needs ${pl.small.need} of its ${pl.small.full}; an extra drop from ${pl.small.thr} = ${pl.small.pct}%). Send anyway: the bar above the table.">—</span>${l&&l.smallWas?`<div class="small muted pleft">was ${l.smallWas}</div>`:""}</td>`;
     if(pl.skip) return `<td class="r psend pn" data-l="${esc(P0.code)}"><span class="pv muted" title="No delivery to ${esc(P0.name)} on ${nice(pl.d1)}">—</span><div class="small muted pleft">left ${l?l.stockNow:((pl.stock||{})[id]||0)}</div></td>`;
     const lt=l?`${P0.internal?"On the HQ display":"Left at "+esc(P0.name)}${l.refDate?` after ${nice(l.refDate)}`:""}: ${l.stockRep||0}${l.perDay!=null?` · sells about ${(Math.round(l.perDay*10)/10).toFixed(1)}/day`:""}`:"";
     return `<td class="r psend pn" data-l="${esc(P0.code)}"><label title="${esc(P0.name)} · ${nice(pl.d1)}${l&&l.why?` · ${esc(l.why)}`:""}${l&&l.over?` · suggested ${l.suggest}`:""}${l&&l.fromHQ?` · ${l.fromHQ} from the HQ display`:""}${(pl.planned||[]).length?` · on ${pl.planned.map(o=>esc(o.no)).join(", ")}`:""}"><input type="number" min="0" step="1" inputmode="numeric" class="mono${l&&l.over?" over":""}" data-psend="${d}|${id}|${pl.pid}" value="${l?(l.base||0):q}" ${done?"disabled":""} aria-label="${esc(P0.name)} quantity">${l&&l.fromHQ?`<span class="pill info" style="font-size:10px;padding:1px 6px" title="${P0.internal?`${l.fromHQ} already on the display`:`${l.fromHQ} come from the HQ display`} (${l.fromLots.map(x=>x.qty+" "+x.colour+" · "+dayOfBatch(x.batch,x.colour)).join(", ")}), ${l.fresh} to make">${l.fromHQ} ${P0.internal?"on display":"HQ"}</span>`:""}${chg(l)}</label>${P0.internal?"":`<div class="small muted pleft" title="${lt}">left ${l?l.stockNow:((pl.stock||{})[id]||0)}</div>`}</td>`; };
@@ -2422,9 +2432,10 @@ function prepTable(d,PA,prepX,prep){ const plans=PA.plans, ORD=PA.orders||{}, P=
   const skOuts=outs.filter(pl=>pl.d1&&!partner(pl.pid).internal);
   const skipBar=skOuts.length?`<div class="row skipbar" style="margin:6px 0 2px;flex-wrap:wrap;gap:6px 8px"><span class="small muted">No delivery?</span>${skOuts.map(pl=>{ const P0=partner(pl.pid), on=!!pl.skip, live=(pl.planned||[]).filter(o=>o.status!=="cancelled");
       return `<label class="pill ${on?"warn":""}" style="gap:6px;padding:6px 10px;cursor:pointer" title="${on?`No delivery to ${esc(P0.name)} on ${nice(pl.d1)}${pl.skip.by?` — ticked by ${esc(pl.skip.by)}`:""}. Untick to deliver again.`:`Tick when ${esc(P0.name)} gets no delivery on ${nice(pl.d1)} (e.g. too little to prepare): its cakes come off the prep list${live.length?` and ${live.map(o=>esc(o.no)).join(", ")} is cancelled`:""}.`}"><input type="checkbox" data-pskip="${d}|${pl.pid}" ${on?"checked":""} ${canSnap?"":"disabled"} style="width:18px;height:18px;margin:0"> ${esc(P0.name)} <span class="muted">· ${nice(pl.d1)}</span>${on?` <b>· no delivery</b>`:""}</label>`; }).join("")}${skOuts.map(pl=>{ const P0=partner(pl.pid);
-      if(pl.small) return `<span class="pill warn" style="gap:6px;padding:6px 10px" title="Smallest delivery for ${esc(P0.name)} is ${pl.small.mn} cakes (Setup › Outlets). The next delivery covers it; it never skips two days in a row.">${esc(P0.name)}: only ${pl.small.tot} needed → skipped ${canSnap?`<button class="btn sm" data-psmall="${d}|${pl.pid}|1">Send anyway</button>`:""}</span>`;
-      if(pl.smallSent) return `<span class="pill info" style="gap:6px;padding:6px 10px">${esc(P0.name)}: only ${pl.smallSent.tot} — sending anyway${pl.smallSent.by?` (${esc(pl.smallSent.by)})`:""} ${canSnap?`<button class="btn sm" data-psmall="${d}|${pl.pid}|0">Skip it</button>`:""}</span>`;
-      if(pl.smallKeep) return `<span class="pill info" style="padding:6px 10px" title="Under the smallest delivery (${pl.smallKeep.mn}), but nothing went on ${esc(nice(pl.smallKeep.prev))} — never two skips in a row.">${esc(P0.name)}: only ${pl.smallKeep.tot}, delivering (skipped ${esc(nice(pl.smallKeep.prev).split(" ")[0])})</span>`;
+      if(pl.small) return `<span class="pill" style="gap:6px;padding:6px 10px" title="${esc(P0.name)} gets its regular delivery on ${esc((partner(pl.pid).deliveryDays||[]).map(Number).sort().map(i=>WD[i]).join(", "))}. On other days an extra drop goes when it needs ${pl.small.pct}% of its full counter (${pl.small.thr} of ${pl.small.full}). Next regular: ${pl.small.next?esc(nice(pl.small.next)):"—"}.">${esc(P0.name)}: no drop · needs ${pl.small.need} of ${pl.small.full} <span class="muted">(extra from ${pl.small.thr})</span> ${canSnap?`<button class="btn sm" data-psmall="${d}|${pl.pid}|1">Send anyway</button>`:""}</span>`;
+      if(pl.smallSent) return `<span class="pill info" style="gap:6px;padding:6px 10px">${esc(P0.name)}: extra drop — sending anyway${pl.smallSent.by?` (${esc(pl.smallSent.by)})`:""} ${canSnap?`<button class="btn sm" data-psmall="${d}|${pl.pid}|0">Skip it</button>`:""}</span>`;
+      if(pl.lowGo&&pl.low) return `<span class="pill warn" style="padding:6px 10px" title="Not a regular delivery day, but ${esc(P0.name)} needs ${pl.low.need} of its ${pl.low.full} (${pl.low.pct}% = ${pl.low.thr}) to get back to its counter.">${esc(P0.name)}: running low → extra drop (needs ${pl.low.need} of ${pl.low.full})</span>`;
+      if(!pl.extra&&!pl.skip) return `<span class="pill ok" style="padding:6px 10px" title="A regular delivery day: always delivered, filled until ${pl.d2?esc(nice(pl.d2)):"the next delivery"}.">${esc(P0.name)}: regular delivery</span>`;
       return ""; }).join("")}</div>`:"";
   /* v22.23 (Alfred 8 Oct, "I forget to send in the morning"): the snap can be for an earlier day's sheet — after 2pm this page shows the next delivery */
   const snapDays=[...new Set([d,today(),add(today(),-1)])].filter(x=>x>=add(today(),-3)&&x<=add(today(),3)), snapD=snapDays.includes(S.ui.snapDay)?S.ui.snapDay:d;
@@ -2720,7 +2731,7 @@ document.addEventListener("click",async e=>{
   if(d.dorm&&S.ui.doEdit){const E=S.ui.doEdit; E.rows=doRowIds(E).filter(x=>x!==d.dorm); delete E.lines[d.dorm]; E.rowsTouched=true; render(); return;}
   if(d.psmall){ const [dd,pid,on]=d.psmall.split("|"), who=(CA.get()||{}).name||AUTH.name||"", at=new Date().toISOString(); b.disabled=true;
     try{ await savePrep(dd,x=>{ x.sendSmall=x.sendSmall||{}; if(on==="1") x.sendSmall[pid]={by:who,at}; else delete x.sendSmall[pid]; (x.skipLog||(x.skipLog=[])).push({at,by:who,pid,small:on==="1"?"send anyway":"skip again"}); x.skipLog=x.skipLog.slice(-40); });
-      toast(on==="1"?`${partner(pid).name}: sending the small delivery anyway.`:`${partner(pid).name}: small delivery skipped again.`); }catch(e){ toast((e&&e.message)||"Couldn't save"); }
+      toast(on==="1"?`${partner(pid).name}: sending the extra drop anyway.`:`${partner(pid).name}: no extra drop.`); }catch(e){ toast((e&&e.message)||"Couldn't save"); }
     render(); return; }
   if(d.dskip&&S.ui.doPrev){const P=S.ui.doPrev, x=P.out.find(o=>o.pid===d.dskip); P.out=P.out.filter(o=>o.pid!==d.dskip); if(x) P.skip.push({name:x.p.name,d1:x.d1,why:"removed by you"}); (S.ui.doSkip||(S.ui.doSkip=new Set())).add(d.dskip); render(); return;}
   if(d.pmrstep&&S.ui.prepRead){ const [id,st]=d.pmrstep.split("|"); const V=S.ui.prepRead.vals||(S.ui.prepRead.vals={}), v=V[id]||(V[id]={}); v.made=String(Math.max(0,(v.made===""||v.made==null?0:+v.made)+(+st))); render(); return;}
@@ -3039,7 +3050,7 @@ async function act(a,b){
   case "newPartner": S.ui.pEdit={id:"",code:"",name:"",pct:75,termsStatus:"Proposed",wasteRule:"credit",terms:14,active:true}; render(); return;
   case "cancelPartner": S.ui.pEdit=null; render(); return;
   case "saveGame":{ const gd=S.ui.gd||{}; try{ S.ui.game=await GS("gameSettings",{target:gd.target??S.ui.game.target,unlock:gd.unlock??S.ui.game.unlock,qcOn:String(gd.qcOn??S.ui.game.qcOn)==="true",qcBy:gd.qcBy??S.ui.game.qcBy,ladder:(gd.ladder||S.ui.game.ladder).map(Number)}); S.ui.gd={}; toast("Points settings saved"); render(); }catch(e){ toast(e.message); } return; }
-  case "savePartner":{const e=S.ui.pEdit; e.parDay=+e.parDay||3; if(e.minDrop!=null&&e.minDrop!==""){ const v=Math.round(+String(e.minDrop).replace(/[^0-9]/g,"")); e.minDrop=isFinite(v)?Math.min(99,Math.max(0,v)):""; } e.deliveryDays=(e.deliveryDays||[1,3,5]).map(Number); e.code=(e.code||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.code||!e.name){toast("Code and name are required");return;}
+  case "savePartner":{const e=S.ui.pEdit; e.parDay=+e.parDay||3; if(e.lowPct!=null&&e.lowPct!==""){ const v=Math.round(+String(e.lowPct).replace(/[^0-9]/g,"")); e.lowPct=isFinite(v)?Math.min(100,Math.max(0,v)):""; } e.deliveryDays=(e.deliveryDays||[1,3,5]).map(Number); e.code=(e.code||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.code||!e.name){toast("Code and name are required");return;}
     if(partners(true).some(p=>p.code===e.code&&p.id!==e.id)){toast("That code is already used");return;}
     if(!e.formKey) e.formKey=newFormKey(e.code);
     e.whole=wholeOf(e); e.wholeDays=wholeDaysOf(e); if(limitsSet(e)) e.limits=limitsOf(e); else delete e.limits;
