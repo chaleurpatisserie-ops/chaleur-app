@@ -1792,7 +1792,7 @@ const sampleCount=r=>sampleSecs(r).reduce((s,[,a])=>s+a.length,0);
 function sampleList(r){const sec=sampleSecs(r); return sec.length?`<div class="tw"><table><tbody>${sec.map(([k,a])=>`<tr><td><b>${esc(k)}</b> <span class="small muted">${a.length}</span></td><td class="small">${a.slice(0,60).map(esc).join(" · ")}${a.length>60?" …":""}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">Nothing to remove: no sample or test data found.</div>`;}
 function vSetup(){
   const sec=S.ui.setup;
-  const subs=[["partners","Outlets & terms"],["products","Products"],["shelf","Shelf life"],["prices","Price register"],["opening","Opening stock"],["general","Go-live & rules"],["kitchen","Kitchen HQ & WhatsApp"]].concat(can("admin")||can("bills")||can("setup")?[["bukku","Bukku"]]:[]).concat(can("admin")||can("setup")?[["orderla","Orderla orders"]]:[]);
+  const subs=[["partners","Outlets & terms"],["products","Products"],["shelf","Shelf life"],["prices","Price register"],["opening","Opening stock"],["general","Go-live & rules"],["kitchen","Kitchen HQ & WhatsApp"]].concat(can("admin")||can("bills")||can("setup")?[["bukku","Bukku"]]:[]).concat(can("admin")||can("setup")?[["orderla","Orderla orders"],["feedme","FeedMe (HQ till)"]]:[]);
   let body="";
   if(sec==="partners"){
     const e=S.ui.pEdit;
@@ -1959,6 +1959,17 @@ function vSetup(){
         <div class="row"><button class="btn pri" data-act="saveWA">Save</button><button class="btn" data-act="testWA" ${w.set?"":"disabled"}>Send a test message</button>${w.set?(w.on?`<button class="btn sm" data-act="waOff">Switch off</button>`:`<button class="btn sm" data-act="waOn">Switch on</button>`):""}${w.groupSet?`<button class="btn sm" data-act="waNoGroup">Forget group</button>`:""}</div>
         ${(w.log||[]).length?`<details class="help"><summary>Last messages sent (${w.log.length})</summary><div class="small">${w.log.map(x=>`<div>${esc(x.at)} · ${x.ok?"✓":"✗"} ${esc(x.what)}<br><span class="muted">${(x.res||[]).map(esc).join(" · ")}</span></div>`).join("")}</div></details>`:""}</div>`:""}`;
   }
+  if(sec==="feedme"){
+    if(S.fm===undefined){ S.fm=null; GS("feedmeStatus").then(r=>{S.fm=r;render();}).catch(e=>{S.fm={err:e.message};render();}); }
+    const F0=S.fm||{}, days=F0.days||[];
+    body=`<div class="panel"><div class="spread"><h2>FeedMe · HQ till sales</h2>${S.fm===null?`<span class="small muted">Checking…</span>`:days.length?`<span class="pill ok">Reading · last day ${esc(nice(days[0].date))}</span>`:`<span class="pill warn">No FeedMe report read yet</span>`}</div>
+      <p class="small muted" style="margin:4px 0 10px">Every night FeedMe emails the <b>Product Sales</b> report (schedule "CA app - Product sales daily", Excel, 12:00 AM) to chaleurpatisserie@gmail.com. From 00:20 the server reads it from Gmail by itself (no computer needed), and the Prep list uses those numbers as <b>HQ sold</b> instead of the night count (has − waste − left). Nothing in Gmail is changed or sent.</p>
+      ${F0.err?`<p class="pill warn">${esc(F0.err)}</p>`:""}${F0.lastError?`<p class="small"><span class="pill warn">Last problem</span> ${esc(F0.lastError)}</p>`:""}
+      <p class="small muted">Last check: ${F0.lastRun?esc(new Date(F0.lastRun).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"})):"—"}</p>
+      ${days.length?`<div class="tw"><table class="cf"><thead><tr><th>Day</th><th class="r">Items sold</th><th class="r">Our cakes</th><th>Not matched to a cake</th></tr></thead><tbody>${days.map(x=>`<tr><td data-l="Day">${esc(nice(x.date))}</td><td class="r mono" data-l="Items sold">${x.items}</td><td class="r mono" data-l="Our cakes">${x.matched}</td><td class="small" data-l="Not matched">${x.other.length?x.other.slice(0,8).map(o=>`${esc(o.name)} ${o.qty}`).join(" · ")+(x.other.length>8?` +${x.other.length-8} more`:""):"—"}</td></tr>`).join("")}</tbody></table></div>`:""}
+      ${can("setup")||can("admin")?`<div class="row" style="margin-top:8px"><button class="btn sm" data-act="fmPull" ${S.ui.fmBusy?"disabled":""}>${S.ui.fmBusy?"Reading…":"Read the last 7 days now"}</button></div>`:""}
+      <p class="small muted" style="margin-top:8px">Drinks, add-ons and bakery items are listed as "not matched" — that's expected; only cakes count for the prep list.</p></div>`;
+  }
   if(sec==="orderla"){
     if(S.ol===undefined){ S.ol=null; GS("orderlaStatus").then(r=>{S.ol=r;render();}).catch(e=>{S.ol={err:e.message};render();}); }
     const O=S.ol||{}, T=S.ui.olTest, cat=olCatalog(), ed=S.ui.olEdit, draft=S.ui.olDraft||[], st=S.orders||{};
@@ -2032,7 +2043,10 @@ function salesHistory(pid,days=28){
   for(let d=from; d<t; d=add(d,1)){ const ws=weekStartOf(d); if(seen.has(ws)) continue; seen.add(ws);
     for(const day of calcWeek(pid,ws).days){ if(day.date<from||day.date>=t||!day.rep) continue;
       const per={}; for(const l of day.lines){ if(l.close==null) continue; const x=per[l.productId]||(per[l.productId]={sold:0,waste:0,recv:0,close:0}); x.sold+=l.sold; x.waste+=l.waste; x.recv+=l.recv||0; x.close+=l.close; }
-      for(const [pr,v] of Object.entries(per)) (out[pr]||(out[pr]=[])).push({date:day.date,...v,stockout:v.close===0&&v.sold>0});
+      /* v22.30: HQ sold = FeedMe's item sales for the day when the nightly Product Sales email was read (the till, not has − waste − left) */
+      const fm=partner(pid).internal?(((S.feedme||{}).days||{})[day.date]||null):null;
+      if(fm){ for(const v of Object.values(per)) v.sold=0; for(const [pr,q] of Object.entries(fm.sold||{})){ if(!S.products[pr]) continue; const x=per[pr]||(per[pr]={sold:0,waste:0,recv:0,close:null,fm:true}); x.sold=+q||0; x.fm=true; } }
+      for(const [pr,v] of Object.entries(per)) (out[pr]||(out[pr]=[])).push({date:day.date,...v,fm:!!fm,stockout:v.close===0&&v.sold>0});
     }}
   return out;
 }
@@ -2103,6 +2117,7 @@ function planOutlet(pid,taken){
     const need=Math.max(Math.ceil(demand*(1+buffer)),isGood&&demand>0?Math.ceil(demand)+1:0); let target=Math.max(need,counter); if(maxCap!=null) target=Math.min(target,Math.max(maxCap,counter));
     let suggest=Math.max(0,target-usable);
     const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
+    if(p.internal){ const nf=(hist[id]||[]).filter(x=>x.fm).length; if(nf) notes.push(`HQ sales from FeedMe on ${nf} of ${(hist[id]||[]).length} days`); }
     if(neverSold&&counter&&!dead) notes.push(`not sold here yet — min ${counter} kept`);
     if(dead) notes.push(`sold ${sold14} in 14 days here — min ${counter} kept (drop list)`); else if(wasteful) notes.push(`waste ${Math.round(wr14*100)}% in 14 days — no buffer, min ${counter} kept`); else if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`);
     if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — buffer +20%${R&&R.max!=null?", max lifted by 1":""}`); else if(isGood) notes.push(`good seller here — buffer +20% (at least +1)`);
@@ -2948,6 +2963,7 @@ async function act(a,b){
     const who=(CA.get()||{}).name||AUTH.name||"", at=new Date().toISOString(), F=clone(S.freezer||{}); b.disabled=true;
     try{ await put("config/freezer",{counts,date:today(),at,by:who,log:((F.log||[]).concat([{at,by:who,counts}])).slice(-30)}); S.ui.frz=null; toast("Freezer count saved — the prep list follows it from now"); }
     catch(e){ b.disabled=false; return; } render(); return; }
+  case "fmPull": { S.ui.fmBusy=true; render(); try{ const r=await GS("feedmePull"); toast(r.got&&r.got.length?`FeedMe: read ${r.got.length} day${r.got.length===1?"":"s"}`:(r.error||"No new FeedMe report found")); S.fm=undefined; await reload(); }catch(e){ toast(e.message); } S.ui.fmBusy=false; render(); return; }
   case "showLog": S.ui.showLog=true; render(); setTimeout(()=>{const e=document.getElementById("all-changes"); if(e) e.scrollIntoView({behavior:"smooth",block:"start"});},60); return;
   case "hideLog": S.ui.showLog=false; render(); return;
   case "makeDOs":{S.ui.doDone=null; S.ui.doSkip=null; S.ui.doPrev=draftPlan(); render(); setTimeout(()=>{const e=document.getElementById("doprev"); if(e) e.scrollIntoView({behavior:"smooth",block:"start"});},60); return;}
@@ -3254,7 +3270,7 @@ async function start(){
   S.db=shimDB; S.assets=shimAssets; S.dl=null; S.mcp=null;
   const sub=(col,fn)=>shimDB.collection(col).onSnapshot(snap=>{fn(snap);S.loaded.add(col);render();});
   const into=(key)=>s=>{const o={};for(const d of s.docs)o[d.id]={...d.data(),id:d.data().id||d.id};S[key]=o;};
-  sub("config",s=>{S.cfg={};S.counters={};S.orders={};S.drive={folders:{}};for(const d of s.docs){if(d.id==="settings")S.cfg=d.data()||{};if(d.id==="counters")S.counters=d.data()||{};if(d.id==="handled")S.handled=d.data()||{};if(d.id==="prep")S.prep=d.data()||{};if(d.id==="orders")S.orders=d.data()||{};if(d.id==="freezer")S.freezer=d.data()||{};}});
+  sub("config",s=>{S.cfg={};S.counters={};S.orders={};S.drive={folders:{}};for(const d of s.docs){if(d.id==="settings")S.cfg=d.data()||{};if(d.id==="counters")S.counters=d.data()||{};if(d.id==="handled")S.handled=d.data()||{};if(d.id==="prep")S.prep=d.data()||{};if(d.id==="orders")S.orders=d.data()||{};if(d.id==="freezer")S.freezer=d.data()||{};if(d.id==="feedme")S.feedme=d.data()||{};}});
   sub("calendar",into("calendar"));
   sub("partners",into("partners")); sub("products",into("products")); sub("prices",into("prices"));
   sub("weeks",into("weeks")); sub("audits",into("audits"));
