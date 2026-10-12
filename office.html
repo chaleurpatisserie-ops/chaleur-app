@@ -2121,7 +2121,7 @@ function planOutlet(pid,taken){
     const R=limitFor(p,id,d1), RS=[...Array(span)].map((_,i)=>limitFor(p,id,add(d1,i))).filter(Boolean); /* v22.32: a drop covering several days keeps the highest min / max of those days */
     let counter=RS.reduce((a,r)=>Math.max(a,r.min!=null?r.min:0),0);
     const neverSold=(hist[id]||[]).reduce((a,x)=>a+(x.sold||0),0)===0, counterSet=counter, mxs=RS.filter(r=>r.max!=null).map(r=>r.max), full=R?(R.max!=null?R.max:(R.min||0)):0;
-    let maxCap=mxs.length?Math.max(...mxs)+(f.so>.3?1:0):null;
+    let maxCap=mxs.length?(Math.max(...mxs)>0?Math.max(...mxs)+(f.so>.3?1:0):0):null; /* v22.32: max 0 = not carried there — never lifted */
     const dayLbl=span>1&&RS.length>1?`${WD[dow(d1)]}–${WD[dow(add(d1,span-1))]}`:(R?R.day:WD[dow(d1)]);
     const need=Math.max(Math.ceil(demand*(1+buffer)),isGood&&demand>0?Math.ceil(demand)+1:0); let target=Math.max(need,counter); if(maxCap!=null) target=Math.min(target,Math.max(maxCap,counter));
     let suggest=Math.max(0,target-usable); const gapF=Math.max(0,target-usableF);
