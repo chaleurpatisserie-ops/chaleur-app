@@ -445,6 +445,7 @@ const PAGES=[
  ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries · due 10:30","kitchen.html#opening",["kitchen","kapprove","see_kitchen"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
  ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists · due 19:30","kitchen.html#closing",["kitchen","kapprove","see_kitchen"],"closing report waste left lists evening",["kitchen:pm"]],
  ["Kitchen HQ","Prep list","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports","see_plan"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
+ ["Kitchen HQ","Recipes","Every recipe from the Recipe Master: ingredients, method, and a calculator for one recipe or a whole cake","office.html#recipes",["kitchen","kapprove","reports","view","setup"],"recipe recipes calculator scale batch ingredient method component build cake gram",["kitchen"]],
  ["Kitchen HQ","Morning to-do · decorate & deliver","Morning team: today's cakes, custom & Grab orders, finish & decorate, pack & deliver the DOs","kitchen.html?team=am#today",["kitchen","kapprove","todo","see_kitchen"],"morning decoration decorate delivery list to-do custom order grab pack deliver",["kitchen:am"]],
  ["Kitchen HQ","Noon to-do · production","Noon team: today's production list, prep reminders, and the plan for the next days","kitchen.html?team=pm#today",["kitchen","kapprove","todo","see_kitchen"],"noon production list plan mise en place photo next days to-do reminders",["kitchen:pm"]],
  ["Kitchen HQ","Kitchen reports","Past reports, temperatures and photos · fridges, display cakes and reminders","kitchen.html#history",["kitchen","kapprove","view","see_khist"],"history temperature fridge freezer streak calendar setup display list reminder limit",[]],
@@ -552,8 +553,22 @@ const ICON={
         try{ sessionStorage.setItem("ca.pwGo",r.date); }catch(e){} location.href="office.html#plan"; });
       document.body.appendChild(el); PW=el; const fb=el.querySelector("[data-pw=go]"); if(fb) fb.focus(); }catch(e){} }
   if(!/closing|audit/.test(location.pathname)) { if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",()=>setTimeout(prepWin,1800)); else setTimeout(prepWin,1800); }
+  /* v22.38 (Alfred 14 Oct): B2B orders from Bukku invoices — shown from the invoice date until the delivery date ("they take 3-4 days to
+     prep bulk order up, so include it as upcoming b2b order"). Shared by the office Prep list and the kitchen To-do; each page draws its card. */
+  const B2B=(()=>{ const dd=(a,b)=>Math.round((Date.parse(b+"T00:00:00Z")-Date.parse(a+"T00:00:00Z"))/864e5), WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const nice=d=>{ if(!d) return ""; const x=new Date(d+"T00:00:00Z"); return isNaN(x)?d:WD[x.getUTCDay()]+" "+x.getUTCDate()+" "+MO[x.getUTCMonth()]; };
+    const pick=o=>/pick|collect/i.test((o&&o.method)||"");
+    const phase=(o,t,pd)=>{ if(!o.del) return {k:"nodate",n:null,lab:"No delivery date in Bukku"}; const n=dd(t,o.del), v=pick(o)?"pick-up":"delivery"; if(n<0) return null;
+      if(n===0) return {k:"today",n,lab:(pick(o)?"Pick-up":"Delivery")+" today"}; if(n<=pd) return {k:"prep",n,lab:"Prep now · "+v+" "+(n===1?"tomorrow":"in "+n+" days")}; return {k:"up",n,lab:"Upcoming · in "+n+" days"}; };
+    const clean=s=>String(s||"").replace(/\s*\d+\s*NOS\s*\/\s*CTN\s*$/i,"").trim();
+    const item=i=>{ const u=String(i.unit||""), b=i.base&&i.bunit&&(i.bunit!==u||+i.base!==+i.qty)?` (${i.base} ${i.bunit})`:""; return `${i.qty} ${u} ${clean(i.name)}${b}`.replace(/\s+/g," ").trim(); };
+    const view=(B,t)=>{ if(!B) return null; const pd=+B.prepDays||4, rows=(B.orders||[]).map(o=>({o,ph:phase(o,t,pd)})).filter(x=>x.ph);
+      const dated=rows.filter(x=>x.ph.k!=="nodate").sort((a,b)=>a.o.del.localeCompare(b.o.del)||String(a.o.no).localeCompare(String(b.o.no))), nodate=rows.filter(x=>x.ph.k==="nodate");
+      const tot={}; dated.filter(x=>x.ph.k!=="up").forEach(x=>(x.o.items||[]).forEach(i=>{ const k=(i.sku||clean(i.name)).toUpperCase()+"|"+(i.unit||""), z=tot[k]||(tot[k]={name:clean(i.name),unit:i.unit||"",qty:0,base:0,bunit:i.bunit||""}); z.qty+=+i.qty||0; z.base+=+i.base||0; }));
+      return {pd,dated,nodate,tot:Object.values(tot),nPrep:dated.filter(x=>x.ph.k!=="up").length}; };
+    return {phase,view,item,nice,clean,pick}; })();
   const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose()};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose(),b2b:B2B};
 })();
 </script>
 
@@ -899,6 +914,7 @@ body.dark #bar .cb.ghost{background:transparent;color:#fff;border-color:rgba(255
 .hd .hbtn.pdf{padding:0 10px;margin-right:-2px}@media (max-width:480px){.hbtn .pl{display:none}.hbtn[data-menu]{padding:0 14px}.hbtn.pdf{padding:0 12px}.kchips{gap:6px}.kchips button,.kchips a.pchip{padding:0 12px}}
 body.ro #main input:not([type=date]),body.ro #main select,body.ro #main textarea,body.ro #main label.cb,body.ro #main button.cb:not([data-tab]):not([data-part]):not([data-partback]):not([data-date]):not([data-team]):not([data-v2]):not([data-v2back]):not([data-plan]):not([data-eqstep]),body.ro #bar,body.ro .foot{pointer-events:none;opacity:.55}
 .hd .tt{flex:1;min-width:0}.hd .hbtn{height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-weight:600;font-size:14px;color:var(--ink);box-shadow:0 3px 0 var(--line);flex:none;font-family:inherit}
+.b2bk h3{margin:0 0 4px}.b2bk .b2bo{border-top:1px dashed var(--line);padding:9px 0}.b2bk .b2bo:first-of-type{border-top:0}.b2bk .b2bo.today{background:var(--bad-bg);border-radius:10px;padding:9px 10px;border-top:0;margin:4px 0}.b2bk ul{margin:5px 0 2px 18px;padding:0}.b2bk li{margin:2px 0}.b2bk .b2bt{border-top:1px solid var(--line);padding-top:8px;margin-top:4px}
 </style>
 </head><body>
 <div class="w" id="app">
@@ -1167,6 +1183,13 @@ function outletsLeftCard(open){ const L=(INFO.outletsLeft||[]); if(!L.length) re
     return `<details class="oleft"${open?" open":""}><summary><b>${esc(o.name)}</b> <span class="hint">${o.date?`${o.total} left · counted ${when}`:"no closing count yet"}</span>${o.date&&!o.fresh?` <span class="pill warn">last night's count missing</span>`:""}</summary>
       ${rows.length?`<div class="olr">${rows.map(r=>`<span class="nm">${esc(r.name)}</span><span class="dt"><i style="background:${esc(hex(r.colour))}"></i>${esc(r.colour)}</span><b>${r.qty}</b>`).join("")}</div>`:`<p class="hint" style="margin:6px 0 0">${o.date?"Nothing left: everything sold or wasted.":"The outlet has not sent a closing count yet."}</p>`}</details>`; };
   return `<div class="card"><h3 style="margin:0 0 4px">Left at the outlets</h3><p class="hint" style="margin:0 0 6px">From each outlet's closing count last night. Use it with the <a href="office.html#plan">prep list</a> to decide what to make.</p>${L.map(one).join("")}</div>`; }
+/* v22.38 (Alfred 14 Oct): B2B orders from Bukku invoices — on the to-do of both teams from the invoice date until the delivery date
+   ("they take 3-4 days to prep bulk order up, so include it as upcoming b2b order"). No amounts here. */
+function b2bCard(){ const v=CA.b2b&&CA.b2b.view(INFO.b2b,INFO.today); if(!v||!v.dated.length) return "";
+  const pc=k=>k==="today"?"bad":k==="prep"?"warn":"";
+  return `<div class="card b2bk"><h3>B2B orders (${v.dated.length})</h3><p class="hint" style="margin-bottom:4px">From Bukku invoices. Shown from the invoice date until the delivery date.</p>${v.dated.map(({o,ph})=>`<div class="b2bo ${ph.k}"><div><span class="pill ${pc(ph.k)}">${esc(ph.lab)}</span></div><div style="margin-top:4px"><b>${esc(o.cust)}</b></div>
+    <div class="hint">${esc(CA.b2b.nice(o.del))}${o.method?" · "+esc(o.method):""} · ${esc(o.no)}</div><ul>${(o.items||[]).map(i=>`<li>${esc(CA.b2b.item(i))}${i.note?`<div class="hint">${esc(i.note)}</div>`:""}</li>`).join("")}</ul>${o.inote?`<div class="hint"><b>Note:</b> ${esc(o.inote)}</div>`:""}</div>`).join("")}
+    ${v.nPrep>1&&v.tot.length?`<div class="b2bt"><b>To prep in the next ${v.pd} days · all B2B orders</b><ul>${v.tot.map(z=>`<li>${esc(CA.b2b.item(z))}</li>`).join("")}</ul></div>`:""}</div>`; }
 function vToday(){
   const t=INFO.today; if(!TEAM||!TEAMS()[TEAM]) TEAM=teamGet()||(INFO.now<"13:00"?"am":"pm"); if(!TEAMS()[TEAM]) TEAM="am";
   const it={am:teamItems("am"),pm:teamItems("pm")}, left=k=>it[k].filter(x=>x.count&&!x.done).length, cur=it[TEAM].filter(x=>x.count), dn=cur.filter(x=>x.done).length;
@@ -1181,7 +1204,7 @@ function vToday(){
   const shared=`${INFO.proposals.length?`<div class="card info"><h3>Waiting for a supervisor (${INFO.proposals.length})</h3>${INFO.proposals.map(x=>`<div style="padding:8px 0;border-top:1px dashed var(--line)"><div>${esc(propText(x))}</div><div class="hint">${esc(x.by)} · ${esc(dtOf(x.at))}${x.why?` · “${esc(x.why)}”`:""}</div>${SUP()?`<div style="display:flex;gap:8px;margin-top:8px"><button class="cb sm ok" type="button" data-dec="${x.id}" data-ok="1">Approve</button><button class="cb sm ghost" type="button" data-dec="${x.id}" data-ok="0">Reject</button></div>`:""}</div>`).join("")}</div>`:""}
     ${INFO.brief&&(INFO.brief.warnings||[]).length?`<div class="card info"><h3>AI notes</h3><ul class="iss">${INFO.brief.warnings.map(w=>`<li>${esc(w)}</li>`).join("")}</ul><p class="hint">Updated ${esc(dtOf(INFO.brief.generatedAt))}</p></div>`:""}
     ${INFO.check&&INFO.check.items.length?`<div class="card info"><h3>Latest check</h3><ul class="iss">${INFO.check.items.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul><p class="hint">${esc(INFO.check.by)} · ${esc(dtOf(INFO.check.at))}</p></div>`:""}`;
-  return `<div class="stack">${head}${cards.join("")}${add}${extra}${mng}${shared}</div>`;
+  return `<div class="stack">${head}${b2bCard()}${cards.join("")}${add}${extra}${mng}${shared}</div>`;
 }
 /* the to-do form (people with "Add and edit to-dos") */
 function openTask(type,team,id){ let x=null; if(id){ x=(INFO.tasks||[]).find(y=>y.id===id); if(!x){ toast("Reload the page to edit this to-do."); return; } }

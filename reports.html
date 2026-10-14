@@ -445,6 +445,7 @@ const PAGES=[
  ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries · due 10:30","kitchen.html#opening",["kitchen","kapprove","see_kitchen"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
  ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists · due 19:30","kitchen.html#closing",["kitchen","kapprove","see_kitchen"],"closing report waste left lists evening",["kitchen:pm"]],
  ["Kitchen HQ","Prep list","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports","see_plan"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
+ ["Kitchen HQ","Recipes","Every recipe from the Recipe Master: ingredients, method, and a calculator for one recipe or a whole cake","office.html#recipes",["kitchen","kapprove","reports","view","setup"],"recipe recipes calculator scale batch ingredient method component build cake gram",["kitchen"]],
  ["Kitchen HQ","Morning to-do · decorate & deliver","Morning team: today's cakes, custom & Grab orders, finish & decorate, pack & deliver the DOs","kitchen.html?team=am#today",["kitchen","kapprove","todo","see_kitchen"],"morning decoration decorate delivery list to-do custom order grab pack deliver",["kitchen:am"]],
  ["Kitchen HQ","Noon to-do · production","Noon team: today's production list, prep reminders, and the plan for the next days","kitchen.html?team=pm#today",["kitchen","kapprove","todo","see_kitchen"],"noon production list plan mise en place photo next days to-do reminders",["kitchen:pm"]],
  ["Kitchen HQ","Kitchen reports","Past reports, temperatures and photos · fridges, display cakes and reminders","kitchen.html#history",["kitchen","kapprove","view","see_khist"],"history temperature fridge freezer streak calendar setup display list reminder limit",[]],
@@ -552,8 +553,22 @@ const ICON={
         try{ sessionStorage.setItem("ca.pwGo",r.date); }catch(e){} location.href="office.html#plan"; });
       document.body.appendChild(el); PW=el; const fb=el.querySelector("[data-pw=go]"); if(fb) fb.focus(); }catch(e){} }
   if(!/closing|audit/.test(location.pathname)) { if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",()=>setTimeout(prepWin,1800)); else setTimeout(prepWin,1800); }
+  /* v22.38 (Alfred 14 Oct): B2B orders from Bukku invoices — shown from the invoice date until the delivery date ("they take 3-4 days to
+     prep bulk order up, so include it as upcoming b2b order"). Shared by the office Prep list and the kitchen To-do; each page draws its card. */
+  const B2B=(()=>{ const dd=(a,b)=>Math.round((Date.parse(b+"T00:00:00Z")-Date.parse(a+"T00:00:00Z"))/864e5), WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const nice=d=>{ if(!d) return ""; const x=new Date(d+"T00:00:00Z"); return isNaN(x)?d:WD[x.getUTCDay()]+" "+x.getUTCDate()+" "+MO[x.getUTCMonth()]; };
+    const pick=o=>/pick|collect/i.test((o&&o.method)||"");
+    const phase=(o,t,pd)=>{ if(!o.del) return {k:"nodate",n:null,lab:"No delivery date in Bukku"}; const n=dd(t,o.del), v=pick(o)?"pick-up":"delivery"; if(n<0) return null;
+      if(n===0) return {k:"today",n,lab:(pick(o)?"Pick-up":"Delivery")+" today"}; if(n<=pd) return {k:"prep",n,lab:"Prep now · "+v+" "+(n===1?"tomorrow":"in "+n+" days")}; return {k:"up",n,lab:"Upcoming · in "+n+" days"}; };
+    const clean=s=>String(s||"").replace(/\s*\d+\s*NOS\s*\/\s*CTN\s*$/i,"").trim();
+    const item=i=>{ const u=String(i.unit||""), b=i.base&&i.bunit&&(i.bunit!==u||+i.base!==+i.qty)?` (${i.base} ${i.bunit})`:""; return `${i.qty} ${u} ${clean(i.name)}${b}`.replace(/\s+/g," ").trim(); };
+    const view=(B,t)=>{ if(!B) return null; const pd=+B.prepDays||4, rows=(B.orders||[]).map(o=>({o,ph:phase(o,t,pd)})).filter(x=>x.ph);
+      const dated=rows.filter(x=>x.ph.k!=="nodate").sort((a,b)=>a.o.del.localeCompare(b.o.del)||String(a.o.no).localeCompare(String(b.o.no))), nodate=rows.filter(x=>x.ph.k==="nodate");
+      const tot={}; dated.filter(x=>x.ph.k!=="up").forEach(x=>(x.o.items||[]).forEach(i=>{ const k=(i.sku||clean(i.name)).toUpperCase()+"|"+(i.unit||""), z=tot[k]||(tot[k]={name:clean(i.name),unit:i.unit||"",qty:0,base:0,bunit:i.bunit||""}); z.qty+=+i.qty||0; z.base+=+i.base||0; }));
+      return {pd,dated,nodate,tot:Object.values(tot),nPrep:dated.filter(x=>x.ph.k!=="up").length}; };
+    return {phase,view,item,nice,clean,pick}; })();
   const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose()};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose(),b2b:B2B};
 })();
 </script>
 
