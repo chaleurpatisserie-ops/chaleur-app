@@ -446,8 +446,8 @@ const CA=(function(){
 const PAGES=[
  /* v22.4 (Alfred 29 Sep): 6 clear Kitchen HQ pages. "Decoration & delivery list" → Morning to-do, "Production list" → Noon to-do;
     the production plan (lists for the next days) is inside the Noon to-do (and the Plan chip on the kitchen page), no longer its own page here. */
- ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries · due 10:30","kitchen.html#opening",["kitchen","kapprove","see_kitchen"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
- ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists · due 19:30","kitchen.html#closing",["kitchen","kapprove","see_kitchen"],"closing report waste left lists evening",["kitchen:pm"]],
+ ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries","kitchen.html#opening",["kitchen","kapprove","see_kitchen"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
+ ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists","kitchen.html#closing",["kitchen","kapprove","see_kitchen"],"closing report waste left lists evening",["kitchen:pm"]],
  ["Kitchen HQ","Prep list","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports","see_plan"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
  ["Kitchen HQ","Morning to-do · decorate & deliver","Morning team: today's cakes, custom & Grab orders, finish & decorate, pack & deliver the DOs","kitchen.html?team=am#today",["kitchen","kapprove","todo","see_kitchen"],"morning decoration decorate delivery list to-do custom order grab pack deliver",["kitchen:am"]],
  ["Kitchen HQ","Noon to-do · production","Noon team: today's production list, prep reminders, and the plan for the next days","kitchen.html?team=pm#today",["kitchen","kapprove","todo","see_kitchen"],"noon production list plan mise en place photo next days to-do reminders",["kitchen:pm"]],
@@ -2015,6 +2015,7 @@ function vSetup(){
         <label class="f">Production plan needed for (days ahead)<input id="hq-pd" data-hq="planDays" inputmode="numeric" value="${esc(v("planDays"))}"></label>
         <label class="f">Remind on WhatsApp when late<select id="hq-ch" data-hq="chase">${opt("true","On",String(v("chase")))}${opt("false","Off",String(v("chase")))}</select></label>
         <label class="f">4pm kitchen reminders to the group<select id="hq-br" data-hq="brief">${opt("true","On",String(v("brief")))}${opt("false","Off",String(v("brief")))}</select></label></div>
+        ${h.today&&(h.today.openBy!==h.openBy||h.today.closeBy!==h.closeBy)?`<p class="small" style="margin:6px 0 0"><span class="pill warn">From tomorrow</span> Opening due <b>${esc(h.openBy)}</b>, closing due <b>${esc(h.closeBy)}</b>. Today stays ${esc(h.today.openBy)} / ${esc(h.today.closeBy)}.</p>`:`<p class="small muted" style="margin:6px 0 0">A new due time starts the next day; past days keep the times they had.</p>`}
         <div class="f"><span>Kitchen closed on (no reports expected)</span><div>${WD.map((d,i)=>`<label class="chk"><input type="checkbox" id="hq-cl-${i}" data-hqcl="${i}" ${cl.map(Number).includes(i)?"checked":""}>${d}</label>`).join("")}</div></div>
         ${MGR()?`<div class="row"><button class="btn pri" data-act="saveHqs">Save kitchen settings</button></div>`:`<span class="pill info">Only Alfred or Joscelyn can change these</span>`}`}</div>
       ${MGR()?gamePanel():""}
