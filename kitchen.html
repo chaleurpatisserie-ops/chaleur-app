@@ -1360,29 +1360,65 @@ function vPart(kind,part){
    in; the app checks it like the recipe scanner … save as pending for Chef Alfred to approve"; "allow them to choose between 5 items missing,
    so if they could do all we collect data faster, but at least 1 is needed each shift"): five open items at a time (today's cakes first),
    "Show 5 others" rotates; a weighed gram per piece, a blank recipe gram, or a missing recipe read from a photo and checked line by line. */
-const missName=i=>i.t==="recipe"?i.cname:i.t==="line"?i.cname+" › "+i.ingName:i.pname+" › "+i.cname;
-const missFilled=(it,v)=>it.t==="recipe"?!!(v&&(v.lines||[]).some(l=>String(l.name||"").trim()&&parseFloat(l.g)>0)):!!(v&&parseFloat(v.g)>0);
+const missName=i=>i.t==="recipe"?i.cname:i.t==="method"?i.cname+" (method)":i.t==="check"?i.cname+" (check the recipe)":i.t==="line"?i.cname+" › "+i.ingName:i.pname+" › "+i.cname;
+const missFilled=(it,v)=>it.t==="recipe"?!!(v&&(v.lines||[]).some(l=>String(l.name||"").trim()&&parseFloat(l.g)>0)):it.t==="method"?String((v&&v.method)||"").trim().length>=10:it.t==="check"?!!(v&&v.read&&(v.lines||[]).some(l=>String(l.name||"").trim())):!!(v&&parseFloat(v.g)>0);
+/* v22.54: the photo of each item has its own key (a method card or a kitchen copy for the same recipe never share a photo) */
+const missPk=(kind,it)=>pre(kind)+"rs_"+(it.t==="check"?"q"+it.qid:it.t==="method"?"m"+it.cid:it.cid);
 function missOpen(kind){ const M=(INFO.missing||{})[kind]||{items:[]}; return (M.items||[]).filter(i=>!i.pending); }
 function missShown(kind){ const s=st(kind), open=missOpen(kind); if(!open.length) return []; const n=Math.ceil(open.length/5), pg=((+s.mpage||0)%n+n)%n; const V=s.miss||{}; const filledElse=open.filter((it,i)=>Math.floor(i/5)!==pg&&missFilled(it,V[it.key])); return open.slice(pg*5,pg*5+5).concat(filledElse); }
 function vMissing(kind){ const s=st(kind), M=(INFO.missing||{})[kind]||{items:[]}, open=missOpen(kind), pend=(M.items||[]).filter(i=>i.pending), V=s.miss||{}, show=missShown(kind), done=open.filter(it=>missFilled(it,V[it.key])).length;
   if(!open.length) return `<div class="card"><b>✓ Nothing missing${M.today?" for today's cakes":""}.</b><p class="hint">${pend.length?pend.length+" waiting for Chef Alfred: "+esc(pend.map(missName).join(", "))+".":"The Recipe Master has every gram it needs."}</p></div>${M.err?`<p class="hint">Recipe Master not read: ${esc(M.err)}</p>`:""}`;
-  return `<p class="hint">The Recipe Master is missing these${M.today?" for today's cakes":""}. Do <b>at least one</b> this shift — all five is better. Weigh the component of <b>one</b> finished piece on the scale, or snap the recipe when the whole recipe is missing. Chef Alfred approves before it is saved.</p>
+  return `<p class="hint">The Recipe Master is missing these${M.today?" for today's cakes":""}. Do <b>at least one</b> this shift — all five is better. Weigh the component of <b>one</b> finished piece, snap the recipe or the method when it is missing, or check a recipe against the kitchen copy. Chef Alfred approves before it is saved.</p>
     <div class="stack">${show.map(it=>missCard(kind,it,V[it.key]||{})).join("")}</div>
     <p class="hint" style="text-align:center">${done} of ${open.length} filled${open.length>5?` · <button class="lnk" type="button" data-act="missMore">Show 5 others</button>`:""}</p>
     ${pend.length?`<p class="hint">Waiting for Chef Alfred: ${pend.map(i=>esc(missName(i))+" ("+esc(i.pending)+")").join(", ")}.</p>`:""}
     ${noteBox(kind,"recipes")}`; }
+/* v22.54 "Check this recipe": the kitchen copy vs the Recipe Master, line by line — the same steps as rcpCheckDiff_ in Code.gs (keep the two the same) */
+const mcNorm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9一-鿿]+/g," ").trim().split(" ").filter(Boolean).map(w=>w.length>3&&/[^s]s$/.test(w)?w.slice(0,-1):w).join(" ");
+function mcSc(a,b){ if(!a||!b) return 0; if(a===b) return 3; const s=a.length<=b.length?a:b, l=s===a?b:a; if(s.length>=4&&(" "+l+" ").indexOf(" "+s+" ")>=0) return 2;
+  const A=a.split(" "), B=b.split(" "), eq=(x,y)=>x===y||(Math.min(x.length,y.length)>=5&&(x.indexOf(y)===0||y.indexOf(x)===0)); const n=A.filter(x=>B.some(y=>eq(x,y))).length, j=n/(A.length+B.length-n); return j>=0.5?1+j:0; }
+function missCmp(rm,kit){ const r1=v=>Math.round(v*10)/10;
+  const R=(rm||[]).map((l,i)=>({i,name:String((l||{}).name||"").trim(),n:mcNorm((l||{}).name),g:+(l||{}).g>0?r1(+l.g):0})), K=(kit||[]).map((l,i)=>({i,name:String((l||{}).name||"").trim(),n:mcNorm((l||{}).name),g:+(l||{}).g>0?r1(+l.g):0}));
+  const pair={}, used={};
+  [3,2,1].forEach(min=>R.forEach(r=>{ if(pair[r.i]!=null||!r.n) return; let best=-1,bs=0,bd=1e9; K.forEach(k=>{ if(used[k.i]||!k.n) return; const sc=mcSc(r.n,k.n), dd=Math.abs(k.i-r.i); if(sc<min) return; if(sc>bs||(sc===bs&&dd<bd)){ best=k.i; bs=sc; bd=dd; } }); if(best>=0){ pair[r.i]=best; used[best]=1; } }));
+  const ratios=R.filter(r=>pair[r.i]!=null&&r.g>0&&K[pair[r.i]].g>0).map(r=>K[pair[r.i]].g/r.g).sort((a,b)=>a-b);
+  let scale=1; if(ratios.length>=3){ const med=ratios[Math.floor(ratios.length/2)], agree=ratios.filter(x=>Math.abs(x/med-1)<=0.02).length; if(Math.abs(med-1)>0.02&&agree>=Math.max(3,Math.ceil(ratios.length*0.7))) scale=Math.round(med*10000)/10000; }
+  const same=(a,b)=>Math.abs(a-b)<=Math.max(0.5,b*0.005);
+  const rows=R.filter(r=>r.n).map(r=>{ const ki=pair[r.i]; if(ki==null) return {st:"miss",name:r.name,rmG:r.g}; const k=K[ki], kg=k.g>0?k.g/scale:0, st=!k.g&&!r.g?"same":!k.g?"nog":!r.g?"g":same(kg,r.g)?"same":"g"; return {st,name:r.name,kname:r.n!==k.n?k.name:"",rmG:r.g,kitG:k.g}; });
+  K.forEach(k=>{ if(k.n&&!used[k.i]) rows.push({st:"extra",name:k.name,kitG:k.g}); });
+  const nDiff=rows.filter(x=>x.st!=="same").length; return {rows,scale,same:!nDiff,nDiff,rmSum:r1(R.reduce((a,r)=>a+r.g,0)),kitSum:r1(K.reduce((a,k)=>a+k.g,0))}; }
+const mcG=g=>g>0?(Math.round(g*10)/10).toLocaleString("en-US")+" g":"no grams";
+function missCmpHtml(it,v){ if(!v.read) return ""; const d=missCmp(it.rm,(v.lines||[]).filter(l=>String(l.name||"").trim()));
+  const sc=d.scale!==1?` The kitchen copy is for a different batch (×${esc(String(d.scale))}), so it was compared after scaling.`:"";
+  if(d.same) return `<p style="margin:8px 0 0;color:var(--ok-tx)"><b>✓ The same as the Recipe Master</b> — all ${d.rows.length} lines.${sc}</p>`;
+  const nm=x=>`<b>${esc(x.name)}</b>${x.kname?` <span class="hint">(read “${esc(x.kname)}”)</span>`:""}`;
+  return `<div style="margin-top:8px"><p style="margin:0 0 4px"><b>${d.nDiff} difference${d.nDiff===1?"":"s"}</b> with the Recipe Master:</p><ul style="margin:0;padding-left:18px">${d.rows.filter(x=>x.st!=="same").map(x=>`<li>${x.st==="miss"?`− ${nm(x)} ${esc(mcG(x.rmG))} — not on the kitchen copy`:x.st==="extra"?`+ ${nm(x)} ${esc(mcG(x.kitG))} — not in the Recipe Master`:x.st==="nog"?`${nm(x)}: no grams on the kitchen copy (Recipe Master ${esc(mcG(x.rmG))})`:`${nm(x)}: Recipe Master ${esc(mcG(x.rmG))} · kitchen copy <b>${esc(mcG(x.kitG))}</b>`}</li>`).join("")}</ul>
+    <p class="hint" style="margin:6px 0 0">Fix any line the app read wrong (look at the photo). Then send — Chef Alfred decides which one is right.${sc}</p></div>`; }
+function missLinesEd(k,it,L){ return `${L.map((l,i)=>`<div class="pl1" style="display:grid;grid-template-columns:1fr 84px auto;gap:6px;margin-top:6px"><input data-mln="${k}#${i}" value="${esc(l.name||"")}" placeholder="ingredient" aria-label="Ingredient ${i+1}"><input type="number" inputmode="decimal" step="any" min="0" data-mlg="${k}#${i}" value="${esc(l.g||"")}" placeholder="g" aria-label="Grams ${i+1}"><button type="button" class="cb sm ghost" data-mldel="${k}#${i}" aria-label="Remove line">✕</button></div>`).join("")}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center"><button type="button" class="cb sm ghost" data-act="missAdd:${k}">＋ Add a line</button><span class="hint">Total ${esc(String(Math.round(L.reduce((a,l)=>a+(parseFloat(l.g)||0),0)*10)/10))} g</span><button type="button" class="cb sm ghost" data-act="missRead:${k}" ${MSBUSY===it.key?"disabled":""}>Read again</button></div>`; }
+const missReadBtn=(k,it,has,v)=>has&&!v.read?`<button class="cb big full" type="button" data-act="missRead:${k}" ${MSBUSY===it.key?"disabled":""}>${MSBUSY===it.key?"Reading…":"Read it ›"}</button>`:"";
 function missCard(kind,it,v){ const k=esc(it.key), ok=missFilled(it,v);
   if(it.t==="build") return `<div class="card ${ok?"sent":""}"><h3>${esc(it.pname)} › ${esc(it.cname)}</h3><p class="hint" style="margin:2px 0 8px">Grams of this component in <b>ONE</b> finished piece${it.stage?" · "+esc(it.stage):""}. Weigh it before it goes on (or weigh 3 and divide).</p>
     <div class="stp"><span class="lb">g in one piece</span><div class="ctl"><input type="number" inputmode="decimal" step="any" min="0" value="${esc(v.g||"")}" data-mg="${k}" aria-label="Grams in one piece ${esc(it.cname)}" placeholder="g"></div></div>
     <input data-mn="${k}" value="${esc(v.note||"")}" placeholder="note (optional, e.g. average of 3)" aria-label="Note" style="width:100%;margin-top:6px"></div>`;
   if(it.t==="line") return `<div class="card ${ok?"sent":""}"><h3>${esc(it.cname)} › ${esc(it.ingName)}</h3><p class="hint" style="margin:2px 0 8px">The recipe has no grams for this ingredient. How much goes in one batch${it.yield?" ("+esc(String(it.yield))+" g batch)":""}?</p>
     <div class="stp"><span class="lb">g in the batch</span><div class="ctl"><input type="number" inputmode="decimal" step="any" min="0" value="${esc(v.g||"")}" data-mg="${k}" aria-label="Grams of ${esc(it.ingName)}" placeholder="g"></div></div></div>`;
-  const pk=pre(kind)+"rs_"+it.cid, has=!!P2[pk], L=v.lines||[];
-  return `<div class="card ${ok?"sent":""}"><h3>${esc(it.cname)} <span class="pill warn">recipe missing</span></h3><p class="hint" style="margin:2px 0 8px">${esc(it.cat||"Recipe")} used in ${esc(it.pname)}. Snap the recipe (sheet, book or whiteboard) and tap Read it; then check every line.</p>
-    ${shotBox(pk,has?"The recipe":"Photo of the recipe","")}${has&&!v.read?`<button class="cb big full" type="button" data-act="missRead:${k}" ${MSBUSY===it.key?"disabled":""}>${MSBUSY===it.key?"Reading…":"Read it ›"}</button>`:""}
+  const pk=missPk(kind,it), has=!!P2[pk], L=v.lines||[];
+  /* v22.54 "Method missing": snap the recipe card (the AI reads the steps) or write them */
+  if(it.t==="method") return `<div class="card ${ok?"sent":""}"><h3>${esc(it.cname)} <span class="pill warn">method missing</span></h3><p class="hint" style="margin:2px 0 8px">${esc(it.cat||"Recipe")} used in ${esc(it.pname)}. The ingredients are in the Recipe Master, the steps are not. Snap the recipe card and tap Read it, or write the steps. No grams in the steps — the ingredient list has them.</p>
+    ${(it.ings||[]).length?`<p class="hint" style="margin:0 0 8px">Ingredients: ${esc(it.ings.join(", "))}</p>`:""}
+    ${shotBox(pk,has?"The recipe card":"Photo of the recipe card","optional")}${missReadBtn(k,it,has,v)}
+    <textarea data-mm="${k}" rows="6" placeholder="1. …&#10;2. …&#10;3. …" aria-label="Method of ${esc(it.cname)}" style="width:100%;margin-top:8px">${esc(v.method||"")}</textarea>
+    ${v.read?`<p class="hint" style="margin:4px 0 0">Read from the photo — check every step against the card.</p>`:""}</div>`;
+  /* v22.54 "Check this recipe": snap the kitchen copy; the app shows every difference with the Recipe Master */
+  if(it.t==="check") return `<div class="card ${ok?"sent":""}"><h3>${esc(it.cname)} <span class="pill">check this recipe</span></h3><p class="hint" style="margin:2px 0 8px">Snap the kitchen copy of this recipe (book, sheet or whiteboard) and tap Read it. The app compares it line by line with the Recipe Master (${(it.rm||[]).length} lines, ${esc(mcG((it.rm||[]).reduce((a,l)=>a+(+l.g||0),0)))}).</p>
+    ${it.q?`<p class="hint" style="margin:0 0 8px">${esc(it.qid)}: ${esc(String(it.q).slice(0,220))}</p>`:""}
+    ${shotBox(pk,has?"The kitchen copy":"Photo of the kitchen copy","")}${missReadBtn(k,it,has,v)}
+    ${v.read?`<p class="hint" style="margin:8px 0 4px">${v.title?`Read as “${esc(v.title)}”. `:""}Check the names and grams against the photo.${(v.unclear||[]).length?` Could not read: ${v.unclear.map(esc).join(" · ")}.`:""}</p>${missLinesEd(k,it,L)}<div id="mc_${k}">${missCmpHtml(it,v)}</div>`:""}</div>`;
+  return `<div class="card ${ok?"sent":""}"><h3>${esc(it.cname)} <span class="pill warn">recipe missing</span></h3><p class="hint" style="margin:2px 0 8px">${esc(it.cat||"Recipe")} used in ${esc(it.pname)}. Snap the recipe (sheet, book or whiteboard) and tap Read it; then check every line${it.noMethod?" and the method":""}.</p>
+    ${shotBox(pk,has?"The recipe":"Photo of the recipe","")}${missReadBtn(k,it,has,v)}
     ${v.read?`<p class="hint" style="margin:8px 0 4px">${v.title?`Read as “${esc(v.title)}”. `:""}Check the names and grams against the photo.${(v.unclear||[]).length?` Could not read: ${v.unclear.map(esc).join(" · ")}.`:""}</p>
-      ${L.map((l,i)=>`<div class="pl1" style="display:grid;grid-template-columns:1fr 84px auto;gap:6px;margin-top:6px"><input data-mln="${k}#${i}" value="${esc(l.name||"")}" placeholder="ingredient" aria-label="Ingredient ${i+1}"><input type="number" inputmode="decimal" step="any" min="0" data-mlg="${k}#${i}" value="${esc(l.g||"")}" placeholder="g" aria-label="Grams ${i+1}"><button type="button" class="cb sm ghost" data-mldel="${k}#${i}" aria-label="Remove line">✕</button></div>`).join("")}
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center"><button type="button" class="cb sm ghost" data-act="missAdd:${k}">＋ Add a line</button><span class="hint">Total ${esc(String(Math.round(L.reduce((a,l)=>a+(parseFloat(l.g)||0),0)*10)/10))} g</span><button type="button" class="cb sm ghost" data-act="missRead:${k}" ${MSBUSY===it.key?"disabled":""}>Read again</button></div>`:""}</div>`; }
+      ${missLinesEd(k,it,L)}${it.noMethod?`<p class="hint" style="margin:10px 0 4px"><b>Method</b> (from the photo; no grams in the steps)</p><textarea data-mm="${k}" rows="5" placeholder="1. …&#10;2. …" aria-label="Method of ${esc(it.cname)}" style="width:100%">${esc(v.method||"")}</textarea>`:""}`:""}</div>`; }
 /* v22.45 (Alfred 15 Oct): the FeedMe product-sales report at closing — snap it, the AI reads the rows, HQ sold for today is set from it until
    the FeedMe email arrives (then the email wins). "No report tonight" + why keeps the closing complete. */
 function vSales(kind){ const s=st(kind), none=!!s.later.sales, n=[1,2,3].filter(j=>j===1||P2["cl_fs"+(j-1)]);
@@ -1500,7 +1536,7 @@ function missingPart(kind,part){ const s=st(kind), p=pre(kind), m=[];
     else { const rows=psRows(sh,R); if(!rows.length) m.push("no cake rows read — snap again"); else if(psFB(sh,R)){ if(!rows.some(r=>psTyped(R,r))) m.push("Made for at least one cake"); } /* v22.24c (Alfred): a blank Made = 0 — nothing forced */ } }
   if(part==="lists"){ if(!P2.cl_lt1) m.push("today's list photo"); [1,2,3].forEach(i=>{ if(!P2["cl_ld"+i+"_1"]) m.push(niceD(addD(DATE,i))+" list photo"); }); }
   if(part==="sales"){ if(s.later.sales){ if(!String(s.notes.saleswhy||"").trim()) m.push("why there is no report"); } else if(!P2.cl_fs1) m.push("photo of the FeedMe product sales report"); }
-  if(part==="recipes"){ const open=missOpen(kind), V=s.miss||{}; if(open.length&&!open.some(it=>missFilled(it,V[it.key]))) m.push("at least one missing value (weigh it, or snap the recipe and read it)"); }
+  if(part==="recipes"){ const open=missOpen(kind), V=s.miss||{}; if(open.length&&!open.some(it=>missFilled(it,V[it.key]))) m.push("at least one missing value (weigh it, snap the recipe, write the method or check the kitchen copy)"); }
   return m; }
 function tidyGate(){ const k=TAB==="opening"?"op_display":"cl_display"; const t=TIDY[k]; if(!t||!P2[k]) return ""; if(t.state==="checking") return "Checking the display photo…"; if(t.state==="messy"&&!t.sendAnyway) return "Please tidy the display and take the photo again"; return ""; }
 function refresh(){ if(SENDING) return; const b=$("#send"), nav=$("#eqnav"), cn=$("#cnav"); if(!PART||!(TAB==="opening"||TAB==="closing")) return; const m=missingPart(TAB,PART); { const g=(PART==="display"||PART==="count")?tidyGate():""; if(g) m.unshift(g); }
@@ -1535,7 +1571,11 @@ async function send(replace){ const kind=TAB, part=PART; if(SENDING||!part||miss
   if(part==="prep"){ const R=s.prep||{}, sh=(INFO.prep||{}).sheet, rows=psRows(sh,R).filter(r=>!psFB(sh,R)||psTyped(R,r)); d.made={}; d.notes={}; d.rows=rows.map(r=>({id:r.id,toMake:r.fb?null:(+r.toMake||0)})); rows.forEach(r=>{ const v=(R.vals||{})[r.id]||{}; d.made[r.id]=+v.made||0; const n=String(v.note||"").trim(); if(n) d.notes[r.id]=n; }); d.photo=(R.res||{}).photo||{}; d.src=(R.res||{}).aiError?"typed":"photo"; }
   if(part==="lists"){ d.today=[1,2,3].map(j=>P2["cl_lt"+j]).filter(Boolean); d.days=[1,2,3].map(i=>[1,2].map(j=>P2["cl_ld"+i+"_"+j]).filter(Boolean)); }
   if(part==="sales"){ d.photos=s.later.sales?[]:[1,2,3].map(j=>P2["cl_fs"+j]).filter(Boolean); d.none=!!s.later.sales; d.why=s.notes.saleswhy||""; }
-  if(part==="recipes"){ const V=s.miss||{}; d.items=missOpen(kind).filter(it=>missFilled(it,V[it.key])).map(it=>{ const v=V[it.key]||{}; return it.t==="recipe"?{key:it.key,lines:(v.lines||[]).filter(l=>String(l.name||"").trim()&&parseFloat(l.g)>0).map(l=>({name:String(l.name).trim(),g:parseFloat(l.g),grp:l.grp||""}))}:{key:it.key,g:parseFloat(v.g),note:String(v.note||"").trim()}; }); }
+  if(part==="recipes"){ const V=s.miss||{}; d.items=missOpen(kind).filter(it=>missFilled(it,V[it.key])).map(it=>{ const v=V[it.key]||{}, L=()=>(v.lines||[]).filter(l=>String(l.name||"").trim()).map(l=>({name:String(l.name).trim(),g:parseFloat(l.g)||0,grp:l.grp||""})), ph=(v.photos||[]).slice(0,4);
+    if(it.t==="recipe") return {key:it.key,lines:L().filter(l=>l.g>0),method:it.noMethod?String(v.method||"").trim():"",photos:ph};
+    if(it.t==="method") return {key:it.key,method:String(v.method||"").trim(),read:!!v.read,photos:ph};
+    if(it.t==="check") return {key:it.key,lines:L(),photos:ph};
+    return {key:it.key,g:parseFloat(v.g),note:String(v.note||"").trim()}; }); }
   saveDraft(kind); const stats=partStats(kind,part);
   try{ const r=await run("hqSubmitPart",kind,part,d); RESULT={kind,part,r,stats}; clearPart(kind,part); SENDING=false; PART=null; PARTT=0; HIST=null; INFO=await run("hqInfo",DATE).catch(()=>INFO); render(); window.scrollTo(0,0); }
   catch(e){ SENDING=false; b.disabled=false; const al=/^ALREADY\|([^|]*)\|(.*)$/.exec((e&&e.message)||"");
@@ -1710,8 +1750,12 @@ document.addEventListener("click",async e=>{
     b.disabled=true; try{ const r=await run("hqSave","planList",{date:PLE.date,listId:PLE.listId,token:PLE.token,lines},PLE.why||""); toast(r.msg); NEWD=PLE.date; PLE=null; await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.pok){ b.disabled=true; try{ const r=await run("hqSave","approvePlan",{date:d.pok}); toast(r.msg); await reload(); }catch(err){ toast(err.message); b.disabled=false; } return; }
   if(d.act==="missMore"){ const s0=st(TAB); s0.mpage=(+s0.mpage||0)+1; saveDraft(TAB); render(); refresh(); return; }
-  if(/^missRead:/.test(d.act||"")){ const key=d.act.slice(9), s0=st(TAB), it=missOpen(TAB).find(x=>x.key===key); if(!it||MSBUSY) return; const pk=pre(TAB)+"rs_"+it.cid; if(!P2[pk]){ toast("Take the photo of the recipe first."); return; } MSBUSY=key; render(); refresh();
-    try{ const res=await run("recipeScan",[P2[pk]]), rec=res.rec||res; const V=s0.miss||(s0.miss={}); V[key]={lines:(rec.lines||[]).map(l=>({name:l.name||"",g:l.g===""||l.g==null?"":String(l.g),grp:l.grp||""})),unclear:[...new Set(rec.unclear||res.unclear||[])],title:rec.title||"",read:true}; if(!V[key].lines.length) V[key].lines.push({name:"",g:"",grp:""}); saveDraft(TAB); }
+  if(/^missRead:/.test(d.act||"")){ const key=d.act.slice(9), s0=st(TAB), it=missOpen(TAB).find(x=>x.key===key); if(!it||MSBUSY) return; const pk=missPk(TAB,it); if(!P2[pk]){ toast(it.t==="check"?"Take the photo of the kitchen copy first.":it.t==="method"?"Take the photo of the recipe card first.":"Take the photo of the recipe first."); return; } MSBUSY=key; render(); refresh();
+    try{ const res=await run("recipeScan",[P2[pk]]), rec=res.rec||res; const V=s0.miss||(s0.miss={}), old=V[key]||{}, ph=(res.photos||[]).slice(0,4);
+      if(it.t==="method"){ const mt=String(rec.method||"").trim(); if(mt.length<10){ toast("No steps found on the photo — write them in the box."); V[key]=Object.assign(old,{photos:ph}); } else V[key]={method:mt,read:true,photos:ph,unclear:[...new Set(rec.unclear||[])]}; }
+      else { V[key]={lines:(rec.lines||[]).map(l=>({name:l.name||"",g:l.g===""||l.g==null?"":String(l.g),grp:l.grp||""})),unclear:[...new Set(rec.unclear||res.unclear||[])],title:rec.title||"",read:true,photos:ph};
+        if(it.t==="recipe"&&it.noMethod) V[key].method=String(rec.method||"").trim(); if(!V[key].lines.length) V[key].lines.push({name:"",g:"",grp:""}); }
+      saveDraft(TAB); }
     catch(err){ toast(err.message); }
     MSBUSY=""; const y=window.scrollY; render(); window.scrollTo(0,y); refresh(); return; }
   if(/^missAdd:/.test(d.act||"")){ const key=d.act.slice(8), s0=st(TAB), V=s0.miss||(s0.miss={}), v=V[key]||(V[key]={lines:[],read:true}); (v.lines||(v.lines=[])).push({name:"",g:"",grp:""}); v.read=true; saveDraft(TAB); const y=window.scrollY; render(); window.scrollTo(0,y); refresh(); return; }
@@ -1749,7 +1793,10 @@ document.addEventListener("click",async e=>{
 document.addEventListener("click",e=>{ if(e.target.classList&&e.target.classList.contains("sheet")){ const h=e.target.parentElement; if(h) h.innerHTML=""; if(h&&h.id==="tksheet") TK=null; if(h&&h.id==="sheet"&&EQE!=null){ EQE=null; render(); } } });
 document.addEventListener("input",e=>{ const t=e.target, d=t.dataset; if(t.closest&&t.closest(".ca-hp,.ca-login")) return;
   if(d.mg||d.mn){ const key=d.mg||d.mn, s0=st(TAB), V=s0.miss||(s0.miss={}), v=V[key]||(V[key]={}); if(d.mg) v.g=String(t.value).replace(/[^0-9.,]/g,"").replace(",","."); else v.note=t.value.slice(0,160); saveDraft(TAB); refresh(); return; }
-  if(d.mln||d.mlg){ const kk=d.mln||d.mlg, h=kk.lastIndexOf("#"), key=kk.slice(0,h), i=kk.slice(h+1), s0=st(TAB), v=((s0.miss||{})[key]); if(!v||!v.lines||!v.lines[+i]) return; if(d.mln) v.lines[+i].name=t.value.slice(0,80); else v.lines[+i].g=String(t.value).replace(/[^0-9.,]/g,"").replace(",","."); saveDraft(TAB); refresh(); return; }
+  if(d.mln||d.mlg){ const kk=d.mln||d.mlg, h=kk.lastIndexOf("#"), key=kk.slice(0,h), i=kk.slice(h+1), s0=st(TAB), v=((s0.miss||{})[key]); if(!v||!v.lines||!v.lines[+i]) return; if(d.mln) v.lines[+i].name=t.value.slice(0,80); else v.lines[+i].g=String(t.value).replace(/[^0-9.,]/g,"").replace(",","."); saveDraft(TAB);
+    const it=missOpen(TAB).find(x=>x.key===key), el=document.getElementById("mc_"+key); if(it&&it.t==="check"&&el) el.innerHTML=missCmpHtml(it,v); /* v22.54: the comparison follows the fixes */
+    refresh(); return; }
+  if(d.mm){ const s0=st(TAB), V=s0.miss||(s0.miss={}), v=V[d.mm]||(V[d.mm]={}); v.method=t.value.slice(0,4000); saveDraft(TAB); refresh(); return; }
   if((d.psv||d.psn)&&K.opening&&K.opening.prep){ const V=K.opening.prep.vals||(K.opening.prep.vals={}), id=d.psv||d.psn, v=V[id]||(V[id]={made:"",note:""}); if(d.psv) v.made=String(t.value).replace(/[^0-9]/g,"").slice(0,3); else v.note=t.value.slice(0,120); saveDraft("opening"); if(d.psv) psPillUpd(d.psv); refresh(); return; }
   if(d.temp){ const [k,id]=d.temp.split("|"); if(/[-−]/.test(t.value)){ st(k).equip[id].neg=true; document.querySelectorAll(`[data-sign^="${k}|${id}|"]`).forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.sign.endsWith("|1")))); } let v=t.value.replace(/[^0-9.,]/g,""); if(v!==t.value) t.value=v; st(k).equip[id].t=v; saveDraft(k); refresh(); return; }
   if(d.kv){ const a=d.kv.split("|"), f=a.pop(), k=a.shift(), key=a.join("|"), s=st(k), r=key.indexOf("ev")===0&&key.indexOf("|")<0?s.ev[+key.slice(2)]:s.rows[key]; if(!r) return; const v=t.value.replace(/[^0-9]/g,"").slice(0,3); if(v!==t.value) t.value=v; r[f]=v; saveDraft(k); if(f==="w") wasteBox(k); refresh(); return; }
