@@ -1418,7 +1418,9 @@ function vPrepPart(kind){ const s=st(kind), I=INFO.prep||{}, sh=I.sheet, R=s.pre
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"><button type="button" class="cb sm ghost" data-pick="kshot=op_prep" data-pick-title="Filled prep sheet">📷 Retake the photo</button><input type="file" accept="image/&#42;" capture="environment" data-kshot="op_prep" hidden><input type="file" accept="image/&#42;" multiple data-kshot="op_prep" hidden>${(res.photos&&res.photos.length?res.photos:(res.photo&&res.photo.url?[res.photo]:[])).map((ph,i,arr)=>ph&&ph.url?`<a class="cb sm ghost" href="${esc(ph.url)}" target="_blank" rel="noopener">Open ${arr.length>1?"photo "+(i+1):"the photo"}</a>`:"").join("")}</div>${noteBox(kind,"prep")}`; }
 /* fridges & freezers (3f): one unit per screen, keypad */
 function eqState(e,x,k){ const t=String(x.t).replace(",","."), ok=t!==""&&isFinite(+t), v=ok?(x.neg?-1:1)*Math.abs(+t):null; return {ok,v,door:!!x.door,photo:!!P2[k]}; }
-function eqPill(e,v){ return v==null?"":v>+e.max+3?`<span class="pill bad">${v}°C too warm · Good catch, tell the supervisor</span>`:v>+e.max?`<span class="pill warn">${v}°C warm · Good catch</span>`:`<span class="pill ok">${v}°C ✓</span>`; }
+/* v22.52: from 1 Nov a Good catch is a real problem only — a freezer warmer than −12, a chiller warmer than 8 °C (its max + 6 / + 3) */
+const catchAt=e=>((INFO.pts||{}).catchMargin?+e.max+(e.type==="freezer"?6:3):+e.max);
+function eqPill(e,v){ return v==null?"":v>catchAt(e)?`<span class="pill bad">${v}°C too warm · Good catch, tell the supervisor</span>`:v>+e.max?`<span class="pill warn">${v}°C warm · check the door, tell the supervisor</span>`:`<span class="pill ok">${v}°C ✓</span>`; }
 function vEq(kind){ const s=st(kind), p=pre(kind), E=INFO.conf.equipment, n=E.length, i=Math.max(0,Math.min(n,s.step));
   const zs=E.map(e=>eqState(e,s.equip[e.id],p+"eq_"+e.id)), catches=E.filter((e,j)=>zs[j].v!=null&&zs[j].v>+e.max).length;
   if(i===n){ return partHead(kind,"eq",`<span class="hint">${n} units</span>`)+`<div class="lsegs segs" aria-hidden="true" style="margin-bottom:12px">${E.map((e,j)=>`<i class="${zs[j].ok&&zs[j].door&&zs[j].photo?"ok":""}"></i>`).join("")}</div>
@@ -1510,7 +1512,7 @@ function refresh(){ if(SENDING) return; const b=$("#send"), nav=$("#eqnav"), cn=
 function wasteBox(k){ const pk=k==="closing"?"cl_":"op_", s=st(k), wn=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0)+s.ev.reduce((a,x)=>a+(+x.w||0),0), box=document.getElementById("sb-"+pk+"waste");
   if(wn>0&&!box){ const d0=document.getElementById("sb-"+pk+"display"); if(d0) d0.insertAdjacentHTML("afterend",shotBox(pk+"waste","Cakes thrown away","")); } else if(!wn&&box) box.remove(); }
 function partStats(kind,part){ const s=st(kind), mins=Math.max(1,Math.round((Date.now()-(PARTT||Date.now()))/60000));
-  if(part==="eq"){ const E=INFO.conf.equipment, c=E.filter(e=>{const z=eqState(e,s.equip[e.id],pre(kind)+"eq_"+e.id); return z.v!=null&&z.v>+e.max;}).length; return [[E.length,"units"],[mins,"minutes"],[c,"good catch"+(c===1?"":"es")]]; }
+  if(part==="eq"){ const E=INFO.conf.equipment, c=E.filter(e=>{const z=eqState(e,s.equip[e.id],pre(kind)+"eq_"+e.id); return z.v!=null&&z.v>catchAt(e);}).length; return [[E.length,"units"],[mins,"minutes"],[c,"good catch"+(c===1?"":"es")]]; }
   if(part==="display"){ const n=Object.values(s.rows).reduce((a,x)=>a+(+x.q||0),0)+s.ev.reduce((a,x)=>a+(+x.q||0),0), w=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0); return [[n,"available"],[w,"wasted"],[mins,"minutes"]]; }
   if(part==="count"){ const w=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0), l=Object.values(s.rows).reduce((a,x)=>a+(+x.b||0),0); return [[w,"waste"],[l,"left"],[mins,"minutes"]]; }
   if(part==="deliveries"){ const o=INFO.dos.filter(d=>!d.internal); return [[o.length,"deliveries"],[o.filter(d=>P2["op_do_"+d.id]).length,"photos"],[mins,"minutes"]]; }
@@ -1541,7 +1543,7 @@ function vResult(){ const {kind,part,r}=RESULT, bad=(r.issues||[]).filter(i=>i.s
   const nextP=s0.done?null:(PARTS()[kind].find(([p])=>(s0.missing||[]).includes(p))||[])[0];
   return `<div class="res2">
     <div class="eb">Part ${idx} complete</div><h2>${esc(partName(kind,part))} sent</h2>
-    ${r.pts?`<div class="xpbig">+${nf(r.pts)}</div><div class="xps">to the Team treat jar</div>`:`<div class="xps">Sent. Thank you!</div>`}
+    ${r.pts?`<div class="xpbig">+${nf(r.pts)}</div><div class="xps">to the Team treat jar${r.late?" · sent late (due "+esc(r.due||"")+")":""}</div>`:r.late&&r.rules&&!r.rules.late?`<div class="xps">Sent late (due ${esc(r.due||"")}) · no points. On time next shift = +${nf(r.rules.part)}.</div>`:`<div class="xps">Sent. Thank you!</div>`}
     <div class="stats">${(RESULT.stats||[]).map(([n,l])=>`<div><b>${esc(String(n))}</b><span>${esc(l)}</span></div>`).join("")}</div>
     <div class="ref">Reference ${esc(r.id)}${bad.length?" · Alfred and the kitchen group have been told":""}</div>
     ${(r.issues||[]).length?`<div class="card"><b>${bad.length?"Please act now":"Things to check"}</b><ul class="iss">${r.issues.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul></div>`:`<div class="ref">Everything looks fine.</div>`}

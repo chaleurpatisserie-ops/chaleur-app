@@ -2468,7 +2468,7 @@ const prodValue=rows=>{ let v=0; const miss=[]; for(const r of rows){ const q=+r
    (#recipes/components: categories → recipes) and Calculator (#recipes/calc: search → recipe calculator). A cake's picture = the "photo"
    column of the Recipe Master (a link), else the photo of the same cake in the app (Setup › Cakes, matched by app_name or by name). */
 const RC=()=>S.ui.rc||(S.ui.rc={view:"",sec:"cakes",cat:"",q:"",cq:"",sq:"",mode:2,buf:"auto",lim:"0",have:"",tgt:"",cnt:"",per:"",pcs:"",from:""});
-function rcLoad(force){ if(S.rcpBusy) return; S.rcpBusy=true; GS("recipeData",!!force).then(r=>{ const first=!S.rcp; S.rcp=r; S.rcpErr=""; S.rcpAt=Date.now(); if(first) rcFreshReset(); if(force) toast("Recipes read from the Recipe Master"); }).catch(e=>{ S.rcpErr=e.message; if(force) toast(e.message); }).finally(()=>{ S.rcpBusy=false; if(S.tab==="recipes") render(); }); }
+function rcLoad(force){ if(S.rcpBusy) return; S.rcpBusy=true; GS("recipeData",!!force).then(r=>{ const first=!S.rcp; S.rcp=r; S.rcpErr=""; S.rcpAt=Date.now(); if(first) rcFreshReset(); if(force) toast("Recipes read from the Recipe Master"); }).catch(e=>{ S.rcpErr=e.message; if(force) toast(e.message); }).finally(()=>{ S.rcpBusy=false; if(S.tab==="recipes"&&S.loaded.size) render(); }); }
 const rcComp=id=>((S.rcp||{}).components||[]).find(c=>c.id===id), rcProd=id=>((S.rcp||{}).products||[]).find(p=>p.id===id);
 const rcIng=id=>{ const I=((S.rcp||{}).ingredients||{})[id]; if(I&&I.name) return I.name; const c=rcComp(id); return c?c.name:id; };
 const rcIngIdByName=nm=>{ const R=S.rcp||{}, k=String(nm||"").trim().toLowerCase(); if(!k) return ""; const c=(R.components||[]).find(x=>String(x.name||"").toLowerCase()===k); if(c) return c.id; const i=Object.values(R.ingredients||{}).find(x=>String(x.name||"").toLowerCase()===k); return i?i.id:""; }; /* v22.50 */
@@ -4238,7 +4238,7 @@ async function act(a,b){
 /* ---------- boot (Google Apps Script backend) ---------- */
 const AUTH={pin:null,name:"",role:"",perms:[],label:"",area:""};
 const GS=(fn,...a)=>new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>{const m=(e&&e.message)||String(e); if(AUTH.pin&&CA.isAuthErr({message:m})) setTimeout(()=>signedOut(m),0); rej({code:"unavailable",message:m});})[fn](AUTH.pin,...a));
-let STARTED=false;
+let STARTED=false, PRELOAD=null;
 function signedOut(m){ if(!AUTH.pin) return; AUTH.pin=null; AUTH.name=""; AUTH.role=""; AUTH.perms=[]; CA.clear(); showLogin(m); }
 const photoSrc=id=>!id?"":(/^https?:/.test(id)?id:"https:\/\/drive.google.com/thumbnail?id="+encodeURIComponent(id)+"&sz=w400");
 const photoLink=id=>!id?"":(/^https?:/.test(id)?id:"https:\/\/drive.google.com/file/d/"+encodeURIComponent(id)+"/view");
@@ -4347,10 +4347,10 @@ function gamePanel(){
   if(!g) return `<div class="panel"><h2>Team points & treat</h2><div class="empty">Loading…</div></div>`;
   if(g.err) return `<div class="panel"><h2>Team points & treat</h2><p class="neg small">${esc(g.err)}</p></div>`;
   const lad=d.ladder||g.ladder;
-  return `<div class="panel"><h2>Team points & treat</h2><p class="small muted" style="margin:0">The kitchen fills one Team treat jar each month (on the home page). Points: report part on time +${g.pts.part} (late +${g.pts.late}), Random QC +${g.pts.qc}, good catch +${g.pts.catch}, to-do by its time +${g.pts.todo}, each fridge reading +${g.pts.unit}. The team gets the month's treat when the jar reaches the unlock %. Everyone's points this month and last month show on the leaderboard (home page › Team).</p>
+  return `<div class="panel"><h2>Team points & treat</h2><p class="small muted" style="margin:0">The kitchen fills one Team treat jar each month (on the home page). Points from ${esc(g.from||"1 Nov 2026")}: report part on time +${g.pts.part}, late ${g.pts.late?"+"+g.pts.late:"0"}, perfect day (both reports all on time) +${g.pts.perfect} to the jar, Random QC +${g.pts.qc}, good catch +${g.pts.catch} (a freezer warmer than −12, a chiller warmer than 8 °C — once a unit a day — or a problem report), fresh display at closing +${g.pts.fresh}, to-do by its time +${g.pts.todo}, each fridge reading +${g.pts.unit}. Before that (October): on time +${(g.old||{}).part||50}, late +${(g.old||{}).late||15}, each reading +${(g.old||{}).unit||5}, any reading above the max a good catch; the October jar stays 5,000. The team gets the month's treat when the jar reaches the unlock %. Everyone's points this month and last month show on the leaderboard (home page › Team).</p>
     <div class="fgrid">
       <label class="f">Jar size per month (points)<input id="gm-t" data-gm="target" inputmode="numeric" value="${esc(v("target"))}"></label>
-      <div class="f"><span>For comparison</span><div class="small" style="padding-top:8px">A perfect month (every part on time, every reading, to-do and QC) is about <b class="mono">${Number(g.perfect).toLocaleString("en-MY")}</b> points. Empty the box to go back to ${Number(g.def).toLocaleString("en-MY")}.</div></div>
+      <div class="f"><span>For comparison</span><div class="small" style="padding-top:8px">A perfect month from Nov (every part on time, every reading, to-do, QC, perfect day and fresh display) is about <b class="mono">${Number(g.perfect).toLocaleString("en-MY")}</b> points. Empty the box to go back to ${Number(g.def).toLocaleString("en-MY")}. This month's jar: ${Number(g.jarNow||g.target).toLocaleString("en-MY")}.</div></div>
       <label class="f">Treat unlocks at (%)<input id="gm-u" data-gm="unlock" inputmode="numeric" value="${esc(v("unlock"))}"></label>
       <label class="f">Random QC<select id="gm-q" data-gm="qcOn">${opt("true","On (every 1–2 days)",String(v("qcOn")))}${opt("false","Off",String(v("qcOn")))}</select></label>
       <label class="f">QC due by<input type="time" id="gm-b" data-gm="qcBy" value="${esc(v("qcBy"))}"></label></div>
@@ -4445,7 +4445,7 @@ function showLogin(msg){
 async function start(){
   $("#main").innerHTML=`<div class="empty">Loading consignment data…</div>`;
   STARTED=true; { const h=tabOfHash((location.hash||"").slice(1)); if(TABS.some(([k])=>k===h)) S.tab=h; }
-  try{DBX.cache=await GS("dbLoadAll");}catch(e){ if(!AUTH.pin) return; if(CA.isAuthErr(e)) return signedOut(e.message); AUTH.pin=null; return showLogin(e.message); }
+  try{DBX.cache=await (PRELOAD||GS("dbLoadAll")); PRELOAD=null;}catch(e){ PRELOAD=null; if(!AUTH.pin) return; if(CA.isAuthErr(e)) return signedOut(e.message); AUTH.pin=null; return showLogin(e.message); }
   S.db=shimDB; S.assets=shimAssets; S.dl=null; S.mcp=null;
   const sub=(col,fn)=>shimDB.collection(col).onSnapshot(snap=>{fn(snap);S.loaded.add(col);render();});
   const into=(key)=>s=>{const o={};for(const d of s.docs)o[d.id]={...d.data(),id:d.data().id||d.id};S[key]=o;};
@@ -4486,6 +4486,8 @@ function tourFor(){ const t=S.tab; if(t===TOURTAB) return; TOURTAB=t; const st=T
   CA.helper({auth:()=>AUTH.pin,page:()=>"Office desk › "+((TABS.find(([k])=>k===S.tab)||["",""])[1])});
   const s=CA.get(); if(!s) return showLogin();
   AUTH.pin=s.t; AUTH.name=s.name; AUTH.role=s.role; AUTH.perms=CA.permsOf(s); AUTH.label=CA.labelOf(s); AUTH.area=s.area||"";
+  /* v22.52 (audit: every server call costs 2–4 s): the data loads at the same time as the "me" check, not after it */
+  PRELOAD=GS("dbLoadAll"); PRELOAD.catch(()=>{}); if(/^#recipes/.test(location.hash||"")) rcLoad(); /* a recipe link: the Recipe Master is read at the same time too */
   GS("me").then(u=>{AUTH.name=u.name;AUTH.role=u.role;AUTH.perms=u.perms||[];AUTH.label=u.label||"";AUTH.area=u.area||""; CA.update(u); start();}).catch(e=>{ if(!AUTH.pin) return; if(CA.isAuthErr(e)) return signedOut(e.message); AUTH.pin=null; showLogin("Couldn't connect ("+e.message+"). Check the internet and try again."); });
 })();
 </script>
