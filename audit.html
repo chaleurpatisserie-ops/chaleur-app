@@ -271,7 +271,8 @@ const CA=(function(){
         ${opt.noReport?"":`<div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`}`; }
     function askHtml(){
       const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}${opt.noReport?"":`<div style="margin-top:6px"><a class="ca-lnk" href="index.html#guide">Open the how-to guide ›</a></div>`}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+      const tg=(()=>{ try{ return TOUR.has(); }catch(e){ return false; } })();
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}${opt.noReport&&!tg?"":`<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start">${tg?`<button type="button" class="ca-lnk" data-tourgo="1">▶ Show me this page, step by step</button>`:""}${opt.noReport?"":`<a class="ca-lnk" href="index.html#guide">Open the how-to guide ›</a>`}</div>`}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
         <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
     function fbHtml(){
       if(FB.sent){ const x=FB.sent;
@@ -315,6 +316,7 @@ const CA=(function(){
       const fp=panel.querySelector(".ca-fp"); if(fp) fp.onchange=async e=>{ const fl=e.target.files&&e.target.files[0]; if(!fl) return; try{ FB.photo=await shrink(fl); FB.err=""; }catch(x){ FB.err=x.message; } paint(); };
     }
     function onClick(e){ const t=e.target.closest("button"); if(!t||!panel||!panel.contains(t)) return; const d=t.dataset;
+      if(d.tourgo){ close(); try{ TOUR.start(true); }catch(x){} return; }
       if(d.fbreset){ FB=R0(); }
       if(d.hv){ setView(d.hv); return; }
       if(d.fbt){ FB.type=d.fbt; FB.err=""; paint(); return; }
@@ -385,7 +387,9 @@ const CA=(function(){
       try{ new MutationObserver(()=>{ showBtn(); re(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
       window.addEventListener("pagehide",()=>{ const st=cur(); if(st&&!MAN&&(st.last||(C.leaveDone&&C.leaveDone(I)))) finish(); });
     }
-    function showBtn(){ if(!BTN) return; if(C&&C.btnBottom) BTN.style.bottom=fv(C.btnBottom)||""; BTN.classList.toggle("on",!!C&&I<0&&ready()&&!busy()&&!(C.btnHide&&C.btnHide())); }
+    /* v22.53 (Alfred 17 Oct, "a lot of buttons not needed"): no floating "Show me how" button any more — the guide still starts by itself
+       the first 3 visits, and "▶ Show me this page, step by step" in the ? Ask helper replays it */
+    function showBtn(){ if(!BTN) return; BTN.classList.remove("on"); }
     const pillTxt=()=>{ const st=cur(); if(!st) return ""; const t=String(fv(st.title)||"").split("·")[0].trim(); return `<b>❔</b> ${esc(t||"Guide")}${PROG?` · ${esc(PROG)}`:""} ▸`; };
     /* the pill sits where the Show-me-how button lives (bottom left); for a step drawn at the top it sits under the header instead, so it never covers the bottom controls */
     function pill(on){ if(!PILL) return; if(on){ PILL.innerHTML=pillTxt(); const st=cur(); if(st&&st.at==="top"){ PILL.style.bottom="auto"; PILL.style.top=Math.max(8,+(C&&fv(C.topPad))||8)+"px"; } else { PILL.style.top="auto"; PILL.style.bottom=(C&&fv(C.btnBottom))||""; } } PILL.classList.toggle("on",!!on); }
@@ -430,7 +434,7 @@ const CA=(function(){
     /* automatic start: at most once per page load (a page may call this after every render) */
     function maybeStart(){ if(!C||TRIED.has(C.key)||window.CHALEUR_NO_GUIDE) return; build(); showBtn(); if(I<0&&ready()&&seen()<auto()){ TRIED.add(C.key); start(false); } }
     function define(cfg){ stop(); C=cfg||null; build(); showBtn(); return TOUR; }
-    const TOUR={define,start,maybeStart,stop,skip,next,seen,on:()=>I>=0,step:()=>I,manual:()=>MAN,reset:()=>keys().forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} })};
+    const TOUR={define,start,maybeStart,stop,skip,next,seen,on:()=>I>=0,step:()=>I,manual:()=>MAN,has:()=>!!(C&&steps().length&&ready()),reset:()=>keys().forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} })};
     return TOUR;
   })();
 

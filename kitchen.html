@@ -271,7 +271,8 @@ const CA=(function(){
         ${opt.noReport?"":`<div class="ca-tabs" role="tablist"><button type="button" role="tab" data-hv="ask" aria-selected="${VIEW==="ask"}">Ask a question</button><button type="button" role="tab" data-hv="fb" aria-selected="${VIEW==="fb"}">Report a problem</button></div>`}`; }
     function askHtml(){
       const nx=NX&&NX.items&&NX.items.length?`<div class="ca-m ca-a"><b>Hi ${esc(cap(String(NX.name||"").split(" ")[0]))}! Next for you:</b>${nextList(NX.items,true)}<div style="margin-top:6px">Tap an item to go there, or ask me how to do it.</div></div>`:(NXB?`<div class="ca-m ca-a">Checking what's next for you…</div>`:"");
-      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}${opt.noReport?"":`<div style="margin-top:6px"><a class="ca-lnk" href="index.html#guide">Open the how-to guide ›</a></div>`}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
+      const tg=(()=>{ try{ return TOUR.has(); }catch(e){ return false; } })();
+      return `<div class="ca-body"><div class="ca-msgs" aria-live="polite">${nx}<div class="ca-m ca-a">${esc(hi)}${opt.noReport&&!tg?"":`<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start">${tg?`<button type="button" class="ca-lnk" data-tourgo="1">▶ Show me this page, step by step</button>`:""}${opt.noReport?"":`<a class="ca-lnk" href="index.html#guide">Open the how-to guide ›</a>`}</div>`}</div>${H.map(x=>x.q!=null?`<div class="ca-m ca-q">${esc(x.q)}</div>`:`<div class="ca-m ca-a" style="white-space:pre-wrap">${esc(plain(x.a))}</div>`).join("")}${busy?`<div class="ca-m ca-a">Thinking…</div>`:""}</div></div>
         <div class="ca-foot"><form class="ca-askf"><textarea rows="1" placeholder="Ask a question…" aria-label="Your question"></textarea><button type="submit">Send</button></form></div>`; }
     function fbHtml(){
       if(FB.sent){ const x=FB.sent;
@@ -315,6 +316,7 @@ const CA=(function(){
       const fp=panel.querySelector(".ca-fp"); if(fp) fp.onchange=async e=>{ const fl=e.target.files&&e.target.files[0]; if(!fl) return; try{ FB.photo=await shrink(fl); FB.err=""; }catch(x){ FB.err=x.message; } paint(); };
     }
     function onClick(e){ const t=e.target.closest("button"); if(!t||!panel||!panel.contains(t)) return; const d=t.dataset;
+      if(d.tourgo){ close(); try{ TOUR.start(true); }catch(x){} return; }
       if(d.fbreset){ FB=R0(); }
       if(d.hv){ setView(d.hv); return; }
       if(d.fbt){ FB.type=d.fbt; FB.err=""; paint(); return; }
@@ -385,7 +387,9 @@ const CA=(function(){
       try{ new MutationObserver(()=>{ showBtn(); re(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
       window.addEventListener("pagehide",()=>{ const st=cur(); if(st&&!MAN&&(st.last||(C.leaveDone&&C.leaveDone(I)))) finish(); });
     }
-    function showBtn(){ if(!BTN) return; if(C&&C.btnBottom) BTN.style.bottom=fv(C.btnBottom)||""; BTN.classList.toggle("on",!!C&&I<0&&ready()&&!busy()&&!(C.btnHide&&C.btnHide())); }
+    /* v22.53 (Alfred 17 Oct, "a lot of buttons not needed"): no floating "Show me how" button any more — the guide still starts by itself
+       the first 3 visits, and "▶ Show me this page, step by step" in the ? Ask helper replays it */
+    function showBtn(){ if(!BTN) return; BTN.classList.remove("on"); }
     const pillTxt=()=>{ const st=cur(); if(!st) return ""; const t=String(fv(st.title)||"").split("·")[0].trim(); return `<b>❔</b> ${esc(t||"Guide")}${PROG?` · ${esc(PROG)}`:""} ▸`; };
     /* the pill sits where the Show-me-how button lives (bottom left); for a step drawn at the top it sits under the header instead, so it never covers the bottom controls */
     function pill(on){ if(!PILL) return; if(on){ PILL.innerHTML=pillTxt(); const st=cur(); if(st&&st.at==="top"){ PILL.style.bottom="auto"; PILL.style.top=Math.max(8,+(C&&fv(C.topPad))||8)+"px"; } else { PILL.style.top="auto"; PILL.style.bottom=(C&&fv(C.btnBottom))||""; } } PILL.classList.toggle("on",!!on); }
@@ -430,7 +434,7 @@ const CA=(function(){
     /* automatic start: at most once per page load (a page may call this after every render) */
     function maybeStart(){ if(!C||TRIED.has(C.key)||window.CHALEUR_NO_GUIDE) return; build(); showBtn(); if(I<0&&ready()&&seen()<auto()){ TRIED.add(C.key); start(false); } }
     function define(cfg){ stop(); C=cfg||null; build(); showBtn(); return TOUR; }
-    const TOUR={define,start,maybeStart,stop,skip,next,seen,on:()=>I>=0,step:()=>I,manual:()=>MAN,reset:()=>keys().forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} })};
+    const TOUR={define,start,maybeStart,stop,skip,next,seen,on:()=>I>=0,step:()=>I,manual:()=>MAN,has:()=>!!(C&&steps().length&&ready()),reset:()=>keys().forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} })};
     return TOUR;
   })();
 
@@ -968,6 +972,8 @@ function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}
 <script>
 /* v21.10 (Alfred): "Kitchen setup … can put inside kitchen history > kitchen report" → one Reports tab = past reports + fridges, display cakes, reminders */
 const TABS=[["today","To-do"],["opening","Opening"],["closing","Closing"],["plan","Plan"],["history","Reports"]];
+/* v22.53 (Alfred 17 Oct: "a lot of buttons not needed"): 4 chips, one row. The Plan page opens from the To-do (Plan for the next days); the prep list from the To-do link. */
+const CHIPS=TABS.filter(([k])=>k!=="plan");
 const TAB_ALIAS={lists:"history",setup:"history"};
 const SEEN={}; const partOf=(k,p)=>(INFO&&INFO.day&&INFO.day[k]&&INFO.day[k].parts&&INFO.day[k].parts[p])||(k==="opening"&&p==="prep"&&INFO&&INFO.prep&&INFO.prep.madeAt?{by:INFO.prep.madeBy+" (office page)",at:INFO.prep.madeAt,id:"desk",issues:[],desk:true}:null);
 /* v21.11 (Alfred): the display photo is checked for tidiness the moment it is taken; a messy display pops up with the photo and asks for a re-do.
@@ -1074,7 +1080,7 @@ const TABI={
  team:`<svg viewBox="0 0 28 26"><circle cx="9" cy="8" r="4.5" fill="currentColor"/><circle cx="19.5" cy="9" r="4" fill="currentColor" opacity=".6"/><path d="M1.5 23c0-5 3.5-8 7.5-8s7.5 3 7.5 8z" fill="currentColor"/><path d="M14 23c.5-4 3-7 5.5-7s5.8 3 6 7z" fill="currentColor" opacity=".6"/></svg>`,
  me:`<svg viewBox="0 0 28 26"><circle cx="14" cy="8" r="6" fill="currentColor"/><path d="M3 25c0-6.5 5-10 11-10s11 3.5 11 10z" fill="currentColor"/></svg>`};
 function hdr(title,opt){ opt=opt||{}; return `<div class="hd">${opt.back?`<${opt.back.href?`a href="${opt.back.href}"`:`button type="button" ${opt.back.attr||""}`} class="back" aria-label="${esc(opt.back.label||"Back")}">‹</${opt.back.href?"a":"button"}>`:""}
-  <div class="tt">${opt.eb?`<div class="eb">${esc(opt.eb)}</div>`:""}<div class="ptitle">${esc(title)}</div></div>${opt.right||""}${opt.noMenu||inFlow()?"":`<button class="hbtn pdf" type="button" data-act="printList" title="Print this page (or choose Save as PDF in the print window)" aria-label="Print">🖨<span class="pl"> Print</span></button><button class="hbtn" type="button" data-menu="1" aria-haspopup="dialog" aria-label="Menu">☰<span class="pl"> Menu</span></button>`}</div>`; }
+  <div class="tt">${opt.eb?`<div class="eb">${esc(opt.eb)}</div>`:""}<div class="ptitle">${esc(title)}</div></div>${opt.right||""}${opt.noMenu||inFlow()?"":`${opt.print?`<button class="hbtn pdf" type="button" data-act="printList" title="Print this page (or choose Save as PDF in the print window)" aria-label="Print">🖨<span class="pl"> Print</span></button>`:""}<button class="hbtn" type="button" data-menu="1" aria-haspopup="dialog" aria-label="Menu">☰<span class="pl"> Menu</span></button>`}</div>`; }
 /* v22.7: ☰ Menu on the kitchen page too — the one shared menu (CA.menu), the same as Home and the office desk */
 function inFlow(){ return !!(V2||((TAB==="opening"||TAB==="closing")&&(PART||(RESULT&&RESULT.kind===TAB)))); }
 function render(){
@@ -1086,7 +1092,7 @@ function render(){
   const ro=!!(INFO.me&&!INFO.me.kit&&!INFO.me.sup&&!INFO.me.canTask); document.body.classList.toggle("ro",ro);
   document.body.classList.toggle("dark",!res&&!V2&&(TAB==="opening"||TAB==="closing")&&PART==="eq"&&st(TAB).step<INFO.conf.equipment.length);
   $("#tabs").hidden=flow; $("#ktabs").hidden=flow; $("#acct").hidden=flow;
-  $("#tabs").innerHTML=flow?"":TABS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${TAB===k}" data-tab="${k}">${l}${k==="today"&&INFO.proposals.length&&SUP()?`<span class="n">${INFO.proposals.length}</span>`:""}</button>`+(k==="today"?`<a class="pchip" href="office.html#plan" title="Prep list: what to make today, for the HQ display and every outlet">Prep list · what to make ›</a>`:"")).join("");
+  $("#tabs").innerHTML=flow?"":CHIPS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${TAB===k}" data-tab="${k}">${l}${k==="today"&&INFO.proposals.length&&SUP()?`<span class="n">${INFO.proposals.length}</span>`:""}</button>`).join("");
   $("#ktabs").innerHTML=`<nav aria-label="Main"><a href="index.html#today">${TABI.today}<span>Today</span></a><a href="kitchen.html" aria-current="page">${TABI.kitchen}<span>Kitchen</span></a><a href="index.html#team">${TABI.team}<span>Team</span></a><a href="index.html#me">${TABI.me}<span>Me</span></a></nav>`;
   $("#hdr").innerHTML=flow?"":tabHdr();
   let html;
@@ -1103,7 +1109,7 @@ function tabHdr(){ const eb="Kitchen HQ · "+niceD(DATE);
   if(TAB==="opening"||TAB==="closing"){ const s0=INFO.state[TAB], due=TAB==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=!s0.done&&DATE===INFO.today&&INFO.now>due;
     return hdr(TAB==="opening"?"Opening report":"Closing report",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb,right:`<span class="duepill ${s0.done?"ok":late?"bad":""}">${s0.done?"✓ Complete":late?"Late · "+esc(due):"due "+esc(due)}</span>`}); }
   if(TAB==="plan") return hdr("Production plan",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb:"Kitchen HQ"});
-  return hdr("Kitchen reports",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb:"Kitchen HQ · last 14 days, fridges, display cakes, reminders"}); }
+  return hdr("Kitchen reports",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb:"Kitchen HQ · last 14 days, fridges, display cakes, reminders",print:true}); }
 function go(t){ if(SENDING){ toast("Please wait until the report is sent."); return; } t=TAB_ALIAS[t]||t; TAB=t; RESULT=null; PART=null; V2=""; CK=null; RCV=null; history.replaceState(null,"","#"+t); render(); window.scrollTo(0,0); if((t==="opening"||t==="closing")&&Date.now()-INFO_AT>60000) reload(); }
 
 /* ---------- TO-DO (3d): two teams, one list each ---------- */
@@ -1150,7 +1156,7 @@ function displayItem(){ const op=INFO.day.opening, disp=op&&op.parts&&op.parts.d
 function prodListCard(){ const p=INFO.plan[DATE], lists=(p&&p.lists)||[];
   return `<div class="card info"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Production list · ${esc(niceD(DATE))}</h3>${p?`<span class="pill ${p.approvedBy?"ok":"warn"}">${p.approvedBy?"✓ Checked":"Not checked yet"}</span>`:""}</div>
     ${lists.length?lists.map(l=>`<div style="margin-top:6px">${(l.items||[]).map(i=>`<div class="pli"><span>${esc(i.name)}${whoChips(i)}</span><b>${esc(i.qty||"")}</b></div>`).join("")||`<p class="hint">Photo only</p>`}</div>`).join(""):`<p class="hint">No production list for this day yet.</p>`}
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="cb sm ghost" type="button" data-tab="plan">Open the plan</button><button class="cb sm ghost" type="button" data-plan="${DATE}">Add a list</button></div>
+    ${lists.length?"":`<div style="margin-top:10px"><button class="cb sm ghost" type="button" data-plan="${DATE}">Add today's list</button></div>`}
     <p class="hint" style="margin-top:8px">Tick the paper list as you go. The closing report takes its photo tonight.</p></div>`; }
 function prepCard(){ const t=INFO.today, rem=INFO.reminders||[], r0=rem.filter(r=>r.date===t), r1=rem.filter(r=>r.date===addD(t,1));
   const remL=a=>a.length?`<ul class="items">${a.map(r=>`<li>${esc(r.text)}${r.forItems&&r.forItems.length?` <span class="hint">(${esc(r.forItems.slice(0,3).join(", "))})</span>`:""}</li>`).join("")}</ul>`:`<p class="hint">Nothing.</p>`;
@@ -1189,7 +1195,7 @@ function outletsLeftCard(open){ const L=(INFO.outletsLeft||[]); if(!L.length) re
     const when=o.date?`${o.date===INFO.today?"today":niceD(o.date)}${o.by?" · "+esc(niceName(o.by)):""}${o.at?" · "+esc(hmOf(o.at)):""}`:"";
     return `<details class="oleft"${open?" open":""}><summary><b>${esc(o.name)}</b> <span class="hint">${o.date?`${o.total} left · counted ${when}`:"no closing count yet"}</span>${o.date&&!o.fresh?` <span class="pill warn">last night's count missing</span>`:""}</summary>
       ${rows.length?`<div class="olr">${rows.map(r=>`<span class="nm">${esc(r.name)}</span><span class="dt"><i style="background:${esc(hex(r.colour))}"></i>${esc(r.colour)}</span><b>${r.qty}</b>`).join("")}</div>`:`<p class="hint" style="margin:6px 0 0">${o.date?"Nothing left: everything sold or wasted.":"The outlet has not sent a closing count yet."}</p>`}</details>`; };
-  return `<div class="card"><h3 style="margin:0 0 4px">Left at the outlets</h3><p class="hint" style="margin:0 0 6px">From each outlet's closing count last night. Use it with the <a href="office.html#plan">prep list</a> to decide what to make.</p>${L.map(one).join("")}</div>`; }
+  return `<div class="card"><h3 style="margin:0 0 4px">Left at the outlets</h3><p class="hint" style="margin:0 0 6px">From each outlet's closing count last night. Use it with the prep list to decide what to make.</p>${L.map(one).join("")}</div>`; }
 /* v22.38 (Alfred 14 Oct): B2B orders from Bukku invoices — on the to-do of both teams from the invoice date until the delivery date
    ("they take 3-4 days to prep bulk order up, so include it as upcoming b2b order"). No amounts here. */
 function b2bCard(){ const v=CA.b2b&&CA.b2b.view(INFO.b2b,INFO.today); if(!v||!v.dated.length) return "";
@@ -1206,7 +1212,7 @@ function vToday(){
     <div class="kseg" role="group" aria-label="Team">${Object.entries(TEAMS()).map(([k,l])=>`<button type="button" data-team="${k}" aria-pressed="${TEAM===k}">${esc(String(l).split(" / ")[0])} · ${left(k)?left(k)+" left":"all done"}</button>`).join("")}</div>
     <div><div class="pbar"><i style="width:${cur.length?Math.round(dn*100/cur.length):0}%"></i></div><div class="lh"><span>${dn} of ${cur.length} done</span><span>${TEAM==="am"?"Plan, opening, orders, decorate, deliveries":"Production, closing report, plan"}</span></div></div>`;
   const extra=TEAM==="am"?outletsLeftCard(false):prodListCard()+prepCard()+planDaysCard()+outletsLeftCard(false);
-  const add=(can?`<button class="cb dash full" type="button" data-tadd="${TEAM==="am"?"order":"task"}|${TEAM}">+ Add a to-do</button>`:"")+`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px"><button class="lnk" type="button" data-act="printList">🖨 Print this list</button><a class="lnk" href="office.html#plan">Plan &amp; prep for all outlets ›</a></div>`;
+  const add=(can?`<button class="cb dash full" type="button" data-tadd="${TEAM==="am"?"order":"task"}|${TEAM}">+ Add a to-do</button>`:"")+`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px"><button class="lnk" type="button" data-act="printList">🖨 Print this list</button><a class="lnk" href="office.html#plan">Prep list · what to make ›</a></div>`;
   const mng=can&&all.length?`<details class="card"><summary style="font-weight:700;color:var(--accent);cursor:pointer">All to-dos for this team (${all.length})</summary>${all.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)"><span><span class="tag ${esc(x.type)}">${esc(TTYPE()[x.type]||"To-do")}</span> ${esc(x.title)} <span class="hint">· ${esc(x.date?niceD(x.date):dayList(x.days))}${x.ready?" · "+esc(x.ready):""}</span></span><button class="lnk" type="button" data-tedit="${esc(x.id)}">Edit</button></div>`).join("")}</details>`:"";
   const shared=`${INFO.proposals.length?`<div class="card info"><h3>Waiting for a supervisor (${INFO.proposals.length})</h3>${INFO.proposals.map(x=>`<div style="padding:8px 0;border-top:1px dashed var(--line)"><div>${esc(propText(x))}</div><div class="hint">${esc(x.by)} · ${esc(dtOf(x.at))}${x.why?` · “${esc(x.why)}”`:""}</div>${SUP()?`<div style="display:flex;gap:8px;margin-top:8px"><button class="cb sm ok" type="button" data-dec="${x.id}" data-ok="1">Approve</button><button class="cb sm ghost" type="button" data-dec="${x.id}" data-ok="0">Reject</button></div>`:""}</div>`).join("")}</div>`:""}
     ${INFO.brief&&(INFO.brief.warnings||[]).length?`<div class="card info"><h3>AI notes</h3><ul class="iss">${INFO.brief.warnings.map(w=>`<li>${esc(w)}</li>`).join("")}</ul><p class="hint">Updated ${esc(dtOf(INFO.brief.generatedAt))}</p></div>`:""}
@@ -1323,7 +1329,6 @@ function vReport(kind){
   const needed=list.filter(([p])=>s0.need.includes(p)||partOf(kind,p)); /* v22.23: the prep sheet part is always offered; it only counts once a sheet was printed */
   const curP=(list.find(([p])=>!partOf(kind,p)&&s0.need.includes(p))||list.find(([p])=>!partOf(kind,p))||[])[0];
   return `<div class="stack">
-    <div class="kseg" role="tablist" aria-label="Report"><button type="button" data-tab="opening" aria-selected="${kind==="opening"}">Opening</button><button type="button" data-tab="closing" aria-selected="${kind==="closing"}">Closing · due ${esc(INFO.conf.closeBy)}</button></div>
     <div><div class="pbar"><i style="width:${needed.length?Math.round(needed.filter(([p])=>partOf(kind,p)).length*100/needed.length):0}%"></i></div><div class="lh"><span>${s0.done?"✓ "+(kind==="opening"?"Opening":"Closing")+" report complete":`${needed.filter(([p])=>partOf(kind,p)).length} of ${needed.length} parts sent`}</span><span>${DATE!==INFO.today?esc(niceD(DATE)):""}</span></div></div>
     ${late?`<p class="err">Late: still to do ${esc(s0.names.join(", "))}.</p>`:""}
     ${legacy?`<div class="card"><b>Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}</b>. Sending a part now starts a new report.</div>`:""}
@@ -1602,8 +1607,8 @@ function vLists(){ if(!LED) LED={carries:new Set(INFO.hq.carries.length?INFO.hq.
   const chips=`<div class="kchips" style="padding-bottom:4px">${[["eq","Fridges · "+LED.eq.length],["car","Display cakes · "+LED.carries.size],["rules","Reminders · "+(INFO.rules||[]).length]].map(([k,l])=>`<button type="button" data-setc="${k}" aria-selected="${SETC===k}">${esc(l)}</button>`).join("")}</div>`;
   let body="";
   if(SETC==="eq") body=`<div class="card srows">${LED.eq.map((e,i)=>`<button type="button" class="srow" data-eqe="${i}"><b>${esc(e.name||"New unit")}</b><span class="v">${esc(rng(e))}</span><span class="ch">›</span></button>`).join("")||`<p class="hint" style="padding:14px">No fridges yet.</p>`}</div>
-    <p class="hint">Checked in every opening and closing report. “Max” is the warmest allowed temperature.</p>
-    <div class="foot"><div class="in">${LED.dirty?`${!SUP()?`<input id="ls-why" value="${esc(LED.why)}" placeholder="Why the change? (for the supervisor)">`:""}<div class="row2" style="display:grid;grid-template-columns:1fr 2fr;gap:10px"><button class="cb ghost" type="button" data-act="eqAdd">+ Add</button><button class="cb ok" type="button" data-act="saveEq">${SUP()?"Save changes":"Send for approval"}</button></div>`:`<button class="cb big full" type="button" data-act="eqAdd">+ Add a fridge</button>`}</div></div>`;
+    <p class="hint">Checked in every opening and closing report. “Max” is the warmest allowed temperature.${LED.dirty?"":` <button class="lnk" type="button" data-act="eqAdd">+ Add a fridge</button>`}</p>
+    ${LED.dirty?`<div class="foot"><div class="in">${!SUP()?`<input id="ls-why" value="${esc(LED.why)}" placeholder="Why the change? (for the supervisor)">`:""}<div class="row2" style="display:grid;grid-template-columns:1fr 2fr;gap:10px"><button class="cb ghost" type="button" data-act="eqAdd">+ Add</button><button class="cb ok" type="button" data-act="saveEq">${SUP()?"Save changes":"Send for approval"}</button></div></div></div>`:""}`;
   if(SETC==="car") body=CATS.map(c=>{const ps=(INFO.products||[]).filter(x=>x.category===c); return ps.length?`<div class="catt">${esc(CATL[c])}</div><div class="card srows">${ps.map(x=>`<label class="srow" style="grid-template-columns:minmax(0,1fr) auto"><b>${esc(x.name)}</b><input type="checkbox" data-car="${esc(x.id)}" ${LED.carries.has(x.id)?"checked":""} aria-label="On the HQ display: ${esc(x.name)}"></label>`).join("")}</div>`:"";}).join("")
     +`<p class="hint">Cakes on the HQ display chiller (same as the Orderla menu). Used by the opening report and the Plan &amp; prep suggestion for HQ.</p>
     <div class="foot"><div class="in">${!SUP()?`<input id="ls-why" value="${esc(LED.why)}" placeholder="Why the change? (for the supervisor)">`:""}<button class="cb big full" type="button" data-act="saveCarries">${SUP()?"Save display cakes":"Send for approval"}</button></div></div>`;
