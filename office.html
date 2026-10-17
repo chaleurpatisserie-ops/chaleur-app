@@ -2482,6 +2482,7 @@ const rcSubOf=id=>((S.rcp||{}).components||[]).filter(c=>c.lines.some(l=>l.ing==
 const rcNorm=s=>String(s||"").toLowerCase().replace(/\bpetit\b|\(s\)/g," ").replace(/[^a-z0-9]+/g," ").trim();
 const rcNames=s=>{ const t=String(s||""), out=[rcNorm(t.replace(/\(.*?\)/g," "))]; (t.match(/\(([^)]*)\)/g)||[]).forEach(x=>out.push(rcNorm(x.slice(1,-1)))); return out.filter(x=>x.length>=4); };
 function rcAppCake(p){ const A=Object.values(S.products||{}).filter(x=>x&&x.name); if(p.app){ const a=A.find(x=>String(x.name).toLowerCase()===p.app.toLowerCase()); if(a) return a; }
+  if(!/live/i.test(String(p.status||""))) return null; /* v22.51b: a Q4 / R&D cake does not borrow an app cake by a name guess */
   const mine=rcNames(p.name); let best=null; for(const a of A){ const an=rcNorm(String(a.name).replace(/\(.*?\)/g," ")); if(an.length>=4&&mine.includes(an)){ if(!best||(a.photo&&!best.photo)||(a.active!==false&&best.active===false)) best=a; } } return best; }
 function rcPhoto(p){ const u=String(p.photo||"").trim(); if(u){ const m=/\/d\/([a-zA-Z0-9_-]{20,})|[?&]id=([a-zA-Z0-9_-]{20,})/.exec(u); if(m) return "https://drive.google.com/thumbnail?id="+(m[1]||m[2])+"&sz=w600"; if(/^https?:\/\//.test(u)) return u; if(/^[a-zA-Z0-9_-]{25,}$/.test(u)) return "https://drive.google.com/thumbnail?id="+u+"&sz=w600"; }
   const a=rcAppCake(p); return a&&a.photo?a.photo:""; }
@@ -2581,7 +2582,7 @@ function rcProdText(p){ const U=RC(), n=+U.pcs||0, out=[`Chaleur · ${p.name} ×
    takes the Prep list's To make for the same day (outlet closing reports + HQ display + online orders, with any change typed on the Prep list)
    for every app cake linked to a Recipe Master cake (app_name, or the same name) — no typing; lines added here come on top as extra.
    B2B orders being prepped that day are listed as a reminder (Bukku items are free text, so they are not counted by themselves). */
-function rcAppMap(){ const R=S.rcp||{}, A=S.products||{}, m={}; const P=R.products||[];
+function rcAppMap(){ const R=S.rcp||{}, A=S.products||{}, m={}; const P=(R.products||[]).filter(p=>/live/i.test(String(p.status||""))); /* v22.51b: only live Recipe Master cakes link to app cakes (a Q4 / R&D cake never claims one — "Strawberry is not Apam Balik") */
   for(const p of P) if(p.app){ const k=Object.keys(A).find(id=>String((A[id]||{}).name||"").toLowerCase()===p.app.toLowerCase()); if(k&&!m[k]) m[k]=p; }
   for(const p of P){ const a=rcAppCake(p); if(!a) continue; const k=Object.keys(A).find(id=>A[id]===a); if(k&&!m[k]) m[k]=p; } return m; }
 function rcPrepAuto(d){ let rows=[]; try{ rows=typeof prepRows==="function"&&typeof planAll==="function"?prepRows(d,planAll()):[]; }catch(e){ rows=[]; }
