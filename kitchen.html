@@ -783,7 +783,7 @@ body:not(.flow):has(#main .foot) .ca-hbtn{bottom:calc(170px + env(safe-area-inse
 .pc{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px}
 .pc .no{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font:700 22px var(--display);background:var(--soft);color:var(--muted)}
 .pc.cur .no{background:var(--accent);color:#fff}.pc.sent .no{background:var(--ok);color:#fff;font-family:var(--body);font-size:22px}
-.pc .nm{font-weight:700;font-size:17px;line-height:1.2}.pc .sb{font-size:13px;color:var(--muted);margin-top:2px}.pc .pt{font-weight:700;color:var(--muted);font-size:14px}.pc.cur .pt{color:var(--warn-tx)}
+.pc .nm{font-weight:700;font-size:17px;line-height:1.2}.pc .sb .when{font-weight:600;color:var(--muted)}.pc .sb .when.t{color:var(--warn-tx)}.pc .sb{font-size:13px;color:var(--muted);margin-top:2px}.pc .pt{font-weight:700;color:var(--muted);font-size:14px}.pc.cur .pt{color:var(--warn-tx)}
 .pc .go{grid-column:1/-1}.pc.cur{border:2px solid var(--accent);box-shadow:0 3px 0 var(--accent)}
 .duepill{display:inline-block;background:var(--warn-bg);color:var(--warn-tx);border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px;white-space:nowrap}.duepill.bad{background:var(--bad-bg);color:var(--bad-tx)}.duepill.ok{background:var(--ok-bg);color:var(--ok-tx)}
 /* fridges (3f): dark screen */
@@ -1106,8 +1106,8 @@ function render(){
 }
 function tabHdr(){ const eb="Kitchen HQ · "+niceD(DATE);
   if(TAB==="today") return hdr("To-do",{back:{href:"index.html",label:"Home"},eb,right:INFO.game?`<a class="pill ink" href="index.html#me" style="text-decoration:none">${nf(INFO.game.mine)} pts</a>`:""});
-  if(TAB==="opening"||TAB==="closing"){ const s0=INFO.state[TAB], due=TAB==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=!s0.done&&DATE===INFO.today&&INFO.now>due;
-    return hdr(TAB==="opening"?"Opening report":"Closing report",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb,right:`<span class="duepill ${s0.done?"ok":late?"bad":""}">${s0.done?"✓ Complete":late?"Late · "+esc(due):"due "+esc(due)}</span>`}); }
+  if(TAB==="opening"||TAB==="closing"){ const s0=INFO.state[TAB], due=TAB==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=repLate(TAB,s0);
+    return hdr(TAB==="opening"?"Opening report":"Closing report",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb,right:`<span class="duepill ${s0.done?"ok":late?"bad":""}">${s0.done?"✓ Complete":late?"Late · "+esc(due):TAB==="closing"?"aim "+esc(due):"due "+esc(due)}</span>`}); }
   if(TAB==="plan") return hdr("Production plan",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb:"Kitchen HQ"});
   return hdr("Kitchen reports",{back:{attr:'data-tab="today"',label:"Back to to-do"},eb:"Kitchen HQ · last 14 days, fridges, display cakes, reminders",print:true}); }
 function go(t){ if(SENDING){ toast("Please wait until the report is sent."); return; } t=TAB_ALIAS[t]||t; TAB=t; RESULT=null; PART=null; V2=""; CK=null; RCV=null; history.replaceState(null,"","#"+t); render(); window.scrollTo(0,0); if((t==="opening"||t==="closing")&&Date.now()-INFO_AT>60000) reload(); }
@@ -1129,12 +1129,12 @@ const niceName=n=>String(n||"").toLowerCase().replace(/\b[a-z]/g,c=>c.toUpperCas
 const whoChips=it=>(it&&it.who||[]).map(w=>{ const me=INFO&&INFO.me&&String(INFO.me.name||"").toUpperCase()===String(w).toUpperCase(); return `<span class="who ${me?"me":""}">${me?"you":esc(niceName(String(w).split(/\s+/)[0]))}</span>`; }).join("");
 const boxTick=(id,on,label)=>`<label class="tick ${on?"on":""}" aria-label="${esc((on?"Done: ":"Tick when done: ")+label)}"><input type="checkbox" data-tdone="${esc(id)}" ${on?"checked":""} ${canTick()?"":"disabled"}>${on?"✓":""}</label>`;
 function tkCard(o){ return `<div class="card tk ${o.done?"done":""} ${o.cur?"cur":""}">${o.circle}<div class="tb">${o.tag?`<div><span class="tag ${o.tagc||""}">${o.tag}</span></div>`:""}${o.due?`<div class="due ${o.late?"late":""}">${o.due}</div>`:""}<div class="tt">${o.title}</div>${o.sub?`<div class="ts">${o.sub}</div>`:""}${o.by?`<div class="tby">✓ ${o.by}</div>`:""}${o.extra||""}</div>${o.act?`<div class="act">${o.act}</div>`:"<span></span>"}</div>`; }
-function repItem(kind){ const s0=INFO.state[kind], r=INFO.day[kind], due=kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=!s0.done&&DATE===INFO.today&&INFO.now>due;
+function repItem(kind){ const s0=INFO.state[kind], r=INFO.day[kind], due=kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=repLate(kind,s0);
   const parts=PARTS()[kind].filter(([p])=>s0.need.includes(p)), sent=s0.need.length-s0.missing.length;
-  const lines=r&&r.legacy?`<ul class="lines"><li class="ok">Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}</li></ul>`:`<ul class="lines">${parts.map(([p,l])=>{const x=partOf(kind,p); return `<li class="${x?"ok":""}">${x?"✓":"○"} ${esc(l)}${x?` · ${esc(x.by)} ${esc(hmOf(x.at))}`:""}</li>`;}).join("")}</ul>`;
+  const lines=r&&r.legacy?`<ul class="lines"><li class="ok">Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}</li></ul>`:`<ul class="lines">${parts.map(([p,l])=>{const x=partOf(kind,p); return `<li class="${x?"ok":""}">${x?"✓":"○"} ${esc(l)}${x?` · ${esc(x.by)} ${esc(hmOf(x.at))}`:` <span class="hint">· ${esc(whenTxt(kind,p))}</span>`}</li>`;}).join("")}</ul>`;
   const iss=r&&(r.issues||[]).length?`<ul class="iss">${r.issues.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul>`:"";
-  const chase=!s0.done&&(SUP()||CA.can("chase"))&&DATE===INFO.today&&INFO.now>due?`<button class="cb sm ghost" type="button" data-chase="${kind}">Remind the kitchen team</button>`:"";
-  return {count:true,done:s0.done,html:tkCard({circle:autoTick(s0.done),tag:s0.done?"✓ Complete":"Report",tagc:s0.done?"ok":"",due:s0.done?"":(late?"Late · was due "+esc(due):"due "+esc(due)),late,title:kind==="opening"?"Opening report":"Closing report",sub:`${sent} of ${s0.need.length} parts sent`,extra:lines+iss+(chase?`<div style="margin-top:8px">${chase}</div>`:""),
+  const chase=!s0.done&&(SUP()||CA.can("chase"))&&DATE===INFO.today&&(late||(kind==="closing"&&INFO.now>due))?`<button class="cb sm ghost" type="button" data-chase="${kind}">Remind the kitchen team</button>`:"";
+  return {count:true,done:s0.done,html:tkCard({circle:autoTick(s0.done),tag:s0.done?"✓ Complete":"Report",tagc:s0.done?"ok":"",due:s0.done?"":(late?"Late · on-time parts were due "+esc(due):kind==="closing"?"aim for "+esc(due):tMiss(kind,s0).length?"on time by "+esc(due):"rest any time today"),late,title:kind==="opening"?"Opening report":"Closing report",sub:`${sent} of ${s0.need.length} parts sent`,extra:lines+iss+(chase?`<div style="margin-top:8px">${chase}</div>`:""),
     act:(s0.done?`<button class="cb sm ghost" type="button" data-tab="${kind}">Open</button>`:`<button class="cb sm" type="button" data-tab="${kind}">${sent?"Continue":"Start"}</button>`)})}; }
 function taskItems(team){ const ts=TD().tasks.filter(x=>x.team===team), can=!!(INFO.me&&INFO.me.canTask);
   return ts.map(x=>({count:true,done:!!x.done,html:tkCard({circle:boxTick(x.id,!!x.done,x.title),tag:esc(TTYPE()[x.type]||"To-do"),tagc:x.type,due:x.ready&&!x.done?"ready by "+esc(x.ready):"",title:esc(x.title),sub:[x.assigned?"From "+esc(niceName(x.by||""))+(x.forLabel&&x.forLabel!=="Anyone"?" · for "+esc(x.forLabel):""):"",x.detail?esc(x.detail):""].filter(Boolean).join(" · "),by:x.done?esc(x.done.by)+" "+esc(hmOf(x.done.at)):"",act:can?`<button class="lnk" type="button" data-tedit="${esc(x.id)}">Edit</button>`:""})})); }
@@ -1287,11 +1287,18 @@ function vRcv(id){ const d=doOf(id); if(!d){ V2=""; return vToday(); } if(!RCV||
 /* ---------- OPENING / CLOSING (4c/3e): parts, each sent on its own by whoever does it ---------- */
 const PARTS=()=>INFO.parts||{opening:[["eq","Fridges & freezers"],["display","HQ display count"],["prep","Prep sheet (made)"],["deliveries","Outlet deliveries"]],closing:[["eq","Fridges & freezers"],["count","HQ display count"],["lists","Mise en place lists"]]};
 const partName=(kind,p)=>((PARTS()[kind]||[]).find(x=>x[0]===p)||[p,p])[1];
-const PHINT={opening:{eq:"temp, door and photo, one at a time",display:"by colour dot + 1 photo",prep:"write MADE on the printed sheet + 1 photo",deliveries:"box photo per DO",recipes:"weigh or snap what the Recipe Master is missing · at least 1"},closing:{eq:"temp, door and photo, one at a time",count:"waste and left per colour + photo",lists:"today's list + the next 3 days",sales:"snap the FeedMe product sales report",recipes:"weigh or snap what the Recipe Master is missing · at least 1"}};
+/* v22.57 (Alfred 18 Oct: "only certain report needed to be on time, the rest as long they complete"): the opening is late only on its on-time
+   parts (INFO.timed); its other parts are "any time today"; the closing is an "aim for" time and is never late */
+const TIMED=()=>INFO.timed||{opening:["eq","display","prep","deliveries"],closing:[]};
+const isTimed=(kind,p)=>(TIMED()[kind]||[]).includes(p);
+const tMiss=(kind,s0)=>s0.timedMissing||(s0.missing||[]).filter(p=>isTimed(kind,p));
+const repLate=(kind,s0)=>kind==="opening"&&!s0.done&&tMiss(kind,s0).length>0&&DATE===INFO.today&&INFO.now>INFO.conf.openBy;
+const whenTxt=(kind,p)=>kind==="closing"?"aim for "+INFO.conf.closeBy:isTimed(kind,p)?"by "+INFO.conf.openBy:"any time today";
+const PHINT={opening:{eq:"temp, door and photo, one at a time",display:"by colour dot + 1 photo",prep:"write MADE on the printed sheet + 1 photo",deliveries:"box photo per DO",grab:"pack the Grab sets up to their number · count them on Monday",recipes:"weigh or snap what the Recipe Master is missing · at least 1"},closing:{eq:"temp, door and photo, one at a time",count:"waste and left per colour + photo",lists:"today's list + the next 3 days",sales:"snap the FeedMe product sales report",recipes:"weigh or snap what the Recipe Master is missing · at least 1"}};
 const partPts=(kind,p)=>{ const P=INFO.pts||{part:50,unit:5}; return p==="eq"?P.part+INFO.conf.equipment.length*2*0+INFO.conf.equipment.length*P.unit:P.part; };
 function st(kind){ const s0=K[kind]||st0(kind); INFO.conf.equipment.forEach(e=>{ if(!s0.equip[e.id]) s0.equip[e.id]={t:"",neg:e.type==="freezer",door:false}; }); return s0; }
 function st0(kind){ const d=loadDraft(kind)||{};
-  const s={prep:d.prep||null,prepPh:d.prepPh||null,equip:d.equip||{},step:+d.step||0,rows:d.rows||null,order:d.order||[],shown:d.shown||[],ev:d.ev||[],later:d.later||{},notes:d.notes||{},nonce:d.nonce||{},pre:d.pre||{},cstep:+d.cstep||0,cmode:d.cmode||"",miss:d.miss||{},mpage:+d.mpage||0};
+  const s={prep:d.prep||null,prepPh:d.prepPh||null,equip:d.equip||{},step:+d.step||0,rows:d.rows||null,order:d.order||[],shown:d.shown||[],ev:d.ev||[],later:d.later||{},notes:d.notes||{},nonce:d.nonce||{},pre:d.pre||{},cstep:+d.cstep||0,cmode:d.cmode||"",miss:d.miss||{},mpage:+d.mpage||0,grab:d.grab||{c:{},p:{}}};
   if(!s.rows){ s.rows={}; s.order=[]; s.shown=[]; s.pre={};
     const add=(pid,c,v)=>{ const k=pid+"|"+c; if(!s.rows[k]){ s.rows[k]=v; s.order.push(k); if(v.q!=null) s.pre[k]=v.q; } if(!s.shown.includes(pid)) s.shown.push(pid); };
     if(kind==="opening"){ const r=INFO.day.opening&&INFO.day.opening.display;
@@ -1310,10 +1317,11 @@ function clearPart(kind,part){ const s=st(kind), p=pre(kind);
   if(part==="deliveries") s.later={};
   if(part==="prep"){ s.prep=null; s.prepPh=null; }
   if(part==="recipes"){ s.miss={}; s.mpage=0; }
+  if(part==="grab") s.grab={c:{},p:{}};
   delete s.notes[part]; delete s.nonce[part];
-  const keys=part==="eq"?[p+"eq_"]:part==="display"?["op_display","op_waste"]:part==="prep"?["op_prep"]:part==="deliveries"?["op_do_"]:part==="count"?["cl_display","cl_waste"]:part==="recipes"?[p+"rs_"]:part==="sales"?["cl_fs"]:["cl_l"];
+  const keys=part==="eq"?[p+"eq_"]:part==="display"?["op_display","op_waste"]:part==="prep"?["op_prep"]:part==="deliveries"?["op_do_"]:part==="count"?["cl_display","cl_waste"]:part==="recipes"?[p+"rs_"]:part==="sales"?["cl_fs"]:part==="grab"?["op_grab_"]:["cl_l"];
   Object.keys(P2).forEach(k=>{ if(keys.some(x=>k.indexOf(x)===0)){ delete P2[k]; savePh(k);} });
-  K[kind]=null; const n=st0(kind); Object.assign(n,{prep:part==="prep"?null:s.prep,prepPh:part==="prep"?null:s.prepPh,equip:part==="eq"?{}:s.equip,step:part==="eq"?0:s.step,later:part==="deliveries"?{}:s.later,notes:s.notes,nonce:s.nonce,miss:part==="recipes"?{}:s.miss,mpage:part==="recipes"?0:s.mpage});
+  K[kind]=null; const n=st0(kind); Object.assign(n,{prep:part==="prep"?null:s.prep,prepPh:part==="prep"?null:s.prepPh,equip:part==="eq"?{}:s.equip,step:part==="eq"?0:s.step,later:part==="deliveries"?{}:s.later,notes:s.notes,nonce:s.nonce,miss:part==="recipes"?{}:s.miss,mpage:part==="recipes"?0:s.mpage,grab:part==="grab"?{c:{},p:{}}:s.grab});
   if(part!=="display"&&part!=="count"){ n.rows=s.rows; n.order=s.order; n.shown=s.shown; n.ev=s.ev; n.pre=s.pre; n.cstep=s.cstep; n.cmode=s.cmode; }
   K[kind]=n; saveDraft(kind); }
 /* photo: a big tile to take it (camera), with "choose from phone" underneath */
@@ -1324,23 +1332,23 @@ const noteBox=(kind,part)=>`<label class="f sec">Note (optional)<textarea rows="
 function vReport(kind){
   if(RESULT&&RESULT.kind===kind) return vResult();
   if(PART) return vPart(kind,PART);
-  const s0=INFO.state[kind], r=INFO.day[kind], due=kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=!s0.done&&DATE===INFO.today&&INFO.now>due, legacy=r&&r.legacy;
+  const s0=INFO.state[kind], r=INFO.day[kind], due=kind==="opening"?INFO.conf.openBy:INFO.conf.closeBy, late=repLate(kind,s0), legacy=r&&r.legacy;
   const list=PARTS()[kind].filter(([p])=>s0.need.includes(p)||partOf(kind,p)||(kind==="opening"&&p==="prep")||(kind==="closing"&&p==="sales"&&INFO.fmPart==="optional")), sent=list.filter(([p])=>partOf(kind,p)).length;
   const needed=list.filter(([p])=>s0.need.includes(p)||partOf(kind,p)); /* v22.23: the prep sheet part is always offered; it only counts once a sheet was printed */
   const curP=(list.find(([p])=>!partOf(kind,p)&&s0.need.includes(p))||list.find(([p])=>!partOf(kind,p))||[])[0];
   return `<div class="stack">
     <div><div class="pbar"><i style="width:${needed.length?Math.round(needed.filter(([p])=>partOf(kind,p)).length*100/needed.length):0}%"></i></div><div class="lh"><span>${s0.done?"✓ "+(kind==="opening"?"Opening":"Closing")+" report complete":`${needed.filter(([p])=>partOf(kind,p)).length} of ${needed.length} parts sent`}</span><span>${DATE!==INFO.today?esc(niceD(DATE)):""}</span></div></div>
-    ${late?`<p class="err">Late: still to do ${esc(s0.names.join(", "))}.</p>`:""}
+    ${late?`<p class="err">Late: still to do ${esc(tMiss(kind,s0).map(p=>partName(kind,p)).join(", "))}.</p>`:""}
     ${legacy?`<div class="card"><b>Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}</b>. Sending a part now starts a new report.</div>`:""}
     ${list.map(([p,label],i)=>{ const x=partOf(kind,p), iss=(x&&x.issues)||[], bad=iss.some(z=>z.sev==="bad"), cur=!x&&p===curP;
-      return `<div class="card pc ${x?"sent":""} ${cur?"cur":""}"><span class="no">${x?"✓":i+1}</span><div><div class="nm">${esc(label)}</div><div class="sb">${x?`${esc(x.by)} · ${esc(hmOf(x.at))}`:esc(p==="eq"?INFO.conf.equipment.length+" units · "+PHINT[kind][p]:PHINT[kind][p]||"")}${!x&&!s0.need.includes(p)?` · <i>optional today</i>`:""}</div></div>
+      return `<div class="card pc ${x?"sent":""} ${cur?"cur":""}"><span class="no">${x?"✓":i+1}</span><div><div class="nm">${esc(label)}</div><div class="sb">${x?`${esc(x.by)} · ${esc(hmOf(x.at))}`:esc(p==="eq"?INFO.conf.equipment.length+" units · "+PHINT[kind][p]:PHINT[kind][p]||"")}${!x&&!s0.need.includes(p)?` · <i>optional today</i>`:""}${!x&&s0.need.includes(p)?` · <b class="when ${kind==="opening"&&isTimed(kind,p)?"t":""}">${esc(whenTxt(kind,p))}</b>`:""}</div></div>
         <span class="pt">${x?(bad?`<span class="pill bad">Act now</span>`:""):"+"+partPts(kind,p)}</span>
         ${iss.length?`<ul class="iss go">${iss.map(z=>`<li class="${esc(z.sev)}">${esc(z.text)}</li>`).join("")}</ul>`:""}
         <div class="go">${x?`<button class="lnk" type="button" data-part="${p}">Send again</button>`:`<button class="cb ${cur?"big":"sm ghost"} ${cur?"full":""}" type="button" data-part="${p}">Start</button>`}</div></div>`; }).join("")}
     ${kind==="opening"?qcCard():""}
     ${!s0.need.includes("deliveries")&&kind==="opening"?`<p class="hint">No outlet deliveries today, so there is no delivery part.</p>`:""}
-    ${!s0.done&&(SUP()||CA.can("chase"))&&DATE===INFO.today&&INFO.now>due?`<button class="cb ghost full" type="button" data-chase="${kind}">Remind the kitchen team on WhatsApp</button>`:""}
-    <p class="hint" style="text-align:center">Send ${needed.length>1?"all "+needed.length:"it"} by ${esc(due)} to keep the team's on-time streak. Each part can be done by a different person at the same time; your answers stay on this phone until you send.</p>
+    ${!s0.done&&(SUP()||CA.can("chase"))&&DATE===INFO.today&&(late||(kind==="closing"&&INFO.now>due))?`<button class="cb ghost full" type="button" data-chase="${kind}">Remind the kitchen team on WhatsApp</button>`:""}
+    <p class="hint" style="text-align:center">${kind==="opening"?`On time by ${esc(due)}: ${esc(PARTS().opening.filter(([p])=>isTimed("opening",p)&&s0.need.includes(p)).map(x=>x[1]).join(", ")||"—")}. The other parts any time today, before you go home.`:`Aim to send it by ${esc(due)}. It is not late after that, but please finish it before you go home.`} Each part can be done by a different person at the same time; your answers stay on this phone until you send.</p>
     <details class="card flat"><summary style="cursor:pointer;font-weight:600">Report for another day</summary><label class="f" style="margin-top:8px">Report date<input type="date" data-rdate="1" value="${esc(DATE)}" min="${esc(addD(INFO.today,-1))}" max="${esc(INFO.today)}"></label></details></div>`; }
 function partIdx(kind,part){ return PARTS()[kind].findIndex(x=>x[0]===part)+1; }
 function partHead(kind,part,right){ const x=partOf(kind,part);
@@ -1354,7 +1362,29 @@ function vPart(kind,part){
   if(part==="lists") return partHead(kind,part)+vLists4(kind);
   if(part==="sales") return partHead(kind,part)+vSales(kind);
   if(part==="recipes") return partHead(kind,part)+vMissing(kind);
+  if(part==="grab") return partHead(kind,part)+vGrab(kind);
   return ""; }
+/* v22.57 (Alfred 18 Oct: Grab sets follow the FeedMe sales — "once sold, deduct it, then if it reaches a par, in the morning opening shift task
+   they will see that they need to pack … once they done packing they can update also how many they have packed"; "stock check every week
+   monday"): one card per Grab pack — packed on hand (last count + packed − Grab sold), the number to keep, "Pack N", the cakes for it;
+   Monday: the count first. */
+const gNum=v=>{ const t=String(v??"").trim(); if(t==="") return null; const n=Number(t); return Number.isInteger(n)&&n>=0&&n<=99?n:NaN; };
+function gNeed(g,V){ const c=gNum((V.c||{})[g.id]); const have=c==null||Number.isNaN(c)?g.onHand:c; return {have,need:Math.max(0,g.par-have),c}; }
+function gCakes(g,n){ return g.cakes.map(c=>(n*c.qty)+" "+c.name).join(" · "); }
+function gNeedHtml(g,V){ const {have,need}=gNeed(g,V), k=gNum((V.p||{})[g.id]), after=have+(k&&!Number.isNaN(k)?k:0);
+  return need?`<span class="pill warn">Pack ${need}</span> <span class="hint">${esc(gCakes(g,need))}</span>${k!=null&&!Number.isNaN(k)?` <span class="hint">· after packing: ${after} of ${g.par}</span>`:""}`:`<span class="pill ok">Enough · ${have} of ${g.par}</span>`; }
+function vGrab(kind){ const s=st(kind), G=INFO.grab||{packs:[]}, V=s.grab||(s.grab={c:{},p:{}});
+  if(!G.on) return `<div class="card"><b>No Grab packs are set up.</b><p class="hint">Office desk › Setup › Grab packs.</p></div>`;
+  return `<p class="hint">${G.countDue?`<b>Monday stock check:</b> count the packed sets in the fridge first, then pack. `:""}Pack each Grab set up to the number to keep ready, then type how many you packed. Packed sets stay out of the HQ display count. Any time today.</p>
+    ${G.fmLate?`<p class="hint">Yesterday's FeedMe report is not in yet, so yesterday's Grab sales are not taken off: the app may show more packed sets than are really there. Count them if unsure.</p>`:""}
+    <div class="stack">${G.packs.map(g=>{ const mustC=G.countDue&&!g.counted, cv=(V.c||{})[g.id]??"", pv=(V.p||{})[g.id]??"";
+      const cBox=`<label class="f">Count the packed ${esc(g.name)} in the fridge now${mustC?" (Monday)":""}<input type="number" min="0" max="99" step="1" inputmode="numeric" data-gc="${esc(g.id)}" value="${esc(cv)}" aria-label="Packed ${esc(g.name)} counted"></label>`;
+      return `<div class="card"><div style="display:flex;gap:12px;align-items:center">${g.photo?`<img src="${esc(g.photo)}" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none">`:""}<div style="min-width:0"><div class="nm" style="font-weight:700">${esc(g.name)}</div><div class="hint">${esc(gCakes(g,1))}</div></div></div>
+        <div class="hint" style="margin:8px 0 4px">Packed now: <b>${g.onHand}</b> · keep <b>${g.par}</b> ready${g.sold?` · ${g.sold} sold on Grab since ${g.lastCount?"the last count":"packing started"}`:""}${g.lastCount?` · last count ${esc(niceD(g.lastCount.d))}: ${g.lastCount.n}`:""}</div>
+        <div id="gn-${esc(g.id)}" style="margin:4px 0 8px">${gNeedHtml(g,V)}</div>
+        ${mustC?cBox:`<details${cv!==""?" open":""}><summary class="hint" style="cursor:pointer">The number in the fridge is different? Count it</summary>${cBox}</details>`}
+        <label class="f">How many ${esc(g.name)} did you pack now?<input type="number" min="0" max="99" step="1" inputmode="numeric" data-gp="${esc(g.id)}" value="${esc(pv)}" placeholder="0" aria-label="${esc(g.name)} packed now"></label></div>`; }).join("")}</div>
+    ${noteBox(kind,"grab")}`; }
 /* v22.51 (Recipe Master 17 Oct, Chef Alfred: "add a MUST-DO Missing recipe task to the opening AND closing reports … pop out ONLY what is
    missing: components with no ingredient lines or blank grams, and Build rows with blank g per piece … team snaps a photo / weighs and fills it
    in; the app checks it like the recipe scanner … save as pending for Chef Alfred to approve"; "allow them to choose between 5 items missing,
@@ -1537,6 +1567,9 @@ function missingPart(kind,part){ const s=st(kind), p=pre(kind), m=[];
   if(part==="lists"){ if(!P2.cl_lt1) m.push("today's list photo"); [1,2,3].forEach(i=>{ if(!P2["cl_ld"+i+"_1"]) m.push(niceD(addD(DATE,i))+" list photo"); }); }
   if(part==="sales"){ if(s.later.sales){ if(!String(s.notes.saleswhy||"").trim()) m.push("why there is no report"); } else if(!P2.cl_fs1) m.push("photo of the FeedMe product sales report"); }
   if(part==="recipes"){ const open=missOpen(kind), V=s.miss||{}; if(open.length&&!open.some(it=>missFilled(it,V[it.key]))) m.push("at least one missing value (weigh it, snap the recipe, write the method or check the kitchen copy)"); }
+  if(part==="grab"){ const G=INFO.grab||{packs:[]}, V=s.grab||{}; let short=false; (G.packs||[]).forEach(g=>{ const {need,c}=gNeed(g,V), k=gNum((V.p||{})[g.id]);
+      if(Number.isNaN(c)||Number.isNaN(k)) m.push(g.name+": a whole number"); else { if(G.countDue&&!g.counted&&c==null) m.push("Monday count of "+g.name); if(need>0&&k==null) m.push("how many "+g.name+" you packed (0 if none)"); if(k!=null&&k<need) short=true; } });
+    if(short&&!String(s.notes.grab||"").trim()) m.push("why fewer were packed (note)"); }
   return m; }
 function tidyGate(){ const k=TAB==="opening"?"op_display":"cl_display"; const t=TIDY[k]; if(!t||!P2[k]) return ""; if(t.state==="checking") return "Checking the display photo…"; if(t.state==="messy"&&!t.sendAnyway) return "Please tidy the display and take the photo again"; return ""; }
 function refresh(){ if(SENDING) return; const b=$("#send"), nav=$("#eqnav"), cn=$("#cnav"); if(!PART||!(TAB==="opening"||TAB==="closing")) return; const m=missingPart(TAB,PART); { const g=(PART==="display"||PART==="count")?tidyGate():""; if(g) m.unshift(g); }
@@ -1560,6 +1593,7 @@ function partStats(kind,part){ const s=st(kind), mins=Math.max(1,Math.round((Dat
   if(part==="prep"){ const rows=psRows((INFO.prep||{}).sheet,s.prep), V=(s.prep||{}).vals||{}; return [[rows.length,"cakes"],[rows.reduce((a,r)=>a+(+((V[r.id]||{}).made)||0),0),"made"],[mins,"minutes"]]; }
   if(part==="sales"){ return [[s.later.sales?0:Object.keys(P2).filter(k=>/^cl_fs/.test(k)).length,"photo"+(Object.keys(P2).filter(k=>/^cl_fs/.test(k)).length===1?"":"s")],[mins,"minutes"]]; }
   if(part==="recipes"){ const V=s.miss||{}, n=missOpen(kind).filter(it=>missFilled(it,V[it.key])).length; return [[n,"value"+(n===1?"":"s")],[mins,"minutes"]]; }
+  if(part==="grab"){ const V=s.grab||{}, n=Object.values(V.p||{}).reduce((a,v)=>a+(+v||0),0); return [[n,"set"+(n===1?"":"s")+" packed"],[mins,"minutes"]]; }
   return [[Object.keys(P2).filter(k=>/^cl_l/.test(k)).length,"photos"],[3,"days planned"],[mins,"minutes"]]; }
 async function send(replace){ const kind=TAB, part=PART; if(SENDING||!part||missingPart(kind,part).length) return; const s=st(kind), p=pre(kind);
   SENDING=true; const b=$("#send"); b.disabled=true; $("#status").textContent="Sending "+partName(kind,part).toLowerCase()+"… keep this page open (up to a minute).";
@@ -1576,6 +1610,7 @@ async function send(replace){ const kind=TAB, part=PART; if(SENDING||!part||miss
     if(it.t==="method") return {key:it.key,method:String(v.method||"").trim(),read:!!v.read,photos:ph};
     if(it.t==="check") return {key:it.key,lines:L(),photos:ph};
     return {key:it.key,g:parseFloat(v.g),note:String(v.note||"").trim()}; }); }
+  if(part==="grab"){ const V=s.grab||{}; d.count={}; d.packed={}; ((INFO.grab||{}).packs||[]).forEach(g=>{ const c=gNum((V.c||{})[g.id]), k=gNum((V.p||{})[g.id]); if(c!=null) d.count[g.id]=c; if(k!=null) d.packed[g.id]=k; }); }
   saveDraft(kind); const stats=partStats(kind,part);
   try{ const r=await run("hqSubmitPart",kind,part,d); RESULT={kind,part,r,stats}; clearPart(kind,part); SENDING=false; PART=null; PARTT=0; HIST=null; INFO=await run("hqInfo",DATE).catch(()=>INFO); render(); window.scrollTo(0,0); }
   catch(e){ SENDING=false; b.disabled=false; const al=/^ALREADY\|([^|]*)\|(.*)$/.exec((e&&e.message)||"");
@@ -1801,7 +1836,9 @@ document.addEventListener("input",e=>{ const t=e.target, d=t.dataset; if(t.close
   if(d.temp){ const [k,id]=d.temp.split("|"); if(/[-−]/.test(t.value)){ st(k).equip[id].neg=true; document.querySelectorAll(`[data-sign^="${k}|${id}|"]`).forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.sign.endsWith("|1")))); } let v=t.value.replace(/[^0-9.,]/g,""); if(v!==t.value) t.value=v; st(k).equip[id].t=v; saveDraft(k); refresh(); return; }
   if(d.kv){ const a=d.kv.split("|"), f=a.pop(), k=a.shift(), key=a.join("|"), s=st(k), r=key.indexOf("ev")===0&&key.indexOf("|")<0?s.ev[+key.slice(2)]:s.rows[key]; if(!r) return; const v=t.value.replace(/[^0-9]/g,"").slice(0,3); if(v!==t.value) t.value=v; r[f]=v; saveDraft(k); if(f==="w") wasteBox(k); refresh(); return; }
   if(d.evn){ const [k,i]=d.evn.split("|"), s=st(k); if(s.ev[+i]){ s.ev[+i].name=t.value.slice(0,40); saveDraft(k); refresh(); } return; }
-  if(d.pnote){ const [k,p]=d.pnote.split("|"); st(k).notes[p]=t.value; saveDraft(k); return; }
+  if(d.gc||d.gp){ const s0=st(TAB), V=s0.grab||(s0.grab={c:{},p:{}}), id=d.gc||d.gp; (d.gc?(V.c||(V.c={})):(V.p||(V.p={})))[id]=String(t.value).replace(/[^0-9]/g,"").slice(0,2); saveDraft(TAB);
+    const g=((INFO.grab||{}).packs||[]).find(x=>x.id===id), el=document.getElementById("gn-"+id); if(g&&el) el.innerHTML=gNeedHtml(g,V); refresh(); return; }
+  if(d.pnote){ const [k,p]=d.pnote.split("|"); st(k).notes[p]=t.value; saveDraft(k); if(p==="grab") refresh(); return; }
   if(d.pwhy){ st("closing").notes[d.pwhy+"why"]=t.value; saveDraft("closing"); refresh(); return; }
   if(d.tk&&TK){ TK[d.tk]=t.value; return; }
   if(d.pli!=null&&PLE){ PLE.lines[+d.pli]=t.value; return; }

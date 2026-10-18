@@ -821,7 +821,7 @@ function render(){
   const t=D.today, days=[0,-1,-2,-3,-4,-5,-6].map(n=>addD(t,n));
   const done=D.rows.filter(r=>r.done), undone=D.rows.filter(r=>!r.done);
   const card=r=>`<details class="rep ${r.done?"done":r.late?"late":""}" data-key="${esc(r.key)}" ${OPEN.has(r.key)?"open":""}><summary><span class="st">${r.done?"✓":r.late?"!":""}</span>
-      <span><span class="t">${esc(r.title)}</span><span class="s ${r.done?"":"lt"}">${r.done?`✓ ${esc(r.by)}${r.at?" · "+esc(hm(r.at)):""}`:(r.late?"Late — due ":"Due ")+esc(r.due)+(r.left&&r.left.length?" · still: "+esc(r.left.join(", ")):"")}</span></span>
+      <span><span class="t">${esc(r.title)}</span><span class="s ${r.done?"":"lt"}">${r.done?`✓ ${esc(r.by)}${r.at?" · "+esc(hm(r.at)):""}`:(r.late?"Late — due ":r.aim?"Aim for ":"Due ")+esc(r.due)+(r.left&&r.left.length?" · still: "+esc(r.left.join(", ")):"")}</span></span>
       ${r.done?"":`<span class="badge ${r.times?"":"warn"}">${r.times?`🔔 ${r.times}×`:"no reminder"}</span>`}</summary>
       <div class="body">${r.done?"":remHtml(r)}${r.detail.map(secHtml).join("")||(r.done?"":"")}</div></details>`;
   a.innerHTML=`<div class="rtop"><h1>Reports</h1><span style="display:flex;gap:8px;align-items:center"><button type="button" class="rmenu" onclick="window.print()" title="Print this page (or choose Save as PDF in the print window)">🖨 Print</button><button type="button" data-menu="1" class="rmenu" aria-haspopup="dialog">☰ Menu</button><a href="index.html">‹ Home</a></span></div>
