@@ -165,7 +165,7 @@ body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bot
 .ca-onb-rows{margin:10px 0 4px}.ca-onb-r{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid rgba(0,0,0,.08)}
 .ca-onb-ri{font-size:22px;text-align:center}.ca-onb-rt b{display:block;font-size:15px}.ca-onb-rt small{display:block;font-size:12.5px;opacity:.75;line-height:1.35}
 .ca-onb-b{border:0;border-radius:10px;background:var(--accent,#7b1c2b);color:#fff;font:700 14px inherit;padding:10px 14px;cursor:pointer;min-height:40px}.ca-onb-b:disabled{opacity:.5}
-.ca-onb-ok{color:#2e6b3a;font-weight:700;font-size:14px;white-space:nowrap}.ca-onb-no{font-size:12px;opacity:.7;text-align:right;display:block;max-width:110px}.ca-onb-msg{min-height:1em;color:#9a2a1a;font-size:13px;margin:4px 0 0;text-align:center}
+.ca-onb-ok{color:#2e6b3a;font-weight:700;font-size:14px;white-space:nowrap}.ca-onb-no{font-size:12px;opacity:.7;text-align:right;display:block;max-width:110px}.ca-onb-msg{min-height:1em;color:#9a2a1a;font-size:13px;margin:4px 0 0;text-align:center}.ca-onb-n{font-size:12.5px;opacity:.75;text-align:center;margin:2px 0 8px;line-height:1.35}.ca-onb-n:empty{display:none}
 </style>
 <script>
 /* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
@@ -589,7 +589,7 @@ const ICON={
      "for those who never add to home screen, pop it out the next time they open the app. this is a one time only. then let them allow
      location, notification and gallery access. and camera access"; location: "i wanted to know who is at hq or where did they do their job".
      LOC keeps the phone's last position while a page is open (only after the person allowed it) and the API bridge sends it with the calls
-     that finish a job; PUSH turns this phone's notifications on/off; ONB = the two one-time sheets. */
+     that finish a job; PUSH turns this phone's notifications on/off; ONB = the two sheets (v22.58b: they come back each time the app is opened until notifications are on). */
   const LSg=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } }, LSs=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };
   const LOC=(()=>{ let fix=null, watch=null; const has=()=>typeof navigator!=="undefined"&&"geolocation" in navigator;
     const take=p=>{ fix={lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy||0),at:new Date(p.timestamp||Date.now()).toISOString()}; };
@@ -635,7 +635,7 @@ const ICON={
         ${can?`<button type="button" class="ca-pw-b" data-onb="install">Add to Home Screen</button>`:`<button type="button" class="ca-pw-b" data-onb="next">${ios?"OK":"Done"}</button>`}<button type="button" class="ca-pw-x" data-onb="next">Not now</button>`,"Add the app to your Home Screen");
       d.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-onb]"); if(!b) return; ev.preventDefault(); ev.stopPropagation();
         if(b.dataset.onb==="install"&&bip){ try{ bip.prompt(); await bip.userChoice; }catch(e){} bip=null; }
-        close(); if(!LSg("ca.onb.perm")) setTimeout(perms,300); }); }
+        close(); const st=await PUSH.state(); if(st==="off"||st==="denied"||!LSg("ca.onb.perm")) setTimeout(perms,300); }); }
     async function rowsHtml(){ const ps=await PUSH.state(), lp=await LOC.perm(); let cp="prompt"; try{ if(navigator.permissions&&navigator.permissions.query) cp=(await navigator.permissions.query({name:"camera"})).state; }catch(e){ cp=LSg("ca.cam")==="on"?"granted":"prompt"; }
       const ok=`<span class="ca-onb-ok">✓ On</span>`, row=(ic,t,s,right)=>`<div class="ca-onb-r"><span class="ca-onb-ri" aria-hidden="true">${ic}</span><span class="ca-onb-rt"><b>${t}</b><small>${s}</small></span><span>${right}</span></div>`;
       const nR=ps==="on"?ok:ps==="ios-browser"?`<span class="ca-onb-no">Home Screen app first</span>`:ps==="unsupported"?`<span class="ca-onb-no">Not on this browser</span>`:ps==="denied"?`<span class="ca-onb-no">Blocked · phone settings</span>`:`<button type="button" class="ca-onb-b" data-perm="notif">Allow</button>`;
@@ -643,9 +643,15 @@ const ICON={
         +row("📷","Camera","For the report photos",cp==="granted"?ok:cp==="denied"?`<span class="ca-onb-no">Blocked · phone settings</span>`:`<button type="button" class="ca-onb-b" data-perm="cam">Allow</button>`)
         +row("📍","Location","Saved only when you send a report or finish a job, so Chef Alfred sees where it was done",lp==="granted"?ok:lp==="denied"?`<span class="ca-onb-no">Blocked · phone settings</span>`:lp==="unsupported"?`<span class="ca-onb-no">Not on this phone</span>`:`<button type="button" class="ca-onb-b" data-perm="loc">Allow</button>`)
         +row("🖼️","Photos (gallery)","Your phone asks the first time you choose a photo","<span class=\"ca-onb-no\">When needed</span>"); }
+    /* v22.58b (Alfred: "if they didnot turn it on, the pop will keep coming out everytime untill they turn it on"): while notifications
+       are not on, this sheet comes back each time the app is opened; a blocked one says where to unblock it. */
+    const unblock=()=>PUSH.isIOS?"To unblock: iPhone Settings › Notifications › Chaleur Atelier › Allow Notifications.":PUSH.standalone()&&/Android/.test(navigator.userAgent||"")?"To unblock: hold the app icon › App info › Notifications › On.":"To unblock: tap the icon left of the web address › Notifications › Allow.";
+    async function foot(d){ const ps=await PUSH.state(), on=ps==="on", can=ps==="off"||ps==="denied"; const n=d.querySelector(".ca-onb-n"), b=d.querySelector('[data-perm="done"]');
+      if(n) n.textContent=on||!can?"":(ps==="denied"?unblock()+" ":"")+"This comes back each time you open the app until notifications are on."; if(b) b.textContent=on||!can?"Done":"Not now"; }
     async function perms(){ LSs("ca.onb.perm",new Date().toISOString());
-      const d=sheet(`<div class="ca-onb-ic" aria-hidden="true">✅</div><p class="ca-pw-t">Allow the app</p><p class="ca-pw-s">Tap Allow on each, then Allow again when the phone asks.</p><div class="ca-onb-rows">${await rowsHtml()}</div><p class="ca-onb-msg" role="status"></p><button type="button" class="ca-pw-b" data-perm="done">Done</button>`,"Allow the app");
-      const paint=async()=>{ const el=d.querySelector(".ca-onb-rows"); if(el) el.innerHTML=await rowsHtml(); }, msg=t=>{ const m=d.querySelector(".ca-onb-msg"); if(m) m.textContent=t||""; };
+      const d=sheet(`<div class="ca-onb-ic" aria-hidden="true">✅</div><p class="ca-pw-t">Allow the app</p><p class="ca-pw-s">Tap Allow on each, then Allow again when the phone asks.</p><div class="ca-onb-rows">${await rowsHtml()}</div><p class="ca-onb-msg" role="status"></p><p class="ca-onb-n"></p><button type="button" class="ca-pw-b" data-perm="done">Done</button>`,"Allow the app");
+      await foot(d);
+      const paint=async()=>{ const el=d.querySelector(".ca-onb-rows"); if(el) el.innerHTML=await rowsHtml(); await foot(d); }, msg=t=>{ const m=d.querySelector(".ca-onb-msg"); if(m) m.textContent=t||""; };
       d.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-perm]"); if(!b) return; ev.preventDefault(); ev.stopPropagation(); const k=b.dataset.perm; if(k==="done"){ close(); return; }
         b.disabled=true; msg("");
         try{ if(k==="notif") await PUSH.enable();
@@ -657,8 +663,12 @@ const ICON={
     async function maybe(){ try{ if(window.CHALEUR_NO_GUIDE&&!window.CHALEUR_ONB) return; if(/closing/.test(location.pathname)) return; const s=get(); if(!s||!s.t){ if(++tries<100) setTimeout(maybe,3000); return; }
         if(!booted){ booted=true; LOC.boot(); PUSH.refresh(); }
         if(document.getElementById("ca-pw")||document.getElementById("ca-onb")||document.querySelector(".si")){ setTimeout(maybe,4000); return; }
-        if(!PUSH.standalone()&&PUSH.mobile()&&!LSg("ca.onb.a2hs")) return a2hs(); /* phones and tablets only */
-        if(!LSg("ca.onb.perm")) return perms(); }catch(e){} }
+        if(seen()) return; const ps=await PUSH.state(), tip=!PUSH.standalone()&&PUSH.mobile()&&!LSg("ca.onb.a2hs"); /* the Home Screen tip: phones and tablets only */
+        if(ps==="on"){ if(tip){ mark(); a2hs(); } return; } /* notifications on: nothing more to ask */
+        if(ps==="unsupported"){ if(!LSg("ca.onb.perm")){ mark(); perms(); } return; } /* can't be turned on here: show it once only */
+        mark(); if(ps==="ios-browser"||tip) return a2hs(); /* iPhone: notifications only from the Home Screen app, so that sheet keeps coming */
+        return perms(); }catch(e){} }
+    const seen=()=>{ try{ return sessionStorage.getItem("ca.onb.seen"); }catch(e){ return null; } }, mark=()=>{ try{ sessionStorage.setItem("ca.onb.seen","1"); }catch(e){} }; /* once per opening of the app */
     return {maybe,a2hs,perms,close}; })();
   const bootV58=()=>{ setTimeout(ONB.maybe,1000); };
   if(!/closing/.test(location.pathname)){ if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bootV58); else bootV58(); }
