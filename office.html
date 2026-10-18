@@ -3,7 +3,7 @@
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
 function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new AbortController():null,tm=null,done=function(){if(tm)clearTimeout(tm);};
- var opt={method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args})};
+ var opt={method:"POST",credentials:"omit",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({fn:fn,args:args,loc:(window.CA_LOC&&/^(hqSubmitPart|hqSave|qcSubmit|submitAudit|hqDoCheck|hqDoDeliver|hqSubmit)$/.test(fn))?window.CA_LOC():undefined})}; /* v22.58: where a job was done */
  var go=function(sig){var o={};for(var k in opt)o[k]=opt[k];if(sig)o.signal=sig;try{return fetch(API,o);}catch(e){return Promise.reject(e);}};
  /* 7 Oct 2026: a browser add-on that wraps fetch and posts the request to another window crashed on the timeout signal
     ("Failed to execute 'postMessage' on 'Window': AbortSignal object could not be cloned") — sign-in failed. Retry once without it. */
@@ -160,6 +160,12 @@ body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bot
 .ca-pw-t{font:700 22px Georgia,serif;margin:0 0 6px}.ca-pw-s{font-size:14px;opacity:.8;margin:0 0 8px;line-height:1.4}.ca-pw-s.w{opacity:1;color:#9a5a12;font-weight:600}
 .ca-pw-b{display:block;width:100%;margin-top:12px;padding:14px;border:0;border-radius:12px;background:var(--accent,#7b1c2b);color:#fff;font:700 16px inherit;cursor:pointer}
 .ca-pw-x{display:block;width:100%;margin-top:6px;padding:10px;border:0;background:none;color:inherit;opacity:.7;font:600 14px inherit;cursor:pointer}
+.ca-onb{max-width:400px;text-align:left}.ca-onb .ca-pw-t,.ca-onb .ca-pw-s{text-align:center}.ca-onb-ic{font-size:40px;text-align:center;margin-bottom:6px}
+.ca-onb-st{margin:8px 0 4px;padding-left:22px;font-size:14px;line-height:1.5}.ca-onb-st li{margin:4px 0}.ca-onb-sh{display:inline-block;border:1.5px solid currentColor;border-radius:5px;padding:0 5px;font-size:12px}
+.ca-onb-rows{margin:10px 0 4px}.ca-onb-r{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid rgba(0,0,0,.08)}
+.ca-onb-ri{font-size:22px;text-align:center}.ca-onb-rt b{display:block;font-size:15px}.ca-onb-rt small{display:block;font-size:12.5px;opacity:.75;line-height:1.35}
+.ca-onb-b{border:0;border-radius:10px;background:var(--accent,#7b1c2b);color:#fff;font:700 14px inherit;padding:10px 14px;cursor:pointer;min-height:40px}.ca-onb-b:disabled{opacity:.5}
+.ca-onb-ok{color:#2e6b3a;font-weight:700;font-size:14px;white-space:nowrap}.ca-onb-no{font-size:12px;opacity:.7;text-align:right;display:block;max-width:110px}.ca-onb-msg{min-height:1em;color:#9a2a1a;font-size:13px;margin:4px 0 0;text-align:center}
 </style>
 <script>
 /* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
@@ -169,7 +175,7 @@ const CA=(function(){
   const rd=st=>{try{const v=st.getItem(K);return v?JSON.parse(v):null}catch(e){return null}};
   function clear(){try{localStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem(K)}catch(e){} try{sessionStorage.removeItem("chaleur.pin")}catch(e){}}
   function get(){const s=rd(sessionStorage)||rd(localStorage); if(s&&(!s.t||(s.exp&&Date.now()>s.exp))){clear();return null;} return s;}
-  function save(s){clear(); try{(s.remember?localStorage:sessionStorage).setItem(K,JSON.stringify(s));}catch(e){}}
+  function save(s){clear(); try{(s.remember?localStorage:sessionStorage).setItem(K,JSON.stringify(s));}catch(e){} setTimeout(()=>{ try{ ONB.maybe(); }catch(e){} },1200); /* v22.58: the one-time sheets right after sign-in */}
   /* v20: access ticks. Old saved sign-ins (before v20) only know their role: use that role's usual ticks until the page refreshes them. */
   const LEG={owner:"kitchen kapprove todo qc deliv doedit chase audit view money reports setup bills problems staff admin",manager:"kitchen kapprove todo qc deliv doedit chase audit view money reports setup bills problems staff admin",
     office:"kitchen todo deliv doedit chase audit view money reports setup problems",supervisor:"kitchen kapprove todo qc deliv doedit chase",kitchen:"kitchen qc deliv",auditor:"kitchen audit view money"};
@@ -547,7 +553,7 @@ const ICON={
      away (window.caPrintPrep); elsewhere it opens the Prep list, where the same window prints with one more tap. */
   let PW=null;
   const pwClose=()=>{ if(PW){ PW.remove(); PW=null; } };
-  async function prepWin(force){ try{ if(window.CHALEUR_NO_GUIDE&&!window.CHALEUR_PREP_WIN) return; /* automated tests opt in */ const s=get(); if(!s||!s.t) return; const P=permsOf(s); if(!["kitchen","deliv","doedit","reports"].some(k=>P.includes(k))) return;
+  async function prepWin(force){ try{ if(window.CHALEUR_NO_GUIDE&&!window.CHALEUR_PREP_WIN) return; /* automated tests opt in */ const s=get(); if(!s||!s.t) return; if(document.getElementById("ca-onb")){ setTimeout(()=>prepWin(force),3000); return; } /* v22.58: after the one-time sheets */ const P=permsOf(s); if(!["kitchen","deliv","doedit","reports"].some(k=>P.includes(k))) return;
       const h=new Date().getHours(); if(!force&&(h<6||h>=14)) return;
       let sn=0; try{ sn=+sessionStorage.getItem("ca.pwLater")||0; }catch(e){} if(!force&&Date.now()<sn) return;
       const r=await run("prepOut",s.t); if(!r||!r.show) return; if(r.printed&&!r.newOrders) { pwClose(); return; }
@@ -578,8 +584,86 @@ const ICON={
       const tot={}; dated.filter(x=>x.ph.k!=="up").forEach(x=>(x.o.items||[]).forEach(i=>{ const k=(i.sku||clean(i.name)).toUpperCase()+"|"+(i.unit||""), z=tot[k]||(tot[k]={name:clean(i.name),unit:i.unit||"",qty:0,base:0,bunit:i.bunit||""}); z.qty+=+i.qty||0; z.base+=+i.base||0; }));
       return {pd,dated,nodate,tot:Object.values(tot),nPrep:dated.filter(x=>x.ph.k!=="up").length}; };
     return {phase,view,item,nice,clean,pick}; })();
+  /* ===== v22.58 (Alfred 18 Oct) =====
+     "can we send notification directly from the app to their phone instead of whatsapp" → A (built in): sw.js shows them;
+     "for those who never add to home screen, pop it out the next time they open the app. this is a one time only. then let them allow
+     location, notification and gallery access. and camera access"; location: "i wanted to know who is at hq or where did they do their job".
+     LOC keeps the phone's last position while a page is open (only after the person allowed it) and the API bridge sends it with the calls
+     that finish a job; PUSH turns this phone's notifications on/off; ONB = the two one-time sheets. */
+  const LSg=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } }, LSs=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };
+  const LOC=(()=>{ let fix=null, watch=null; const has=()=>typeof navigator!=="undefined"&&"geolocation" in navigator;
+    const take=p=>{ fix={lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy||0),at:new Date(p.timestamp||Date.now()).toISOString()}; };
+    async function perm(){ if(!has()) return "unsupported"; try{ if(navigator.permissions&&navigator.permissions.query){ const r=await navigator.permissions.query({name:"geolocation"}); return r.state; } }catch(e){} return LSg("ca.loc")==="on"?"granted":"prompt"; }
+    function start(){ if(!has()||watch!==null) return; try{ watch=navigator.geolocation.watchPosition(take,()=>{},{enableHighAccuracy:true,maximumAge:120000,timeout:30000}); }catch(e){} }
+    async function boot(){ if(!get()) return; if(await perm()==="granted") start(); }
+    function ask(){ return new Promise(res=>{ if(!has()) return res(false); try{ navigator.geolocation.getCurrentPosition(p=>{ take(p); LSs("ca.loc","on"); start(); res(true); },()=>res(false),{enableHighAccuracy:true,timeout:20000,maximumAge:60000}); }catch(e){ res(false); } }); }
+    window.CA_LOC=()=>fix&&Date.now()-Date.parse(fix.at)<30*60000?fix:null;
+    return {boot,ask,perm,get:()=>fix}; })();
+  const PUSH=(()=>{ const ua=navigator.userAgent||"";
+    const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+    const standalone=()=>{ try{ return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true; }catch(e){ return false; } };
+    const sup=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+    const devName=()=>(isIOS?"iPhone":/Android/.test(ua)?"Android":/Windows/.test(ua)?"Windows PC":/Mac/.test(ua)?"Mac":"Phone")+(standalone()?" · home-screen app":" · browser");
+    function dev(){ let d=null; try{ d=JSON.parse(LSg("ca.dev")||"null"); }catch(e){} if(!d||!/^[a-z0-9]{16,40}$/.test(d.id||"")){ const r=()=>Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b=>b.toString(16).padStart(2,"0")).join(""); d={id:r(),sec:r()+r()}; LSs("ca.dev",JSON.stringify(d)); } return d; }
+    function idbPut(d){ return new Promise(res=>{ try{ const o=indexedDB.open("ca-push",1); o.onupgradeneeded=()=>o.result.createObjectStore("kv"); o.onsuccess=()=>{ try{ const tx=o.result.transaction("kv","readwrite"); tx.objectStore("kv").put(d,"dev"); tx.oncomplete=()=>res(true); tx.onerror=()=>res(false); }catch(e){ res(false); } }; o.onerror=()=>res(false); }catch(e){ res(false); } }); }
+    const b64=s=>{ s=String(s).replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="="; const b=atob(s), a=new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; };
+    const u64=buf=>btoa(String.fromCharCode.apply(null,Array.from(new Uint8Array(buf)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+    async function reg(){ const r=await navigator.serviceWorker.register("sw.js",{scope:"./"}); await navigator.serviceWorker.ready; return r; }
+    async function state(){ if(!sup()) return isIOS&&!standalone()?"ios-browser":"unsupported"; if(Notification.permission==="denied") return "denied"; if(Notification.permission!=="granted") return "off";
+      try{ const r=await navigator.serviceWorker.getRegistration(); const s=r&&await r.pushManager.getSubscription(); return s&&LSg("ca.push")==="on"?"on":"off"; }catch(e){ return "off"; } }
+    async function send(sub){ const s=get(); if(!s) throw new Error("Sign in first."); const d=dev(); await idbPut(d); await run("pushSubscribe",s.t,sub.toJSON(),{id:d.id,sec:d.sec,ua:devName(),standalone:standalone()}); LSs("ca.push","on"); LSs("ca.pushAt",String(Date.now())); }
+    async function enable(){ /* from a tap */
+      if(!sup()) throw new Error(isIOS&&!standalone()?"On iPhone: add the app to your Home Screen first, then open it from there.":"This browser can't show notifications. Use Chrome (Android) or the Home Screen app (iPhone).");
+      const p=await Notification.requestPermission(); if(p!=="granted") throw new Error(p==="denied"?"Notifications are blocked for this app. Allow them in the phone's settings, then try again.":"Notifications were not allowed.");
+      const r=await reg(), k=await run("pushKey"); let sub=await r.pushManager.getSubscription();
+      if(sub){ try{ const ak=sub.options&&sub.options.applicationServerKey; if(ak&&u64(ak)!==k.key){ await sub.unsubscribe(); sub=null; } }catch(e){} }
+      if(!sub) sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(k.key)});
+      await send(sub); return true; }
+    async function refresh(){ /* once a day: the phone's push address can change */ try{ if(!sup()||Notification.permission!=="granted"||LSg("ca.push")!=="on") return; if(Date.now()-(+LSg("ca.pushAt")||0)<20*3600e3) return;
+      const r=await navigator.serviceWorker.getRegistration(); const sub=r&&await r.pushManager.getSubscription(); if(sub) await send(sub); else LSs("ca.push","off"); }catch(e){} }
+    async function off(){ try{ const r=await navigator.serviceWorker.getRegistration(), sub=r&&await r.pushManager.getSubscription(); if(sub) await sub.unsubscribe(); }catch(e){} LSs("ca.push","off"); const s=get(); if(s) await run("pushUnsubscribe",s.t,dev().id).catch(()=>{}); }
+    async function test(){ const s=get(); if(!s) throw new Error("Sign in first."); return run("pushTest",s.t); }
+    const mobile=()=>isIOS||/Android|Mobile|iPad/i.test(ua);
+    return {sup,isIOS,standalone,mobile,state,enable,refresh,off,test,dev,devName}; })();
+  const ONB=(()=>{ let bip=null; try{ window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); bip=e; }); }catch(e){}
+    const close=()=>{ const d=document.getElementById("ca-onb"); if(d) d.remove(); };
+    const sheet=(html,lab)=>{ close(); const d=document.createElement("div"); d.id="ca-onb"; d.className="ca-pw"; d.setAttribute("role","dialog"); d.setAttribute("aria-label",lab); d.innerHTML=`<div class="ca-pw-box ca-onb">${html}</div>`; document.body.appendChild(d); return d; };
+    function a2hs(){ LSs("ca.onb.a2hs",new Date().toISOString()); const ios=PUSH.isIOS, can=!!bip;
+      const steps=ios?`<ol class="ca-onb-st"><li>Tap <b>Share</b> <span class="ca-onb-sh" aria-hidden="true">⬆︎</span> (Safari: bottom of the screen · Chrome: top right)</li><li>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b></li><li>Open <b>Chaleur Atelier</b> from your Home Screen and sign in once</li></ol>`
+        :can?`<p class="ca-pw-s">One tap and it sits on your Home Screen like a normal app.</p>`:`<ol class="ca-onb-st"><li>Tap the <b>⋮</b> menu (top right of Chrome)</li><li>Tap <b>Add to Home screen</b> or <b>Install app</b></li><li>Open <b>Chaleur Atelier</b> from your Home Screen</li></ol>`;
+      const d=sheet(`<div class="ca-onb-ic" aria-hidden="true">📲</div><p class="ca-pw-t">Add the app to your Home Screen</p><p class="ca-pw-s">It opens like a normal app, and reminders come straight to your phone${ios?" — on iPhone notifications only work from the Home Screen app":""}.</p>${steps}
+        ${can?`<button type="button" class="ca-pw-b" data-onb="install">Add to Home Screen</button>`:`<button type="button" class="ca-pw-b" data-onb="next">${ios?"OK":"Done"}</button>`}<button type="button" class="ca-pw-x" data-onb="next">Not now</button>`,"Add the app to your Home Screen");
+      d.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-onb]"); if(!b) return; ev.preventDefault(); ev.stopPropagation();
+        if(b.dataset.onb==="install"&&bip){ try{ bip.prompt(); await bip.userChoice; }catch(e){} bip=null; }
+        close(); if(!LSg("ca.onb.perm")) setTimeout(perms,300); }); }
+    async function rowsHtml(){ const ps=await PUSH.state(), lp=await LOC.perm(); let cp="prompt"; try{ if(navigator.permissions&&navigator.permissions.query) cp=(await navigator.permissions.query({name:"camera"})).state; }catch(e){ cp=LSg("ca.cam")==="on"?"granted":"prompt"; }
+      const ok=`<span class="ca-onb-ok">✓ On</span>`, row=(ic,t,s,right)=>`<div class="ca-onb-r"><span class="ca-onb-ri" aria-hidden="true">${ic}</span><span class="ca-onb-rt"><b>${t}</b><small>${s}</small></span><span>${right}</span></div>`;
+      const nR=ps==="on"?ok:ps==="ios-browser"?`<span class="ca-onb-no">Home Screen app first</span>`:ps==="unsupported"?`<span class="ca-onb-no">Not on this browser</span>`:ps==="denied"?`<span class="ca-onb-no">Blocked · phone settings</span>`:`<button type="button" class="ca-onb-b" data-perm="notif">Allow</button>`;
+      return row("🔔","Notifications","Reminders and alerts straight to this phone",nR)
+        +row("📷","Camera","For the report photos",cp==="granted"?ok:cp==="denied"?`<span class="ca-onb-no">Blocked · phone settings</span>`:`<button type="button" class="ca-onb-b" data-perm="cam">Allow</button>`)
+        +row("📍","Location","Saved only when you send a report or finish a job, so Chef Alfred sees where it was done",lp==="granted"?ok:lp==="denied"?`<span class="ca-onb-no">Blocked · phone settings</span>`:lp==="unsupported"?`<span class="ca-onb-no">Not on this phone</span>`:`<button type="button" class="ca-onb-b" data-perm="loc">Allow</button>`)
+        +row("🖼️","Photos (gallery)","Your phone asks the first time you choose a photo","<span class=\"ca-onb-no\">When needed</span>"); }
+    async function perms(){ LSs("ca.onb.perm",new Date().toISOString());
+      const d=sheet(`<div class="ca-onb-ic" aria-hidden="true">✅</div><p class="ca-pw-t">Allow the app</p><p class="ca-pw-s">Tap Allow on each, then Allow again when the phone asks.</p><div class="ca-onb-rows">${await rowsHtml()}</div><p class="ca-onb-msg" role="status"></p><button type="button" class="ca-pw-b" data-perm="done">Done</button>`,"Allow the app");
+      const paint=async()=>{ const el=d.querySelector(".ca-onb-rows"); if(el) el.innerHTML=await rowsHtml(); }, msg=t=>{ const m=d.querySelector(".ca-onb-msg"); if(m) m.textContent=t||""; };
+      d.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-perm]"); if(!b) return; ev.preventDefault(); ev.stopPropagation(); const k=b.dataset.perm; if(k==="done"){ close(); return; }
+        b.disabled=true; msg("");
+        try{ if(k==="notif") await PUSH.enable();
+          if(k==="cam"){ const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}); st.getTracks().forEach(t=>t.stop()); LSs("ca.cam","on"); }
+          if(k==="loc"&&!await LOC.ask()) throw new Error("Location was not allowed."); }
+        catch(e){ msg((e&&e.message)||"Not allowed."); }
+        await paint(); }); }
+    let tries=0, booted=false;
+    async function maybe(){ try{ if(window.CHALEUR_NO_GUIDE&&!window.CHALEUR_ONB) return; if(/closing/.test(location.pathname)) return; const s=get(); if(!s||!s.t){ if(++tries<100) setTimeout(maybe,3000); return; }
+        if(!booted){ booted=true; LOC.boot(); PUSH.refresh(); }
+        if(document.getElementById("ca-pw")||document.getElementById("ca-onb")||document.querySelector(".si")){ setTimeout(maybe,4000); return; }
+        if(!PUSH.standalone()&&PUSH.mobile()&&!LSg("ca.onb.a2hs")) return a2hs(); /* phones and tablets only */
+        if(!LSg("ca.onb.perm")) return perms(); }catch(e){} }
+    return {maybe,a2hs,perms,close}; })();
+  const bootV58=()=>{ setTimeout(ONB.maybe,1000); };
+  if(!/closing/.test(location.pathname)){ if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bootV58); else bootV58(); }
   const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
-  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose(),b2b:B2B};
+  return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose(),b2b:B2B,push:PUSH,loc:LOC,onb:ONB};
 })();
 </script>
 
@@ -1617,7 +1701,7 @@ const GRAB_SUGGEST=[
   {name:"Petit Duo Deal",photo:"https://food-cms.grab.com/item/url-e856fc5b/photos/e58980847c1de768.jpg",hint:"Grab: RM70 · the photo says Decadent Chocolate + Pandan Gula Melaka"}];
 const fmKeyC=nm=>"FM:"+String(nm||"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9%]+/g," ").replace(/\s+/g," ").trim();
 const grabList=()=>(Array.isArray(cfg().grabPacks)?cfg().grabPacks:[]).filter(g=>g&&g.id);
-function grabStateC(date){ const packs=grabList().filter(g=>g.on!==false&&(g.cakes||[]).some(c=>S.products[c.productId])&&+g.par>0); if(!packs.length) return {on:false,packs:[],needN:0,cakesNeed:{}};
+function grabStateC(date){ const packs=grabList().filter(g=>g.on!==false&&(!g.from||g.from<=date)&&(g.cakes||[]).some(c=>S.products[c.productId])&&+g.par>0); if(!packs.length) return {on:false,packs:[],needN:0,cakesNeed:{}};
   const log=((S.grab||{}).log)||[], fm=((S.feedme||{}).days)||{};
   const out=packs.map(g=>{ let base=0,from="",idx=-1,last=null; log.forEach((e,i)=>{ if(e&&e.k==="count"&&e.n&&e.n[g.id]!=null&&e.d<=date){ base=+e.n[g.id]||0; from=e.d; idx=i; last=e; } });
     let packed=0; log.forEach((e,i)=>{ if(e&&i>idx&&e.k==="pack"&&e.n&&e.d<=date){ packed+=+e.n[g.id]||0; if(!from&&+e.n[g.id]>0) from=e.d; } });
@@ -2107,6 +2191,7 @@ function vSetup(){
           <label class="f">Alert numbers (Alfred, Joscelyn)<input id="wa-al" value="${esc((w.alerts||[]).join(", "))}" placeholder="0146650928"></label></div>
         <div class="row"><button class="btn pri" data-act="saveWA">Save</button><button class="btn" data-act="testWA" ${w.set?"":"disabled"}>Send a test message</button>${w.set?(w.on?`<button class="btn sm" data-act="waOff">Switch off</button>`:`<button class="btn sm" data-act="waOn">Switch on</button>`):""}${w.groupSet?`<button class="btn sm" data-act="waNoGroup">Forget group</button>`:""}</div>
         ${(w.log||[]).length?`<details class="help"><summary>Last messages sent (${w.log.length})</summary><div class="small">${w.log.map(x=>`<div>${esc(x.at)} · ${x.ok?"✓":"✗"} ${esc(x.what)}<br><span class="muted">${(x.res||[]).map(esc).join(" · ")}</span></div>`).join("")}</div></details>`:""}</div>`:""}`;
+    body+=pushSetupPanel(); /* v22.58 */
   }
   if(sec==="feedme"){
     if(S.fm===undefined){ S.fm=null; GS("feedmeStatus").then(r=>{S.fm=r;render();}).catch(e=>{S.fm={err:e.message};render();}); }
@@ -2436,11 +2521,23 @@ function grabSetupPanel(){ const L=grabList(), ed=S.ui.gpEd, GR=grabStateC(today
   return `<div class="panel"><div class="spread"><h2>Grab packs</h2>${GR.on?`<span class="pill ${GR.needN?"warn":"ok"}">${GR.needN?`${GR.needN} to pack`:"all packed"}</span>`:""}</div>
     <p class="small muted" style="margin:4px 0 10px">Grab sets packed ahead. Each morning the <b>opening report</b> shows the team how many to pack (part "Grab packs", any time of the day) and they type how many they packed; every <b>Monday</b> they count the packed sets. A set sold on Grab (FeedMe, the "-D" menu) takes one off and counts its cakes as HQ sold. The cakes to pack go into the prep list's Order column.</p>
     ${L.length?`<div class="tw"><table><thead><tr><th>Grab set</th><th>Inside</th><th class="r">Keep ready</th><th class="r">Packed now</th><th class="r">Sold on Grab (14 days)</th><th></th></tr></thead><tbody>${L.map(g=>{ const x=stOf(g.id);
-      return `<tr class="${(g.cakes||[]).length?"":"warnrow"}"><td>${g.photo?`<img src="${esc(g.photo)}" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:8px">`:""}${esc(g.name)}${g.on===false?` <span class="pill mute">off</span>`:""}</td><td class="small">${inside(g)}</td><td class="r mono">${+g.par||0}</td><td class="r mono">${x?x.onHand+(x.need?` <span class="pill warn">pack ${x.need}</span>`:""):"—"}</td><td class="r mono">${sold14(g.id)}</td><td>${can2&&!(ed&&ed.id===g.id)?`<button class="btn sm" data-gpedit="${esc(g.id)}">Edit</button>`:""}</td></tr>`; }).join("")}</tbody></table></div>`:`<div class="empty">No Grab packs yet.</div>`}
+      return `<tr class="${(g.cakes||[]).length?"":"warnrow"}"><td>${g.photo?`<img src="${esc(g.photo)}" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:8px">`:""}${esc(g.name)}${g.on===false?` <span class="pill mute">off</span>`:g.from&&g.from>today()?` <span class="pill info">from ${esc(nice(g.from))}</span>`:""}</td><td class="small">${inside(g)}</td><td class="r mono">${+g.par||0}</td><td class="r mono">${x?x.onHand+(x.need?` <span class="pill warn">pack ${x.need}</span>`:""):"—"}</td><td class="r mono">${sold14(g.id)}</td><td>${can2&&!(ed&&ed.id===g.id)?`<button class="btn sm" data-gpedit="${esc(g.id)}">Edit</button>`:""}</td></tr>`; }).join("")}</tbody></table></div>`:`<div class="empty">No Grab packs yet.</div>`}
     ${ed?editor():""}
     ${can2&&!ed&&sug.length?`<h3 style="margin-top:14px">From your Grab menu (not set up yet)</h3><div class="stack">${sug.map(x=>`<div class="row" style="gap:10px;align-items:center"><img src="${esc(x.photo)}" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover"><div style="flex:1;min-width:0"><b>${esc(x.name)}</b><div class="small muted">${esc(x.hint)}</div></div><button class="btn sm" data-gpsug="${x.i}">Set up</button></div>`).join("")}</div>`:""}
     ${can2&&!ed?`<div class="row" style="margin-top:10px"><button class="btn sm" data-gpsug="new">+ Another Grab pack</button></div>`:""}
     ${((S.grab||{}).log||[]).length?`<details class="help"><summary>Last packing and counts</summary><div class="small">${((S.grab||{}).log||[]).slice(-12).reverse().map(e=>`<div>${esc(nice(e.d))} · ${esc(e.by||"")} · ${e.k==="count"?"counted":"packed"} ${Object.entries(e.n||{}).map(([id,q])=>`${q} ${esc((L.find(g=>g.id===id)||{}).name||id)}`).join(", ")}</div>`).join("")}</div></details>`:""}</div>`; }
+/* v22.58 Setup › Kitchen HQ: phone notifications (who has them on, a test) and the HQ location (for "at HQ" on reports and jobs) */
+function pushSetupPanel(){ if(S.ui.pst===undefined){ S.ui.pst=null; GS("pushStatus").then(r=>{S.ui.pst=r;render();}).catch(e=>{S.ui.pst={err:e.message};render();}); }
+  const P=S.ui.pst||{}, L=cfg().hqLoc, list=P.all||[], when=x=>x?new Date(x).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
+  const people=[...new Set(list.map(d=>d.name))];
+  return `<div class="panel" id="push"><div class="spread"><h2>Phone notifications</h2>${P.all?`<span class="pill ${people.length?"ok":"warn"}">${people.length} ${people.length===1?"person":"people"} on</span>`:""}</div>
+    <p class="small muted" style="margin:4px 0 10px">Reminders and alerts go straight to the team's phones as notifications, from the app itself. WhatsApp still goes too, as the backup, until you switch it off above. Each person turns them on once — the app asks after sign-in (with Add to Home Screen first), or Home › Me › Phone notifications. iPhone: only from the Home Screen app (iOS 16.4 or newer).</p>
+    ${P.err?`<p class="pill warn">${esc(P.err)}</p>`:!P.all?`<p class="small muted">Checking…</p>`:list.length?`<div class="tw"><table><thead><tr><th>Person</th><th>Phone</th><th>Since</th></tr></thead><tbody>${list.map(d=>`<tr><td>${esc(d.name)}${d.me?` <span class="pill mute">you</span>`:""}</td><td class="small">${esc(d.ua||"")}</td><td class="small">${esc(when(d.at))}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">Nobody has turned them on yet.</div>`}
+    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="pushTest">Send me a test notification</button></div></div>
+  <div class="panel" id="hqloc"><h2>HQ location</h2>
+    <p class="small muted" style="margin:4px 0 8px">Report parts, to-dos, colour checks, deliveries, QC and spot audits keep where the phone was when they were sent (only for people who allowed location). Within 150 m of this point = "at HQ"; otherwise the distance and a map link show on the report.</p>
+    <p class="small">${L&&isFinite(+L.lat)?`Set${L.by?` by ${esc(L.by)}`:""}${L.at?` · ${esc(when(L.at))}`:""} · <a href="https://maps.google.com/?q=${+L.lat},${+L.lng}" target="_blank" rel="noopener">see it on the map</a>`:`<span class="pill warn">Not set yet</span> — until it is, reports show a map link but not "at HQ".`}</p>
+    ${can("setup")||can("admin")?`<div class="row"><button class="btn sm" data-act="hqLocSet">${L?"Set again":"Set HQ"} to where I am now</button><span class="small muted">Stand inside HQ when you tap it.</span></div>`:""}</div>`; }
 function fmNamesPanel(F0){ const un=(F0&&F0.unmatched)||[], ed=S.ui.olEdit, draft=S.ui.olDraft||[], M=cfg().orderlaMap||{}, mine=Object.keys(M).filter(k=>/^FM:/.test(k)).sort();
   const cakeOpts=cur=>`<option value="">— choose a cake —</option>${Object.values(S.products).filter(x=>x.active!==false).sort((a,b)=>catRank(a.id)-catRank(b.id)||a.name.localeCompare(b.name)).map(x=>opt(x.id,x.name,cur)).join("")}`;
   const editor=key=>{ const cur=M[key]||{}; return `<div class="small muted" style="margin:2px 0 4px">The cakes in 1 of this item:</div><div class="row" style="flex-wrap:wrap;gap:6px">${draft.map((c,i)=>`<span class="row" style="gap:4px"><select data-oled="${i}" aria-label="Cake">${cakeOpts(c.productId)}</select><input type="number" min="1" step="1" inputmode="numeric" class="mono" style="width:3.2em" data-oledq="${i}" value="${esc(c.qty||1)}" aria-label="How many"><button class="btn sm" data-oledrm="${i}" aria-label="Remove">✕</button></span>`).join("")}<select data-oledadd="1" aria-label="Add a cake"><option value="">＋ Add a cake…</option>${cakeOpts("").replace(/<option value="">[^<]*<\/option>/,"")}</select></div>
@@ -4326,13 +4423,18 @@ async function act(a,b){
   case "olMapSkip":{const key=S.ui.olEdit; if(!key) return; b.disabled=true; try{const m={...(cfg().orderlaMap||{})}; m[key]={skip:true}; await put("config/settings",{...S.cfg,orderlaMap:m}); S.ui.olEdit=null; S.ui.olDraft=null; toast("Saved: not a cake"); fmRemapQuiet();}catch(e){toast(e.message);} render(); return;}
   case "olMapAuto":{const key=S.ui.olEdit; if(!key) return; b.disabled=true; try{const m={...(cfg().orderlaMap||{})}; delete m[key]; await put("config/settings",{...S.cfg,orderlaMap:m}); S.ui.olEdit=null; S.ui.olDraft=null; toast("Back to automatic"); fmRemapQuiet();}catch(e){toast(e.message);} render(); return;}
   case "olMapCancel":{S.ui.olEdit=null; S.ui.olDraft=null; render(); return;}
+  case "pushTest":{ b.disabled=true; try{ const r=await GS("pushTest"); toast(r.sent?"Sent — it should pop up on your phone":r.devices?"Not delivered — turn notifications off and on again on your phone":"Turn notifications on first: Home › Me › Phone notifications"); }catch(e){ toast(e.message); } b.disabled=false; return; }
+  case "hqLocSet":{ if(!navigator.geolocation){ toast("This device has no location"); return; } b.disabled=true;
+    navigator.geolocation.getCurrentPosition(async p=>{ const who=(CA.get()||{}).name||AUTH.name||""; try{ await put("config/settings",{...S.cfg,hqLoc:{lat:Math.round(p.coords.latitude*1e5)/1e5,lng:Math.round(p.coords.longitude*1e5)/1e5,r:150,acc:Math.round(p.coords.accuracy||0),by:who,at:new Date().toISOString()}}); toast(`HQ location saved (±${Math.round(p.coords.accuracy||0)} m)`); }catch(e){ toast(e.message); } render(); },
+      e=>{ toast("Location not allowed: "+((e&&e.message)||"")); b.disabled=false; },{enableHighAccuracy:true,timeout:20000,maximumAge:0}); return; }
   case "gpCancel":{ S.ui.gpEd=null; S.ui.gpDel=null; render(); return; }
   case "gpSave": case "gpDel":{ const E=S.ui.gpEd; if(!E) return; gpKeep(); let L=grabList().map(g=>JSON.parse(JSON.stringify(g)));
     if(a==="gpDel"){ if(S.ui.gpDel!==E.id){ S.ui.gpDel=E.id; render(); return; } L=L.filter(g=>g.id!==E.id); }
     else { const name=String(E.name||"").trim(), cakes=(E.cakes||[]).filter(c=>c.productId&&S.products[c.productId]).map(c=>({productId:c.productId,qty:Math.max(1,Math.round(+c.qty||1))})), par=Math.round(+E.par);
       if(!name){ toast("Type the name as it is on Grab"); return; } if(!cakes.length){ toast("Choose the cakes in one pack"); return; } if(!(par>=0&&par<=99)||String(E.par).trim()===""){ toast("Keep ready: a number from 0 to 99"); return; }
       const fmk=fmKeyC(name); if(L.some(g=>g.id!==E.id&&g.fm===fmk)){ toast("There is already a Grab pack with this name"); return; }
-      const g={id:E.id||("gp"+Date.now().toString(36)),name:name.slice(0,90),fm:fmk,cakes,par,on:E.on!==false,photo:String(E.photo||"").slice(0,300),hint:String(E.hint||"").slice(0,200)};
+      const was=L.find(x=>x.id===E.id), from=was&&was.from&&!(was.on===false&&E.on!==false)?was.from:add(today(),1); /* v22.58: a new (or switched on) pack is packed from tomorrow — the opening report of today does not change under the team */
+      const g={id:E.id||("gp"+Date.now().toString(36)),name:name.slice(0,90),fm:fmk,cakes,par,on:E.on!==false,from,photo:String(E.photo||"").slice(0,300),hint:String(E.hint||"").slice(0,200)};
       const i=L.findIndex(x=>x.id===g.id); if(i>=0) L[i]=g; else L.push(g); }
     b.disabled=true; try{ await put("config/settings",{...S.cfg,grabPacks:L}); S.ui.gpEd=null; S.ui.gpDel=null; let n=0; try{ n=(await GS("feedmeRemap")).days||0; }catch(e){} S.fm=undefined;
       toast(a==="gpDel"?"Grab pack removed":"Grab pack saved"+(n?` — FeedMe days counted again`:"")); }catch(e){ toast(e.message); } render(); return; }
