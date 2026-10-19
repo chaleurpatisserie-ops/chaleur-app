@@ -2844,8 +2844,25 @@ function rcCompOut(c){ const R=S.rcp||{}, U=RC(), x=rcCalc(c), k=x.k, L=c.lines;
 const rcWho=()=>(CA.get()||{}).name||AUTH.name||"";
 const rcWaOpen=t=>{ try{ window.open("https://wa.me/?text="+encodeURIComponent(t),"_blank","noopener"); }catch(e){ location.href="https://wa.me/?text="+encodeURIComponent(t); } };
 function rcCalcText(c){ const x=rcCalc(c), out=[`${c.id} ${c.name}  × ${rcF(x.k,3)}`]; if(x.line) out.push(x.line); { const hg=c.lines.some(l=>String(l.grp||"").trim()); let lg=null; rcSortLines(c.lines).forEach(l=>{ const gk=String(l.grp||"").trim().toUpperCase(); if(hg&&gk!==lg) out.push(rcPart(l.grp)+":"); lg=gk; out.push(`${hg?"  ":""}${rcIng(l.ing)}: ${rcF((+l.g||0)*x.k)} g`); }); } out.push(`Total: ${rcF(x.sum*x.k)} g`); return out; }
-function rcProdText(p){ const U=RC(), n=+U.pcs||0, out=[`Chaleur · ${p.name} × ${n} pieces (${nice(today())}, ${rcWho()})`];
-  for(const b of p.build){ const c=rcComp(b.comp); if(b.g==null){ out.push(`• ${c?c.name:b.comp}: grams a piece not filled in`); continue; } const need=n*b.g, pct=rcPct(need,U.buf); out.push(`• ${c?c.name:b.comp}: make ${rcF(need*(1+pct/100))} g (need ${rcF(need)} g + ${pct}%)`); } return out.join("\n"); }
+/* v22.58g (Alfred 19 Oct, the recipe's WhatsApp message: "can u make this format easier to read when send out"): the name in bold capitals on
+   top, what to make in bold, then one line per ingredient with the GRAMS FIRST in bold (the number is what they weigh), a bold heading per
+   part, a blank line between blocks and the total at the end. WhatsApp shows *…* as bold. */
+/* v22.58g (Alfred 19 Oct, the Maple Glaze message: "can u make this format easier to read when send out"): every WhatsApp text from Recipes
+   has a bold capital title, date · who, bold part headings, and the grams first in bold on each line, so the kitchen reads down the numbers. */
+const rcWaHead=(title,sub)=>[`*${String(title).toUpperCase()}*${sub?` · ${sub}`:""}`];
+const rcWaWhen=()=>`${nice(today())} · ${rcWho()}`;
+function rcCalcWa(c){ const U=RC(), x=rcCalc(c), out=rcWaHead(c.name,c.id), k=isFinite(x.k)?x.k:1;
+  if(U.mode===1&&isFinite(x.k)){ const l=c.lines[x.lim]; out.push(`*Scaled to what we have:* ${rcF(parseFloat(U.have))} g ${rcIng(l.ing)}`); }
+  else if(isFinite(x.need)){ const make=x.need*(1+x.pct/100), how=U.mode===3?`${rcF(+U.cnt,0)} ${(rcVes(c)||{w:RC_VES.tray}).w[1]} × ${rcF(+U.per)} g = `:U.mode===4?`${rcF(+U.cnt,0)} pieces × ${rcF(+U.per)} g = `:"";
+    out.push(`*Make ${rcF(make)} g* (${how}need ${rcF(x.need)} g${x.pct?` + ${x.pct}% extra`:""})`); }
+  else out.push(`*Full batch* (${rcF(x.sum)} g)`);
+  out.push(rcWaWhen());
+  const hg=c.lines.some(l=>String(l.grp||"").trim()); let lg=null; if(!hg) out.push("");
+  rcSortLines(c.lines).forEach(l=>{ const gk=String(l.grp||"").trim().toUpperCase(); if(hg&&gk!==lg) out.push("",`*${rcPart(l.grp)}*`); lg=gk; out.push(`• *${rcF((+l.g||0)*k)} g*  ${rcIng(l.ing)}`); });
+  out.push("",`*Total ${rcF(x.sum*k)} g*`); return out.join("\n"); }
+function rcProdText(p){ const U=RC(), n=+U.pcs||0, out=[...rcWaHead(p.name,`${n} pieces`),rcWaWhen(),""], miss=[];
+  for(const b of p.build){ const c=rcComp(b.comp); if(b.g==null){ miss.push(c?c.name:b.comp); continue; } const need=n*b.g, pct=rcPct(need,U.buf); out.push(`• *${rcF(need*(1+pct/100))} g*  ${c?c.name:b.comp}${pct?` (need ${rcF(need)} g + ${pct}%)`:""}`); }
+  if(miss.length) out.push("","_Grams a piece not filled in:_ "+miss.join(", ")); return out.join("\n"); }
 /* v22.44 (Alfred 15 Oct: "is the plan and order linked with their daily closing report?" → "it should fill automatically"): Plan & order
    takes the Prep list's To make for the same day (outlet closing reports + HQ display + online orders, with any change typed on the Prep list)
    for every app cake linked to a Recipe Master cake (app_name, or the same name) — no typing; lines added here come on top as extra.
@@ -2859,14 +2876,14 @@ function rcPrepAuto(d){ let rows=[]; try{ rows=typeof prepRows==="function"&&typ
   return {lines,unlinked,rows:rows.length}; }
 const rcPlanAll=d=>{ const day=rcPlanDay(d), A=rcPrepAuto(d); return {lines:[...A.lines,...day.lines],checks:day.checks,auto:A,manual:day.lines}; };
 function rcB2bDue(d){ try{ const v=CA.b2b.view(S.b2b,d); if(!v) return []; return [].concat(v.dated||[],v.rows||[]).filter(x=>x&&x.ph&&(x.ph.k==="today"||x.ph.k==="prep")).filter((x,i,a)=>a.indexOf(x)===i); }catch(e){ return []; } }
-function rcPlanText(d){ const day=rcPlanAll(d), N=rcNeeds(day), X=rcExplode(N.comps), out=[`Chaleur · Production plan ${nice(d)} (${rcWho()})`];
-  for(const l of day.lines){ const x=l.kind==="p"?rcProd(l.ref):rcComp(l.ref); out.push(`• ${x?x.name:l.ref}: ${l.kind==="p"?rcF(l.qty,0)+" pieces":rcG(l.qty)}${l.auto?" (prep list)":""}`); }
-  const cs=Object.entries(N.comps); if(cs.length){ out.push("","Recipes to make (+5%):"); cs.forEach(([cid,x])=>out.push(`• ${(rcComp(cid)||{}).name||cid}: ${rcG(x.need*1.05)}`)); }
-  const sh=Object.keys(day.checks).filter(k=>day.checks[k]==="short"&&X.ing[k]); if(sh.length){ out.push("","Short (sent to Ordering):"); sh.forEach(k=>out.push(`• ${rcIng(k)}: ${rcG(X.ing[k])}`)); }
+function rcPlanText(d){ const day=rcPlanAll(d), N=rcNeeds(day), X=rcExplode(N.comps), out=[...rcWaHead("Production plan",nice(d)),rcWho()];
+  if(day.lines.length){ out.push("","*Cakes*"); for(const l of day.lines){ const x=l.kind==="p"?rcProd(l.ref):rcComp(l.ref); out.push(`• *${l.kind==="p"?rcF(l.qty,0)+" pcs":rcG(l.qty)}*  ${x?x.name:l.ref}${l.auto?" (prep list)":""}`); } }
+  const cs=Object.entries(N.comps).filter(([cid])=>!rcReady(rcComp(cid))); if(cs.length){ out.push("","*Recipes to make (+5%)*"); cs.forEach(([cid,x])=>out.push(`• *${rcG(x.need*1.05)}*  ${(rcComp(cid)||{}).name||cid}`)); }
+  const sh=Object.keys(day.checks).filter(k=>day.checks[k]==="short"&&X.ing[k]); if(sh.length){ out.push("","*Short (sent to Ordering)*"); sh.forEach(k=>out.push(`• *${rcG(X.ing[k])}*  ${rcIng(k)}`)); }
   return out.join("\n"); }
 function rcOrderText(k){ const it=((S.ordering||{}).items||[]).filter(x=>x.status==="open"&&(!k||(x.supplier||"No supplier yet")===k));
   const by={}; it.forEach(x=>{ const s=x.supplier||"No supplier yet"; (by[s]||(by[s]=[])).push(x); });
-  return [`Chaleur Atelier · ingredients to order (${nice(today())}, ${rcWho()})`,...Object.entries(by).flatMap(([s,a])=>["",s+":",...a.map(x=>{ const pg=rcPackG(x.pack), n=pg?Math.ceil(x.g/pg):0; return `• ${x.name}: ${rcG(x.g)}${n?` (${n} × ${x.pack})`:""}${x.forDate?` · for ${nice(x.forDate)}`:""}`; })])].join("\n"); }
+  return [...rcWaHead("Ingredients to order","Chaleur Atelier"),rcWaWhen(),...Object.entries(by).flatMap(([s,a])=>["",`*${s}*`,...a.map(x=>{ const pg=rcPackG(x.pack), n=pg?Math.ceil(x.g/pg):0; return `• *${rcG(x.g)}*  ${x.name}${n?` (${n} × ${x.pack})`:""}${x.forDate?` · for ${nice(x.forDate)}`:""}`; })])].join("\n"); }
 const RC_GRP={crunch:"Biscuits",dough:"Biscuits",coating:"Finishing",glaze:"Finishing"};
 const rcCatOf=c=>{ const k=String(c.cat||c.type||"Other").trim()||"Other"; return RC_GRP[k.toLowerCase()]||k; };
 /* v22.58b (Recipe Master 18 Oct): Components.type "Ready-made" = bought in (gold leaf, snow powder, fresh strawberry, cocoa nibs, pistachio kernel …):
@@ -3297,7 +3314,7 @@ function rcAsmHtml(c){ const U=RC(), A=U.asm, used=rcUsedIn(c.id), R=S.rcp||{};
     ${others.length?`<p class="small" style="margin:8px 0 2px"><b>Check the other parts</b> — how many are already made (in the freezer / chiller)?</p>${others.map(b=>{ const x=rcComp(b.comp); return `<div class="rcasmi"><span class="rcn"><b>${esc(x?x.name:b.comp)}</b><span class="small muted">${esc(b.stage||"")}${b.g!=null?` · ${rcF(+b.g)} g a piece`:""}</span></span><input class="rcin" type="number" inputmode="numeric" min="0" step="1" data-rci="asm_h:${esc(b.comp+"|"+b.step)}" value="${esc((A.have||{})[b.comp+"|"+b.step]||"")}" placeholder="ready" aria-label="${esc(x?x.name:b.comp)} ready"></div>`; }).join("")}`:""}
     <div id="rc-asmcalc">${rcAsmCalc()}</div>
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">${R.canG?`<button class="btn pri" data-rc="asmok" ${S.ui.rcBusy?"disabled":""}>✓ Confirm — add to Plan &amp; order (today)</button>`:""}<button class="btn" data-rc="asmuse">Use for this recipe only</button><button class="btn rcwa" data-rc="asmwa">WhatsApp</button><button class="btn" data-rc="asmback">‹ Other cake</button></div></div></div>`; }
-const rcAsmText=()=>{ const U=RC(), A=U.asm||{}, p=rcProd(A.pid)||{}, n=parseInt(A.n,10)||0; return [`Chaleur · Assembly ${n} × ${p.name} (${nice(today())}, ${rcWho()})`,...rcAsmRows().map(r=>`• ${r.c?r.c.name:r.b.comp}: ${r.mk?`make ${r.mk} pcs${r.have?` (${r.have} ready)`:""}${r.make!=null?` = ${rcG(r.make)}`:""}`:`enough ready (${r.have})`}`)].join("\n"); };
+const rcAsmText=()=>{ const U=RC(), A=U.asm||{}, p=rcProd(A.pid)||{}, n=parseInt(A.n,10)||0; return [...rcWaHead(`Assembly · ${p.name||""}`,`${n} pieces`),rcWaWhen(),"",...rcAsmRows().map(r=>r.mk?`• *${r.make!=null?rcG(r.make):r.mk+" pcs"}*  ${r.c?r.c.name:r.b.comp} (make ${r.mk} pcs${r.have?`, ${r.have} ready`:""})`:`• ${r.c?r.c.name:r.b.comp}: enough ready (${r.have})`)].join("\n"); };
 /* v22.53 (Alfred 17 Oct: "a lot of buttons not needed"): the Ordering tab shows only while something is to order or on its way */
 const rcOrdN=()=>(((S.ordering||{}).items)||[]).filter(x=>x.status==="open"||x.status==="ordered").length;
 const rcNav=()=>{ const s=RC().sec||"cakes", n=rcOrdN(); return `<nav class="rcnav noprint" aria-label="Recipes">${RC_NAV.filter(([k])=>k!=="order"||n||s==="order").map(([k,t])=>`<button data-rc="go:${k}" ${s===k?'aria-current="page"':""}>${t}${k==="order"&&n?` · ${n}`:""}</button>`).join("")}</nav>`; };
@@ -3749,7 +3766,7 @@ async function rcAct(a,b){ const U=RC();
   if(/^cdec:/.test(a)){ const [st,id]=a.slice(5).split("|"), it0=(((S.rcchg||{}).items)||[]).find(x=>x.id===id)||{}; b.disabled=true; try{ const r=await GS("recipeChangeDecide",id,st==="keep"?"keep":st==="ok",""); S.rcchg=r.rcchg; if(DBX.cache&&DBX.cache.config) DBX.cache.config.rcchg=S.rcchg; if(r.data){ S.rcp=r.data; S.rcpAt=Date.now(); }
     toast(r.refused?"Not saved: "+r.refused:it0.kind==="check"?(st==="keep"?"Recipe Master kept — question answered":st==="ok"?((it0.diff||{}).same?"Done — question answered":"Kitchen copy saved in the Recipe Master"):"The kitchen will be asked again"):st==="ok"?"Approved — saved in the Recipe Master":"Declined"); }catch(err){ toast(err.message); } render(); return; }
   if(/^wa:/.test(a)){ const [w,arg]=a.slice(3).split("|"), v=U.view||"";
-    if(w==="calc"){ const c=rcComp(v.slice(2)); if(c) rcWaOpen([`Chaleur · ${c.name} (${nice(today())}, ${rcWho()})`,...rcCalcText(c)].join("\n")); }
+    if(w==="calc"){ const c=rcComp(v.slice(2)); if(c) rcWaOpen(rcCalcWa(c)); }
     else if(w==="cake"){ const p=rcProd(v.slice(2)); if(p) rcWaOpen(rcProdText(p)); }
     else if(w==="plan"){ rcWaOpen(rcPlanText(U.pdate||rcTomorrow())); }
     else if(w==="order"){ rcWaOpen(rcOrderText(arg||"")); } return; }
