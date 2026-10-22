@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Chaleur · Outlet closing</title><meta name="theme-color" content="#780a13"><meta name="apple-mobile-web-app-title" content="Chaleur Atelier"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
+<html lang="en"><head><meta charset="utf-8"><title>Chaleur · Outlet closing</title><meta name="theme-color" content="#780a13"><meta name="apple-mobile-web-app-title" content="CA Closing"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><script>
 /* Chaleur API bridge: talks to the Google backend anonymously, so it works in any browser */
 (function(){var API="https://script.google.com/macros/s/AKfycbyX_DH98Kfqa3SHKgM_XXCM7MIJaJokTbjuCq8Rcf6uueS7kSDy7wg2CmvXsOACtZfivw/exec";
 function call(fn,args,ok,fail){var ac=typeof AbortController!=="undefined"?new AbortController():null,tm=null,done=function(){if(tm)clearTimeout(tm);};
@@ -632,7 +632,7 @@ const ICON={
       const d=dev(); await idbPut(d); const out=await run("pushSubscribeOutlet",key,sub.toJSON(),{id:d.id,sec:d.sec,ua:devName(),standalone:standalone()}); LSs("ca.pusho",key); LSs("ca.pushoAt",String(Date.now())); return out; }
     async function offOutlet(key){ LSs("ca.pusho",""); try{ await run("pushUnsubscribeOutlet",key,dev().id); }catch(e){}
       if(LSg("ca.push")!=="on"){ try{ const r=await navigator.serviceWorker.getRegistration(), sub=r&&await r.pushManager.getSubscription(); if(sub) await sub.unsubscribe(); }catch(e){} } }
-    async function stateOutlet(key){ if(!sup()) return isIOS&&!standalone()?"ios-browser":"unsupported"; if(Notification.permission==="denied") return "denied"; if(Notification.permission!=="granted"||!key||LSg("ca.pusho")!==key) return "off";
+    async function stateOutlet(key){ if(isIOS&&!standalone()) return "ios-browser"; /* iPhone/iPad: only the Home Screen icon can get notifications */ if(!sup()) return "unsupported"; if(Notification.permission==="denied") return "denied"; if(Notification.permission!=="granted"||!key||LSg("ca.pusho")!==key) return "off";
       try{ const r=await navigator.serviceWorker.getRegistration(), s=r&&await r.pushManager.getSubscription(); if(!s) return "off";
         if(Date.now()-(+LSg("ca.pushoAt")||0)>20*3600e3){ const d=dev(); await run("pushSubscribeOutlet",key,s.toJSON(),{id:d.id,sec:d.sec,ua:devName(),standalone:standalone()}); LSs("ca.pushoAt",String(Date.now())); } /* once a day: the push address can change */
       }catch(e){ return "off"; } return "on"; }
@@ -804,6 +804,7 @@ label.f input,label.f select,label.f textarea{text-transform:none;letter-spacing
 .plinks{display:flex;gap:14px;flex-wrap:wrap}.plinks label{color:var(--accent);font:600 13px var(--body);cursor:pointer}
 .foot .st{font-size:12.5px;color:var(--muted);min-height:18px}.foot .st .err{color:var(--bad-tx)}
 .cb.dim{background:var(--line);color:#9a8f91;box-shadow:0 4px 0 #d9c9c1}
+.rgbox .eb{margin-bottom:4px}.rgh{font:700 22px var(--display);margin:0 0 6px}.rgs{margin:8px 0 12px;padding:0;list-style:none;counter-reset:rg}.rgs li{counter-increment:rg;position:relative;padding:8px 0 8px 40px;border-top:1px solid var(--line);font-size:15px;line-height:1.4}.rgs li:first-child{border-top:0}.rgs li::before{content:counter(rg);position:absolute;left:0;top:7px;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font:700 14px/28px var(--body);text-align:center}.rgok{width:56px;height:56px;border-radius:50%;background:var(--ok);color:#fff;font:700 30px/56px var(--body);text-align:center;margin:4px 0 8px}.rgbox .cb.full{width:100%}
 table{border-collapse:collapse;width:100%;font-size:14px}th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left}td{padding:8px 4px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
 .done2{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:24px 8px}
@@ -860,7 +861,7 @@ async function load(){
   try{ INFO=await run("closingInfo",KEY,DATE); }
   catch(e){ $("#app").innerHTML=`<div class="empty err stack">${esc(e.message||"Could not load. Check your internet and try again.")}<button class="btn" type="button" data-act="retry">Try again</button></div>`; return; }
   if(!INFO.outlet){ if(!PRESET){try{localStorage.removeItem("chaleur.key")}catch(e){}} return renderNeedLink(); }
-  store.set("chaleur.key",KEY);
+  store.set("chaleur.key",KEY); rgManifest();
   ROWS={}; ORDER=[]; SHOWN=[]; WOK={}; EXP=new Set(INFO.stock.map(s=>K(s.productId,s.colour)));
   const ex=INFO.existing;
   const add=(p,c)=>{const k=K(p,c); if(!SHOWN.includes(p)) SHOWN.push(p); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} };
@@ -957,8 +958,72 @@ async function remFill(){ const el=$("#remcard"); if(!el||!KEY||typeof CA==='und
   if(st==="unsupported"){ el.hidden=true; return; }
   el.hidden=false;
   el.innerHTML=st==="on"?`<div class="row2" style="align-items:center"><span class="hint" style="margin:0">🔔 <b>Closing reminders are on</b> for ${o} on this phone.</span><button class="cb ghost" type="button" data-rem="off">Turn off</button></div>`
-    :st==="ios-browser"?`<p class="hint" style="margin:0">🔔 <b>Get the closing reminder on this iPhone:</b> tap <b>Share › Add to Home Screen</b>, open the form from the Home Screen, then turn reminders on here.</p>`
-    :`<div class="stack" style="gap:8px"><p class="hint" style="margin:0">🔔 <b>Get the closing reminder on this phone</b> — a notification before closing time and if the count is late. No WhatsApp needed.</p>${st==="denied"?`<p class="hint err" style="margin:0">Notifications are blocked for this page. Allow them in the phone's settings first.</p>`:""}<button class="cb ghost full" type="button" data-rem="on">🔔 Turn on reminders</button></div>`; }
+    :`<div class="stack" style="gap:8px"><p class="hint" style="margin:0">🔔 <b>Get the closing reminder on this phone</b> — a notification before closing time and if the count is late. No WhatsApp needed.</p><button class="cb ghost full" type="button" data-rg="open">🔔 Turn on reminders — show me how</button></div>`; }
+/* v22.59b (Alfred 22 Oct: "can u just show this instruction and on the webpage straight away guide them, make sure is compatible with all
+   system"): when this phone does not get the outlet's reminders yet, a guide opens by itself on the form with the steps for THIS phone and
+   browser — Android / computer: one button + Allow · blocked: where to allow it in this browser · iPhone / iPad (Safari, Chrome, Firefox,
+   Edge): Share › Add to Home Screen › open "CA Closing" › Turn on · iOS older than 16.4: update first · inside Instagram / Facebook / another
+   app: open it in Safari or Chrome (Copy link) · a phone that cannot (no Google push service): reminders stay on WhatsApp. It opens each time
+   the form is opened until reminders are on ("Not now" = not again this visit); a phone that cannot do it is told once a fortnight. */
+const RG=(()=>{ const ua=navigator.userAgent||"", P=(typeof CA!=="undefined"&&CA.push)||{}; const ios=!!P.isIOS, and=/Android/i.test(ua);
+  const vm=/(?:iPhone|iPad|CPU) OS (\d+)[_.](\d+)/.exec(ua), iosV=vm?vm[1]+"."+vm[2]:"", iosOld=!!vm&&(+vm[1]<16||(+vm[1]===16&&+vm[2]<4)); /* 16.4+ can get notifications */
+  const app=/Instagram/i.test(ua)?"Instagram":/FBAN|FBAV|FB_IAB|FBIOS/.test(ua)?"Facebook":/MicroMessenger/i.test(ua)?"WeChat":/Line\//.test(ua)?"LINE":/TikTok|musical_ly|BytedanceWebview/i.test(ua)?"TikTok":/Snapchat/i.test(ua)?"Snapchat":/Twitter/i.test(ua)?"X":(and&&/; wv\)/.test(ua))?"another app":"";
+  const br=ios?(/CriOS/.test(ua)?"Chrome":/FxiOS/.test(ua)?"Firefox":/EdgiOS/.test(ua)?"Edge":"Safari"):/SamsungBrowser/i.test(ua)?"Samsung":/Firefox/i.test(ua)?"Firefox":/EdgA?\//.test(ua)?"Edge":/OPR\//.test(ua)?"Opera":/HuaweiBrowser/i.test(ua)?"Huawei":"Chrome";
+  return {ua,ios,and,iosV,iosOld,app,br,sa:()=>!!(P.standalone&&P.standalone())}; })();
+const RG_SHARE='<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="vertical-align:-4px"><path d="M12 3v12M8 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const RG_ADD='<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="vertical-align:-4px"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+function rgKind(st){ if(st==="on") return "on"; if(RG.app) return "inapp";
+  if(RG.ios&&!RG.sa()) return RG.iosOld?"oldios":"ios";
+  if(st==="denied") return "denied"; if(st==="unsupported") return RG.ios?(RG.iosOld?"oldios":"iosreadd"):"other"; return "tap"; }
+const rgLink=()=>location.origin+location.pathname+"?o="+encodeURIComponent(KEY||"");
+const rgSteps=a=>`<ol class="rgs">${a.map(x=>`<li>${x}</li>`).join("")}</ol>`;
+function rgBody(k,err){ const o=INFO&&INFO.outlet?esc(INFO.outlet.name):"your outlet", B=RG.br, copy=`<button class="cb ghost full" type="button" data-rg="copy">📋 Copy link</button>`;
+  if(k==="done") return `<div class="rgok">✓</div><h3 class="rgh">Reminders are on</h3><p class="hint" style="font-size:15px">This phone now gets the closing reminder for <b>${o}</b> — before closing time, and if the count is late.</p><button class="cb ok full" type="button" data-rg="later">Done</button>`;
+  const intro=`<p class="hint" style="font-size:15px;margin:0 0 4px">Get a notification on this phone before closing time, and if tonight's count is late — no WhatsApp needed. Do it once on each phone.</p>`;
+  const fail=err?`<div class="banner warn" style="margin:8px 0">${esc(err)}</div>`:"";
+  if(k==="tap") return intro+fail+rgSteps(["Tap <b>Turn on reminders</b> below.","Your phone asks to show notifications — tap <b>Allow</b>."])+`<button class="cb ok full" type="button" data-rg="on">🔔 Turn on reminders</button>`;
+  if(k==="denied"){ const how=RG.ios?["Open the iPhone <b>Settings</b> › <b>Notifications</b>.","Tap <b>CA Closing</b> and switch on <b>Allow Notifications</b>.","Come back here and tap <b>Try again</b>."]
+      :B==="Samsung"?["Tap <b>☰</b> (bottom right) › <b>Settings</b> › <b>Sites and downloads</b> › <b>Notifications</b>.","Find this page (chaleurpatisserie-ops.github.io) and switch it <b>on</b>.","Come back and tap <b>Try again</b>."]
+      :B==="Firefox"?["Tap the <b>lock 🔒</b> left of the web address.","Set <b>Notifications</b> to <b>Allow</b>.","Tap <b>Try again</b>."]
+      :RG.and?["Tap the icon left of the web address (<b>🔒</b> or <b>⚙</b>).","Tap <b>Permissions</b> (or <b>Site settings</b>) › <b>Notifications</b> › <b>Allow</b>.","Tap <b>Try again</b>."]
+      :["Click the icon left of the web address (<b>🔒</b>).","Set <b>Notifications</b> to <b>Allow</b>.","Click <b>Try again</b>."];
+    return `<div class="banner warn" style="margin:0 0 8px">Notifications are <b>blocked</b> for this page on this phone.</div>`+fail+rgSteps(how)+`<button class="cb ok full" type="button" data-rg="on">Try again</button>`; }
+  if(k==="ios") return intro+`<p class="hint" style="margin:0 0 4px">On iPhone and iPad, reminders work from a <b>Home Screen icon</b> — not inside the browser:</p>`+rgSteps([
+      `Tap <b>Share</b> ${RG_SHARE} — ${B==="Safari"?`at the <b>bottom</b> of Safari (iPad: top right; if you don't see it, tap <b>⋯</b> first)`:`next to the web address in ${esc(B)} (or in the <b>⋯</b> menu)`}.`,
+      `Scroll down and tap <b>Add to Home Screen</b> ${RG_ADD}.`,
+      `If you see <b>Open as Web App</b>, keep it <b>on</b>. Tap <b>Add</b>.`,
+      `Go to your Home Screen and open <b>CA Closing</b>.`,
+      `There, tap <b>Turn on reminders</b>, then <b>Allow</b>.`])
+    +`<p class="hint" style="margin:6px 0">From then on, send the closing count from the <b>CA Closing</b> icon every night.</p><p class="hint" style="margin:0 0 6px">No <b>Add to Home Screen</b>? Copy the link and open it in <b>Safari</b>.</p>`+copy;
+  if(k==="oldios") return intro+`<div class="banner warn" style="margin:0 0 8px">This iPhone has iOS ${RG.iosV?esc(RG.iosV):"older than 16.4"}. App reminders need <b>iOS 16.4 or newer</b>.</div>`+rgSteps(["Open <b>Settings</b> › <b>General</b> › <b>Software Update</b> and update.","Then open this form again — this guide shows the next steps."])+`<p class="hint">Until then, reminders keep coming on WhatsApp.</p>`;
+  if(k==="iosreadd") return `<div class="banner warn" style="margin:0 0 8px">This Home Screen icon can't show notifications.</div>`+rgSteps(["Press and hold the <b>CA Closing</b> icon › <b>Remove App</b> › <b>Delete from Home Screen</b>.","Open your closing link in <b>Safari</b> again.","Tap <b>Share</b> "+RG_SHARE+" › <b>Add to Home Screen</b> — keep <b>Open as Web App</b> on — <b>Add</b>.","Open <b>CA Closing</b> from the Home Screen and tap <b>Turn on reminders</b>."])+copy;
+  if(k==="inapp") return intro+`<div class="banner warn" style="margin:0 0 8px">This page is open inside <b>${esc(RG.app)}</b>, which can't show reminders.</div>`+rgSteps([`Tap <b>⋯</b> or <b>⋮</b> (top right) › <b>Open in ${RG.ios?"Safari":"Chrome"}</b> (or <b>Open in browser</b>).`,`Or tap <b>Copy link</b> below and paste it into <b>${RG.ios?"Safari":"Chrome"}</b>.`,`Then follow the steps there.`])+copy;
+  return intro+`<div class="banner warn" style="margin:0 0 8px">${B==="Huawei"?"The Huawei browser":"This browser"} can't show app notifications.</div>`+rgSteps(["Tap <b>Copy link</b> below.","Open <b>Chrome</b> and paste the link.","Tap <b>Turn on reminders</b> there."])+copy+`<p class="hint" style="margin-top:6px">Phones without Google services can't get them — reminders keep coming on WhatsApp.</p>`; }
+function rgOpen(k,err){ const box=$("#sheet"); if(!box) return; box.innerHTML=`<div class="sheet" data-close="1"><div class="box rgbox" role="dialog" aria-modal="true" aria-label="Reminders on this phone"><div class="eb">🔔 Closing reminders</div>${k==="done"?"":`<h3 class="rgh">Get tonight's reminder on this phone</h3>`}${rgBody(k,err)}${k==="done"?"":`<button class="cb ghost full" type="button" data-rg="later" style="margin-top:10px">Not now</button>`}</div></div>`; }
+/* the Home Screen icon must open THIS outlet's form: a manifest made on the page with the outlet's link as start_url (display standalone, so
+   iPhone / iPad save it as a web app that can get notifications); a browser that ignores it still has apple-mobile-web-app-capable */
+function rgManifest(){ try{ if(!KEY||!window.Blob||!window.URL||!URL.createObjectURL) return; const base=location.origin+location.pathname.replace(/[^/]*$/,""), start=rgLink();
+  const m={name:"CA Closing"+(INFO&&INFO.outlet?" · "+INFO.outlet.name:""),short_name:"CA Closing",id:start,start_url:start,scope:base,display:"standalone",background_color:"#f7f2ec",theme_color:"#780a13",
+    icons:[{src:base+"icon-192.png",sizes:"192x192",type:"image/png"},{src:base+"icon-512.png",sizes:"512x512",type:"image/png"}]};
+  let l=document.querySelector('link[rel="manifest"]'); if(!l){ l=document.createElement("link"); l.rel="manifest"; document.head.appendChild(l); }
+  l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/manifest+json"})); }catch(e){} }
+let RG_ASKED=false;
+async function rgAuto(){ if(window.CHALEUR_NO_GUIDE&&!window.CHALEUR_RG) return; /* automated tests opt in */ if(RG_ASKED||!KEY||!INFO||!INFO.outlet||typeof CA==="undefined"||!CA.push||!CA.push.stateOutlet) return; RG_ASKED=true;
+  let st="off"; try{ st=await CA.push.stateOutlet(KEY); }catch(e){} const k=rgKind(st); if(k==="on") return;
+  try{ if(sessionStorage.getItem("ca.rg."+KEY)) return; }catch(e){}
+  if(k==="oldios"||k==="other"){ try{ const t=+localStorage.getItem("ca.rgx."+KEY)||0; if(Date.now()-t<14*864e5) return; localStorage.setItem("ca.rgx."+KEY,String(Date.now())); }catch(e){} }
+  if(document.querySelector("#sheet .sheet")||!$("#app .card")) return; rgOpen(k); }
+document.addEventListener("click",async e=>{ const b=e.target.closest("[data-rg]"); if(!b) return; const a=b.dataset.rg;
+  if(a==="later"){ try{ sessionStorage.setItem("ca.rg."+KEY,"1"); }catch(x){} $("#sheet").innerHTML=""; remFill(); return; }
+  if(a==="open"){ let st="off"; try{ st=await CA.push.stateOutlet(KEY); }catch(x){} rgOpen(rgKind(st)); return; }
+  if(a==="copy"){ const u=rgLink(); let ok=false; try{ await navigator.clipboard.writeText(u); ok=true; }catch(x){ try{ const ta=document.createElement("textarea"); ta.value=u; ta.setAttribute("readonly",""); ta.style.cssText="position:fixed;top:0;left:0;opacity:0"; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,u.length); ok=document.execCommand("copy"); ta.remove(); }catch(y){} }
+    b.textContent=ok?"✓ Link copied — paste it in the browser":u; if(!ok) b.style.wordBreak="break-all"; return; }
+  if(a==="on"){ b.disabled=true; b.textContent="Turning on…";
+    try{ await CA.push.subOutlet(KEY); rgOpen("done"); remFill(); }
+    catch(x){ const m=String((x&&x.message)||x||""); let st="off"; try{ st=await CA.push.stateOutlet(KEY); }catch(y){}
+      const k=st==="denied"?"denied":rgKind(st);
+      rgOpen(k==="on"?"done":k, /not supported|push service|AbortError|Registration failed|no.*service/i.test(m)?"This phone can't get app notifications (its push service is not available — e.g. no Google services). Reminders keep coming on WhatsApp.":m||"Could not turn the reminders on."); }
+    return; } });
 document.addEventListener("click",async e=>{ const b=e.target.closest("[data-rem]"); if(!b) return; b.disabled=true;
   try{ if(b.dataset.rem==="on"){ await CA.push.subOutlet(KEY); status("Reminders are on for this phone."); } else { await CA.push.offOutlet(KEY); status("Reminders are off for this phone."); } }catch(x){ status((x&&x.message)||"Could not change the reminders.",true); }
   b.disabled=false; remFill(); });
@@ -1142,7 +1207,7 @@ const tourSkip=()=>CA.tour.skip(), tourStart=m=>CA.tour.start(m), tourMaybeStart
 Object.defineProperty(window,"tourI",{get:()=>CA.tour.step()});
 
 document.getElementById("next").onclick=review;
-load().then(()=>setTimeout(tourMaybeStart,400));
+load().then(()=>{ setTimeout(rgAuto,300); setTimeout(tourMaybeStart,400); }); /* v22.59b: the reminders guide first; the guide tour waits while it is open */
 if(typeof CA!=="undefined") CA.helper({noReport:true,auth:()=>KEY&&INFO&&INFO.outlet?"o:"+KEY:"",page:()=>"Outlet closing form",hello:"Hi! Ask me anything about the closing form, for example: “What do I do with a cake past its shelf life?” or “What does the colour dot mean?”"});
 </script>
 </body></html>
