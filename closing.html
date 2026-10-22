@@ -470,8 +470,6 @@ const PAGES=[
  ["Recipes","Components","Every recipe by category: sponge, mousse & cream, filling, glaze, crunch, décor…","office.html#recipes/components",["kitchen","kapprove","reports","view","setup"],"recipe recipes component components category sponge mousse filling glaze crunch dough coating decor ingredient method",[]],
  ["Recipes","Calculator","Search a recipe and scale it: what I have, target total, trays or pieces","office.html#recipes/calc",["kitchen","kapprove","reports","view","setup"],"recipe calculator scale batch search weight gram",[]],
  ["Recipes","Moulds","The mould library: every mould with its photo, box, sheets and cavities; count them and take a better photo","office.html#recipes/moulds",["kitchen","kapprove","reports","view","setup"],"mould mold library silicone cavity cavities sheet box tin tray ring frame photo",[]],
- ["Recipes","Plan & order","Plan production for a day: every recipe and ingredient it needs, stock check, send what is short to Ordering","office.html#recipes/plan",["kitchen","kapprove","reports","view","setup"],"plan production order ingredient stock check short buffer daily plan batch",["kitchen"]],
- ["Recipes","Ordering","Ingredients to order by supplier with the quantity needed; mark ordered and received","office.html#recipes/order",["kitchen","kapprove","reports","view","setup"],"ordering order supplier ingredient purchase buy short pack quantity",[]],
  ["Back office","Reports","Every report: done and not done, what was sent, photos, reminders and Chase on WhatsApp","reports.html",(c,s)=>c("see_reports")||/owner|manager/i.test(labelOf(s)||""),"reports report done undone missing photos chase reminder whatsapp",[]],
  ["Back office","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup","see_setup"],"outlet cake product price shelf life whatsapp wasapbot bukku key go-live fresh start holiday limits",[]],
  ["Back office","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
@@ -624,7 +622,21 @@ const ICON={
     async function off(){ try{ const r=await navigator.serviceWorker.getRegistration(), sub=r&&await r.pushManager.getSubscription(); if(sub) await sub.unsubscribe(); }catch(e){} LSs("ca.push","off"); const s=get(); if(s) await run("pushUnsubscribe",s.t,dev().id).catch(()=>{}); }
     async function test(){ const s=get(); if(!s) throw new Error("Sign in first."); return run("pushTest",s.t); }
     const mobile=()=>isIOS||/Android|Mobile|iPad/i.test(ua);
-    return {sup,isIOS,standalone,mobile,state,enable,refresh,off,test,dev,devName}; })();
+    /* v22.59 (Alfred 22 Oct: "when outlet did not send report and its times up, will they get notification? app noti, not whatsapp"): the outlet
+       closing form turns this phone's reminders on for its outlet — no sign-in, the outlet's link is the key */
+    async function subOutlet(key){ if(!sup()) throw new Error(isIOS&&!standalone()?"On iPhone: tap Share › Add to Home Screen, open the form from there, then turn reminders on.":"This browser can't show notifications. Use Chrome (Android) or the Home Screen app (iPhone).");
+      const p=await Notification.requestPermission(); if(p!=="granted") throw new Error(p==="denied"?"Notifications are blocked for this page. Allow them in the phone's settings, then try again.":"Notifications were not allowed.");
+      const r=await reg(), k=await run("pushKey"); let sub=await r.pushManager.getSubscription();
+      if(sub){ try{ const ak=sub.options&&sub.options.applicationServerKey; if(ak&&u64(ak)!==k.key){ await sub.unsubscribe(); sub=null; } }catch(e){} }
+      if(!sub) sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(k.key)});
+      const d=dev(); await idbPut(d); const out=await run("pushSubscribeOutlet",key,sub.toJSON(),{id:d.id,sec:d.sec,ua:devName(),standalone:standalone()}); LSs("ca.pusho",key); LSs("ca.pushoAt",String(Date.now())); return out; }
+    async function offOutlet(key){ LSs("ca.pusho",""); try{ await run("pushUnsubscribeOutlet",key,dev().id); }catch(e){}
+      if(LSg("ca.push")!=="on"){ try{ const r=await navigator.serviceWorker.getRegistration(), sub=r&&await r.pushManager.getSubscription(); if(sub) await sub.unsubscribe(); }catch(e){} } }
+    async function stateOutlet(key){ if(!sup()) return isIOS&&!standalone()?"ios-browser":"unsupported"; if(Notification.permission==="denied") return "denied"; if(Notification.permission!=="granted"||!key||LSg("ca.pusho")!==key) return "off";
+      try{ const r=await navigator.serviceWorker.getRegistration(), s=r&&await r.pushManager.getSubscription(); if(!s) return "off";
+        if(Date.now()-(+LSg("ca.pushoAt")||0)>20*3600e3){ const d=dev(); await run("pushSubscribeOutlet",key,s.toJSON(),{id:d.id,sec:d.sec,ua:devName(),standalone:standalone()}); LSs("ca.pushoAt",String(Date.now())); } /* once a day: the push address can change */
+      }catch(e){ return "off"; } return "on"; }
+    return {sup,isIOS,standalone,mobile,state,enable,refresh,off,test,dev,devName,subOutlet,offOutlet,stateOutlet}; })();
   const ONB=(()=>{ let bip=null; try{ window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); bip=e; }); }catch(e){}
     const close=()=>{ const d=document.getElementById("ca-onb"); if(d) d.remove(); };
     const sheet=(html,lab)=>{ close(); const d=document.createElement("div"); d.id="ca-onb"; d.className="ca-pw"; d.setAttribute("role","dialog"); d.setAttribute("aria-label",lab); d.innerHTML=`<div class="ca-pw-box ca-onb">${html}</div>`; document.body.appendChild(d); return d; };
@@ -849,7 +861,7 @@ async function load(){
   catch(e){ $("#app").innerHTML=`<div class="empty err stack">${esc(e.message||"Could not load. Check your internet and try again.")}<button class="btn" type="button" data-act="retry">Try again</button></div>`; return; }
   if(!INFO.outlet){ if(!PRESET){try{localStorage.removeItem("chaleur.key")}catch(e){}} return renderNeedLink(); }
   store.set("chaleur.key",KEY);
-  ROWS={}; ORDER=[]; SHOWN=[]; EXP=new Set(INFO.stock.map(s=>K(s.productId,s.colour)));
+  ROWS={}; ORDER=[]; SHOWN=[]; WOK={}; EXP=new Set(INFO.stock.map(s=>K(s.productId,s.colour)));
   const ex=INFO.existing;
   const add=(p,c)=>{const k=K(p,c); if(!SHOWN.includes(p)) SHOWN.push(p); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} };
   INFO.stock.forEach(s=>add(s.productId,s.colour));
@@ -914,6 +926,42 @@ function renderColourAsk(q){ window.scrollTo(0,0); $("#bar").hidden=true;
       else { COLOK[x.k]="sticker confirmed"; notes.push(`${prod(x.r.productId).name}: outlet says the sticker is ${x.r.colour} (${colDay(x.r.colour)}), our record says ${x.to.colour} (${colDay(x.to.colour)}) → check with the kitchen`); } }
     if(notes.length){ const add="Colour check — "+notes.join("; "); NOTE=NOTE?NOTE+"\n"+add:add; }
     saveDraft(); review(); }; }
+/* v22.59 (Alfred 22 Oct: "when outlet is wastaging more than we have gave, show a warning. if they say yes confirm then we continue"): before
+   sending, a cake whose waste is more than the outlet had (its last count + what we delivered, from the server) gets one question — the likely
+   answer ready ("I made a mistake — fix my count") and the other with a reason they type ("Yes, the waste is right because …"). */
+let WOK={};
+function wasteOver(){ if(!INFO||!INFO.stockQty) return []; const had={}, w={}; /* an older server sends no quantities: no check */
+  INFO.stock.forEach(x=>{ had[x.productId]=(had[x.productId]||0)+(+x.qty||0); }); ORDER.forEach(k=>{ const r=ROWS[k]; w[r.productId]=(w[r.productId]||0)+(+r.w||0); });
+  return Object.keys(w).filter(id=>w[id]>(had[id]||0)&&!WOK[id]).map(id=>({id,w:w[id],had:had[id]||0})); }
+function renderWasteAsk(q){ window.scrollTo(0,0); $("#bar").hidden=true;
+  $("#app").innerHTML=`${head()}<div class="card stack"><h3 style="font:700 22px var(--display);margin:0">Waste is more than you had</h3>
+    <p class="hint">Our record — your last count plus what we delivered — shows fewer cakes than the waste you wrote. Please check ${q.length===1?"this cake":"these cakes"}:</p>
+    ${q.map((x,i)=>`<div class="card" style="padding:12px;margin:0" data-wq="${esc(x.id)}"><div style="font-weight:700;margin-bottom:6px">${esc(prod(x.id).name)} · waste <b>${x.w}</b> · you had <b>${x.had}</b></div>
+      <label class="opt"><input type="radio" name="wq-${i}" value="fix" checked><span>I made a mistake — <b>let me fix my count</b>.</span></label>
+      <label class="opt"><input type="radio" name="wq-${i}" value="keep"><span>Yes, <b>${x.w} waste is right</b> — I write why below.</span></label>
+      <label class="f" style="margin-top:4px">Why the waste is more<input id="wq-why-${i}" placeholder="e.g. cakes from another delivery, dropped tray…"></label></div>`).join("")}
+    <div class="row2" style="margin-top:6px"><button class="cb ghost" type="button" id="wq-back">Back</button><button class="cb ok" type="button" id="wq-go">Continue</button></div><div class="st" id="status"></div></div>`;
+  q.forEach((x,i)=>{ const w=document.getElementById("wq-why-"+i); if(w) w.addEventListener("input",()=>{ const r=document.querySelector(`input[name="wq-${i}"][value="keep"]`); if(r&&w.value.trim()) r.checked=true; }); });
+  $("#wq-back").onclick=()=>{ restoreBar(); render(); };
+  $("#wq-go").onclick=()=>{ const notes=[]; let fix=null;
+    for(let i=0;i<q.length;i++){ const x=q[i], v=(document.querySelector(`input[name="wq-${i}"]:checked`)||{}).value, why=((document.getElementById("wq-why-"+i)||{}).value||"").trim();
+      if(v==="keep"){ if(why.length<3){ status(`Write why the waste of ${prod(x.id).name} is more than you had.`,true); const el=document.getElementById("wq-why-"+i); if(el) el.focus(); return; } WOK[x.id]=why; notes.push(`${prod(x.id).name}: waste ${x.w}, more than the ${x.had} on record (last count + delivered) — confirmed by the outlet: ${why}`); }
+      else if(!fix) fix=x.id; }
+    if(notes.length){ const add="Waste check — "+notes.join("; "); NOTE=NOTE?NOTE+"\n"+add:add; }
+    saveDraft(); if(fix){ restoreBar(); render(); setTimeout(()=>{ const el=document.getElementById("cake-"+fix); if(el) el.scrollIntoView({block:"center",behavior:"smooth"}); },60); status("Fix the waste, then tap send again.",true); return; }
+    review(); }; }
+/* v22.59 (Alfred 22 Oct: "when outlet did not send report and its times up, will they get notification? app noti, not whatsapp"): this phone can
+   get the closing reminders of the outlet as an app notification (no sign-in needed) */
+async function remFill(){ const el=$("#remcard"); if(!el||!KEY||typeof CA==='undefined'||!CA.push||!CA.push.subOutlet) return; let st="off"; try{ st=await CA.push.stateOutlet(KEY); }catch(e){}
+  const o=INFO&&INFO.outlet?esc(INFO.outlet.name):"your outlet";
+  if(st==="unsupported"){ el.hidden=true; return; }
+  el.hidden=false;
+  el.innerHTML=st==="on"?`<div class="row2" style="align-items:center"><span class="hint" style="margin:0">🔔 <b>Closing reminders are on</b> for ${o} on this phone.</span><button class="cb ghost" type="button" data-rem="off">Turn off</button></div>`
+    :st==="ios-browser"?`<p class="hint" style="margin:0">🔔 <b>Get the closing reminder on this iPhone:</b> tap <b>Share › Add to Home Screen</b>, open the form from the Home Screen, then turn reminders on here.</p>`
+    :`<div class="stack" style="gap:8px"><p class="hint" style="margin:0">🔔 <b>Get the closing reminder on this phone</b> — a notification before closing time and if the count is late. No WhatsApp needed.</p>${st==="denied"?`<p class="hint err" style="margin:0">Notifications are blocked for this page. Allow them in the phone's settings first.</p>`:""}<button class="cb ghost full" type="button" data-rem="on">🔔 Turn on reminders</button></div>`; }
+document.addEventListener("click",async e=>{ const b=e.target.closest("[data-rem]"); if(!b) return; b.disabled=true;
+  try{ if(b.dataset.rem==="on"){ await CA.push.subOutlet(KEY); status("Reminders are on for this phone."); } else { await CA.push.offOutlet(KEY); status("Reminders are off for this phone."); } }catch(x){ status((x&&x.message)||"Could not change the reminders.",true); }
+  b.disabled=false; remFill(); });
 function render(){
   const ex=INFO.existing, g=grouped();
   $("#app").innerHTML=`${head()}
@@ -941,7 +989,8 @@ function render(){
     ${thumbs()}
     <p class="hint">Sales report = the list of items sold today from your POS (up to 3 photos if it's long). Chiller = all the cakes left now.${hasWaste()?` Waste = the ${wasteN()} cake${wasteN()>1?"s":""} you are throwing away.`:""}</p>
   </section>
-  <section class="sec"><label class="f">Anything else? (optional)<textarea id="note" rows="2" placeholder="Short delivery, damaged cake, chiller issue…">${esc(NOTE)}</textarea></label></section>`;
+  <section class="sec"><label class="f">Anything else? (optional)<textarea id="note" rows="2" placeholder="Short delivery, damaged cake, chiller issue…">${esc(NOTE)}</textarea></label></section>
+  <section class="sec" id="remcard" hidden></section>`; remFill();
   saveDraft(); $("#bar").hidden=false; $("#next").textContent="Send tonight's count"; $("#next").disabled=false; setBtn();
 }
 const canAdd=k=>k==="sales"?PH.sales.length<3:!PH[k];
@@ -976,7 +1025,7 @@ function collect(){ WHO=($("#who")||{value:WHO}).value.trim(); NOTE=($("#note")|
 
 async function review(){
   const m=missing(); if(m.length){ status("Still needed: "+m.join(", ")+".",true); const first=!PH.sales.length?"#shot-sales":!PH.display?"#shot-display":hasWaste()&&!PH.waste?"#shot-waste":"#who"; const el=$(first); if(el){el.classList&&el.classList.add("need"); el.scrollIntoView({behavior:"smooth",block:"center"});} return; }
-  keep(); { const q=colourSuspects(); if(q.length) return renderColourAsk(q); }
+  keep(); { const q=colourSuspects(); if(q.length) return renderColourAsk(q); } { const w=wasteOver(); if(w.length) return renderWasteAsk(w); }
   const d=collect(); window.scrollTo(0,0);
   $("#app").innerHTML=`${head()}<div class="card" style="text-align:center;padding:26px"><span class="spin"></span><p style="margin:12px 0 0">Reading your sales photo and checking the numbers…</p><p class="hint">This takes a few seconds.</p></div>`;
   $("#bar").hidden=true;
@@ -1027,7 +1076,7 @@ async function send(d){
       <div class="dr" aria-hidden="true">${COL().map(c=>`<i style="background:${esc(c.hex)}"></i>`).join("")}</div>
       ${wa?`<a class="cb ok full" href="${wa}" target="_blank" rel="noopener">Send summary to Chaleur on WhatsApp</a>`:""}
       <button class="cb ghost full" type="button" data-act="again">Edit this report</button>
-      <p class="hint">Made a mistake? Tap "Edit this report", fix it and send again. The newest report is the one that counts.</p></div>`;
+      <p class="hint">Made a mistake? Tap "Edit this report", fix it and send again. The newest report is the one that counts.</p></div><div class="card" id="remcard" style="margin-top:12px" hidden></div>`; remFill();
     PH={sales:[],display:null,waste:null};
   }catch(e){ status(e.message||"Sending failed. Check your internet and try again.",true); $("#send").disabled=false; $("#edit").disabled=false; }
   SENDING=false;
