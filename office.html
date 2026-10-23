@@ -944,7 +944,7 @@ details.doold{margin-top:10px;border-top:1px solid var(--line,#e8dcd6);padding-t
 .csth{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}.cstn{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}.cstnow{white-space:nowrap;font-variant-numeric:tabular-nums}
 .cstsrc{margin:4px 0 0;overflow-wrap:anywhere}.cstc{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:6px}.cstkg{display:flex;align-items:center;gap:6px;font-size:14px}.cstkg input{width:96px;min-height:40px}.cstkg input.cstbu{width:88px}.cstkg select.cstsel{width:auto;min-width:64px;min-height:40px;padding:6px;font-size:14px}
 .cstres{font-variant-numeric:tabular-nums}.cstuse{display:flex;align-items:center;gap:6px;font-weight:600;margin-left:auto;min-height:40px}.cstuse input{width:20px;height:20px}.cstw{margin:6px 0 0;color:var(--warn-tx,#8a5a00)}.cstprop{margin:4px 0 0;padding:6px 8px;border-radius:8px;background:var(--accent-soft,rgba(123,28,43,.07))}
-.cstbtns{gap:6px;margin-top:6px;flex-wrap:wrap}.cstpk{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
+.rcpr{border-top:1px dashed var(--line);padding:8px 0 4px}.cstbtns{gap:6px;margin-top:6px;flex-wrap:wrap}.cstpk{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
 .cstpick{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:8px 2px;color:var(--ink);font:inherit;cursor:pointer;min-height:44px;overflow-wrap:anywhere}
 .cstv{display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap;font-variant-numeric:tabular-nums}.cstv small{color:var(--muted);font-size:12px}.cstv.part b{color:var(--muted)}.cstrow>.rcn{order:1}.cstrow>.cstv{order:2}.cstrow>.pill{order:3}
 @media (max-width:560px){.cstrow{flex-wrap:wrap;row-gap:4px}.cstrow>.rcn{flex:1 1 calc(100% - 120px)}.cstrow>.pill{margin:0}}
@@ -3630,6 +3630,7 @@ function rcProdView(id){ const p=rcProd(id), U=RC(), R=S.rcp||{}; U.sec="cakes";
         ${F.length?`<div class="rcdl">${F.map(([k,v])=>`<div><span class="rclab">${esc(k)}</span><span>${esc(v)}</span></div>`).join("")}</div>`:""}
         ${R.boss?`<div class="row noprint" style="gap:8px;margin:0 0 10px"><button class="btn sm" data-rc="go:k:${esc(p.id)}">✎ Edit cake</button></div>`:""}${rcMouldStrip(p)}${rcPicPanel(p)}
         ${p.notes&&R.boss?`<details class="panel noprint"><summary class="small"><b>Recipe session notes</b> <span class="muted">full text · only you see these</span></summary><p class="small" style="margin:6px 0 0;white-space:pre-line">${esc(p.notes)}</p></details>`:""}`; })()}
+    ${R.money&&p.build.length?rcPriceHtml(p):""}
     ${p.build.length?"":`<div class="panel rcmiss"><h2>No recipe yet</h2><p style="margin:0">This cake has no components in the Recipe Master yet.</p></div>`}
     <div class="panel"><h2>Components <span class="small muted">${p.build.length}</span></h2>${nog&&R.canG?`<p class="small" style="margin:0;color:var(--warn-tx,#8a5a00)">${nog} component${nog===1?" has":"s have"} no grams a piece yet — tap <b>+ g</b> to fill it in when you know it.</p>`:""}${comps||`<div class="empty">No components listed for this cake yet.</div>`}</div>
     ${p.build.length?`<div class="panel"><div class="spread"><h2>Scale the whole cake</h2></div>
@@ -3904,7 +3905,45 @@ function rcCostG(id,seen){ const R=S.rcp||{}; if(RC_COSTM.R!==R) RC_COSTM={R,G:{
 const CST_MISC=0.15, cstM=v=>v*(1+CST_MISC);
 function rcCakeCost(p){ let rm=0; const miss=[], noG=[]; (p.build||[]).forEach(b=>{ const c=rcComp(b.comp), nm=c?c.name:b.comp; if(b.g==null||!(+b.g>0)){ noG.push(nm); return; } const x=rcCostG(b.comp); if(x.g!=null) rm+=(+b.g)*x.g; x.miss.forEach(m=>miss.push(m)); });
   const pr=/Orderla[^:]*:\s*RM\s*([\d.,]+\d)/i.exec(String(p.notes||"")), price=pr?+pr[1].replace(/,/g,""):null;
-  const tot=cstM(rm); return {rm:tot,food:rm,miss:[...new Set(miss)],noG,price,pct:price>0&&tot>0?tot/price:null}; }
+  const sv=((S.cost||{}).prices||{})[p.id]||{}, pc=sv.b2c>0?+sv.b2c:price, pb=sv.b2b>0?+sv.b2b:null; /* v22.64c: the saved B2C price first, else the Orderla price in the notes */
+  const tot=cstM(rm); return {rm:tot,food:rm,miss:[...new Set(miss)],noG,price:pc,pct:pc>0&&tot>0?tot/pc:null,b2b:pb,pctB:pb>0&&tot>0?tot/pb:null}; }
+/* v22.64c (Alfred 24 Oct: "Selling price, I need suggestion … b2b and b2c … b2b often come in bulk of 12nos per ctn atleast. And 3ctn moq … or rm 300 moq …
+   b2c … we target our cost to be at ard 25 to 35 percent … Suggest cost and sell price. Then we can adjust the sell price or the cost percent. Both will be
+   automatically counted no matter which one we filled in."): a Selling price panel on each cake — B2C and B2B, cost % ⇄ price, cartons and MOQ */
+const RC_PR={b2c:30,lo:25,hi:35,b2b:45,ctn:12,moqCtn:3,moqRm:300};
+const rcCeil=(v,step)=>Math.ceil(v/step-1e-9)*step;
+const rcPrPct=(cost,price)=>cost>0&&+price>0?cost/+price*100:null;
+function rcPrState(p){ const U=RC(), x=rcCakeCost(p), sv=((S.cost||{}).prices||{})[p.id]||{}, d=((U.pr||{})[p.id])||{}, cost=x.rm>0?x.rm:0;
+  const sug={b2c:cost?rcCeil(cost/(RC_PR.b2c/100),0.5):0, b2b:cost?rcCeil(cost/(RC_PR.b2b/100),0.1):0};
+  const price=k=>d[k]!=null?String(d[k]):(sv[k]>0?(+sv[k]).toFixed(2):""), ctn=d.ctn!=null?String(d.ctn):String(sv.ctn>0?sv.ctn:RC_PR.ctn);
+  return {x,cost,sv,d,sug,price,ctn}; }
+function rcPrCtnTxt(st){ const pb=+st.price("b2b"), n=Math.max(1,Math.round(+st.ctn||RC_PR.ctn)); if(!(pb>0)) return "";
+  const c=pb*n, need=Math.max(RC_PR.moqCtn,Math.ceil(RC_PR.moqRm/c-1e-9));
+  return `1 ctn of ${n} = <b>RM ${fm(c)}</b> · MOQ ${need} ctn = RM ${fm(c*need)}${need>RC_PR.moqCtn?` (to reach the RM ${RC_PR.moqRm} minimum)`:` (${RC_PR.moqCtn} ctn, over RM ${RC_PR.moqRm})`}`; }
+function rcPriceHtml(p){ if(!S.cost&&!S.costBusy&&!S.costErr) cstLoad(); const st=rcPrState(p), can=!!(S.cost||{}).canSave, x=st.x, id=esc(p.id);
+  if(!(st.cost>0)) return `<div class="panel noprint"><h2>Selling price</h2><p class="small muted" style="margin:0">No cost yet — the grams a piece or the ingredient prices are missing.</p></div>`;
+  const row=(k,lab,hint)=>{ const pr=st.price(k), pc=rcPrPct(st.cost,pr); return `<div class="rcpr"><b>${lab}</b><div class="row" style="gap:6px 12px;flex-wrap:wrap;margin-top:4px">
+    <label class="cstkg">Cost <input type="number" inputmode="decimal" min="1" max="99" step="any" data-rci="pr:${k}:pct:${id}" value="${pc!=null?Math.round(pc*10)/10:""}" placeholder="${k==="b2c"?RC_PR.b2c:RC_PR.b2b}" aria-label="${lab}: cost %" style="width:72px"> %</label>
+    <label class="cstkg">Sell RM <input type="number" inputmode="decimal" min="0" step="any" data-rci="pr:${k}:price:${id}" value="${esc(pr)}" placeholder="${fm(st.sug[k])}" aria-label="${lab}: selling price a piece" style="width:92px"></label>
+    ${k==="b2b"?`<label class="cstkg">pcs a ctn <input type="number" inputmode="numeric" min="1" step="1" data-rci="pr:b2b:ctn:${id}" value="${esc(st.ctn)}" aria-label="Pieces in one carton" style="width:64px"></label>`:""}</div>
+    <p class="small muted" style="margin:4px 0 0">${hint}</p>${k==="b2b"?`<p class="small" id="pr-ctn-${id}" style="margin:2px 0 0">${rcPrCtnTxt(st)}</p>`:""}</div>`; };
+  const lo=rcCeil(st.cost/(RC_PR.hi/100),0.5), hi=rcCeil(st.cost/(RC_PR.lo/100),0.5), part=x.miss.length||x.noG.length;
+  return `<div class="panel" id="rc-pr"><h2>Selling price</h2><p class="small" style="margin:0 0 6px">Cost a piece <b>RM ${fm(st.cost)}</b> incl. 15% misc${part?` <span class="pill warn">part — ${x.noG.length?`grams missing for ${x.noG.length}`:""}${x.noG.length&&x.miss.length?", ":""}${x.miss.length?`${x.miss.length} price${x.miss.length===1?"":"s"} missing`:""}</span>`:""}. Type the cost % or the price — the other one is worked out.</p>
+    ${row("b2c","B2C — one piece",`Suggested <b>RM ${fm(st.sug.b2c)}</b> at ${RC_PR.b2c}% · RM ${fm(lo)} – ${fm(hi)} for ${RC_PR.hi}% – ${RC_PR.lo}%`)}
+    ${row("b2b","B2B — by the carton",`Suggested <b>RM ${fm(st.sug.b2b)}</b> a piece at ${RC_PR.b2b}% (MOQ ${RC_PR.moqCtn} ctn or RM ${RC_PR.moqRm})`)}
+    <div class="row noprint" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" data-rc="prsug:${id}">Use the suggested prices</button>${can?`<button class="btn sm pri" data-rc="prsave:${id}" ${S.ui.prSaving?"disabled":""}>${S.ui.prSaving?"Saving…":"Save prices"}</button>`:`<span class="small muted">Only Alfred saves prices.</span>`}</div>
+    ${st.sv.at?`<p class="small muted" style="margin:6px 0 0">Saved ${esc(cstDate(st.sv.at))}${st.sv.by?` by ${esc(st.sv.by)}`:""}: B2C ${st.sv.b2c>0?`RM ${fm(st.sv.b2c)}`:"—"} · B2B ${st.sv.b2b>0?`RM ${fm(st.sv.b2b)}${st.sv.ctn?` (${st.sv.ctn} a ctn)`:""}`:"—"}</p>`:""}</div>`; }
+function rcPrInput(t,k){ const m=/^pr:(b2c|b2b):(pct|price|ctn):(.+)$/.exec(k); if(!m) return false; const line=m[1], f=m[2], pid=m[3], U=RC(), p=rcProd(pid); if(!p) return true;
+  const d=(U.pr||(U.pr={}))[pid]||(U.pr[pid]={}), st=rcPrState(p), v=t.value;
+  if(f==="ctn") d.ctn=v;
+  else if(f==="price"){ d[line]=v; const pc=rcPrPct(st.cost,v), e=document.querySelector(`[data-rci="pr:${line}:pct:${pid}"]`); if(e) e.value=pc!=null?Math.round(pc*10)/10:""; }
+  else { const pc=+v, pr=pc>0&&pc<100&&st.cost>0?(st.cost/(pc/100)).toFixed(2):""; d[line]=pr; const e=document.querySelector(`[data-rci="pr:${line}:price:${pid}"]`); if(e) e.value=pr; }
+  const ce=document.getElementById("pr-ctn-"+pid); if(ce) ce.innerHTML=rcPrCtnTxt(rcPrState(p));
+  return true; }
+async function rcPrSave(pid){ const U=RC(), p=rcProd(pid); if(!p||S.ui.prSaving) return; const st=rcPrState(p), b2c=+st.price("b2c")||null, b2b=+st.price("b2b")||null, ctn=Math.round(+st.ctn)||null;
+  S.ui.prSaving=true; render();
+  try{ const r=await GS("recipePriceSave",pid,{b2c,b2b,ctn}); if(S.cost) S.cost.prices=r.prices; if(U.pr) delete U.pr[pid]; toast(`Prices saved for ${p.name}`); }catch(e){ toast(e.message); }
+  S.ui.prSaving=false; render(); }
 const cstMissPill=(miss,noG)=>miss.length||(noG&&noG.length)?`<span class="pill warn" title="${esc([...(noG||[]).map(x=>"grams: "+x),...miss.map(x=>"price: "+x)].join(", "))}">${noG&&noG.length?`grams missing for ${noG.length}`:""}${noG&&noG.length&&miss.length?" · ":""}${miss.length?`${miss.length} price${miss.length===1?"":"s"} missing`:""}</span>`:"";
 /* Costing page (v22.60b): Cakes | Components, each with filters (Alfred 23 Oct: "then a costing page with cake and component costing") */
 const CST_KF=[["all","All"],["done","Complete"],["price","Missing prices"],["grams","Missing grams"]];
@@ -3921,10 +3960,10 @@ function cstCakesHtml(){ const R=S.rcp||{}, U=RC(), A=cstTok(U.cks||""), X=(R.pr
   const test=(o,k)=>k==="done"?!o.x.miss.length&&!o.x.noG.length&&o.x.rm>0:k==="price"?!!o.x.miss.length:k==="grams"?!!o.x.noG.length:true, cnt={}; CST_KF.forEach(([k])=>{ cnt[k]=X.filter(o=>test(o,k)).length; });
   const f=U.ckf||"all"; let L=X.filter(o=>test(o,f)); if(A.length) L=L.filter(o=>cstScore(A,`${o.p.name} ${o.p.id} ${o.p.app||""}`).s>0);
   return `<div class="panel"><p class="small muted" style="margin:0">Cost of ONE piece = the grams of each part in one piece × that recipe's cost a gram, plus 15% misc (small items, decor, loss). Food cost % = against the Orderla price in the cake's notes (only when complete). Packaging is not counted.</p>${cstChips("ckf",CST_KF,f,cnt)}${cstSearchBox("Search a cake")}<div class="row" style="gap:6px;margin-top:8px"><button class="btn sm" data-rc="ccsv:cakes">⬇ Download (Excel)</button></div></div>
-    <div class="panel">${L.map(({p,x})=>`<button class="rcrow cstrow" data-rc="p:${esc(p.id)}"><span class="rcn"><b>${esc(p.name||p.id)}</b><span class="small muted">${esc(p.id)}${p.range?` · ${esc(p.range)}`:""}${x.price?` · sells RM ${fm(x.price)}${x.pct!=null&&!x.miss.length&&!x.noG.length?` · food cost <b>${Math.round(x.pct*100)}%</b>`:""}`:""}</span></span>${cstMissPill(x.miss,x.noG)}<span class="cstv${x.miss.length||x.noG.length?" part":""}"><b>${x.rm>0?`RM ${fm(x.rm)}`:"—"}</b><small>a piece${x.rm>0&&(x.miss.length||x.noG.length)?" (part)":""}</small></span></button>`).join("")||`<div class="empty">Nothing here.</div>`}</div>`; }
+    <div class="panel">${L.map(({p,x})=>`<button class="rcrow cstrow" data-rc="p:${esc(p.id)}"><span class="rcn"><b>${esc(p.name||p.id)}</b><span class="small muted">${esc(p.id)}${p.range?` · ${esc(p.range)}`:""}${x.price?` · sells RM ${fm(x.price)}${x.pct!=null&&!x.miss.length&&!x.noG.length?` · food cost <b>${Math.round(x.pct*100)}%</b>`:""}`:x.rm>0&&!x.miss.length&&!x.noG.length?` · suggested RM ${fm(rcCeil(x.rm/(RC_PR.b2c/100),0.5))}`:""}${x.b2b?` · B2B RM ${fm(x.b2b)}${x.pctB!=null&&!x.miss.length&&!x.noG.length?` (${Math.round(x.pctB*100)}%)`:""}`:""}</span></span>${cstMissPill(x.miss,x.noG)}<span class="cstv${x.miss.length||x.noG.length?" part":""}"><b>${x.rm>0?`RM ${fm(x.rm)}`:"—"}</b><small>a piece${x.rm>0&&(x.miss.length||x.noG.length)?" (part)":""}</small></span></button>`).join("")||`<div class="empty">Nothing here.</div>`}</div>`; }
 function cstCsv(kind){ const R=S.rcp||{}, q=v=>{ v=v==null?"":String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }, rows=[];
-  if(kind==="cakes"){ rows.push(["Code","Cake","Range","Cost a piece incl. 15% misc (RM)","Ingredients only (RM)","Orderla price (RM)","Food cost %","Grams missing","Prices missing"]);
-    (R.products||[]).filter(p=>!/retired/i.test(p.status||"")).forEach(p=>{ const x=rcCakeCost(p); rows.push([p.id,p.name,p.range,x.rm>0?x.rm.toFixed(2):"",x.food>0?x.food.toFixed(2):"",x.price!=null?x.price.toFixed(2):"",x.pct!=null?Math.round(x.pct*100):"",x.noG.join("; "),x.miss.join("; ")]); }); }
+  if(kind==="cakes"){ rows.push(["Code","Cake","Range","Cost a piece incl. 15% misc (RM)","Ingredients only (RM)","B2C price (RM)","B2C cost %","B2B price (RM)","B2B cost %","Suggested B2C at 30% (RM)","Suggested B2B at 45% (RM)","Grams missing","Prices missing"]);
+    (R.products||[]).filter(p=>!/retired/i.test(p.status||"")).forEach(p=>{ const x=rcCakeCost(p); rows.push([p.id,p.name,p.range,x.rm>0?x.rm.toFixed(2):"",x.food>0?x.food.toFixed(2):"",x.price!=null?x.price.toFixed(2):"",x.pct!=null?Math.round(x.pct*100):"",x.b2b!=null?x.b2b.toFixed(2):"",x.pctB!=null?Math.round(x.pctB*100):"",x.rm>0?rcCeil(x.rm/(RC_PR.b2c/100),0.5).toFixed(2):"",x.rm>0?rcCeil(x.rm/(RC_PR.b2b/100),0.1).toFixed(2):"",x.noG.join("; "),x.miss.join("; ")]); }); }
   else { rows.push(["Code","Recipe","Category","Batch (g)","Cost a batch incl. 15% misc (RM)","Cost a kg incl. 15% misc (RM)","Ingredients a kg (RM)","Prices missing"]);
     (R.components||[]).filter(c=>!/retired/i.test(c.status||"")&&(c.lines||[]).length).forEach(c=>{ const x=rcCostG(c.id); rows.push([c.id,c.name,rcCatOf(c),Math.round(x.base),cstM(x.rm||0).toFixed(2),x.g!=null?cstM(x.g*1000).toFixed(2):"",x.g!=null?(x.g*1000).toFixed(2):"",x.miss.join("; ")]); }); }
   const blob=new Blob(["﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"}), a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`Chaleur costing ${kind} ${today()}.csv`; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500); }
@@ -3934,7 +3973,7 @@ function rcCostView(){ const R=S.rcp||{}, U=RC(); U.sec="cost";
   const t=U.ct==="comps"?"comps":"cakes";
   return `${head}${rcNav()}${cstCostBanner()}<nav class="rcnav cstnav" aria-label="Costing">${[["cakes","Cakes"],["comps","Components"]].map(([k,x])=>`<button data-rc="ct:${k}" ${t===k?'aria-current="page"':""}>${x}</button>`).join("")}</nav>${t==="comps"?cstRecipesHtml():cstCakesHtml()}`; }
 async function cstPull(){ const U=RC(); let tot=0; S.ui.costPull="Reading Bukku…"; render();
-  try{ for(let i=0;i<6;i++){ const r=await GS("costPull"); tot+=r.opened||0; const m=S.cost&&S.cost.map, L=S.cost&&S.cost.lists, sd=S.cost&&S.cost.std, pr=S.cost&&S.cost.prop; S.cost=Object.assign({},S.cost||{},r,{map:m||{},lists:L||[],std:sd||[],prop:pr||{}}); delete S.cost._k; S.costAuto=null; if(!r.more) break; S.ui.costPull=`Reading Bukku… ${tot} bills opened`; render(); }
+  try{ for(let i=0;i<6;i++){ const r=await GS("costPull"); tot+=r.opened||0; const m=S.cost&&S.cost.map, L=S.cost&&S.cost.lists, sd=S.cost&&S.cost.std, pr=S.cost&&S.cost.prop, px=S.cost&&S.cost.prices; S.cost=Object.assign({},S.cost||{},r,{map:m||{},lists:L||[],std:sd||[],prop:pr||{},prices:px||{}}); delete S.cost._k; S.costAuto=null; if(!r.more) break; S.ui.costPull=`Reading Bukku… ${tot} bills opened`; render(); }
     toast(`Bukku bills read: ${S.cost.nb} bills${tot?` (${tot} opened)`:""}`); }catch(e){ toast(e.message); } S.ui.costPull=""; render(); }
 async function cstSave(only){ const U=RC(), out=[]; if(S.ui.costSaving) return; cstRows().forEach(r=>{ if(only&&r.id!==only) return; const s=cstSel(r); if(!(only||s.use)||!s.has) return; const ch=s.ch||null;
     out.push({id:r.id,cost:s.cost>0?Math.round(s.cost*100)/100:null,cpc:s.cpc>0?Math.round(s.cpc*1000)/1000:null,pw:ch&&cstEndsPc(ch)&&+ch.pw>0?+ch.pw:null,bu:ch?ch.bu:"",pn:ch&&cstPack(ch.bu)&&+ch.pn>0?+ch.pn:null,pu:ch&&cstPack(ch.bu)?ch.pu:"",tp:s.src==="typed"?+s.tp||null:null,
@@ -3948,6 +3987,8 @@ function cstAct(a){ const U=RC(); U.cst=U.cst||{};
   if(a==="cpull"){ cstPull(); return true; }
   if(a==="csave"){ cstSave(); return true; }
   if(/^csave1:/.test(a)){ cstSave(a.slice(7)); return true; }
+  if(/^prsug:/.test(a)){ const pid=a.slice(6), p=rcProd(pid); if(p){ const st=rcPrState(p); U.pr=U.pr||{}; U.pr[pid]=Object.assign({},U.pr[pid]||{},{b2c:st.sug.b2c.toFixed(2),b2b:st.sug.b2b.toFixed(2)}); render(); } return true; }
+  if(/^prsave:/.test(a)){ rcPrSave(a.slice(7)); return true; }
   if(/^cuse1:/.test(a)){ const [id,v]=a.slice(6).split("|"); if(!(+v>0)) return true; U.cst[id]={src:"typed",k:"",tp:String(+v),ch:null,use:true}; cstSave(id); return true; }
   if(a==="ctickall"){ cstRows().forEach(r=>{ const s=cstSel(r); if(!s.use&&s.sure&&s.has&&!s.same){ (U.cst[r.id]||(U.cst[r.id]={})).use=true; } }); render(); return true; }
   if(a==="cuntick"){ Object.keys(U.cst).forEach(k=>{ if(U.cst[k]) U.cst[k].use=false; }); render(); return true; }
@@ -4245,7 +4286,7 @@ async function rcAct(a,b){ const U=RC();
   if(a==="link"){ const v=(document.getElementById("rc-link")||{}).value||""; b.disabled=true; try{ const r=await GS("recipeSheetSave",v); toast(`Now reading ${r.title}`); S.rcp=null; S.rcpAt=0; rcLoad(true); }catch(e){ toast(e.message); } b.disabled=false; render(); return; }
   if(a==="copy"){ const c=rcComp((U.view||"").slice(2)); if(!c) return; const x=rcCalc(c), out=[`${c.id} ${c.name}  × ${rcF(x.k,3)}`]; if(x.line) out.push(x.line); { const hg=c.lines.some(l=>String(l.grp||"").trim()); let lg=null; rcSortLines(c.lines).forEach(l=>{ const gk=String(l.grp||"").trim().toUpperCase(); if(hg&&gk!==lg) out.push(rcPart(l.grp)+":"); lg=gk; out.push(`${hg?"  ":""}${rcIng(l.ing)}: ${rcAmt(l,x.k)}`); }); } out.push(`Total: ${rcF(x.sum*x.k)} g`);
     const t=out.join("\n"); try{ await navigator.clipboard.writeText(t); toast("Weights copied"); }catch(e){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); toast("Weights copied"); }catch(_){ toast("Could not copy — select the weights in the table"); } ta.remove(); } return; } }
-document.addEventListener("input",e=>{ const t=e.target, d=t&&t.dataset; if(!d||d.rci==null) return; const U=RC(); if((/^c(tp|use|ws|bu|pn|pu|pw):/.test(d.rci)||["cpq","cq2","cks","csort","cmgq","cmgn"].includes(d.rci))&&cstInput(t,d.rci,e)) return; U[d.rci]=t.value; const el=document.getElementById("rc-list");
+document.addEventListener("input",e=>{ const t=e.target, d=t&&t.dataset; if(!d||d.rci==null) return; const U=RC(); if(/^pr:/.test(d.rci)&&rcPrInput(t,d.rci)) return; /* v22.64c */ if((/^c(tp|use|ws|bu|pn|pu|pw):/.test(d.rci)||["cpq","cq2","cks","csort","cmgq","cmgn"].includes(d.rci))&&cstInput(t,d.rci,e)) return; U[d.rci]=t.value; const el=document.getElementById("rc-list");
   if(d.rci==="q"){ if(el) el.innerHTML=rcCakesInner(); return; } if(d.rci==="mq"){ if(el) el.innerHTML=rcMouldsInner(); return; } if(d.rci==="mpq"){ const ml=document.getElementById("rc-mlist"); if(ml) ml.innerHTML=rcMPickInner(); return; }
   if(/^ml_/.test(d.rci)){ if(U.mf) U.mf[d.rci.slice(3)]=t.value; return; }
   if(d.rci==="fq"){ return; }
