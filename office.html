@@ -942,7 +942,7 @@ details.doold{margin-top:10px;border-top:1px solid var(--line,#e8dcd6);padding-t
 /* v22.60 Recipes › Costing */
 .cst{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 8px}.cst.on{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
 .csth{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}.cstn{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}.cstnow{white-space:nowrap;font-variant-numeric:tabular-nums}
-.cstsrc{margin:4px 0 0;overflow-wrap:anywhere}.cstc{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:6px}.cstkg{display:flex;align-items:center;gap:6px;font-size:14px}.cstkg input{width:96px;min-height:40px}.cstkg select.cstsel{width:auto;min-width:64px;min-height:40px;padding:6px;font-size:14px}
+.cstsrc{margin:4px 0 0;overflow-wrap:anywhere}.cstc{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:6px}.cstkg{display:flex;align-items:center;gap:6px;font-size:14px}.cstkg input{width:96px;min-height:40px}.cstkg input.cstbu{width:88px}.cstkg select.cstsel{width:auto;min-width:64px;min-height:40px;padding:6px;font-size:14px}
 .cstres{font-variant-numeric:tabular-nums}.cstuse{display:flex;align-items:center;gap:6px;font-weight:600;margin-left:auto;min-height:40px}.cstuse input{width:20px;height:20px}.cstw{margin:6px 0 0;color:var(--warn-tx,#8a5a00)}.cstprop{margin:4px 0 0;padding:6px 8px;border-radius:8px;background:var(--accent-soft,rgba(123,28,43,.07))}
 .cstbtns{gap:6px;margin-top:6px;flex-wrap:wrap}.cstpk{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
 .cstpick{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:8px 2px;color:var(--ink);font:inherit;cursor:pointer;min-height:44px;overflow-wrap:anywhere}
@@ -2133,10 +2133,12 @@ function vSetup(){
     const e=S.ui.prEdit;
     body=`<div class="panel"><div class="spread"><h2>Products</h2><button class="btn pri" data-act="newProduct">Add product</button></div>
       ${e?`<div class="fgrid">${[["sku","Code / SKU (no spaces)"],["name","Name"],["retail","Retail price RM"],["shelfDays","Shelf life (days, chilled)"],["bukkuId","Bukku product ID"]].map(([k,l])=>`<label class="f">${l}<input id="pr-${k}" data-pr="${k}" value="${esc(e[k]??"")}" ${k==="shelfDays"&&!MGR()?`readonly title="Change shelf life in Setup › Shelf life (Alfred or Joscelyn)"`:""}></label>`).join("")}
-        <label class="f">Active<select id="pr-act" data-pr="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label></div>
+        <label class="f">Active<select id="pr-act" data-pr="active">${opt("true","Active",String(e.active!==false))}${opt("false","Inactive",String(e.active!==false))}</select></label>
+        <label class="f">Limited cake — first day<input id="pr-runFrom" type="date" data-pr="runFrom" value="${esc(e.runFrom||"")}"></label><label class="f">How many a day<input id="pr-runDay" inputmode="numeric" data-pr="runDay" value="${esc(e.runDay??"")}" placeholder="e.g. 6"></label><label class="f">For how many days<input id="pr-runDays" inputmode="numeric" data-pr="runDays" value="${esc(e.runDays??"")}" placeholder="e.g. 4"></label></div>
+        <p class="small muted" style="margin:4px 0 8px">Limited cake (v22.62): only on the HQ display, only those days, that many a day on the Prep list (what is left on the display counts); never for the outlets. Leave the three boxes blank for a normal cake.</p>
         <div class="row"><button class="btn pri" data-act="saveProduct">Save product</button><button class="btn" data-act="cancelProduct">Cancel</button></div>`:""}
       <div class="tw"><table><thead><tr><th>Photo</th><th>SKU</th><th>Name</th><th class="r">Retail RM</th><th class="r">Shelf life</th><th>Bukku ID</th><th></th></tr></thead><tbody>
-      ${products(true).map(p=>`<tr><td>${thumb(p.id,44)}${S.assets?`<label class="btn sm" style="margin-left:6px">${p.photo?"Change":"Add photo"}<input type="file" accept="image/&#42;" data-photo="${p.id}" hidden></label>`:""}</td><td class="mono">${esc(p.sku)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}${p.note?`<div class="small muted">${esc(p.note)}</div>`:""}</td><td class="r mono">${fm(p.retail)}</td><td class="r mono">${esc(p.shelfDays)} d</td><td class="mono small">${esc(p.bukkuId||"—")}</td><td class="r"><button class="btn sm" data-predit="${p.id}">Edit</button></td></tr>`).join("")}
+      ${products(true).map(p=>`<tr><td>${thumb(p.id,44)}${S.assets?`<label class="btn sm" style="margin-left:6px">${p.photo?"Change":"Add photo"}<input type="file" accept="image/&#42;" data-photo="${p.id}" hidden></label>`:""}</td><td class="mono">${esc(p.sku)}</td><td>${esc(p.name)}${p.active===false?` <span class="pill mute">inactive</span>`:""}${runOf(p.id)?`<div class="small"><span class="pill info">limited</span> ${esc(runTxt(runOf(p.id)))}</div>`:""}${p.note?`<div class="small muted">${esc(p.note)}</div>`:""}</td><td class="r mono">${fm(p.retail)}</td><td class="r mono">${esc(p.shelfDays)} d</td><td class="mono small">${esc(p.bukkuId||"—")}</td><td class="r"><button class="btn sm" data-predit="${p.id}">Edit</button></td></tr>`).join("")}
       </tbody></table></div><p class="small muted" style="margin:0">Use a clear top-down photo of each cake so outlet staff can recognise it.</p></div>`;
   }
   if(sec==="shelf"){
@@ -2463,6 +2465,14 @@ function outNoRep(pid){ const p=partner(pid); if(!p||p.internal||p.sample||p.act
   let d=add(today(),-1); for(let i=0;i<7&&isClosed(pid,d);i++) d=add(d,-1); if(isClosed(pid,d)||(co&&d<co)||repIn(pid,d)) return null;
   let last=""; for(let i=0,x=add(d,-1);i<30;i++,x=add(x,-1)){ if(co&&x<co) break; if(repIn(pid,x)){ last=x; break; } }
   return {date:d,last}; }
+/* v22.62 (Alfred 23 Oct: "add in ghost a cake only have 24 nos. start tomorrow 6 nos a day. add in the list. no need for outlet, only hq";
+   then "Display has 6 a day"): a LIMITED cake (Setup › Products: first day, how many a day, for how many days) is planned only for the HQ
+   display, only on those days, at that number — what is still sellable on the display counts towards it, so the kitchen makes the rest; never
+   for the outlets; before and after its days it is not planned anywhere (even when it is on the HQ display list). A number typed on the Prep
+   list still wins. */
+const runOf=id=>{ const p=S.products[id]; if(!p||!/^\d{4}-\d{2}-\d{2}$/.test(String(p.runFrom||""))||!(+p.runDay>0)||!(+p.runDays>0)) return null; const n=Math.round(+p.runDays); return {from:p.runFrom,to:add(p.runFrom,n-1),perDay:Math.round(+p.runDay),days:n}; };
+const runOn=(id,d)=>{ const r=runOf(id); return r&&d&&d>=r.from&&d<=r.to?r:null; };
+const runTxt=r=>`${r.perDay} a day on the HQ display, ${nice(r.from)}${r.days>1?` – ${nice(r.to)}`:""} (${r.days} day${r.days===1?"":"s"}, ${r.perDay*r.days} in all) · not for the outlets`;
 function planAll(){const taken={};
   for(const w of Object.values(S.weeks)) for(const o of Object.values(w.dos||{})) if(o.status!=="cancelled") for(const l of o.lines||[]) if(+l.qty>0&&isWhole(l.productId)) (taken[o.date]||(taken[o.date]=new Set())).add(l.productId);
   /* v21.13 (Alfred, 26 Sep): "HQ need to be inside here, so team can check the whole prep list and prepare accordingly. But no need to be delivered."
@@ -2477,6 +2487,12 @@ function planAll(){const taken={};
       /* v22.25 (Alfred 8 Oct): "all this will be the require number, and the system will auto count the need to make based on the FIFO rules" —
          the HQ box is what the display needs in total (its target); what is already on the display counts towards it below */
       if(partner(pl.pid).internal) for(const l of pl.lines){ l.suggestFresh=l.suggest; if(!(isWhole(l.productId)&&l.suggest===0)) l.suggest=Math.max(0,l.target||0); /* a whole cake the whole-cake rules left out stays out */ if(l.why) l.why=l.why.replace(/ · has .*$/,"")+` → display needs ${l.suggest} (has ${l.stockNow||0}; what is still sellable stays, the rest is made)`; }
+      { const hq=!!partner(pl.pid).internal, d=pl.d1, typed=id=>(ov[id]||{})[pl.pid]!=null&&(ov[id]||{})[pl.pid]!=="";  /* v22.62 limited cakes */
+        pl.lines=pl.lines.filter(l=>!runOf(l.productId)||typed(l.productId)||(hq&&runOn(l.productId,d)));
+        if(hq&&d) for(const id of Object.keys(S.products)){ const r=runOn(id,d); if(!r||S.products[id].active===false) continue; let l=pl.lines.find(x=>x.productId===id);
+          if(!l){ const st=(pl.stock||{})[id]||0; l={productId:id,aw:null,ae:null,perDay:null,stockNow:st,stockRep:st,usable:0,demand:0,buffer:0,suggest:0,notes:[]}; pl.lines.push(l); }
+          const k=diffDays(d,r.from)+1; l.suggest=r.perDay; l.run=r; l.notes=(l.notes||[]).filter(x=>!/ (min|max) \d+ of each /.test(x)).concat([`limited cake: ${r.perDay} a day, day ${k} of ${r.days}`]);
+          l.why=`limited cake: day ${k} of ${r.days} → display needs ${r.perDay} (has ${l.stockNow||0}; what is still sellable stays, the rest is made)`; } }
       for(const l of pl.lines){ const o=(ov[l.productId]||{})[pl.pid]; l.over=o!=null&&o!==""&&+o!==l.suggest; l.base=l.over?Math.max(0,Math.round(+o)):l.suggest; }
       /* v22.21 (Alfred 7 Oct): "a tick box, today no delivery for knocknock or jiran … when is too little to prepare, we might skip it" */
       const sk=!partner(pl.pid).internal&&(((S.prep||{})[pl.prepDate]||{}).skip||{})[pl.pid]; if(sk){ pl.skip=sk; for(const l of pl.lines){ l.over=false; l.base=0; } }
@@ -3719,6 +3735,10 @@ const CST_BU=["kg","g","L","ml","pc","unit","pkt","bag","btl","box","ctn","tray"
 const cstBuOf=u=>{ u=String(u||"").toLowerCase().replace(/[^a-z]/g,""); if(/^kgs?$/.test(u)) return "kg"; if(/^(g|gm|gms|gr|gram|grams)$/.test(u)) return "g"; if(/^(l|ltr|lt|litre|liter|litres|liters)$/.test(u)) return "L"; if(u==="ml") return "ml";
   if(/^(pc|pcs|piece|pieces|nos|no|ea|each)$/.test(u)) return "pc"; const m={packet:"pkt",pack:"pkt",pkts:"pkt",bottle:"btl",btls:"btl",carton:"ctn",ctns:"ctn",cartons:"ctn",bags:"bag",boxes:"box",trays:"tray",tubs:"tub",tins:"tin",pails:"pail",cans:"can",jars:"jar",rolls:"roll",blocks:"block",sheets:"sheet",units:"unit"}; return m[u]||(CST_BU.includes(u)?u:"unit"); };
 const cstPack=bu=>CST_W2[bu]==null&&bu!=="pc";
+/* v22.62 (Alfred 23 Oct: "allow me to type to find the closest unit. or add a new unit"): the unit is a box with suggestions; a word that is
+   not in the list (punnet, loaf …) becomes a new pack unit that asks what is in one */
+const cstUnitTyped=v=>{ const u=String(v||"").trim().toLowerCase().replace(/[^a-z ]/g,"").replace(/\s+/g," ").slice(0,12).trim(); if(!u) return ""; const c=cstBuOf(u); return c!=="unit"||/^units?$/.test(u)?c:u; };
+const cstUnits=()=>{ const C=S.cost||{}, U=RC(), out=[...CST_BU]; [...Object.values(C.map||{}),...Object.values(C.prop||{}),...Object.values(U.cst||{}).map(x=>x&&x.ch)].forEach(x=>{ const b=x&&x.bu; if(b&&!out.includes(b)&&/^[a-z][a-z ]{0,11}$/.test(b)) out.push(b); }); return out; };
 function cstConv(ch){ let kg=null, pcs=null; if(!ch) return {kg,pcs}; const bu=ch.bu;
   if(CST_W2[bu]!=null) kg=CST_W2[bu]; else if(bu==="pc") pcs=1; else if(+ch.pn>0){ if(CST_W2[ch.pu]!=null) kg=+ch.pn*CST_W2[ch.pu]; else if(ch.pu==="pc") pcs=+ch.pn; }
   if(pcs&&+ch.pw>0) kg=pcs*(+ch.pw)/1000; return {kg,pcs}; }
@@ -3731,7 +3751,7 @@ function cstChainKg(bu,kg,vol,pw0){ if(CST_W2[bu]!=null){ if(!(kg>0)||Math.abs(k
 /* the chain a row starts from: this session's edits > saved > suggested > read from the bill / list unit and name */
 function cstChain(r,k,typed,ut,G,vol,st,map,pp){ if(st.ch&&(typed||st.ch.k===k)) return st.ch;
   const pw0=(((S.rcp||{}).ingredients||{})[r.id]||{}).pieceG||"", sv=typed?(map&&map.src==="typed"?map:null):(map&&map.k===k?map:null), sp=typed?(pp&&pp.src==="typed"?pp:null):(pp&&pp.k===k?pp:null);
-  for(const [x,why] of [[sv,"as saved before"],[sp,"as suggested"]]) if(x&&x.bu&&CST_BU.includes(x.bu)) return {k,bu:x.bu,pn:x.pn!=null?String(x.pn):"",pu:CST_PU.includes(x.pu)?x.pu:"kg",pw:x.pw!=null&&x.pw!==""?String(x.pw):String(pw0),why};
+  for(const [x,why] of [[sv,"as saved before"],[sp,"as suggested"]]) if(x&&x.bu&&(CST_BU.includes(x.bu)||/^[a-z][a-z ]{0,11}$/.test(x.bu))) return {k,bu:x.bu,pn:x.pn!=null?String(x.pn):"",pu:CST_PU.includes(x.pu)?x.pu:"kg",pw:x.pw!=null&&x.pw!==""?String(x.pw):String(pw0),why};
   if(typed) return Object.assign({k,why:""},cstChainKg("kg",1,false,pw0));
   const kg=(sv&&sv.kg)||(sp&&sp.kg)||G, why=sv&&sv.kg?"as saved before":sp&&sp.kg?"as suggested":"";
   const ch=Object.assign({k,why},cstChainKg(cstBuOf(ut),kg,vol,pw0)); if(!ch.pw&&pw0&&cstEndsPc(ch)) ch.pw=String(pw0); return ch; }
@@ -3800,7 +3820,7 @@ function cstRowHtml(r){ const U=RC(), s=cstSel(r), id=r.id, C=S.cost||{}, can=!!
   /* v22.61: priced a [unit ▾] · 1 [pack] = [N] [unit ▾] · 1 pc = [w] g */
   const ch=s.ch, nm=esc(r.name), sel=(k,list,v,lab)=>`<select class="rcin cstsel" data-rci="${k}:${esc(id)}" aria-label="${lab} for ${nm}">${list.map(u=>`<option ${u===v?"selected":""}>${u}</option>`).join("")}</select>`;
   const num=(k,v,lab,ph)=>`<input type="number" inputmode="decimal" min="0" step="any" data-rci="${k}:${esc(id)}" value="${esc(v??"")}" placeholder="${ph||""}" aria-label="${lab} for ${nm}">`;
-  const chain=ch?`<span class="cstkg">${s.src==="typed"?`RM ${num("ctp",s.tp,"Price","0.00")} a`:"Priced a"} ${sel("cbu",CST_BU,ch.bu,"Unit priced")}</span>${cstPack(ch.bu)?`<span class="cstkg">1 ${esc(ch.bu)} = ${num("cpn",ch.pn,`How much in one ${ch.bu}`,"?")} ${sel("cpu",CST_PU,ch.pu,`Unit in one ${ch.bu}`)}</span>`:""}${cstEndsPc(ch)?`<span class="cstkg">1 pc = ${num("cpw",ch.pw,"Grams in one piece","?")} g</span>`:""}`:"";
+  const chain=ch?`<span class="cstkg">${s.src==="typed"?`RM ${num("ctp",s.tp,"Price","0.00")} a`:"Priced a"} <input class="rcin cstbu" list="cst-bul" data-rci="cbu:${esc(id)}" value="${esc(ch.bu)}" placeholder="unit" autocomplete="off" autocapitalize="none" enterkeyhint="done" aria-label="Unit priced for ${nm} — type to find one, or a new one"></span>${cstPack(ch.bu)?`<span class="cstkg">1 ${esc(ch.bu)} = ${num("cpn",ch.pn,`How much in one ${ch.bu}`,"?")} ${sel("cpu",CST_PU,ch.pu,`Unit in one ${ch.bu}`)}</span>`:""}${cstEndsPc(ch)?`<span class="cstkg">1 pc = ${num("cpw",ch.pw,"Grams in one piece","?")} g</span>`:""}`:"";
   const ws=(s.src==="bill"||s.src==="list")&&s.kg>0&&(s.waste>0||s.fruit)?`<label class="cstkg">waste % <input type="number" inputmode="decimal" min="0" max="90" step="any" data-rci="cws:${esc(id)}" value="${Math.round((s.waste||0)*1000)/10}" aria-label="Waste % (skin, seeds) for ${nm}" style="width:70px"></label>`:"";
   const res=`<span class="cstres">${cstResHtml(s)}</span>`;
   const pick=U.cpk===id;
@@ -3828,7 +3848,7 @@ function rcIngsView(){ const R=S.rcp||{}, U=RC(); U.sec="ings";
   return `${head}${rcNav()}${bills}<div class="panel"><p class="small" style="margin:0 0 8px"><b>${priced}</b> of ${all.length} have a price in the Recipe Master.</p><div class="rcchips" role="group" aria-label="Show">${CST_COND.map(([k,t])=>`<button class="rcchip" data-rc="cf:${k}" aria-pressed="${f===k}">${t} (${cnt[k]})</button>`).join("")}</div>
     <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><input type="search" class="rcq" data-rci="cq2" value="${esc(U.cq2||"")}" placeholder="Search an ingredient" aria-label="Search an ingredient" style="flex:1;min-width:180px"><select class="rcin" data-rci="csort" aria-label="Sort" style="width:auto"><option value="az" ${U.csort!=="used"?"selected":""}>A–Z</option><option value="used" ${U.csort==="used"?"selected":""}>Most used first</option></select></div>
     <p class="small muted" style="margin:6px 0 0">${({missing:"No price in the Recipe Master yet.",update:"A newer bill or list price differs from the price saved.",check:"A price was found but the item or how it is packed needs a look.",nobill:"No Bukku bill line found for the name — Change to search, or type the price.",unused:"Not used in any recipe or cake.",ticked:"Will be saved when you tap Save.",all:""})[f]} RM a kg = what was paid for one unit on the latest bill (after discount; tax included when the bill has it) ÷ the kg in that unit; litres count as kg. Pick the unit it is priced in — a bag, ctn or tray asks what is in one (1 ctn = 12 kg, 1 tray = 30 pc); pieces ask the grams in one piece (or keep a price a piece). ${C.canSave?"Tick <b>Save</b> on the prices to keep, then save at the bottom.":"Only Alfred saves prices."}</p></div>
-    <div id="cst-rows">${L.slice(0,n).map(({r})=>cstRowHtml(r)).join("")||`<div class="panel"><div class="empty">Nothing here.</div></div>`}</div>
+    <datalist id="cst-bul">${cstUnits().map(u=>`<option value="${esc(u)}">`).join("")}</datalist><div id="cst-rows">${L.slice(0,n).map(({r})=>cstRowHtml(r)).join("")||`<div class="panel"><div class="empty">Nothing here.</div></div>`}</div>
     ${L.length>n?`<div class="row" style="justify-content:center"><button class="btn" data-rc="cmore">Show more (${L.length-n} left)</button></div>`:""}
     ${C.canSave?`<div class="cstbar noprint"><span><b>${ticked}</b> price${ticked===1?"":"s"} ticked</span><button class="btn pri" data-rc="csave" ${ticked&&!S.ui.costSaving?"":"disabled"}>${S.ui.costSaving?"Saving…":`Save ${ticked} to the Recipe Master`}</button></div>`:""}`; }
 /* cost of a component: RM a gram (from the Recipe Master prices; our recipes inside counted) */
@@ -3894,8 +3914,12 @@ function cstAct(a){ const U=RC(); U.cst=U.cst||{};
   if(/^cset:/.test(a)){ const [id,src,k]=a.slice(5).split("|"), st=U.cst[id]||(U.cst[id]={}); st.src=src; st.k=k||""; st.ch=null; st.use=src==="none"?false:(src==="typed"?null:true); if(src==="typed"&&st.tp==null) st.tp=""; U.cpk=""; U.cpq=null; render(); return true; }
   if(/^ccsv:/.test(a)){ cstCsv(a.slice(5)); return true; }
   return false; }
+/* v22.62 the unit box: empty while typing so every suggestion shows (the old unit comes back if nothing is typed); Enter or leaving takes it */
+document.addEventListener("focusin",e=>{ const t=e.target; if(t&&t.classList&&t.classList.contains("cstbu")){ t.dataset.was=t.value; t.placeholder=t.value||"unit"; t.value=""; } });
+document.addEventListener("focusout",e=>{ const t=e.target; if(t&&t.classList&&t.classList.contains("cstbu")&&!t.value.trim()) t.value=t.dataset.was||""; });
+document.addEventListener("change",e=>{ const t=e.target, r=t&&t.dataset&&t.dataset.rci; if(r&&/^cbu:/.test(r)&&t.value.trim()) cstInput(t,r,e); });
 /* inputs on the Prices tab: kg in one unit, typed price, Save tick, the picker search, the ingredient search */
-function cstInput(t,k){ const U=RC(); U.cst=U.cst||{};
+function cstInput(t,k,ev){ const U=RC(); U.cst=U.cst||{};
   if(k==="cpq"){ U.cpq=t.value; const el=document.getElementById("cst-pl"); if(el) el.innerHTML=cstPickInner(U.cpk); return true; }
   if(k==="csort"){ U.csort=t.value; render(); return true; }
   if(k==="cq2"||k==="cks"){ U[k]=t.value; clearTimeout(cstInput.tm); cstInput.tm=setTimeout(()=>{ const a=document.activeElement, id=a&&a.dataset&&a.dataset.rci; render(); if(id){ const e=document.querySelector(`[data-rci="${id}"]`); if(e){ e.focus(); try{ e.setSelectionRange(e.value.length,e.value.length); }catch(x){} } } },350); return true; }
@@ -3905,8 +3929,12 @@ function cstInput(t,k){ const U=RC(); U.cst=U.cst||{};
   else if(m[1]==="ws"){ st.waste=t.value; if(st.use==null||st.use===false) st.use=true; }
   else if(m[1]==="tp"){ st.tp=t.value; if(st.use==null||st.use===false) st.use=true; }
   else { /* v22.61: the chain — a unit picked redraws the row (the questions change), a number updates the result */
-    if(!st.ch) st.ch=Object.assign({},cur.ch||{bu:"kg",pn:"",pu:"kg",pw:""},{k:cur.k||st.k||"",why:""}); st.ch[m[1]]=t.value; st.ch.why=""; if(st.use==null||st.use===false) st.use=true;
-    if(m[1]==="bu"||m[1]==="pu"){ const box0=document.getElementById("cst-"+id); if(box0){ box0.outerHTML=cstRowHtml(r); const nb=document.querySelector(`[data-rci="${k}"]`); if(nb) try{ nb.focus(); }catch(e){} } } }
+    let val=t.value, pick=false;
+    if(m[1]==="bu"){ /* v22.62: typing only suggests; the unit is taken when one is picked from the list, or on Enter / leaving the box */
+      pick=!!ev&&ev.type==="input"&&ev.inputType==="insertReplacementText"; if(ev&&ev.type==="input"&&!pick) return true; val=cstUnitTyped(val); if(!val) return true; t.value=val; }
+    if(!st.ch) st.ch=Object.assign({},cur.ch||{bu:"kg",pn:"",pu:"kg",pw:""},{k:cur.k||st.k||"",why:""}); st.ch[m[1]]=val; st.ch.why=""; if(st.use==null||st.use===false) st.use=true;
+    if(m[1]==="bu"||m[1]==="pu"){ const box0=document.getElementById("cst-"+id); if(box0){ box0.outerHTML=cstRowHtml(r); const nb=m[1]==="pu"?document.querySelector(`[data-rci="${k}"]`):(pick?document.querySelector(`[data-rci="cpn:${id}"],[data-rci="cpw:${id}"]`):null); if(nb) try{ nb.focus(); }catch(e){} }
+      const dl=document.getElementById("cst-bul"); if(dl&&m[1]==="bu"&&!cstUnits().slice(0,dl.options.length).includes(val)) dl.innerHTML=cstUnits().map(u=>`<option value="${esc(u)}">`).join(""); } }
   const box=document.getElementById("cst-"+id); if(box&&m[1]!=="use"){ const s=cstSel(r), res=box.querySelector(".cstres"), cb=box.querySelector('[data-rci="cuse:'+id+'"]');
     if(res) res.innerHTML=cstResHtml(s);
     if(cb) cb.checked=!!s.use; else if(s.has&&(S.cost||{}).canSave){ const c=box.querySelector(".cstc"); if(c) c.insertAdjacentHTML("beforeend",`<label class="cstuse"><input type="checkbox" data-rci="cuse:${esc(id)}" ${s.use?"checked":""}> Save</label>`); } }
@@ -4164,7 +4192,7 @@ async function rcAct(a,b){ const U=RC();
   if(a==="link"){ const v=(document.getElementById("rc-link")||{}).value||""; b.disabled=true; try{ const r=await GS("recipeSheetSave",v); toast(`Now reading ${r.title}`); S.rcp=null; S.rcpAt=0; rcLoad(true); }catch(e){ toast(e.message); } b.disabled=false; render(); return; }
   if(a==="copy"){ const c=rcComp((U.view||"").slice(2)); if(!c) return; const x=rcCalc(c), out=[`${c.id} ${c.name}  × ${rcF(x.k,3)}`]; if(x.line) out.push(x.line); { const hg=c.lines.some(l=>String(l.grp||"").trim()); let lg=null; rcSortLines(c.lines).forEach(l=>{ const gk=String(l.grp||"").trim().toUpperCase(); if(hg&&gk!==lg) out.push(rcPart(l.grp)+":"); lg=gk; out.push(`${hg?"  ":""}${rcIng(l.ing)}: ${rcAmt(l,x.k)}`); }); } out.push(`Total: ${rcF(x.sum*x.k)} g`);
     const t=out.join("\n"); try{ await navigator.clipboard.writeText(t); toast("Weights copied"); }catch(e){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); toast("Weights copied"); }catch(_){ toast("Could not copy — select the weights in the table"); } ta.remove(); } return; } }
-document.addEventListener("input",e=>{ const t=e.target, d=t&&t.dataset; if(!d||d.rci==null) return; const U=RC(); if((/^c(tp|use|ws|bu|pn|pu|pw):/.test(d.rci)||["cpq","cq2","cks","csort"].includes(d.rci))&&cstInput(t,d.rci)) return; U[d.rci]=t.value; const el=document.getElementById("rc-list");
+document.addEventListener("input",e=>{ const t=e.target, d=t&&t.dataset; if(!d||d.rci==null) return; const U=RC(); if((/^c(tp|use|ws|bu|pn|pu|pw):/.test(d.rci)||["cpq","cq2","cks","csort"].includes(d.rci))&&cstInput(t,d.rci,e)) return; U[d.rci]=t.value; const el=document.getElementById("rc-list");
   if(d.rci==="q"){ if(el) el.innerHTML=rcCakesInner(); return; } if(d.rci==="mq"){ if(el) el.innerHTML=rcMouldsInner(); return; } if(d.rci==="mpq"){ const ml=document.getElementById("rc-mlist"); if(ml) ml.innerHTML=rcMPickInner(); return; }
   if(/^ml_/.test(d.rci)){ if(U.mf) U.mf[d.rci.slice(3)]=t.value; return; }
   if(d.rci==="fq"){ return; }
@@ -5018,7 +5046,9 @@ async function act(a,b){
   case "cancelProduct": S.ui.prEdit=null; render(); return;
   case "saveProduct":{const e=S.ui.prEdit; e.sku=(e.sku||"").toUpperCase().replace(/[^A-Z0-9-]/g,""); if(!e.sku||!e.name){toast("SKU and name are required");return;}
     if(products(true).some(p=>p.sku===e.sku&&p.id!==e.id)){toast("That SKU is already used");return;}
-    const id=e.id||e.sku.toLowerCase(); await put(`products/${id}`,{...e,id,retail:+e.retail||0,shelfDays:+e.shelfDays||3,active:String(e.active)!=="false"}); S.ui.prEdit=null; toast("Product saved"); return;}
+    const rf=String(e.runFrom||"").trim(), rd=Math.round(+e.runDay||0), rn=Math.round(+e.runDays||0); /* v22.62 limited cake */
+    if((rf||rd||rn)&&!(/^\d{4}-\d{2}-\d{2}$/.test(rf)&&rd>0&&rd<1000&&rn>0&&rn<=60)){toast("Limited cake: fill the first day, how many a day and for how many days (up to 60) — or leave all three blank");return;}
+    const id=e.id||e.sku.toLowerCase(); await put(`products/${id}`,{...e,id,retail:+e.retail||0,shelfDays:+e.shelfDays||3,active:String(e.active)!=="false",runFrom:rf?rf:"",runDay:rf?rd:"",runDays:rf?rn:""}); S.ui.prEdit=null; toast("Product saved"); return;}
   case "addPrice":{const n=S.ui.priceNew||{}; if(!n.partnerId||!n.productId||!(+n.retail)||!(+n.pct)){toast("Fill outlet, product, retail and %");return;}
     const id=newId(), st=b.dataset.status; const row={id,partnerId:n.partnerId,productId:n.productId,retail:+n.retail,pct:+n.pct,net:r2(+n.retail*+n.pct/100),from:n.from||t,status:"Proposed",approvedBy:n.approvedBy||"",note:n.note||"",createdAt:t};
     await put(`prices/${id}`,row);
