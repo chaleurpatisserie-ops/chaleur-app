@@ -3832,8 +3832,19 @@ function cstRowHtml(r){ const U=RC(), s=cstSel(r), id=r.id, C=S.cost||{}, can=!!
     ${U.cbuys===id&&it?`<div class="tw nocard"><table class="rct"><thead><tr><th>Date</th><th>Bill</th><th class="r">Qty</th><th class="r">RM a unit</th></tr></thead><tbody>${it.buys.map(x=>`<tr><td>${esc(cstDate(x.d))}</td><td>${esc(x.no)} <span class="small muted">${esc(x.s)}</span></td><td class="r mono">${rcF(x.q,2)} ${esc(x.u)}</td><td class="r mono">${fm(x.pu)}</td></tr>`).join("")}</tbody></table></div>`:""}
     ${pick?`<div class="cstpk"><input type="search" class="rcq" data-rci="cpq" value="${esc(U.cpq!=null?U.cpq:r.name)}" placeholder="Search the bills and price lists" aria-label="Search the bills and price lists"><div id="cst-pl">${cstPickInner(id)}</div><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-rc="cset:${esc(id)}|typed|">✎ Type the price</button><button class="btn sm" data-rc="cset:${esc(id)}|none|">No price</button></div></div>`:""}${U.cmg===id?cstMgHtml(r):""}</div>`; }
 /* v22.63 the row buttons: Save this price (only this row), Change, Type the price, Last buys, ⇄ Same as… (Alfred) */
-function cstBtnsHtml(r,s){ const U=RC(), id=r.id, it=s.item, can=!!(S.cost||{}).canSave, pick=U.cpk===id, boss=!!(S.rcp||{}).boss;
-  return `<div class="row cstbtns">${can&&s.has&&!s.same?`<button class="btn sm pri" data-rc="csave1:${esc(id)}" ${S.ui.costSaving?"disabled":""}>Save this price</button>`:""}<button class="btn sm" data-rc="cpick:${esc(id)}">${pick?"Close":"Change"}</button>${s.src!=="typed"?`<button class="btn sm" data-rc="cset:${esc(id)}|typed|">✎ Type the price</button>`:""}${it&&it.buys.length>1?`<button class="btn sm" data-rc="cbuys:${esc(id)}">${U.cbuys===id?"Hide":"Last"} ${it.buys.length} buys</button>`:""}${r.kind==="i"&&boss?`<button class="btn sm" data-rc="cmg:${esc(id)}">${U.cmg===id?"Close":"⇄ Same as…"}</button>`:""}</div>`; }
+/* v22.63b (Alfred 23 Oct: "can u give me a button, use suggestion if theres suggestion"): the prices named in a "To fill" note become
+   buttons — "Use Cooking cream RM 12.10/kg" saves that price (typed, RM a kg; a litre counts as a kg) in one tap */
+function cstNoteOpts(note){ const out=[], seen={}, t=String(note||""), re=/RM\s?([\d,]+(?:\.\d+)?)\s*\/\s*(kg|L)\b/gi; let m, from=0;
+  while((m=re.exec(t))){ const x=+m[1].replace(/,/g,""), pre0=t.slice(from,m.index); from=re.lastIndex; if(!(x>0)||seen[x]) continue; seen[x]=1;
+    let pre=pre0; for(let k=0;k<3;k++) pre=pre.replace(/\([^()]*\)/g," "); pre=pre.replace(/["“”]/g,"").replace(/[\s:;,(—–→-]+$/,"");
+    const op=pre.lastIndexOf("("); if(op>=0){ const aft=pre.slice(op+1); pre=!aft.trim()||/\b(list|claims?|bills?)\b|\b20\d\d\b/i.test(aft)?pre.slice(0,op):aft; } /* a price inside brackets: name it by what is before them, unless it is "(1:3 → RM…)" */
+    const pc=pre.split(/[;,.?!)—–→]|:(?!\d)|\bor\b|\bis\b/i).map(x=>x.trim()).filter(Boolean);
+    pre=(pc.pop()||"").replace(/\b(a|an|the|bills?|claims?|list|no|same|as|which|your)\b/gi," ").trim().split(/\s+/).filter(Boolean).slice(-3).join(" ");
+    out.push({lab:pre,v:x,u:/^l$/i.test(m[2])?"L":"kg"}); } return out.slice(0,4); }
+function cstBtnsHtml(r,s){ const U=RC(), id=r.id, it=s.item, can=!!(S.cost||{}).canSave, pick=U.cpk===id, boss=!!(S.rcp||{}).boss, st=(U.cst||{})[id]||{}, busy=S.ui.costSaving?"disabled":"";
+  const touched=!!(st.src||st.tp!=null||st.ch||st.waste!=null), sug=!touched&&(s.pnote!=null||s.src==="bill"||s.src==="list"||s.src==="std");
+  const opts=can&&!s.has&&s.pnote?cstNoteOpts(s.pnote):[];
+  return `<div class="row cstbtns">${can&&s.has&&!s.same?`<button class="btn sm pri" data-rc="csave1:${esc(id)}" ${busy}>${sug?"✓ Use suggestion":"Save this price"}</button>`:""}${opts.map(o=>`<button class="btn sm pri" data-rc="cuse1:${esc(id)}|${o.v}" ${busy}>Use ${o.lab?esc(o.lab)+" ":""}RM ${fm(o.v)}/${o.u}</button>`).join("")}<button class="btn sm" data-rc="cpick:${esc(id)}">${pick?"Close":"Change"}</button>${s.src!=="typed"?`<button class="btn sm" data-rc="cset:${esc(id)}|typed|">✎ Type the price</button>`:""}${it&&it.buys.length>1?`<button class="btn sm" data-rc="cbuys:${esc(id)}">${U.cbuys===id?"Hide":"Last"} ${it.buys.length} buys</button>`:""}${r.kind==="i"&&boss?`<button class="btn sm" data-rc="cmg:${esc(id)}">${U.cmg===id?"Close":"⇄ Same as…"}</button>`:""}</div>`; }
 /* v22.63 (Alfred 23 Oct: "this are the same"): ⇄ Same as… — Alfred merges a duplicate ingredient into the one kept (recipeIngMerge: its lines move, amounts unchanged) */
 function cstMgHtml(r){ const U=RC(), q=U.cmgq!=null?U.cmgq:r.name;
   return `<div class="cstpk"><p class="small" style="margin:0 0 6px">Is <b>${esc(r.name)}</b> the same as another ingredient or one of our recipes? Pick it below.</p><input type="search" class="rcq" data-rci="cmgq" value="${esc(q)}" placeholder="Search the ingredients and recipes" aria-label="Search the ingredients and recipes"><div id="cst-mg">${cstMgInner(r.id)}</div></div>`; }
@@ -3934,6 +3945,7 @@ function cstAct(a){ const U=RC(); U.cst=U.cst||{};
   if(a==="cpull"){ cstPull(); return true; }
   if(a==="csave"){ cstSave(); return true; }
   if(/^csave1:/.test(a)){ cstSave(a.slice(7)); return true; }
+  if(/^cuse1:/.test(a)){ const [id,v]=a.slice(6).split("|"); if(!(+v>0)) return true; U.cst[id]={src:"typed",k:"",tp:String(+v),ch:null,use:true}; cstSave(id); return true; }
   if(a==="ctickall"){ cstRows().forEach(r=>{ const s=cstSel(r); if(!s.use&&s.sure&&s.has&&!s.same){ (U.cst[r.id]||(U.cst[r.id]={})).use=true; } }); render(); return true; }
   if(a==="cuntick"){ Object.keys(U.cst).forEach(k=>{ if(U.cst[k]) U.cst[k].use=false; }); render(); return true; }
   if(/^cmg:/.test(a)){ const id=a.slice(4); U.cmg=U.cmg===id?"":id; U.cmgq=null; U.cmgTo=""; U.cmgn=""; render(); return true; }
