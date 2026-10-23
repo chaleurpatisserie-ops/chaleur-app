@@ -3695,6 +3695,7 @@ function cstAuto(){ if(S.costAuto) return S.costAuto; const out={}, items=(S.cos
   cstRows().forEach(r=>{ const A=cstTok(r.name); let b1=null,b2=null; pre.forEach(p=>{ const sc=cstScore(A,p.t); if(!sc.s) return; const o={k:p.x.k,s:sc.s,all:sc.all}; if(!b1||o.s>b1.s){ b2=b1; b1=o; } else if(!b2||o.s>b2.s) b2=o; });
     if(b1&&b1.s>=0.34) out[r.id]={k:b1.k,sure:b1.all&&b1.s>=0.84&&(!b2||b1.s-b2.s>=0.15)}; });
   return S.costAuto=out; }
+const CST_FRUIT=/\b(fresh|apples?|mangos?|mangoes|pears?|strawberr(y|ies)|lemons?|limes?|oranges?|bananas?|guavas?|pineapples?|kiwis?|peach(es)?|grapes?|melons?|papayas?|dragon ?fruits?|lychees?|longans?|rambutans?|kurma|dates)\b/i, CST_NOTFRUIT=/puree|purée|iqf|juice|jam|syrup|monin|compote|essence|paste|powder|zest|peel|frozen|glaze|cream|milk|infus/i;
 const cstStd=name=>((S.cost||{}).std||[]).find(s=>{ try{ return new RegExp(s.re,"i").test(name); }catch(e){ return false; } })||null;
 /* what a row will save: {src, k, item|list, kg, kgWhy, pu, cost, d, ref, sup, warn[], sure} */
 function cstSel(r){ const U=RC(), st=(U.cst||(U.cst={}))[r.id]||{}, C=S.cost||{}, map=(C.map||{})[r.id], std=cstStd(r.name);
@@ -3716,6 +3717,9 @@ function cstSel(r){ const U=RC(), st=(U.cst||(U.cst={}))[r.id]||{}, C=S.cost||{}
     if(b.q===1&&same.length>1&&med>0&&b.pu>2.5*med){ o.warn.push(`1 × RM ${fm(b.pu)} on ${b.no} — the bill may have the whole quantity in one line; check it`); o.sure=false; }
     if(new Set(it.buys.map(x=>x.u)).size>1) o.warn.push(`units differ between bills (${[...new Set(it.buys.map(x=>x.u||"?"))].join(" / ")})`);
     if(b.tx) o.warn.push("tax included"); }
+  /* v22.60c (Alfred 23 Oct: "for things like fruits. we buy and we remove the skin. and seeds. so probally ard 25% waste") */
+  if(src==="bill"||src==="list"){ const wm=map&&map.k===k&&map.waste!=null?map.waste:(pp&&pp.k===k&&pp.waste!=null?pp.waste:null); o.fruit=CST_FRUIT.test(r.name)&&!CST_NOTFRUIT.test(r.name);
+    o.waste=st.waste!=null&&st.waste!==""?Math.min(90,Math.max(0,+st.waste||0))/100:(wm!=null?wm:(o.fruit?0.25:0)); if(o.cost>0&&o.waste>0) o.cost=o.cost/(1-o.waste); }
   if(o.cost>0&&r.now>0){ o.chg=(o.cost-r.now)/r.now; if(Math.abs(o.chg)>0.3) o.warn.push(`${o.chg>0?"+":""}${Math.round(o.chg*100)}% against the price now`); }
   o.use=st.use!=null?!!st.use:!!(o.sure&&o.cost>0&&!(r.now>0&&Math.abs(o.cost-r.now)<0.005));
   if(!(o.cost>0)) o.use=false; return o; }
@@ -3745,12 +3749,13 @@ function cstRowHtml(r){ const U=RC(), s=cstSel(r), id=r.id, C=S.cost||{}, can=!!
   else if(s.src==="typed") src=`Your price:`;
   else src=`<span class="muted">No Bukku bill found for this name.</span>`;
   const kgIn=(s.src==="bill"||s.src==="list")?`<label class="cstkg">kg in one ${esc(String((s.src==="bill"?b.u:s.list.u)||"unit").toLowerCase())} <input type="number" inputmode="decimal" min="0" step="any" data-rci="ckg:${esc(id)}" value="${s.kg>0?+(+s.kg).toFixed(4):""}" aria-label="kg in one unit for ${esc(r.name)}"></label>`:"";
+  const ws=(s.src==="bill"||s.src==="list")&&(s.waste>0||s.fruit)?`<label class="cstkg">waste % <input type="number" inputmode="decimal" min="0" max="90" step="any" data-rci="cws:${esc(id)}" value="${Math.round((s.waste||0)*1000)/10}" aria-label="Waste % (skin, seeds) for ${esc(r.name)}" style="width:70px"></label>`:"";
   const tp=s.src==="typed"?`<label class="cstkg">RM a kg <input type="number" inputmode="decimal" min="0" step="any" data-rci="ctp:${esc(id)}" value="${esc(s.tp||"")}" aria-label="Price a kg for ${esc(r.name)}"></label>`:"";
-  const res=s.cost>0?`<span class="cstres">= <b>RM ${fm(s.cost)}</b>/kg${s.kgWhy?` <span class="small muted">(${esc(s.kgWhy)})</span>`:""}</span>`:(s.src==="bill"||s.src==="list")?`<span class="small muted">type the kg in one unit</span>`:"";
+  const res=s.cost>0?`<span class="cstres">= <b>RM ${fm(s.cost)}</b>/kg${s.kgWhy||s.waste>0?` <span class="small muted">(${esc([s.kgWhy,s.waste>0?`${Math.round(s.waste*100)}% waste counted`:""].filter(Boolean).join(", "))})</span>`:""}</span>`:(s.src==="bill"||s.src==="list")?`<span class="small muted">type the kg in one unit</span>`:"";
   const pick=U.cpk===id;
   return `<div class="cst${s.use?" on":""}" id="cst-${esc(id)}"><div class="csth"><span class="cstn"><b>${esc(r.name)}</b><span class="small muted">${esc(id)}${r.kind==="c"?" · ready-made":""} · ${(n=>n?`in ${n} recipe${n===1?"":"s"}`:"not in a recipe")(cstUse()[id]||0)}${r.pb?` · now from ${esc(r.pb)}${r.pd?` ${esc(cstDate(r.pd))}`:""}`:""}</span></span><span class="cstnow">${now}</span></div>
-    <p class="small cstsrc">${src}</p>${s.pnote?`<p class="small cstprop">${s.psure?"Suggested":"Suggested — please check"}: ${esc(s.pnote)}</p>`:""}
-    <div class="cstc">${kgIn}${tp}${res}${can&&s.cost>0?`<label class="cstuse"><input type="checkbox" data-rci="cuse:${esc(id)}" ${s.use?"checked":""}> Save</label>`:""}</div>
+    <p class="small cstsrc">${src}</p>${s.pnote?`<p class="small cstprop">${s.src==="none"?"To fill":s.psure?"Suggested":"Suggested — please check"}: ${esc(s.pnote)}</p>`:""}
+    <div class="cstc">${kgIn}${ws}${tp}${res}${can&&s.cost>0?`<label class="cstuse"><input type="checkbox" data-rci="cuse:${esc(id)}" ${s.use?"checked":""}> Save</label>`:""}</div>
     ${s.warn.length?`<p class="small cstw">⚠ ${s.warn.map(esc).join(" · ")}</p>`:""}
     <div class="row cstbtns"><button class="btn sm" data-rc="cpick:${esc(id)}">${pick?"Close":"Change"}</button>${s.src!=="typed"?`<button class="btn sm" data-rc="cset:${esc(id)}|typed|">✎ Type the price</button>`:""}${it&&it.buys.length>1?`<button class="btn sm" data-rc="cbuys:${esc(id)}">${U.cbuys===id?"Hide":"Last"} ${it.buys.length} buys</button>`:""}</div>
     ${U.cbuys===id&&it?`<div class="tw nocard"><table class="rct"><thead><tr><th>Date</th><th>Bill</th><th class="r">Qty</th><th class="r">RM a unit</th></tr></thead><tbody>${it.buys.map(x=>`<tr><td>${esc(cstDate(x.d))}</td><td>${esc(x.no)} <span class="small muted">${esc(x.s)}</span></td><td class="r mono">${rcF(x.q,2)} ${esc(x.u)}</td><td class="r mono">${fm(x.pu)}</td></tr>`).join("")}</tbody></table></div>`:""}
@@ -3819,7 +3824,7 @@ async function cstPull(){ const U=RC(); let tot=0; S.ui.costPull="Reading Bukku�
   try{ for(let i=0;i<6;i++){ const r=await GS("costPull"); tot+=r.opened||0; const m=S.cost&&S.cost.map, L=S.cost&&S.cost.lists, sd=S.cost&&S.cost.std, pr=S.cost&&S.cost.prop; S.cost=Object.assign({},S.cost||{},r,{map:m||{},lists:L||[],std:sd||[],prop:pr||{}}); delete S.cost._k; S.costAuto=null; if(!r.more) break; S.ui.costPull=`Reading Bukku… ${tot} bills opened`; render(); }
     toast(`Bukku bills read: ${S.cost.nb} bills${tot?` (${tot} opened)`:""}`); }catch(e){ toast(e.message); } S.ui.costPull=""; render(); }
 async function cstSave(){ const U=RC(), out=[]; cstRows().forEach(r=>{ const s=cstSel(r); if(!s.use||!(s.cost>0)) return;
-    out.push({id:r.id,cost:Math.round(s.cost*100)/100,src:s.src==="std"?"typed":s.src,k:s.src==="bill"||s.src==="list"?s.k:"",kg:s.kg||null,d:s.d||"",ref:s.src==="std"?"":s.ref||"",sup:s.sup||""}); });
+    out.push({id:r.id,cost:Math.round(s.cost*100)/100,src:s.src==="std"?"typed":s.src,k:s.src==="bill"||s.src==="list"?s.k:"",kg:s.kg||null,waste:s.waste||0,d:s.d||"",ref:s.src==="std"?"":s.ref||"",sup:s.sup||""}); });
   if(!out.length){ toast("Tick at least one price"); return; }
   S.ui.costSaving=true; render();
   try{ const r=await GS("costSave",out); toast(`Saved ${r.n} price${r.n===1?"":"s"} to the Recipe Master`); U.cst={}; S.cost=null; S.costAuto=null; cstLoad(); S.rcpAt=0; rcLoad(true); }catch(e){ toast(e.message); }
@@ -3842,9 +3847,10 @@ function cstInput(t,k){ const U=RC(); U.cst=U.cst||{};
   if(k==="cpq"){ U.cpq=t.value; const el=document.getElementById("cst-pl"); if(el) el.innerHTML=cstPickInner(U.cpk); return true; }
   if(k==="csort"){ U.csort=t.value; render(); return true; }
   if(k==="cq2"||k==="cks"){ U[k]=t.value; clearTimeout(cstInput.tm); cstInput.tm=setTimeout(()=>{ const a=document.activeElement, id=a&&a.dataset&&a.dataset.rci; render(); if(id){ const e=document.querySelector(`[data-rci="${id}"]`); if(e){ e.focus(); try{ e.setSelectionRange(e.value.length,e.value.length); }catch(x){} } } },350); return true; }
-  const m=/^c(kg|tp|use):(.+)$/.exec(k); if(!m) return false; const id=m[2], r=cstRows().find(x=>x.id===id); if(!r) return true; const cur=cstSel(r), st=U.cst[id]||(U.cst[id]={});
+  const m=/^c(kg|tp|use|ws):(.+)$/.exec(k); if(!m) return false; const id=m[2], r=cstRows().find(x=>x.id===id); if(!r) return true; const cur=cstSel(r), st=U.cst[id]||(U.cst[id]={});
   if(!st.src){ st.src=cur.src; st.k=cur.k||""; }
   if(m[1]==="use"){ st.use=!!t.checked; }
+  else if(m[1]==="ws"){ st.waste=t.value; if(st.use==null||st.use===false) st.use=true; }
   else { st[m[1]]=t.value; if(st.use==null||st.use===false) st.use=true; }
   const box=document.getElementById("cst-"+id); if(box&&m[1]!=="use"){ const s=cstSel(r), res=box.querySelector(".cstres"), cb=box.querySelector('[data-rci="cuse:'+id+'"]');
     if(res) res.innerHTML=s.cost>0?`= <b>RM ${fm(s.cost)}</b>/kg`:""; else if(s.cost>0){ const c=box.querySelector(".cstc"); if(c) c.insertAdjacentHTML("beforeend",`<span class="cstres">= <b>RM ${fm(s.cost)}</b>/kg</span>`); }
@@ -4103,7 +4109,7 @@ async function rcAct(a,b){ const U=RC();
   if(a==="link"){ const v=(document.getElementById("rc-link")||{}).value||""; b.disabled=true; try{ const r=await GS("recipeSheetSave",v); toast(`Now reading ${r.title}`); S.rcp=null; S.rcpAt=0; rcLoad(true); }catch(e){ toast(e.message); } b.disabled=false; render(); return; }
   if(a==="copy"){ const c=rcComp((U.view||"").slice(2)); if(!c) return; const x=rcCalc(c), out=[`${c.id} ${c.name}  × ${rcF(x.k,3)}`]; if(x.line) out.push(x.line); { const hg=c.lines.some(l=>String(l.grp||"").trim()); let lg=null; rcSortLines(c.lines).forEach(l=>{ const gk=String(l.grp||"").trim().toUpperCase(); if(hg&&gk!==lg) out.push(rcPart(l.grp)+":"); lg=gk; out.push(`${hg?"  ":""}${rcIng(l.ing)}: ${rcF((+l.g||0)*x.k)} g`); }); } out.push(`Total: ${rcF(x.sum*x.k)} g`);
     const t=out.join("\n"); try{ await navigator.clipboard.writeText(t); toast("Weights copied"); }catch(e){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); toast("Weights copied"); }catch(_){ toast("Could not copy — select the weights in the table"); } ta.remove(); } return; } }
-document.addEventListener("input",e=>{ const t=e.target, d=t&&t.dataset; if(!d||d.rci==null) return; const U=RC(); if((/^c(kg|tp|use):/.test(d.rci)||["cpq","cq2","cks","csort"].includes(d.rci))&&cstInput(t,d.rci)) return; U[d.rci]=t.value; const el=document.getElementById("rc-list");
+document.addEventListener("input",e=>{ const t=e.target, d=t&&t.dataset; if(!d||d.rci==null) return; const U=RC(); if((/^c(kg|tp|use|ws):/.test(d.rci)||["cpq","cq2","cks","csort"].includes(d.rci))&&cstInput(t,d.rci)) return; U[d.rci]=t.value; const el=document.getElementById("rc-list");
   if(d.rci==="q"){ if(el) el.innerHTML=rcCakesInner(); return; } if(d.rci==="mq"){ if(el) el.innerHTML=rcMouldsInner(); return; } if(d.rci==="mpq"){ const ml=document.getElementById("rc-mlist"); if(ml) ml.innerHTML=rcMPickInner(); return; }
   if(/^ml_/.test(d.rci)){ if(U.mf) U.mf[d.rci.slice(3)]=t.value; return; }
   if(d.rci==="fq"){ return; }
