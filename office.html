@@ -3764,7 +3764,7 @@ function cstSel(r){ const U=RC(), st=(U.cst||(U.cst={}))[r.id]||{}, C=S.cost||{}
   if(r.kind==="c"){ o.cpc=null; if(!(o.cost>0)&&o.pcs>0) o.warn.push("a ready-made item is costed by weight — type the grams in one piece"); }
   if(o.cost>0&&r.now>0){ o.chg=(o.cost-r.now)/r.now; if(Math.abs(o.chg)>0.3) o.warn.push(`${o.chg>0?"+":""}${Math.round(o.chg*100)}% against the price now`); }
   else if(o.cpc>0&&r.nowPc>0){ o.chg=(o.cpc-r.nowPc)/r.nowPc; if(Math.abs(o.chg)>0.3) o.warn.push(`${o.chg>0?"+":""}${Math.round(o.chg*100)}% against the price a piece now`); }
-  o.has=o.cost>0||o.cpc>0; o.same=cstSame(r,o);
+  o.has=o.cost>0||o.cpc>0; o.same=o.has&&cstSame(r,o); /* nothing found is never "the same" — a suggestion to fill stays To check */
   o.use=st.use!=null?!!st.use:!!(o.sure&&o.has&&!o.same);
   if(!o.has) o.use=false; return o; }
 /* the price found is the one already in the Recipe Master (RM a kg and RM a pc) */
