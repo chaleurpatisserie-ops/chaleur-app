@@ -951,7 +951,9 @@ details.doold{margin-top:10px;border-top:1px solid var(--line,#e8dcd6);padding-t
 /* v22.65: editable component rows, Used in, parts prices, search on every recipe / cake page */
 .rcnl.rcnk.rcoff{grid-template-columns:1fr auto}.rcoff s{opacity:.75}.rcnl.rcnk.rcnr{grid-template-columns:1fr 90px auto}.rcparts{margin-top:10px}.rcparts .rct td,.rcparts .rct th{padding:5px 6px}
 .rcjump{margin:0 0 10px}.rcjl .rcrow{padding:8px 4px}
-@media (max-width:560px){.rcnl.rcnk>.rcn{grid-column:1/-1}.rcnl.rcnk.rcoff>.rcn{grid-column:auto}.rcnl.rcnk.rcnr{grid-template-columns:1fr auto}}
+.rcpick{min-width:0}.rcpkl{margin-top:4px;max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper)}.rcpko{display:block;width:100%;text-align:left;padding:8px 10px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:inherit;cursor:pointer}.rcpko:last-child{border-bottom:0}.rcpko small{display:block}.rcpkn{padding:8px 10px}
+.rcfnd{margin:6px 0 2px}.rcingrow{cursor:default}
+@media (max-width:560px){.rcnl.rcnk>.rcpick{grid-column:1/-1}.rcnl.rcnk>.rcn{grid-column:1/-1}.rcnl.rcnk.rcoff>.rcn{grid-column:auto}.rcnl.rcnk.rcnr{grid-template-columns:1fr auto}}
 .cstbar{padding-right:118px!important;position:sticky;bottom:8px;z-index:5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;box-shadow:0 -4px 14px rgba(0,0,0,.10)}
 </style>
 </head><body>
@@ -1316,7 +1318,7 @@ function doRender(){
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
-  cardify(document.getElementById("main")); cardify(document.getElementById("modal")); fitTables(document.getElementById("main")); fitTables(document.getElementById("modal"));
+  cardify(document.getElementById("main")); cardify(document.getElementById("modal")); fitTables(document.getElementById("main")); fitTables(document.getElementById("modal")); rcPickUp(document.getElementById("main"));
   if(RO()&&S.tab!=="none"&&S.tab!=="recipes"){ const dv=DELIV()&&(S.tab==="plan"||S.tab==="deliveries"); $("#testbar").innerHTML=`<div class="testbar">${dv?`You can ${SUPK()?"create and edit delivery orders, ":""}change To make, snap the filled prep sheet, check colours and mark deliveries delivered here; the rest is view only.`:`This page is view only for you (${esc(AUTH.label||"your access")}). Ask Alfred or Joscelyn if you need to change it.`} Kitchen reports are in <a href="kitchen.html">Kitchen HQ</a>.</div>`; document.querySelectorAll("#main input,#main textarea,#main select,#modal input,#modal textarea,#modal select").forEach(el=>{ if(!el.dataset.ui&&!el.dataset.flt&&!el.dataset.stp&&!el.dataset.st&&!(DELIV()&&kitOK(el))) el.disabled=true; }); }
   if(aid){const e=document.getElementById(aid); if(e){e.focus({preventScroll:true}); if(sel&&"setSelectionRange" in e){try{e.setSelectionRange(sel[0],sel[1])}catch(_){}}}}
   tourFor(); if(S.loaded.size>=NCOL) setTimeout(()=>CA.tour.maybeStart(),300);
@@ -1324,6 +1326,24 @@ function doRender(){
   if(S.loaded.size>=NCOL&&!fmLinkTried){ fmLinkTried=true; if(Object.keys(((S.feedme||{}).pending)||{}).length) setTimeout(()=>fmLinkPull(false),1500); }
   if(S.loaded.size>=NCOL&&!prepWinAsked){ prepWinAsked=true; let go=""; try{ go=sessionStorage.getItem("ca.pwGo")||""; sessionStorage.removeItem("ca.pwGo"); }catch(e){} if(CA.prepWin) setTimeout(()=>CA.prepWin(!!go),go?200:600); }
 }
+/* v22.65b (Alfred 24 Oct: "can this be a filter … when type pecan, everything with pecan only will show. and listed ingredients or a component recipe"):
+   every long recipe / ingredient / cake list (Edit cake, New cake, Edit recipe › Used in, our recipe inside a recipe) gets a search box — type
+   "pecan" and only what has pecan is listed, tap one. The list itself stays a hidden <select>, so saving works as before. */
+function rcPickUp(root){ if(!root) return; root.querySelectorAll("select.rcnls:not([data-rcpk]),select[data-pick]:not([data-rcpk])").forEach(s=>{ s.dataset.rcpk="1";
+  const cur=s.selectedOptions[0], first=s.options[0], what=first&&!first.value?first.textContent.replace(/^[\s—-]+|[\s—-]+$/g,""):"", w=document.createElement("div");
+  w.className="rcpick"+(s.classList.contains("rcnli")?" rcnli":"");
+  w.innerHTML=`<input type="search" class="rcin rcpki" autocomplete="off" value="${esc(cur&&cur.value?cur.textContent:"")}" placeholder="${esc(what?"Search "+what:"Search")} — type e.g. pecan" aria-label="${esc(s.getAttribute("aria-label")||"Search")}"><div class="rcpkl" hidden></div>`;
+  s.parentNode.insertBefore(w,s); w.appendChild(s); s.hidden=true; }); }
+function rcPickList(inp){ const w=inp.closest(".rcpick"), s=w&&w.querySelector("select"), L=w&&w.querySelector(".rcpkl"); if(!s||!L) return;
+  const cur=s.selectedOptions[0], q=cur&&cur.value&&inp.value===cur.textContent?"":inp.value, hit=cstFind(q), all=[...s.options].filter(o=>o.value&&hit(`${o.textContent} ${o.value} ${o.parentNode&&o.parentNode.label||""}`)), N=50;
+  L.innerHTML=all.length?all.slice(0,N).map(o=>`<button type="button" class="rcpko" data-v="${esc(o.value)}"><b>${esc(o.textContent)}</b>${o.parentNode&&o.parentNode.label?`<small class="muted">${esc(o.parentNode.label)}</small>`:""}</button>`).join("")+(all.length>N?`<div class="small muted rcpkn">+ ${all.length-N} more — type more to narrow it down</div>`:""):`<div class="small muted rcpkn">Nothing with "${esc(q)}".</div>`;
+  L.hidden=false; }
+function rcPickClose(except){ document.querySelectorAll(".rcpick .rcpkl:not([hidden])").forEach(L=>{ if(L.closest(".rcpick")!==except) L.hidden=true; }); }
+document.addEventListener("input",e=>{ const t=e.target; if(t&&t.classList&&t.classList.contains("rcpki")) rcPickList(t); });
+document.addEventListener("focusin",e=>{ const t=e.target; if(t&&t.classList&&t.classList.contains("rcpki")){ rcPickClose(t.closest(".rcpick")); try{ t.select(); }catch(_){} rcPickList(t); } });
+document.addEventListener("keydown",e=>{ const t=e.target; if(!t||!t.classList||!t.classList.contains("rcpki")) return; if(e.key==="Enter"){ e.preventDefault(); const b=t.closest(".rcpick").querySelector(".rcpko"); if(b) b.click(); } else if(e.key==="Escape") rcPickClose(null); });
+document.addEventListener("click",e=>{ const b=e.target&&e.target.closest&&e.target.closest(".rcpko"); if(!b){ const w=e.target&&e.target.closest&&e.target.closest(".rcpick"); rcPickClose(w||null); return; }
+  e.preventDefault(); const w=b.closest(".rcpick"), s=w.querySelector("select"), inp=w.querySelector(".rcpki"); s.value=b.dataset.v; const o=s.selectedOptions[0]; inp.value=o?o.textContent:""; w.querySelector(".rcpkl").hidden=true; s.dispatchEvent(new Event("input",{bubbles:true})); });
 const F=(k,d="")=>S.f[k]??d;
 const opt=(v,l,cur)=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`;
 const partnerSelect=(id,cur,withAll,noInt)=>`<select id="${id}" data-ui="partner">${withAll?opt("","All outlets",cur):""}${partners().filter(p=>!(noInt&&p.internal)).map(p=>opt(p.id,`${p.name} (${p.code})`,cur)).join("")}</select>`;
@@ -2816,7 +2836,7 @@ const rcCidName=cid=>{ const m=/^ing:(.+)$/.exec(String(cid||"")); return m?`${r
 const rcRecOpts=(sel,self,ing)=>{ const C=((S.rcp||{}).components||[]).filter(c=>c.id!==self); return rcGrp(C,rcCatOf).map(([k,a])=>`<optgroup label="${esc(k)}">${a.slice().sort((x,y)=>String(x.name).localeCompare(String(y.name))).map(c=>`<option value="${esc(c.id)}" ${c.id===sel?"selected":""}>${esc(c.name)} (${esc(c.id)})</option>`).join("")}</optgroup>`).join("")
   +(ing?`<optgroup label="Ingredient as it is (decor, dusting …)">${rcAsIsIng().map(x=>`<option value="ing:${esc(x.id)}" ${sel==="ing:"+x.id?"selected":""}>${esc(x.name)} — as it is</option>`).join("")}</optgroup>`:""); };
 const rcLnName=(pre,l,i,self)=>l.rc?`<select class="rcin rcnli rcnls" data-rci="${pre}_rc:${i}" aria-label="Our recipe ${i+1}"><option value="">— pick our recipe —</option>${rcRecOpts(l.ing,self)}</select>`:`<input class="rcin rcnli" list="rc-ingl" data-rci="${pre}_name:${i}" value="${esc(l.name)}" placeholder="Ingredient" aria-label="Ingredient ${i+1}">`;
-function rcCakesInner(){ const R=S.rcp||{}, hit=rcHit(RC().q), P=(R.products||[]).filter(p=>hit(p.id)||hit(p.name)||hit(p.range)||hit(p.app)||p.build.some(b=>{ const c=rcComp(b.comp); return c&&(hit(c.name)||hit(c.id)); }));
+function rcCakesInner(){ const q1=String(RC().q||"").trim(); if(q1) return rcFindHtml(q1,""); /* v22.65b */ const R=S.rcp||{}, hit=rcHit(RC().q), P=(R.products||[]).filter(p=>hit(p.id)||hit(p.name)||hit(p.range)||hit(p.app)||p.build.some(b=>{ const c=rcComp(b.comp); return c&&(hit(c.name)||hit(c.id)); }));
   const q0=String(RC().q||"").trim(), RX=q0?(R.components||[]).filter(c=>hit(c.id)||hit(c.name)||hit(c.old)||(c.lines||[]).some(l=>hit(rcIng(l.ing)))).sort((a,b)=>{ const an=String(a.name).toLowerCase().includes(q0.toLowerCase())?0:1, bn=String(b.name).toLowerCase().includes(q0.toLowerCase())?0:1; return an-bn||String(a.name).localeCompare(String(b.name)); }):[];
   const recs=RX.length?`<div class="rcgl">Recipes · ${RX.length}</div>${RX.slice(0,30).map(c=>rcCRow(c,` · ${esc(rcCatOf(c))}`)).join("")}`:"";
   if(!P.length) return recs||`<div class="empty">Nothing matches "${esc(RC().q)}".</div>`;
@@ -2828,14 +2848,14 @@ function rcCakesInner(){ const R=S.rcp||{}, hit=rcHit(RC().q), P=(R.products||[]
 function rcCakesView(){ const U=RC(); U.sec="cakes";
   return `${rcHeadHtml("Recipes",rcSub())}${rcNav()}${rcBossPanel("")}${rcAddBtns()}<div class="panel"><input type="search" id="rc-q" class="rcq" data-rci="q" value="${esc(U.q||"")}" placeholder="Search a cake, recipe or ingredient" aria-label="Search cakes"><div id="rc-list">${rcCakesInner()}</div></div>${rcPicAllPanel()}${rcOwner()}`; }
 /* 2. Components: categories → recipes */
-function rcCatInner(cat){ const R=S.rcp||{}, hit=rcHit(RC().cq), C=(R.components||[]).filter(c=>rcCatOf(c)===cat).filter(c=>hit(c.id)||hit(c.name)||hit(c.old)||c.lines.some(l=>hit(rcIng(l.ing)))).sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+function rcCatInner(cat){ const R=S.rcp||{}, hit=cstFind(RC().cq), C=(R.components||[]).filter(c=>rcCatOf(c)===cat).filter(c=>hit(c.id)||hit(c.name)||hit(c.old)||c.lines.some(l=>hit(rcIng(l.ing)))).sort((a,b)=>String(a.name).localeCompare(String(b.name)));
   return C.length?C.map(c=>rcCRow(c)).join(""):`<div class="empty">Nothing matches "${esc(RC().cq)}".</div>`; }
 function rcCatView(cat){ const U=RC(); U.sec="comps"; U.cat=cat; const n=((S.rcp||{}).components||[]).filter(c=>rcCatOf(c)===cat).length;
   return `${rcHeadHtml(cat,`${n} recipe${n===1?"":"s"} in ${esc(cat)}`,"Components")}${rcNav()}<div class="panel"><input type="search" id="rc-cq" class="rcq" data-rci="cq" value="${esc(U.cq||"")}" placeholder="Search in ${esc(cat)} (name, code or ingredient)" aria-label="Search recipes in this category"><div id="rc-list">${rcCatInner(cat)}</div></div>`; }
 /* 3. Calculator: search → the recipe's calculator */
 const rcRecent=()=>{ try{ return JSON.parse(localStorage.getItem("ca.rcRecent")||"[]").filter(id=>rcComp(id)); }catch(e){ return []; } };
 function rcCalcInner(){ const R=S.rcp||{}, q=String(RC().sq||"").trim(); if(!q){ const rec=rcRecent(); return rec.length?`<div class="rcgl">Recently used</div>${rec.map(id=>rcCRow(rcComp(id))).join("")}`:`<p class="small muted" style="margin:0">Type a recipe name, code (old codes too) or an ingredient.</p>`; }
-  const hit=rcHit(q), C=(R.components||[]).filter(c=>hit(c.id)||hit(c.name)||hit(c.old)||hit(rcCatOf(c))||c.lines.some(l=>hit(rcIng(l.ing)))).sort((a,b)=>{ const an=String(a.name).toLowerCase().includes(q.toLowerCase())?0:1, bn=String(b.name).toLowerCase().includes(q.toLowerCase())?0:1; return an-bn||String(a.name).localeCompare(String(b.name)); });
+  const hit=cstFind(q), C=(R.components||[]).filter(c=>hit(c.id)||hit(c.name)||hit(c.old)||hit(rcCatOf(c))||c.lines.some(l=>hit(rcIng(l.ing)))).sort((a,b)=>{ const an=String(a.name).toLowerCase().includes(q.toLowerCase())?0:1, bn=String(b.name).toLowerCase().includes(q.toLowerCase())?0:1; return an-bn||String(a.name).localeCompare(String(b.name)); });
   return C.length?`<div class="rcgl">${C.length} found</div>${C.slice(0,40).map(c=>rcCRow(c,` · ${esc(rcCatOf(c))}`)).join("")}`:`<div class="empty">Nothing matches "${esc(q)}".</div>`; }
 function rcCalcView(){ const U=RC(); U.sec="calc";
   return `${rcHeadHtml("Calculator","Search a recipe, then scale it: what I have, target total, trays or pieces.")}${rcNav()}${rcFindPanel()}${(S.rcp||{}).canG?`<div class="row noprint" style="margin:-4px 0 10px"><button class="btn sm" data-rc="go:new">＋ New recipe</button></div>`:""}${rcRecent().length?`<div class="panel"><div id="rc-list">${rcCalcInner()}</div></div>`:""}${rcTestCalc()}`; } /* v22.53: one search box (the finder above also finds by ingredient) */
@@ -3401,7 +3421,7 @@ function rcNewView(){ const R=S.rcp||{}, U=RC(); U.sec="comps"; const N=rcNewIni
       <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="btn sm" data-rc="nladd">＋ Add ingredient</button><button class="btn sm" data-rc="nladdr">＋ Add our recipe</button><span class="small">Total <b id="rc-nsum">${rcF(rcNrSum())}</b> g</span></div>
       <div><label class="rclab" for="rc-ny">Batch weight after cooking (g, optional)</label><input id="rc-ny" class="rcin" type="number" inputmode="decimal" min="0" step="any" data-rci="nr_yield" value="${esc(N.yield)}" placeholder="blank = the total"></div>
       <p class="small muted" style="margin:0">A new ingredient name is added to the Ingredients list (supplier and price to fill in later). <b>＋ Add our recipe</b> = something we make first and use in this one (e.g. a syrup or a praline). Group (A, B…) = what goes in together.</p></div>
-    <div class="panel"><h2>Used in <span class="small muted">link it to a cake</span></h2>${N.links.map((k,i)=>`<div class="rcnl rcnk"><select class="rcin" data-rci="nk_pid:${i}" aria-label="Cake ${i+1}"><option value="">— cake —</option><option value="__new" ${k.pid==="__new"?"selected":""}>＋ New cake…</option>${P.map(p=>`<option value="${esc(p.id)}" ${k.pid===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select><input class="rcin rcnlg" type="number" inputmode="decimal" min="0" step="any" data-rci="nk_g:${i}" value="${esc(k.g)}" placeholder="g a piece" aria-label="Grams in one piece"><input class="rcin rcnlp" data-rci="nk_stage:${i}" value="${esc(k.stage)}" placeholder="insert / base…" aria-label="Stage"><button class="btn sm" data-rc="nkdel:${i}" aria-label="Remove">✕</button></div>${k.pid==="__new"?rcNkNew(k,i):""}`).join("")}
+    <div class="panel"><h2>Used in <span class="small muted">link it to a cake</span></h2>${N.links.map((k,i)=>`<div class="rcnl rcnk"><select class="rcin" data-pick="1" data-rci="nk_pid:${i}" aria-label="Cake ${i+1}"><option value="">— cake —</option><option value="__new" ${k.pid==="__new"?"selected":""}>＋ New cake…</option>${P.map(p=>`<option value="${esc(p.id)}" ${k.pid===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select><input class="rcin rcnlg" type="number" inputmode="decimal" min="0" step="any" data-rci="nk_g:${i}" value="${esc(k.g)}" placeholder="g a piece" aria-label="Grams in one piece"><input class="rcin rcnlp" data-rci="nk_stage:${i}" value="${esc(k.stage)}" placeholder="insert / base…" aria-label="Stage"><button class="btn sm" data-rc="nkdel:${i}" aria-label="Remove">✕</button></div>${k.pid==="__new"?rcNkNew(k,i):""}`).join("")}
       <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-rc="nkadd">＋ Link to a cake</button><button class="btn sm" data-rc="nkaddnew">＋ New cake</button></div><p class="small muted" style="margin:0">Grams of this recipe in ONE piece of the cake, if you know it — the cake's "Scale the whole cake" and the assembly check use it. A cake that is not in the list yet: <b>＋ New cake</b> — it is made together with this recipe (R&amp;D; its other parts can be added later).</p></div>
     ${rcEdPanels(pc,E)}
     <div class="panel"><label class="rclab" for="rc-nnote">Other info</label><textarea id="rc-nnote" class="rcta" rows="3" data-rci="nr_notes" placeholder="Source, tests done, what to check next time…">${esc(N.notes)}</textarea>
@@ -3507,23 +3527,34 @@ async function rcMethRun(){ const U=RC(), B=U.mb||(U.mb={items:[]}), left=rcMeth
   B.items=B.items.filter(x=>x.sug||x.err||x.done); B.busy=false; render(); }
 /* v22.65 (Alfred 24 Oct, Recipes › Components: "search button?"): one search box over every category — name, code, old code or an ingredient */
 function rcCompsView(){ const U=RC(); U.sec="comps";
-  return `${rcHeadHtml("Components",rcSub())}${rcNav()}${rcBossPanel("")}${rcMethPanel()}${rcAifPanel()}${rcAddBtns()}<div class="panel"><h2>Categories</h2><input type="search" class="rcq" data-rci="kq" value="${esc(U.kq||"")}" placeholder="Search a recipe (name, code or ingredient)" aria-label="Search a recipe"><div id="rc-klist">${rcCompsInner()}</div></div>`; }
+  return `${rcHeadHtml("Components",rcSub())}${rcNav()}${rcBossPanel("")}${rcMethPanel()}${rcAifPanel()}${rcAddBtns()}<div class="panel"><h2>Categories</h2><input type="search" class="rcq" data-rci="kq" value="${esc(U.kq||"")}" placeholder="Search a cake, recipe or ingredient" aria-label="Search a cake, recipe or ingredient"><div id="rc-klist">${rcCompsInner()}</div></div>`; }
 function rcCompsInner(){ const R=S.rcp||{}, q=String(RC().kq||"").trim();
-  if(q){ const hit=cstFind(q), own=c=>hit(`${c.name} ${c.id} ${c.old||""}`), C=(R.components||[]).filter(c=>own(c)||hit(rcCatOf(c))||(c.lines||[]).some(l=>hit(rcIng(l.ing)))).sort((a,b)=>(own(a)?0:1)-(own(b)?0:1)||String(a.name).localeCompare(String(b.name)));
-    return C.length?`<div class="rcgl" style="margin-top:6px">${C.length} found</div>${C.slice(0,60).map(c=>rcCRow(c,` · ${esc(rcCatOf(c))}`)).join("")}`:`<div class="empty">Nothing matches "${esc(q)}".</div>`; }
+  if(q) return rcFindHtml(q,""); /* v22.65b */
   const G=rcGrp(R.components||[],rcCatOf);
   return `${G.map(([k,a])=>{ const subs=[...new Set(a.map(c=>String(c.cat||c.type||"").trim()).filter(x=>x&&x!==k))], nc=a.filter(c=>rcStat(c.status)).length, nm=a.filter(rcMiss).length;
     return `<button class="rcrow" data-rc="cat:${esc(k)}"><span class="rcn"><b>${esc(k)}</b><span class="small muted">${a.length} recipe${a.length===1?"":"s"}${subs.length?` · ${subs.map(esc).join(" + ")}`:""}${nc?` · ${nc} not confirmed`:""}${nm?` · ${nm} missing`:""}</span></span><span class="rcgo" aria-hidden="true">›</span></button>`; }).join("")}`; }
+/* v22.65b (Alfred 24 Oct: "can this be a filter. when search. example wehn type pecan, everything with pecan only will show. and listed ingredients or a
+   component recipe"): one search for the Cakes page, Components and the box on every recipe / cake page — every cake, recipe and ingredient with
+   all the words typed (part of a word is enough); a cake or recipe also shows when the word is in one of its recipes or ingredients, at any depth. */
+function rcFind(q){ const R=S.rcp||{}, hit=cstFind(q), I=R.ingredients||{}, own=c=>hit(`${c.name} ${c.id} ${c.old||""}`), memo=new Map();
+  const deep=(c,seen)=>{ if(memo.has(c.id)) return memo.get(c.id); seen=Object.assign({},seen||{}); if(seen[c.id]) return ""; seen[c.id]=1; let w="";
+    for(const l of c.lines||[]){ const sc=rcComp(l.ing); if(sc){ if(own(sc)){ w=sc.name; break; } const d=deep(sc,seen); if(d){ w=`${d} in ${sc.name}`; break; } } else if(hit(`${rcIng(l.ing)} ${l.ing}`)){ w=rcIng(l.ing); break; } }
+    memo.set(c.id,w); return w; };
+  const C=(R.components||[]).map(c=>({c,own:own(c),w:own(c)?"":deep(c)})).filter(x=>x.own||x.w);
+  const P=(R.products||[]).map(p=>{ const me=hit(`${p.name} ${p.id} ${p.app||""} ${p.range||""}`); let w=""; if(!me) for(const b of p.build||[]){ const c=rcComp(b.comp); if(!c) continue; if(own(c)){ w=c.name; break; } const d=deep(c); if(d){ w=`${d} in ${c.name}`; break; } } return {p,own:me,w}; }).filter(x=>x.own||x.w);
+  const G=Object.keys(I).filter(k=>!I[k].merged&&hit(`${I[k].name} ${k}`)).map(k=>({id:k,name:I[k].name||k,cost:I[k].cost,n:(R.components||[]).filter(c=>(c.lines||[]).some(l=>l.ing===k)).length}));
+  const by=(a,b,na,nb)=>(a.own?0:1)-(b.own?0:1)||String(na).localeCompare(String(nb));
+  return {P:P.sort((a,b)=>by(a,b,a.p.name,b.p.name)),C:C.sort((a,b)=>by(a,b,a.c.name,b.c.name)),G:G.sort((a,b)=>String(a.name).localeCompare(String(b.name)))}; }
+function rcFindHtml(q,act){ const {P,C,G}=rcFind(q), R=S.rcp||{}, N=60, more=(n)=>n>N?`<p class="small muted" style="margin:4px 0">+ ${n-N} more — type more to narrow it down</p>`:"";
+  if(!P.length&&!C.length&&!G.length) return `<div class="empty">Nothing with "${esc(q)}".</div>`;
+  const go=`<span class="rcgo" aria-hidden="true">›</span>`;
+  return `<p class="small muted rcfnd">Everything with "<b>${esc(q)}</b>": ${P.length} cake${P.length===1?"":"s"} · ${C.length} recipe${C.length===1?"":"s"} · ${G.length} ingredient${G.length===1?"":"s"}</p>`
+    +(P.length?`<div class="rcgl">Cakes · ${P.length}</div>${P.slice(0,N).map(x=>`<button class="rcrow rcprow" data-rc="${act}p:${esc(x.p.id)}">${rcPic(x.p)}<span class="rcn"><b>${esc(x.p.name||x.p.id)}</b><span class="small muted">${esc(x.p.id)}${x.p.range?` · ${esc(x.p.range)}`:""}${x.w?` · has ${esc(x.w)}`:""}</span></span>${rcStat(x.p.status)}${go}</button>`).join("")}${more(P.length)}`:"")
+    +(C.length?`<div class="rcgl">Recipes · ${C.length}</div>${C.slice(0,N).map(x=>`<button class="rcrow" data-rc="${act}c:${esc(x.c.id)}"><span class="rcn"><b>${esc(x.c.name||x.c.id)}</b><span class="small muted">${esc(x.c.id)} · ${esc(rcCatOf(x.c))}${x.w?` · with ${esc(x.w)}`:""}</span></span>${rcMissPill(x.c)}${rcStat(x.c.status)}${go}</button>`).join("")}${more(C.length)}`:"")
+    +(G.length?`<div class="rcgl">Ingredients · ${G.length}</div>${G.slice(0,N).map(x=>{ const sub=`ingredient · in ${x.n} recipe${x.n===1?"":"s"}${R.money&&x.cost>0?` · RM ${fm(x.cost)} a kg`:""}`; return R.money?`<button class="rcrow" data-rc="ingo:${esc(x.name)}"><span class="rcn"><b>${esc(x.name)}</b><span class="small muted">${sub} · tap for its price</span></span>${go}</button>`:`<div class="rcrow rcingrow"><span class="rcn"><b>${esc(x.name)}</b><span class="small muted">${sub}</span></span></div>`; }).join("")}${more(G.length)}`:""); }
 /* v22.65 (Alfred 24 Oct, on a recipe page: "allow me to search here too, so i dont have to keep exit"): a search box on every recipe and cake page */
-const rcJumpBox=()=>`<div class="rcjump noprint"><input type="search" class="rcq" data-rci="jq" value="${esc(RC().jq||"")}" placeholder="Search another cake or recipe" aria-label="Search another cake or recipe"><div id="rc-jlist" class="rcjl">${rcJumpInner()}</div></div>`;
-function rcJumpInner(){ const R=S.rcp||{}, q=String(RC().jq||"").trim(); if(!q) return ""; const hit=cstFind(q);
-  const P=(R.products||[]).filter(p=>hit(`${p.name} ${p.id} ${p.app||""} ${p.range||""}`)).sort((a,b)=>String(a.name).localeCompare(String(b.name))).slice(0,6);
-  const C=(R.components||[]).filter(c=>hit(`${c.name} ${c.id} ${c.old||""}`)).sort((a,b)=>String(a.name).localeCompare(String(b.name))).slice(0,8);
-  const CI=C.length<8?(R.components||[]).filter(c=>!C.includes(c)&&(c.lines||[]).some(l=>hit(rcIng(l.ing)))).slice(0,8-C.length):[];
-  const row=(act,nm,sub)=>`<button class="rcrow" data-rc="jgo:${act}"><span class="rcn"><b>${esc(nm)}</b><span class="small muted">${sub}</span></span><span class="rcgo" aria-hidden="true">›</span></button>`;
-  const out=[...P.map(p=>row("p:"+p.id,p.name||p.id,`cake · ${esc(p.id)}${p.range?` · ${esc(p.range)}`:""}`)),...C.map(c=>row("c:"+c.id,c.name||c.id,`recipe · ${esc(c.id)} · ${esc(rcCatOf(c))}`)),
-    ...CI.map(c=>row("c:"+c.id,c.name||c.id,`recipe with ${esc((c.lines.find(l=>hit(rcIng(l.ing)))||{}).ing?rcIng(c.lines.find(l=>hit(rcIng(l.ing))).ing):"")} · ${esc(c.id)}`))];
-  return out.length?out.join(""):`<p class="small muted" style="margin:4px 0 0">Nothing matches "${esc(q)}".</p>`; }
+const rcJumpBox=()=>`<div class="rcjump noprint"><input type="search" class="rcq" data-rci="jq" value="${esc(RC().jq||"")}" placeholder="Search a cake, recipe or ingredient" aria-label="Search a cake, recipe or ingredient"><div id="rc-jlist" class="rcjl">${rcJumpInner()}</div></div>`;
+function rcJumpInner(){ const q=String(RC().jq||"").trim(); return q?rcFindHtml(q,"jgo:"):""; }
 function vRecipes(){ const R=S.rcp, U=RC();
   if(!R&&!S.rcpErr){ if(!S.rcpBusy) rcLoad(); return `${rcHeadHtml("Recipes")}${rcNav()}<div class="empty">Reading the Recipe Master…</div>`; }
   if(R&&!S.rcpBusy&&Date.now()-(S.rcpAt||0)>4*60e3) setTimeout(()=>rcLoad(),0);
@@ -4350,6 +4381,7 @@ async function rcAct(a,b){ const U=RC();
   if(a==="euadd"||a==="eraadd"){ const Q=(U.ed||{}).used; if(!Q) return; if(a==="euadd") Q.addCakes.push({pid:"",g:"",stage:""}); else Q.addRecs.push({rid:"",g:""}); render(); return; }
   if(/^(euadel|eradel):/.test(a)){ const Q=(U.ed||{}).used; if(!Q) return; (a[1]==="u"?Q.addCakes:Q.addRecs).splice(+a.split(":")[1],1); render(); return; }
   if(/^jgo:/.test(a)){ U.jq=""; rcGo(a.slice(4)); try{ window.scrollTo(0,0); }catch(e){} return; }
+  if(/^ingo:/.test(a)){ U.jq=""; U.cq2=a.slice(5); U.cf="all"; rcGo("ings"); try{ window.scrollTo(0,0); }catch(e){} return; } /* v22.65b */
   if(a==="eqnest"){ U.eqn=U.eqn||{}; U.eqn.est=!U.eqn.est; render(); return; }
   if(a==="eqnadd"){ const n=U.eqn||{}, E=U.ed; if(!E) return; S.ui.rcBusy=true; render(); try{ const r=await GS("recipeEquipSave",Object.assign({name:n.name||"",type:E.f.vessel||"mould",qty:n.qty,est:!!n.est},(E.f.vessel||"mould")==="mould"?{cav:n.cav||""}:{})); S.rcp=r; S.rcpAt=Date.now(); E.f.vesselId=r.eqId; U.eqn={}; toast("Added to the equipment list"); }catch(err){ toast(err.message); } S.ui.rcBusy=false; render(); return; }
   if(a==="eqoest"){ const E=U.ed; if(!E) return; const e=rcEq(E.f.vesselId)||{}; U.eqo=U.eqo&&U.eqo.id===E.f.vesselId?U.eqo:{id:E.f.vesselId,qty:e.qty??"",est:!!e.est,cav:e.cav??""}; U.eqo.est=!U.eqo.est; render(); return; }
