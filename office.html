@@ -2950,7 +2950,16 @@ function rcCalcWa(c){ const U=RC(), x=rcCalc(c), out=rcWaHead(c.name,c.id), k=is
   out.push(rcWaWhen());
   const hg=c.lines.some(l=>String(l.grp||"").trim()); let lg=null; if(!hg) out.push("");
   rcSortLines(c.lines).forEach(l=>{ const gk=String(l.grp||"").trim().toUpperCase(); if(hg&&gk!==lg) out.push("",`*${rcPart(l.grp)}*`); lg=gk; out.push(`• *${rcAmt(l,k)}*  ${rcIng(l.ing)}`); });
-  out.push("",`*Total ${rcF(x.sum*k)} g*`); return out.join("\n"); }
+  out.push("",`*Total ${rcF(x.sum*k)} g*`); out.push(...rcWaMethod(c)); return out.join("\n"); }
+/* v22.65c (Alfred 24 Oct, the Steamed Fruit Cake message: "when sending recipe, can the method also be attached. maybe in a simplier way. but
+   attached"): the recipe's WhatsApp message ends with the method — the language this phone reads (EN / BM / 中文, else English), one numbered
+   line per step, then the bake line and the critical points. Only for people who may see the method; the steps are sent as written. */
+function rcWaMethod(c){ if(!rcAllowed(c)) return []; const ML=rcMLangs(c.method), has=RC_ML.map(([k])=>k).filter(k=>ML[k]), pref=rcMPref(), cur=ML[pref]?pref:(has[0]||"en"), steps=rcMSteps(ML[cur]);
+  const crit=String(c.crit||"").split(/\n+/).map(s=>s.trim().replace(/^[-•*\d.)\s]+/,"")).filter(Boolean), out=[];
+  if(!steps.length&&!c.bakeC&&!crit.length) return ["","_No method in the Recipe Master yet._"];
+  out.push("",`*${cur==="bm"?"Cara":cur==="zh"?"做法":"Method"}*`); steps.forEach((s,i)=>out.push(`${i+1}. ${s.replace(/\s+/g," ")}`));
+  if(c.bakeC) out.push(`🔥 *Bake ${rcF(c.bakeC,0)} °C${c.bakeMin?` · ${String(c.bakeMin).trim()} min`:""}*`);
+  crit.forEach(s=>out.push(`⚠ ${s}`)); return out; }
 function rcProdText(p){ const U=RC(), n=+U.pcs||0, out=[...rcWaHead(p.name,`${n} pieces`),rcWaWhen(),""], miss=[];
   for(const b of p.build){ const c=rcComp(b.comp); if(b.g==null){ miss.push(c?c.name:b.comp); continue; } const need=n*b.g, pct=rcPct(need,U.buf); out.push(`• *${rcF(need*(1+pct/100))} g*  ${c?c.name:b.comp}${pct?` (need ${rcF(need)} g + ${pct}%)`:""}`); }
   if(miss.length) out.push("","_Grams a piece not filled in:_ "+miss.join(", ")); return out.join("\n"); }
