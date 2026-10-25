@@ -952,7 +952,7 @@ details.doold{margin-top:10px;border-top:1px solid var(--line,#e8dcd6);padding-t
 .rcnl.rcnk.rcoff{grid-template-columns:1fr auto}.rcoff s{opacity:.75}.rcnl.rcnk.rcnr{grid-template-columns:1fr 90px auto}.rcparts{margin-top:10px}.rcparts .rct td,.rcparts .rct th{padding:5px 6px}
 .rcjump{margin:0 0 10px}.rcjl .rcrow{padding:8px 4px}
 .rcpick{min-width:0}.rcpkl{margin-top:4px;max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper)}.rcpko{display:block;width:100%;text-align:left;padding:8px 10px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:inherit;cursor:pointer}.rcpko:last-child{border-bottom:0}.rcpko small{display:block}.rcpkn{padding:8px 10px}
-.rcfnd{margin:6px 0 2px}.rcsz{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 8px}.rcsz>input.rcin{flex:1 1 150px;min-width:0}.rcsz .cstkg input{margin:0}.rccut{margin:-2px 0 12px;padding:6px 8px;border-left:3px solid var(--line);background:rgba(127,127,127,.06);border-radius:6px}.rcingrow{cursor:default}
+.rcfnd{margin:6px 0 2px}.rcwatr{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}.rcwatr .rcpick{flex:1 1 200px}.rcwapre{white-space:pre-wrap;word-break:break-word;max-height:280px;overflow:auto;font-family:inherit;font-size:13px;line-height:1.45;background:rgba(127,127,127,.07);padding:8px 10px;border-radius:8px;margin:0 0 8px}.rcsz{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 8px}.rcsz>input.rcin{flex:1 1 150px;min-width:0}.rcsz .cstkg input{margin:0}.rccut{margin:-2px 0 12px;padding:6px 8px;border-left:3px solid var(--line);background:rgba(127,127,127,.06);border-radius:6px}.rcingrow{cursor:default}
 @media (max-width:560px){.rcnl.rcnk>.rcpick{grid-column:1/-1}.rcnl.rcnk>.rcn{grid-column:1/-1}.rcnl.rcnk.rcoff>.rcn{grid-column:auto}.rcnl.rcnk.rcnr{grid-template-columns:1fr auto}}
 .cstbar{padding-right:118px!important;position:sticky;bottom:8px;z-index:5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;box-shadow:0 -4px 14px rgba(0,0,0,.10)}
 </style>
@@ -2946,7 +2946,7 @@ function rcCalcText(c){ const x=rcCalc(c), out=[`${c.id} ${c.name}  × ${rcF(x.k
    has a bold capital title, date · who, bold part headings, and the grams first in bold on each line, so the kitchen reads down the numbers. */
 const rcWaHead=(title,sub)=>[`*${String(title).toUpperCase()}*${sub?` · ${sub}`:""}`];
 const rcWaWhen=()=>`${nice(today())} · ${rcWho()}`;
-function rcCalcWa(c){ const U=RC(), x=rcCalc(c), out=rcWaHead(c.name,c.id), k=isFinite(x.k)?x.k:1;
+function rcCalcWa(c,lang){ const U=RC(), x=rcCalc(c), out=rcWaHead(c.name,c.id), k=isFinite(x.k)?x.k:1;
   if(U.mode===1&&isFinite(x.k)){ const l=c.lines[x.lim]; out.push(`*Scaled to what we have:* ${rcF(parseFloat(U.have))} g ${rcIng(l.ing)}`); }
   else if(isFinite(x.need)){ const make=x.need*(1+x.pct/100), how=U.mode===3?`${rcF(+U.cnt,0)} ${(rcVes(c)||{w:RC_VES.tray}).w[1]} × ${rcF(+U.per)} g = `:U.mode===4?`${rcF(+U.cnt,0)} pieces × ${rcF(+U.per)} g = `:"";
     out.push(`*Make ${rcF(make)} g* (${how}need ${rcF(x.need)} g${x.pct?` + ${x.pct}% extra`:""})`); }
@@ -2954,16 +2954,28 @@ function rcCalcWa(c){ const U=RC(), x=rcCalc(c), out=rcWaHead(c.name,c.id), k=is
   out.push(rcWaWhen());
   const hg=c.lines.some(l=>String(l.grp||"").trim()); let lg=null; if(!hg) out.push("");
   rcSortLines(c.lines).forEach(l=>{ const gk=String(l.grp||"").trim().toUpperCase(); if(hg&&gk!==lg) out.push("",`*${rcPart(l.grp)}*`); lg=gk; out.push(`• *${rcAmt(l,k)}*  ${rcIng(l.ing)}`); });
-  out.push("",`*Total ${rcF(x.sum*k)} g*`); out.push(...rcWaMethod(c)); return out.join("\n"); }
+  out.push("",`*Total ${rcF(x.sum*k)} g*`); out.push(...rcWaMethod(c,lang)); return out.join("\n"); }
 /* v22.65c (Alfred 24 Oct, the Steamed Fruit Cake message: "when sending recipe, can the method also be attached. maybe in a simplier way. but
    attached"): the recipe's WhatsApp message ends with the method — the language this phone reads (EN / BM / 中文, else English), one numbered
    line per step, then the bake line and the critical points. Only for people who may see the method; the steps are sent as written. */
-function rcWaMethod(c){ if(!rcAllowed(c)) return []; const ML=rcMLangs(c.method), has=RC_ML.map(([k])=>k).filter(k=>ML[k]), pref=rcMPref(), cur=ML[pref]?pref:(has[0]||"en"), steps=rcMSteps(ML[cur]);
+function rcWaMethod(c,lang){ if(!rcAllowed(c)) return []; const ML=rcMLangs(c.method), has=RC_ML.map(([k])=>k).filter(k=>ML[k]), pref=lang||rcMPref(), cur=ML[pref]?pref:(has[0]||"en"), steps=rcMSteps(ML[cur]);
   const crit=String(c.crit||"").split(/\n+/).map(s=>s.trim().replace(/^[-•*\d.)\s]+/,"")).filter(Boolean), out=[];
   if(!steps.length&&!c.bakeC&&!crit.length) return ["","_No method in the Recipe Master yet._"];
   out.push("",`*${cur==="bm"?"Cara":cur==="zh"?"做法":"Method"}*`); steps.forEach((s,i)=>out.push(`${i+1}. ${s.replace(/\s+/g," ")}`));
   if(c.bakeC) out.push(`🔥 *Bake ${rcF(c.bakeC,0)} °C${c.bakeMin?` · ${String(c.bakeMin).trim()} min`:""}*`);
   crit.forEach(s=>out.push(`⚠ ${s}`)); return out; }
+/* v22.70 (Alfred 25 Oct: "The recipe, can I have a button to send myanmar version. Beside comes with English. Everyone can send in other language, but when is
+   not Chinese malay or English, the message comes in both language" · "So senior staff can send to any country worker" · "the language should be
+   selectable. Search and drop down."): under the recipe's WhatsApp button, a language list with a search box (Myanmar first, remembered on the phone);
+   the message is built in English, the AI translates it (recipeWaTranslate), and the page shows the translation + the English to check, then sends it. */
+const RC_WA_LANGS=[["Myanmar (Burmese)","မြန်မာ"],["Bahasa Indonesia","Indonesia"],["Bengali","বাংলা"],["Nepali","नेपाली"],["Tamil","தமிழ்"],["Hindi","हिन्दी"],["Urdu","اردو"],["Punjabi","ਪੰਜਾਬੀ"],["Telugu","తెలుగు"],["Malayalam","മലയാളം"],["Sinhala","සිංහල"],["Filipino (Tagalog)","Filipino"],["Thai","ไทย"],["Vietnamese","Tiếng Việt"],["Khmer","ខ្មែរ"],["Lao","ລາວ"],["Javanese","Basa Jawa"],["Japanese","日本語"],["Korean","한국어"],["Arabic","العربية"],["Persian","فارسی"],["Pashto","پښتو"],["Turkish","Türkçe"],["Uzbek","Oʻzbek"],["Kazakh","Қазақ"],["Mongolian","Монгол"],["Russian","Русский"],["French","Français"],["Spanish","Español"],["Portuguese","Português"],["Italian","Italiano"],["German","Deutsch"],["Dutch","Nederlands"]];
+const rcWaLang=()=>{ let v=RC().walang; if(!v){ try{ v=localStorage.getItem("ca.waLang")||""; }catch(e){} } return RC_WA_LANGS.some(([n])=>n===v)?v:RC_WA_LANGS[0][0]; };
+const rcWaTrMsg=W=>`${W.text}\n\n——— English ———\n${W.en}`;
+function rcWaTrBox(c){ const W=RC().watr, cur=rcWaLang();
+  let out=""; if(W&&W.cid===c.id&&W.lang===cur){ if(W.busy) out=`<p class="small muted" style="margin:6px 0 0">Translating into ${esc(W.lang)}…</p>`; else if(W.err) out=`<p class="small" style="margin:6px 0 0;color:var(--bad)">${esc(W.err)}</p>`;
+    else if(W.en!==rcCalcWa(c,"en")) out=`<p class="small muted" style="margin:6px 0 0">The amounts changed — tap the button again.</p>`;
+    else { const msg=rcWaTrMsg(W); out=`<p class="small" style="margin:8px 0 4px"><b>${esc(W.lang)} + English</b> — check it, then send.</p><pre class="rcwapre" lang="">${esc(msg)}</pre><div class="row" style="gap:8px;flex-wrap:wrap"><a class="btn sm rcwa" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">Open WhatsApp</a><button class="btn sm" data-rc="watrcopy">Copy</button></div>`; } }
+  return `<div class="rcwatr noprint"><label class="rclab" for="rc-walang">Send to a worker in their language (with the English)</label><div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-start"><select id="rc-walang" class="rcin" data-pick="1" data-rci="walang" aria-label="Language">${RC_WA_LANGS.map(([n,nat])=>`<option value="${esc(n)}" ${n===cur?"selected":""}>${esc(nat===n?n:`${n} · ${nat}`)}</option>`).join("")}</select><button class="btn sm rcwa" data-rc="watr" ${W&&W.busy?"disabled":""}>WhatsApp in ${esc(cur.replace(/ \(.*\)$/,""))} + English</button></div><div id="rc-watr">${out}</div></div>`; }
 function rcProdText(p){ const U=RC(), n=+U.pcs||0, out=[...rcWaHead(p.name,`${n} pieces`),rcWaWhen(),""], miss=[];
   for(const b of p.build){ const c=rcComp(b.comp); if(b.g==null){ miss.push(c?c.name:b.comp); continue; } const need=n*b.g, pct=rcPct(need,U.buf), tr=b.cut>0&&b.trayG>0&&need>0?Math.ceil(n*(p.k||1)/b.cut-1e-9):0, w=rcVesW(c);
     out.push(tr?`• *${rcF(tr*b.trayG)} g*  ${c?c.name:b.comp} (${tr} ${w}${tr===1?"":"s"}, cut ${rcF(b.cut,0)} a ${w}${b.cutter?` · ✂ ${b.cutter}`:""})`:`• *${rcF(need*(1+pct/100))} g*  ${c?c.name:b.comp}${pct?` (need ${rcF(need)} g + ${pct}%)`:""}`); }
@@ -3658,7 +3670,7 @@ function rcCompView(id){ const c=rcComp(id), U=RC(); if(c&&!U.asm&&!U.from&&!U.t
       <div class="rcmodes" role="group" aria-label="Scale by">${[[1,"What I have"],[2,"Target total"],[3,(rcVes(c)?rcVes(c).w[1].charAt(0).toUpperCase()+rcVes(c).w[1].slice(1):"Trays")],[4,"Pieces"]].map(([n,t])=>`<button data-rc="mode:${n}" aria-pressed="${m===n}">${t}</button>`).join("")}</div>
       ${rcMoulds(c).length>1?`<div class="rcchips" role="group" aria-label="Which mould" style="margin:8px 0 2px"><span class="small muted" style="align-self:center">Mould:</span>${rcMoulds(c).map(mm=>{ const e=rcEq(mm.id); return `<button class="rcchip" data-rc="vsel:${esc(mm.id)}" aria-pressed="${(rcVesPick(c)||{}).id===mm.id}">${esc(e?rcEqName(e):mm.id)}${mm.cavG?` · ${rcF(mm.cavG)} g`:""}</button>`; }).join("")}</div>`:""}
       ${ins}${m!==1?rcChips():""}<div id="rc-out">${rcCompOut(c)}</div>
-      <div class="row noprint" style="gap:8px;flex-wrap:wrap"><button class="btn sm rcwa" data-rc="wa:calc">WhatsApp</button><button class="btn sm" data-rc="full">Back to full batch</button></div>
+      <div class="row noprint" style="gap:8px;flex-wrap:wrap"><button class="btn sm rcwa" data-rc="wa:calc">WhatsApp</button><button class="btn sm" data-rc="full">Back to full batch</button></div>${rcWaTrBox(c)}
       <p class="small muted" style="margin:0">This scales ${esc(c.name||c.id)} only. Scale the other parts of the cake to the same number${used.length?` (open the cake to scale all of it)`:""}, and check each against your stock.</p></div>`}
     ${rcAllowed(c)?`<div class="panel"><div class="spread"><h2>Method</h2>${rcMLChips(ML,mCur,"mlang")}</div>
       ${MK&&steps.length?`<p class="rcwt small" style="margin:0 0 8px">⚠ The ingredients changed ${esc(nice(String(MK.at||"").slice(0,10)))}${MK.what?` (${esc(MK.what)})`:""} after this method was written.${(S.rcp||{}).boss?` <button class="btn sm" data-rc="msug:${esc(c.id)}">✨ Suggest from the ingredients</button> <button class="btn sm" data-rc="mok:${esc(c.id)}">Method still right</button>`:" Chef Alfred will check the method."}</p>`:""}
@@ -4469,6 +4481,9 @@ async function rcAct(a,b){ const U=RC();
   if(/^(eudel|erdel):/.test(a)){ const Q=(U.ed||{}).used; if(!Q) return; const o=(a[1]==="u"?Q.cakes:Q.recs)[+a.split(":")[1]]; if(o){ o.del=!o.del; render(); } return; } /* v22.65 */
   if(a==="euadd"||a==="eraadd"){ const Q=(U.ed||{}).used; if(!Q) return; if(a==="euadd") Q.addCakes.push({pid:"",g:"",stage:""}); else Q.addRecs.push({rid:"",g:""}); render(); return; }
   if(/^(euadel|eradel):/.test(a)){ const Q=(U.ed||{}).used; if(!Q) return; (a[1]==="u"?Q.addCakes:Q.addRecs).splice(+a.split(":")[1],1); render(); return; }
+  if(a==="watr"){ const c=rcComp((U.view||"").slice(2)); if(!c) return; const lang=rcWaLang(), en=rcCalcWa(c,"en"); U.watr={cid:c.id,lang,en,busy:true}; render(); /* v22.70 */
+    try{ const r=await GS("recipeWaTranslate",lang,en); if(U.watr&&U.watr.en===en&&U.watr.lang===lang){ U.watr.text=r.text; U.watr.busy=false; } }catch(err){ if(U.watr){ U.watr.err=err.message; U.watr.busy=false; } } render(); return; }
+  if(a==="watrcopy"){ const W=U.watr; if(!W||!W.text) return; const msg=rcWaTrMsg(W); try{ await navigator.clipboard.writeText(msg); toast("Copied — paste it in WhatsApp"); }catch(e){ toast("Could not copy — long-press the text to copy it"); } return; }
   if(/^jgo:/.test(a)){ U.jq=""; rcGo(a.slice(4)); try{ window.scrollTo(0,0); }catch(e){} return; }
   if(/^ingo:/.test(a)){ U.jq=""; U.cq2=a.slice(5); U.cf="all"; rcGo("ings"); try{ window.scrollTo(0,0); }catch(e){} return; } /* v22.65b */
   if(a==="eqnest"){ U.eqn=U.eqn||{}; U.eqn.est=!U.eqn.est; render(); return; }
@@ -4495,6 +4510,7 @@ async function rcAct(a,b){ const U=RC();
   if(a==="copy"){ const c=rcComp((U.view||"").slice(2)); if(!c) return; const x=rcCalc(c), out=[`${c.id} ${c.name}  × ${rcF(x.k,3)}`]; if(x.line) out.push(x.line); { const hg=c.lines.some(l=>String(l.grp||"").trim()); let lg=null; rcSortLines(c.lines).forEach(l=>{ const gk=String(l.grp||"").trim().toUpperCase(); if(hg&&gk!==lg) out.push(rcPart(l.grp)+":"); lg=gk; out.push(`${hg?"  ":""}${rcIng(l.ing)}: ${rcAmt(l,x.k)}`); }); } out.push(`Total: ${rcF(x.sum*x.k)} g`);
     const t=out.join("\n"); try{ await navigator.clipboard.writeText(t); toast("Weights copied"); }catch(e){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); toast("Weights copied"); }catch(_){ toast("Could not copy — select the weights in the table"); } ta.remove(); } return; } }
 document.addEventListener("input",e=>{ const t=e.target, d=t&&t.dataset; if(!d||d.rci==null) return; const U=RC(); if(/^pr:/.test(d.rci)&&rcPrInput(t,d.rci)) return; /* v22.64c */ if((/^c(tp|use|ws|bu|pn|pu|pw):/.test(d.rci)||["cpq","cq2","cks","csort","cmgq","cmgn"].includes(d.rci))&&cstInput(t,d.rci,e)) return; U[d.rci]=t.value; const el=document.getElementById("rc-list");
+  if(d.rci==="walang"){ try{ localStorage.setItem("ca.waLang",t.value); }catch(e){} render(); return; } /* v22.70 */
   if(d.rci==="q"){ if(el) el.innerHTML=rcCakesInner(); return; } if(d.rci==="jq"){ const e2=document.getElementById("rc-jlist"); if(e2) e2.innerHTML=rcJumpInner(); return; } if(d.rci==="kq"){ const e2=document.getElementById("rc-klist"); if(e2) e2.innerHTML=rcCompsInner(); return; } /* v22.65 */ if(d.rci==="mq"){ if(el) el.innerHTML=rcMouldsInner(); return; } if(d.rci==="mpq"){ const ml=document.getElementById("rc-mlist"); if(ml) ml.innerHTML=rcMPickInner(); return; }
   if(/^ml_/.test(d.rci)){ if(U.mf) U.mf[d.rci.slice(3)]=t.value; return; }
   if(d.rci==="fq"){ return; }
