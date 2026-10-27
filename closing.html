@@ -818,6 +818,19 @@ th:first-child,td:first-child{text-align:left}td{padding:8px 4px;border-bottom:1
 .ca-hbtn{bottom:calc(142px + env(safe-area-inset-bottom,0px))!important;min-height:44px!important;padding:0 14px!important;font-size:14px!important}
 .opt{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,#eee);cursor:pointer}.opt:first-of-type{border-top:0}.opt input[type=radio]{width:24px;height:24px;flex:0 0 24px;margin:0;accent-color:#7b1c2b}.opt span{flex:1;line-height:1.4}.opt .cq-why{width:100%;margin-top:8px;padding:10px;border:1px solid var(--line,#ccc);border-radius:10px;font:inherit}
 .decl{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line,#ddd);border-radius:12px;padding:12px;margin-top:10px;font-size:14px;line-height:1.45;cursor:pointer}.decl input{width:22px;height:22px;flex:0 0 22px;margin-top:2px;accent-color:var(--ok,#1d7a3c)}.decl.on{border-color:var(--ok,#1d7a3c);background:rgba(29,122,60,.06)}.decl.need{border-color:var(--bad,#b3261e);box-shadow:0 0 0 3px rgba(179,38,30,.15)}
+/* v22.71: Waste now, the last 14 nights, the catch-up card */
+.wnbtn{display:flex;align-items:center;gap:12px;width:100%;border:1.5px solid var(--bad);background:var(--bad-bg);color:var(--ink);border-radius:16px;padding:12px 14px;font:600 15px var(--body);cursor:pointer;text-align:left;min-height:56px}
+.wnbtn b{display:block;font-size:16px}.wnbtn small{display:block;font-size:12.5px;color:var(--muted);font-weight:500;line-height:1.35}.wnbtn .ic{font-size:26px;flex:none}
+.wnl{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:8px 0;font-size:14px}.wnl:first-of-type{border-top:0}.wnl .tx{flex:1;min-width:0}.wnl small{display:block;color:var(--muted);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 12px;font:600 14px var(--body);color:var(--ink);cursor:pointer;min-height:42px}.chip small{color:var(--muted);font-weight:600}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--soft);color:var(--accent)}
+.wnbox>*{flex-shrink:0}.wnbox .eb{margin-top:6px}.wnbox .pt{height:96px;width:100%;position:relative;overflow:hidden}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal button{border:0;border-radius:10px;padding:5px 0 4px;font:600 10.5px var(--body);display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--seg);color:var(--muted);min-height:48px;cursor:default;min-width:0}
+.cal button b{font:700 14px var(--body);color:var(--ink)}
+.cal .future{opacity:.45}.cal .ok{background:var(--ok-bg)}.cal .late{background:var(--warn-bg)}.cal .miss{background:var(--bad-bg);cursor:pointer;color:var(--bad-tx)}.cal .caught{background:var(--soft)}.cal .cur{box-shadow:0 0 0 2px var(--accent)}
+.calk{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--muted)}
+.mq{padding:12px;margin:0}.mq .nm{font-weight:700;margin-bottom:2px}
 </style></head><body>
 <div class="w" id="app"><div class="empty"><span class="spin"></span> Loading…</div></div>
 <div class="foot" id="bar" hidden><div class="in"><div class="st" id="status"></div><button class="cb big full" id="next" type="button">Send tonight's count</button></div></div>
@@ -836,9 +849,12 @@ const niceDate=iso=>{const d=new Date(iso+"T00:00:00");return d.toLocaleDateStri
 function calToday(){ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); }
 function dAdd(iso,n){ const d=new Date(iso+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
 function defaultDate(){ const q=(new URLSearchParams(location.search).get("d")||"").trim(), t=calToday(), y=dAdd(t,-1);
-  if(/^\d{4}-\d{2}-\d{2}$/.test(q)&&q<=t&&q>=dAdd(t,-2)) return q; return new Date().getHours()<15?y:t; }
+  if(/^\d{4}-\d{2}-\d{2}$/.test(q)&&q<=t&&q>=lastMon(t)) return q; return new Date().getHours()<15?y:t; } /* v22.71: a reminder link can open any night of this week or last week */
+function lastMon(t){ const d=new Date(t+"T12:00:00Z"); return dAdd(t,-((d.getUTCDay()+6)%7)-7); } /* Monday of last week — counts go by the billing week, Mon–Sun */
+const backFrom=()=>(INFO&&INFO.backFrom)||lastMon(calToday());
 let INFO=null, KEY=(PRESET||store.get("chaleur.key")||"").trim().toUpperCase(), DATE=defaultDate();
 let DRAFTED=false, ROWS={}, ORDER=[], SHOWN=[], EXP=new Set(), PH={sales:[],display:null,waste:null}, NOTE="", WHO=store.get("chaleur.who")||"", PREV=null, SENDING=false, COLOK={};
+let COVER="", MISSOK=null, AFTER_PHOTO=null, WN=null; /* v22.71: catch-up choice, answers about cakes not accounted for, the Waste now sheet */
 const COL=()=>INFO.colours||CONFIG.colours;
 const colHex=n=>(COL().find(c=>c.name===n)||{}).hex||"#999";
 const colDay=n=>WD[COL().findIndex(c=>c.name===n)]||"";
@@ -864,13 +880,14 @@ async function load(){
   catch(e){ $("#app").innerHTML=`<div class="empty err stack">${esc(e.message||"Could not load. Check your internet and try again.")}<button class="btn" type="button" data-act="retry">Try again</button></div>`; return; }
   if(!INFO.outlet){ if(!PRESET){try{localStorage.removeItem("chaleur.key")}catch(e){}} return renderNeedLink(); }
   store.set("chaleur.key",KEY); rgManifest();
-  ROWS={}; ORDER=[]; SHOWN=[]; WOK={}; EXP=new Set(INFO.stock.map(s=>K(s.productId,s.colour)));
+  ROWS={}; ORDER=[]; SHOWN=[]; WOK={}; MISSOK=null; EXP=new Set(INFO.stock.map(s=>K(s.productId,s.colour)));
+  COVER=(INFO.missed||[]).length?"cover":""; /* v22.71: nights without a count since the last one → this count covers them (the suggested answer) */
   const ex=INFO.existing;
   const add=(p,c)=>{const k=K(p,c); if(!SHOWN.includes(p)) SHOWN.push(p); if(!ROWS[k]){ROWS[k]={productId:p,colour:c,w:"",b:""};ORDER.push(k);} };
   INFO.stock.forEach(s=>add(s.productId,s.colour));
   /* v21.8: nothing expected yet (fresh start, first night)? one card per cake the outlet carries — they tap the colour dot(s) they actually have */
   if(!INFO.stock.length&&!(ex&&(ex.lines||[]).length)) (INFO.carries||[]).forEach(p=>{ if(!SHOWN.includes(p)) SHOWN.push(p); });
-  if(ex){ ex.lines.forEach(l=>{add(l.productId,l.colour); const r=ROWS[K(l.productId,l.colour)]; r.w=l.w?String(l.w):""; r.b=l.b?String(l.b):"";}); if(!NOTE) NOTE=ex.note||""; }
+  if(ex){ ex.lines.forEach(l=>{add(l.productId,l.colour); const r=ROWS[K(l.productId,l.colour)], w0=(+l.w||0)-(+l.wn||0); r.w=w0>0?String(w0):""; r.b=l.b?String(l.b):"";}); if(!NOTE) NOTE=ex.note||""; } /* v22.71: the box holds only the waste found at closing; the day's waste is added by the server */
   DRAFTED=loadDraft(ex);
   render();
 }
@@ -904,9 +921,14 @@ function grouped(){
 }
 
 function stepper(k,f,label){const v=ROWS[k][f];return `<div class="stp2 f${f}"><button type="button" data-step="${esc(k)}" data-sf="${f}" data-sn="-1" aria-label="${label} minus one">−</button><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(v)}" data-k="${esc(k)}" data-f="${f}" aria-label="${label}"><button type="button" data-step="${esc(k)}" data-sf="${f}" data-sn="1" aria-label="${label} plus one">+</button></div>`;}
+/* v22.71 Waste now: what was recorded during the day (tonight, plus the nights this count covers) */
+const hm=iso=>{ try{ return new Date(iso).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}); }catch(e){ return ""; } };
+function wnList(){ let L=((INFO&&INFO.wasteNow)||[]).map(e=>({...e,d:DATE})); if(COVER==="cover") for(const [d,es] of Object.entries((INFO&&INFO.wnMissed)||{})) L=L.concat(es.map(e=>({...e,d}))); return L; }
+const wnQ=(p,c)=>wnList().filter(e=>e.productId===p&&(!c||e.colour===c)).reduce((a,e)=>a+(+e.qty||0),0);
 function noteOf(r){ const q=sfOf(r.productId,r.colour), k=K(r.productId,r.colour), nd=!EXP.has(k)&&ORDER.some(x=>x!==k&&EXP.has(x)&&ROWS[x].productId===r.productId);
+  const wq=wnQ(r.productId,r.colour), wnTxt=wq?`<small class="warn">+ ${wq} waste recorded during the day (already in)</small>`:"";
   const base=q==="bad"?`<small class="bad">Past shelf life · throw away</small>`:q==="warn"?`<small class="warn">${esc(capw(r.colour))} · last day, sell first</small>`:`<small>${esc(capw(r.colour))} · ${esc(colDay(r.colour))}</small>`;
-  return nd?base+`<small class="warn">Not on your delivery list — is the sticker really this colour? (today's colour is not the cake's dot)</small>`:base; }
+  return (nd?base+`<small class="warn">Not on your delivery list — is the sticker really this colour? (today's colour is not the cake's dot)</small>`:base)+wnTxt; }
 /* v22.11 (Alfred 6 Oct, after Jiran re-entered Monday's cakes under each day's colour): a count under a colour that was never delivered
    to this outlet, while the delivered colour of the same cake is left empty, gets one question before sending — with the likely answer
    ready ("they're the ORANGE ones, move my count") and a second answer they fill in ("we really have YELLOW: because…"). */
@@ -935,6 +957,7 @@ function renderColourAsk(q){ window.scrollTo(0,0); $("#bar").hidden=true;
 let WOK={};
 function wasteOver(){ if(!INFO||!INFO.stockQty) return []; const had={}, w={}; /* an older server sends no quantities: no check */
   INFO.stock.forEach(x=>{ had[x.productId]=(had[x.productId]||0)+(+x.qty||0); }); ORDER.forEach(k=>{ const r=ROWS[k]; w[r.productId]=(w[r.productId]||0)+(+r.w||0); });
+  wnList().forEach(e=>{ w[e.productId]=(w[e.productId]||0)+(+e.qty||0); }); /* v22.71: + the waste recorded during the day */
   return Object.keys(w).filter(id=>w[id]>(had[id]||0)&&!WOK[id]).map(id=>({id,w:w[id],had:had[id]||0})); }
 function renderWasteAsk(q){ window.scrollTo(0,0); $("#bar").hidden=true;
   $("#app").innerHTML=`${head()}<div class="card stack"><h3 style="font:700 22px var(--display);margin:0">Waste is more than you had</h3>
@@ -1029,19 +1052,84 @@ document.addEventListener("click",async e=>{ const b=e.target.closest("[data-rg]
 document.addEventListener("click",async e=>{ const b=e.target.closest("[data-rem]"); if(!b) return; b.disabled=true;
   try{ if(b.dataset.rem==="on"){ await CA.push.subOutlet(KEY); status("Reminders are on for this phone."); } else { await CA.push.offOutlet(KEY); status("Reminders are off for this phone."); } }catch(x){ status((x&&x.message)||"Could not change the reminders.",true); }
   b.disabled=false; remFill(); });
+/* ---- v22.71 Waste now (any time of the day), the last 14 nights, the catch-up card ---- */
+function wnBtn(){ return `<button class="wnbtn" type="button" data-act="wn"><span class="ic">🗑</span><span><b>Waste now</b><small>A cake dropped, damaged or expired during the day? Record it now with a photo, then throw it away — no need to keep it until closing.</small></span></button>`; }
+function wnToday(){ const L=wnList(); if(!L.length) return "";
+  return `<div class="banner info" id="wntoday"><b>Waste already recorded${L.some(e=>e.d!==DATE)?"":" today"}</b> — it is added to tonight's waste:<br>${L.map(e=>`${e.qty} × ${esc(prod(e.productId).name)} ${esc(capw(e.colour))} · ${esc(e.reason)}${e.d!==DATE?" · "+esc(niceDate(e.d)):""} · ${esc(hm(e.at))}${e.by?" · "+esc(e.by):""}${e.url?" · photo ✓":""}`).join("<br>")}</div>`; }
+function calHtml(){ const C=(INFO&&INFO.cal)||[]; if(!C.length) return ""; const minD=backFrom();
+  const lab={ok:"✓",late:"⏰",caught:"↪",miss:"✕",closed:"–",open:"·",pre:"",future:""}, tip={ok:"sent",late:"sent late",caught:"covered by a later count",miss:"not sent",closed:"closed",open:"tonight",pre:"before the start",future:"coming"};
+  const nMiss=C.filter(x=>x.st==="miss").length;
+  return `<details class="card" style="margin-top:12px;padding:12px" ${nMiss?"open":""} id="cal"><summary style="cursor:pointer;font-weight:700">Last week and this week ${nMiss?`<span class="pill" style="background:var(--bad-bg);color:var(--bad-tx)">${nMiss} not sent</span>`:`<span class="pill" style="background:var(--ok-bg);color:var(--ok-tx)">all in</span>`}</summary>
+    <div class="cal" style="margin-top:10px">${C.map(x=>{ const can=x.st==="miss"&&x.d>=minD&&x.d!==DATE; return `<button type="button" class="${x.st}${x.d===DATE?" cur":""}" ${can?`data-cal="${x.d}"`:`tabindex="-1"`} title="${esc(niceDate(x.d)+": "+tip[x.st]+(x.cov?" ("+niceDate(x.cov)+")":"")+(x.by?" · "+x.by:""))}" aria-label="${esc(niceDate(x.d)+": "+tip[x.st])}"><span>${WD[new Date(x.d+"T00:00:00").getDay()]}</span><b>${+x.d.slice(8)}</b><span>${lab[x.st]}</span></button>`; }).join("")}</div>
+    <div class="calk" style="margin-top:8px"><span>✓ sent</span><span>⏰ late</span><span>↪ covered by a later count</span><span>✕ not sent — tap to send it</span><span>– closed</span></div></details>`; }
+function catchHtml(){ const M=(INFO&&INFO.missed)||[]; if(!M.length) return ""; const n=M.length, minD=backFrom();
+  return `<div class="card stack" style="margin-top:12px;border:2px solid var(--warn)" id="catchup"><h3 style="font:700 20px var(--display);margin:0">${n===1?"1 night":n+" nights"} without a count: ${M.map(x=>esc(niceDate(x))).join(", ")}</h3>
+    <label class="opt"><input type="radio" name="cover" value="cover" ${COVER==="cover"?"checked":""}><span><b>This count covers ${n===1?"it":"them"}</b> (catch-up). Count what you have now as usual. For the sales report, take the POS report <b>from ${esc(niceDate(M[0]))} to ${esc(niceDate(DATE))}</b> — one report for the period, or one photo a day.</span></label>
+    <label class="opt"><input type="radio" name="cover" value="each" ${COVER==="each"?"checked":""}><span><b>I have the count${n>1?"s":""} of ${n===1?"that night":"those nights"}</b> — send ${n===1?"it":"each night"} first, oldest first:<span class="chips" style="margin-top:6px">${M.filter(x=>x>=minD).map(x=>`<button type="button" class="chip" data-cal="${x}">${esc(niceDate(x))}</button>`).join("")}</span></span></label></div>`; }
+const newTok=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+async function openWn(){ keep(); WN={info:null,pid:"",col:"",qty:1,reason:"",note:"",photo:null,overOk:false,overWhy:"",busy:false,err:"",tok:newTok()}; wnDraw();
+  try{ WN.info=await run("wasteNowInfo",KEY); }catch(e){ WN.err=(e&&e.message)||"Could not load. Check your internet and try again."; } wnDraw(); }
+function wnHad(pid,col){ const I=WN.info||{}, s=(I.stock||[]).filter(x=>x.productId===pid&&(!col||x.colour===col)).reduce((a,x)=>a+(+x.qty||0),0), u=(I.entries||[]).filter(x=>x.productId===pid&&(!col||x.colour===col)).reduce((a,x)=>a+(+x.qty||0),0); return Math.max(0,s-u); }
+/* more than on record → two ready answers (Alfred 22 Oct: "warn, if they say yes confirm then we continue"); redrawn on its own while typing */
+function wnOverHtml(){ if(!WN||!WN.pid||!WN.col) return ""; const had=wnHad(WN.pid,WN.col), q=+WN.qty||0; if(q<=had) return "";
+  return `<div class="banner warn" id="wn-over">You have <b>${had}</b> ${esc(prod(WN.pid).name)} ${esc(capw(WN.col))} on record, not ${q}.
+    <label class="opt"><input type="radio" name="wnover" value="fix" ${WN.overOk?"":"checked"}><span>I made a mistake — <b>let me fix the number</b>.</span></label>
+    <label class="opt"><input type="radio" name="wnover" value="ok" ${WN.overOk?"checked":""}><span>Yes, <b>${q} is right</b> because:</span></label><input id="wn-ow" value="${esc(WN.overWhy)}" placeholder="e.g. cakes from another delivery"></div>`; }
+function wnDraw(){ const box=$("#sheet"); if(!box) return; if(!WN){ box.innerHTML=""; return; } const I=WN.info; let body="";
+  if(!I) body=WN.err?`<div class="banner warn">${esc(WN.err)}</div>`:`<div class="empty"><span class="spin"></span> Loading…</div>`;
+  else { const stockP=[...new Set((I.stock||[]).map(x=>x.productId))].filter(id=>(INFO.products||[]).some(p=>p.id===id)), others=(INFO.products||[]).filter(p=>!stockP.includes(p.id));
+    const cakeBtn=p=>`<button type="button" class="chip" data-wnp="${esc(p.id)}" aria-pressed="${WN.pid===p.id}">${esc(p.name)}${stockP.includes(p.id)?` <small>${wnHad(p.id)}</small>`:""}</button>`;
+    body=`${I.moved?`<div class="banner warn">Tonight's count is already sent — this waste goes on <b>tomorrow's</b> count (${esc(niceDate(I.date))}).</div>`:""}
+    ${(I.entries||[]).length?`<div class="card flat" style="padding:10px;margin:0"><div class="eb">Already recorded · ${esc(niceDate(I.date))}</div>${I.entries.map(e=>`<div class="wnl"><span class="tx"><b>${e.qty} × ${esc(prod(e.productId).name)}</b><small>${esc(capw(e.colour))} · ${esc(e.reason)}${e.note?" — "+esc(e.note):""} · ${esc(hm(e.at))} · ${esc(e.by)}${e.url?" · photo ✓":""}</small></span><button type="button" class="lnk" data-wnundo="${esc(e.id)}">Undo</button></div>`).join("")}</div>`:""}
+    <div class="eb">1 · Which cake?</div><div class="chips">${stockP.map(id=>cakeBtn(prod(id))).join("")||`<span class="hint">No cakes on record — pick below.</span>`}</div>
+    ${others.length?`<details ${WN.pid&&!stockP.includes(WN.pid)?"open":""}><summary class="lnk">Another cake</summary><div class="chips" style="margin-top:6px">${others.map(cakeBtn).join("")}</div></details>`:""}
+    ${WN.pid?`<div class="eb">2 · The colour dot on the cake</div><div class="dots">${COL().map(c=>{ const h=wnHad(WN.pid,c.name); return `<button type="button" class="cd${WN.col===c.name?" on":""}" data-wnc="${esc(c.name)}" aria-pressed="${WN.col===c.name}" aria-label="${esc(c.name)}, made ${esc(colDay(c.name))}"><i style="background:${esc(c.hex)}"></i><span>${esc(colDay(c.name))}${h?" · "+h:""}</span></button>`; }).join("")}</div>`:""}
+    ${WN.col?`<div class="eb">3 · How many?</div><div class="stp2" style="max-width:190px"><button type="button" data-wnq="-1" aria-label="One less">−</button><input type="number" inputmode="numeric" min="1" max="50" id="wn-q" value="${esc(WN.qty)}" aria-label="How many"><button type="button" data-wnq="1" aria-label="One more">+</button></div>
+      <div id="wn-overbox">${wnOverHtml()}</div>
+      <div class="eb">4 · Why?</div><div class="chips">${(I.reasons||[]).map(x=>`<button type="button" class="chip" data-wnr="${esc(x)}" aria-pressed="${WN.reason===x}">${esc(x)}</button>`).join("")}</div>
+      <input id="wn-n" value="${esc(WN.note)}" placeholder="${WN.reason==="Other"?"What happened? (needed)":"Anything to add? (optional)"}" style="margin-top:6px">
+      <div class="eb">5 · Photo of the cake</div>
+      <button type="button" class="pt ${WN.photo?"on":""}" id="wn-shot" data-pick="wnshot=1" data-pick-title="Waste photo">${WN.photo?`<img src="${WN.photo}" alt="">`:""}<span class="mk">${WN.photo?"✓":"📷"}</span><span class="lb">${WN.photo?"Done · tap to retake":"Take a photo before you throw it away"}</span></button>
+      <input type="file" accept="image/*" capture="environment" data-wnshot="1" hidden><input type="file" accept="image/*" data-wnshot="1" hidden>
+      <label class="f">Your name<input id="wn-who" value="${esc(WHO)}" placeholder="e.g. Aina" autocomplete="name"></label>`:""}`; }
+  box.innerHTML=`<div class="sheet"><div class="box stack wnbox" role="dialog" aria-modal="true" aria-label="Waste now"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 style="font:700 22px var(--display);margin:0">🗑 Waste now</h3>${I?`<span class="pill">${esc(niceDate(I.date))}</span>`:""}</div>
+    <p class="hint" style="margin:0">Record a cake you throw away during the day, then throw it away — no need to keep it until closing. It is added to tonight's waste.</p>
+    ${body}<div class="st" id="wn-st" role="status">${WN.err&&I?`<span class="err">${esc(WN.err)}</span>`:WN.ok?esc(WN.ok):""}</div>
+    <div class="row2"><button class="cb ghost" type="button" data-wnx="1">Close</button>${I&&WN.col?`<button class="cb ok" type="button" data-wnsave="1" ${WN.busy?"disabled":""}>${WN.busy?"Saving…":"Save waste"}</button>`:""}</div></div></div>`; }
+async function wnSave(){ const q=+WN.qty||0, had=wnHad(WN.pid,WN.col), who=(WHO||"").trim(), st=m=>{ WN.ok=""; const el=$("#wn-st"); if(el) el.innerHTML=`<span class="err">${esc(m)}</span>`; };
+  if(!WN.pid) return st("Pick the cake."); if(!WN.col) return st("Tap the colour dot on the cake."); if(q<1||q>50) return st("How many cakes? (1 to 50)");
+  if(q>had&&!WN.overOk) return st("Fix the number, or tick that it is right and write why.");
+  if(q>had&&WN.overWhy.trim().length<3) return st("Write why it is more than you have on record.");
+  if(!WN.reason) return st("Tap why the cake is thrown away."); if(WN.reason==="Other"&&WN.note.trim().length<3) return st("Write what happened.");
+  if(!WN.photo) return st("Take a photo of the cake first."); if(who.length<2) return st("Enter your name.");
+  WN.busy=true; WN.err=""; wnDraw(); store.set("chaleur.who",who);
+  try{ const r=await run("wasteNowAdd",{key:KEY,productId:WN.pid,colour:WN.col,qty:q,reason:WN.reason,note:WN.note.trim(),who,photo:WN.photo,over:q>had?WN.overWhy.trim():"",token:WN.tok});
+    Object.assign(WN.info,{entries:r.entries,date:r.date,moved:r.moved}); Object.assign(WN,{pid:"",col:"",qty:1,reason:"",note:"",photo:null,overOk:false,overWhy:"",busy:false,tok:newTok(),ok:`✓ Saved: ${q} × ${prod(r.entries[r.entries.length-1].productId).name}. You can throw ${q>1?"them":"it"} away now.`});
+    if(INFO&&r.date===DATE) INFO.wasteNow=r.entries; wnDraw(); }
+  catch(e){ WN.busy=false; wnDraw(); st((e&&e.message)||"Could not save. Try again."); } }
+document.addEventListener("click",async e=>{ if(!WN) return; const b=e.target.closest("[data-wnp],[data-wnc],[data-wnq],[data-wnr],[data-wnsave],[data-wnx],[data-wnundo]"); if(!b) return; e.stopPropagation(); const d=b.dataset;
+  if(d.wnx){ const back=WN&&WN.info&&WN.info.date===DATE; WN=null; wnDraw(); if(back&&INFO&&$("#who")){ const y=window.scrollY; keep(); render(); window.scrollTo(0,y); } return; }
+  if(d.wnp){ WN.pid=d.wnp; const cs=(WN.info.stock||[]).filter(x=>x.productId===d.wnp); WN.col=cs.length===1?cs[0].colour:""; WN.ok=""; wnDraw(); return; }
+  if(d.wnc){ WN.col=d.wnc; wnDraw(); return; }
+  if(d.wnq){ WN.qty=Math.max(1,Math.min(50,(+WN.qty||0)+(+d.wnq))); wnDraw(); return; }
+  if(d.wnr){ WN.reason=d.wnr; const n=$("#wn-n"); if(n) WN.note=n.value; wnDraw(); return; }
+  if(d.wnsave){ const n=$("#wn-n"); if(n) WN.note=n.value; await wnSave(); return; }
+  if(d.wnundo){ b.disabled=true; try{ const r=await run("wasteNowUndo",KEY,WN.info.date,d.wnundo,(WHO||"").trim()); WN.info.entries=r.entries; if(INFO&&r.date===DATE) INFO.wasteNow=r.entries; WN.ok="Removed."; }catch(x){ WN.err=(x&&x.message)||"Could not remove."; } wnDraw(); return; } },true);
 function render(){
   const ex=INFO.existing, g=grouped();
   $("#app").innerHTML=`${head()}
   <div class="card stack" style="gap:10px">
-    <div class="g2"><label class="f">Date<input id="date" type="date" value="${esc(DATE)}" min="${esc(isoAdd(todayISO(),-2))}" max="${esc(calToday())}"></label>
+    <div class="g2"><label class="f">Date<input id="date" type="date" value="${esc(DATE)}" min="${esc(backFrom())}" max="${esc(calToday())}"></label>
     <label class="f">Your name<input id="who" value="${esc(WHO)}" placeholder="e.g. Aina" autocomplete="name"></label></div>
-    <div class="banner ${DATE<calToday()?"warn":"info"}" id="nightsay" style="margin:0">You are sending the closing count for <b>${esc(niceDate(DATE))}${DATE===isoAdd(calToday(),-1)?" (last night)":DATE===calToday()?" (tonight)":""}</b>. Not the right night? Change the date above.</div>
+    <div class="banner ${DATE<calToday()?"warn":"info"}" id="nightsay" style="margin:0">You are sending the closing count for <b>${esc(niceDate(DATE))}${DATE===isoAdd(calToday(),-1)?" (last night)":DATE===calToday()?" (tonight)":" (late)"}</b>. Not the right night? Change the date above.</div>
   </div>
+  <div style="margin-top:12px">${wnBtn()}</div>${calHtml()}${catchHtml()}
   ${ex?`<div class="banner ${ex.locked?"warn":"info"}" style="margin-top:12px">${ex.locked?"This week is already billed. Your changes will be sent to the office to review.":`A report for this day was already sent${ex.by?` by <b>${esc(ex.by)}</b>`:""}${ex.at?` at ${esc(new Date(ex.at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}))}`:""}. Fix anything below and send again — the new report replaces the old one.`}</div>`:""}
   ${DRAFTED?`<div class="banner info" style="margin-top:12px">We kept the counts and photos you hadn't sent yet.</div>`:""}
   <section class="sec">
     ${safetyBanner()}
-    <p class="hint" style="text-wrap:balance"><b>Waste</b> = thrown away or damaged · <b>Left</b> = still in the chiller · empty = 0.</p>
+    ${wnToday()}
+    <p class="hint" style="text-wrap:balance"><b>Waste</b> = thrown away or damaged${wnList().length?" (only <b>new</b> waste — the waste recorded during the day is already in)":""} · <b>Left</b> = still in the chiller · empty = 0.</p>
     <p class="hint" style="text-wrap:balance"><b>The dot = the sticker on the cake</b> (the day it was made), <b>not today</b>. Count each cake under its sticker's colour — a Monday cake stays that colour all week. Only tap another dot if a sticker really has that colour.</p>
     ${g.length?g.map(c=>`<div class="cat">${esc(CATL[c.cat]||c.cat)}</div>${c.items.map(({p,keys})=>`<div class="card cake" id="cake-${esc(p.id)}"><div class="hd2">${pic(p)}<div class="tt"><div class="nm">${esc(p.name)}</div><div class="sub">${keys.length?`${keys.length} colour${keys.length>1?"s":""}`:"Tap the colour dot on the cake"}</div></div></div>
       <div class="dots" role="group" aria-label="Colour dots for ${esc(p.name)}">${COL().map(c=>{const k=K(p.id,c.name), on=!!ROWS[k]; return `<button type="button" class="cd${on?" on":""}" data-cd="${esc(k)}" aria-pressed="${on}" aria-label="${esc(c.name)}, made ${esc(colDay(c.name))}"><i style="background:${esc(c.hex)}"></i><span>${esc(colDay(c.name))}</span></button>`;}).join("")}</div>
@@ -1054,16 +1142,17 @@ function render(){
     <div class="ptiles ${hasWaste()?"":"two"}" id="ptiles">${tile("sales","Sales report")}${tile("display","Chiller")}${hasWaste()?tile("waste","Waste"):""}</div>
     <div class="plinks" id="plinks">${plinks()}</div>
     ${thumbs()}
-    <p class="hint">Sales report = the list of items sold today from your POS (up to 3 photos if it's long). Chiller = all the cakes left now.${hasWaste()?` Waste = the ${wasteN()} cake${wasteN()>1?"s":""} you are throwing away.`:""}</p>
+    <p class="hint">${covering()?`Sales report = the POS sales <b>from ${esc(niceDate(INFO.missed[0]))} to ${esc(niceDate(DATE))}</b> (one report for the period, or one photo a day — up to 8).`:`Sales report = the list of items sold today from your POS (up to 3 photos if it's long).`} Chiller = all the cakes left now.${hasWaste()?` Waste = the ${wasteN()} cake${wasteN()>1?"s":""} you are throwing away.`:""}</p>
   </section>
   <section class="sec"><label class="f">Anything else? (optional)<textarea id="note" rows="2" placeholder="Short delivery, damaged cake, chiller issue…">${esc(NOTE)}</textarea></label></section>
   <section class="sec" id="remcard" hidden></section>`; remFill();
   saveDraft(); $("#bar").hidden=false; $("#next").textContent="Send tonight's count"; $("#next").disabled=false; setBtn();
 }
-const canAdd=k=>k==="sales"?PH.sales.length<3:!PH[k];
+const covering=()=>COVER==="cover"&&!!(INFO&&(INFO.missed||[]).length), salesMax=()=>covering()?8:3;
+const canAdd=k=>k==="sales"?PH.sales.length<salesMax():!PH[k];
 const plinks=()=>""; /* v22.24: the album choice is inside the tile's pop-up now */
 function tile(key,title){ const v=PH[key], has=key==="sales"?v.length>0:!!v, first=key==="sales"?v[0]:v, n=key==="sales"?v.length:0;
-  const lbl=has?(key==="sales"?(n<3?`${n} photo${n>1?"s":""} · add more`:`${n} photos`):"Done · tap to retake"):title;
+  const lbl=has?(key==="sales"?(n<salesMax()?`${n} photo${n>1?"s":""} · add more`:`${n} photos`):"Done · tap to retake"):title;
   /* v22.24 (Alfred): one tap → "Take a photo" or "Choose from album" (the sales report may be several photos at once) */
   const ok=canAdd(key)||key!=="sales", ttl=key==="sales"?"Sales report":key==="display"?"Chiller":"Waste";
   return `<button type="button" class="pt ${has?"on":""}" id="shot-${key}" data-tile="${key}" ${ok?`data-pick="shot=${key}" data-pick-title="${ttl}"`:"disabled"}>${has&&first?`<img src="${first}" alt="">`:""}<span class="mk">${has?"✓":"📷"}</span><span class="lb">${esc(lbl)}</span></button>${ok?`<input type="file" accept="image/*" capture="environment" data-shot="${key}" hidden><input type="file" accept="image/*" ${key==="sales"?"multiple":""} data-shot="${key}" hidden>`:""}`; }
@@ -1088,34 +1177,68 @@ function openAdd(){
   $("#sheet").innerHTML=`<div class="sheet" data-close="1"><div class="box" role="dialog" aria-label="Add a cake">${body}<div style="margin-top:14px"><button class="cb ghost full" type="button" data-close="1">Cancel</button></div></div></div>`;
 }
 function collect(){ WHO=($("#who")||{value:WHO}).value.trim(); NOTE=($("#note")||{value:NOTE}).value; store.set("chaleur.who",WHO);
-  return {key:KEY,date:DATE,who:WHO,note:NOTE,lines:ORDER.map(k=>ROWS[k]).filter(r=>r.w!==""||r.b!==""||true).map(r=>({productId:r.productId,colour:r.colour,w:+r.w||0,b:+r.b||0})),photos:{sales:[...PH.sales],display:PH.display,waste:hasWaste()?PH.waste:null},baseAt:(INFO.existing&&INFO.existing.at)||""}; }
+  return {key:KEY,date:DATE,who:WHO,note:NOTE,lines:ORDER.map(k=>ROWS[k]).filter(r=>r.w!==""||r.b!==""||true).map(r=>({productId:r.productId,colour:r.colour,w:+r.w||0,b:+r.b||0})),photos:{sales:[...PH.sales],display:PH.display,waste:hasWaste()?PH.waste:null},baseAt:(INFO.existing&&INFO.existing.at)||"",
+  wn2:true, covers:covering()?INFO.missed.slice():[], missAns:(MISSOK||[]).slice()}; }
 
 async function review(){
   const m=missing(); if(m.length){ status("Still needed: "+m.join(", ")+".",true); const first=!PH.sales.length?"#shot-sales":!PH.display?"#shot-display":hasWaste()&&!PH.waste?"#shot-waste":"#who"; const el=$(first); if(el){el.classList&&el.classList.add("need"); el.scrollIntoView({behavior:"smooth",block:"center"});} return; }
-  keep(); { const q=colourSuspects(); if(q.length) return renderColourAsk(q); } { const w=wasteOver(); if(w.length) return renderWasteAsk(w); }
+  keep(); MISSOK=null; { const q=colourSuspects(); if(q.length) return renderColourAsk(q); } { const w=wasteOver(); if(w.length) return renderWasteAsk(w); }
   const d=collect(); window.scrollTo(0,0);
   $("#app").innerHTML=`${head()}<div class="card" style="text-align:center;padding:26px"><span class="spin"></span><p style="margin:12px 0 0">Reading your sales photo and checking the numbers…</p><p class="hint">This takes a few seconds.</p></div>`;
   $("#bar").hidden=true;
   try{ PREV=await run("previewClosing",d); }catch(e){ const msg=(e&&e.message)||""; if(msg&&!/No connection|Server busy|taking too long|unexpected reply/i.test(msg)){ restoreBar(); render(); status(msg,true); return; } PREV={read:{ok:false,note:"Could not check the numbers right now. You can still send the report."},check:[]}; }
   renderPreview(d);
 }
+/* v22.71 (Alfred 27 Oct, Waste now): before sending, cakes not accounted for (what they had − sold on the till − waste − left) get one question
+   with two ready answers — "thrown away, I add a waste photo now" (the cakes move to Waste) or "not sure, tell Chaleur" (charged as sold, with a
+   note). The screen says plainly that cakes not accounted for are charged as sold. */
+function renderMissAsk(d,miss){ window.scrollTo(0,0); $("#bar").hidden=true;
+  $("#app").innerHTML=`${head()}<div class="card stack"><h3 style="font:700 22px var(--display);margin:0">${miss.length===1?"A cake is":"Some cakes are"} not accounted for</h3>
+    <p class="hint">Your sales report and your count don't add up. <b>Cakes not accounted for are charged as sold.</b> Where did ${miss.length===1?"it":"they"} go?</p>
+    ${miss.map((c,i)=>`<div class="card mq" data-mq="${esc(c.productId)}"><div class="nm">${esc(c.name||prod(c.productId).name)}: <b>${c.diff}</b> not accounted for</div><div class="hint" style="margin:0 0 4px">You had ${c.avail} · sold ${c.sold??0} · waste ${c.waste||0} · left ${c.balance||0}</div>
+      <label class="opt"><input type="radio" name="mq-${i}" value="wasted" checked><span>${c.diff===1?"It was":"They were"} <b>thrown away</b> — I add a waste photo now.</span></label>
+      <label class="opt"><input type="radio" name="mq-${i}" value="unsure"><span><b>Not sure</b> — tell Chaleur (charged as sold).</span></label>
+      <input id="mq-n-${i}" placeholder="What happened? (optional)" style="margin-top:4px"></div>`).join("")}
+    <p class="hint" style="margin:0">Found ${miss.length===1?"it":"them"} in another chiller? Tap <b>Back</b> and add ${miss.length===1?"it":"them"} to <b>Left</b>.</p>
+    <div class="row2" style="margin-top:6px"><button class="cb ghost" type="button" id="mq-back">Back</button><button class="cb ok" type="button" id="mq-go">Continue</button></div><div class="st" id="status"></div></div>`;
+  miss.forEach((c,i)=>{ const n=document.getElementById("mq-n-"+i); if(n) n.addEventListener("input",()=>{ const u=document.querySelector(`input[name="mq-${i}"][value="unsure"]`); if(u&&n.value.trim()) u.checked=true; }); });
+  $("#mq-back").onclick=()=>{ restoreBar(); render(); };
+  $("#mq-go").onclick=()=>{ const ans=miss.map((c,i)=>({productId:c.productId,qty:c.diff,ans:(document.querySelector(`input[name="mq-${i}"]:checked`)||{}).value==="wasted"?"wasted":"unsure",note:((document.getElementById("mq-n-"+i)||{}).value||"").trim()}));
+    const apply=()=>{ for(const a of ans){ if(a.ans!=="wasted") continue;
+        let k=ORDER.filter(x=>ROWS[x].productId===a.productId).sort((x,y)=>(+ROWS[y].b||0)-(+ROWS[x].b||0)||(EXP.has(y)?1:0)-(EXP.has(x)?1:0))[0];
+        if(!k){ const s=INFO.stock.find(x=>x.productId===a.productId), col=s?s.colour:COL()[0].name; k=K(a.productId,col); if(!ROWS[k]){ ROWS[k]={productId:a.productId,colour:col,w:"",b:""}; ORDER.push(k); if(!SHOWN.includes(a.productId)) SHOWN.push(a.productId); } }
+        ROWS[k].w=String((+ROWS[k].w||0)+a.qty);
+        const c=(PREV.check||[]).find(x=>x.productId===a.productId); if(c){ c.waste=(+c.waste||0)+a.qty; c.diff-=a.qty; } }
+      MISSOK=ans; saveDraft(); renderPreview(collect()); };
+    if(ans.some(a=>a.ans==="wasted")&&!PH.waste){ renderWastePhoto(apply); return; }
+    apply(); }; }
+function renderWastePhoto(then){ window.scrollTo(0,0); $("#bar").hidden=true;
+  $("#app").innerHTML=`${head()}<div class="card stack"><h3 style="font:700 22px var(--display);margin:0">Add the waste photo</h3>
+    <p class="hint">A photo of the cakes you threw away (in the bin or the waste bag).</p>
+    <div class="ptiles two">${tile("waste","Waste")}</div>
+    <div class="row2" style="margin-top:6px"><button class="cb ghost" type="button" id="wp-back">Back</button></div><div class="st" id="status"></div></div>`;
+  AFTER_PHOTO=then; $("#wp-back").onclick=()=>{ AFTER_PHOTO=null; restoreBar(); render(); }; }
 function renderPreview(d){
   const r=PREV.read||{}, ch=PREV.check||[], probs=ch.filter(c=>c.diff);
+  { const miss=r.ok?ch.filter(c=>c.diff>0):[]; if(miss.length&&!MISSOK) return renderMissAsk(d,miss); }
+  const unsure=(MISSOK||[]).filter(a=>a.ans==="unsure");
   const tot=f=>d.lines.reduce((s,l)=>s+(+l[f]||0),0);
   $("#app").innerHTML=`${head()}
   <div class="card stack"><h3 style="font:700 22px var(--display);margin:0">Check before sending</h3>
     <p class="hint">${esc(INFO.outlet.name)} · ${esc(niceDate(DATE))} · counted by <b>${esc(d.who)}</b></p>
-    ${r.ok?(probs.length?`<div class="banner warn"><b>${probs.length} cake${probs.length>1?"s don't":" doesn't"} add up.</b> Please recount these, or tap <b>Edit</b>. If your count is right, send anyway and add a note.</div>`:`<div class="banner info">✓ Everything adds up with your sales report.</div>`)
+    ${(d.covers||[]).length?`<div class="banner info"><b>Catch-up count:</b> it also covers ${d.covers.map(x=>esc(niceDate(x))).join(", ")} (no count was sent those nights).</div>`:""}
+    ${unsure.length?`<div class="banner warn"><b>${unsure.reduce((a,x)=>a+x.qty,0)} cake${unsure.reduce((a,x)=>a+x.qty,0)>1?"s":""} not accounted for</b> (${unsure.map(x=>x.qty+" × "+esc(prod(x.productId).name)).join(", ")}): Chaleur is told, and ${unsure.reduce((a,x)=>a+x.qty,0)>1?"they are":"it is"} <b>charged as sold</b>.</div>`:""}
+    ${r.ok?(probs.filter(c=>!(c.diff>0&&unsure.some(a=>a.productId===c.productId))).length?`<div class="banner warn"><b>${probs.length} cake${probs.length>1?"s don't":" doesn't"} add up.</b> Please recount these, or tap <b>Edit</b>. If your count is right, send anyway and add a note.</div>`:unsure.length?"":`<div class="banner info">✓ Everything adds up with your sales report.</div>`)
       :`<div class="banner info">${esc(r.note||"The sales photo will be checked by the office.")}</div>`}
     ${(()=>{const bad=d.lines.filter(l=>l.b>0&&sfOf(l.productId,l.colour)==="bad");return bad.length?`<div class="banner warn">${bad.map(l=>`${esc(prod(l.productId).name)} ${esc(l.colour)}`).join(", ")}: counted as <b>Left</b> but past shelf life. Please throw them away and move them to <b>Waste</b> (tap Edit).</div>`:"";})()}
     <div style="overflow-x:auto"><table><thead><tr><th>Cake</th>${r.ok?"<th>Sold</th>":""}<th>Waste</th><th>Left</th>${r.ok?"<th>Check</th>":""}</tr></thead><tbody>
     ${(ch.length?ch:aggregate(d.lines)).map(c=>`<tr><td>${esc(c.name||prod(c.productId).name)}</td>${r.ok?`<td>${c.sold??0}</td>`:""}<td>${c.waste||""}</td><td>${c.balance||""}</td>${r.ok?`<td>${c.diff?`<span class="pill warn">${c.diff>0?c.diff+" missing":(-c.diff)+" extra"}</span>`:`<span class="pill ok">OK</span>`}</td>`:""}</tr>`).join("")||`<tr><td colspan="5" class="hint">No cakes counted.</td></tr>`}
     </tbody></table></div>
-    <p class="hint">Total waste <b>${tot("w")}</b> · total left <b>${tot("b")}</b>${r.ok?` · sold <b>${Object.values(r.sold||{}).reduce((a,b)=>a+b,0)}</b>`:""}</p>
+    <p class="hint">Total waste <b>${tot("w")+wnList().reduce((a,e)=>a+(+e.qty||0),0)}</b>${wnList().length?` (${wnList().reduce((a,e)=>a+(+e.qty||0),0)} recorded during the day)`:""} · total left <b>${tot("b")}</b>${r.ok?` · sold <b>${Object.values(r.sold||{}).reduce((a,b)=>a+b,0)}</b>`:""}</p>
     ${r.ok&&(r.other||[]).length?`<p class="hint">Also on the sales report (not matched to our cakes): ${r.other.map(o=>esc(o.seen)+" ×"+o.qty).join(", ")}</p>`:""}
     ${r.ok&&r.note?`<p class="hint">Note from the reader: ${esc(r.note)}</p>`:""}
     ${(()=>{const bad=(PREV.photos||[]).filter(x=>!x.ok);return bad.length?`<div class="banner warn"><b>${bad.length===1?"This photo doesn't":"These photos don't"} look right:</b><br>${bad.map(x=>`${esc(x.label)}: ${esc(x.why)}`).join("<br>")}<br>Please tap <b>Edit</b> and take ${bad.length===1?"it":"them"} again. If the photo is right, you can still send; Chaleur will check it.</div>`:"";})()}
-    ${r.ok&&r.date&&r.date!==DATE?`<div class="banner warn">The sales report looks like it's for <b>${esc(niceDate(r.date))}</b>, not ${esc(niceDate(DATE))}. Please check the photo.</div>`:""}
+    ${r.ok&&r.date&&r.date!==DATE&&!(d.covers||[]).length?`<div class="banner warn">The sales report looks like it's for <b>${esc(niceDate(r.date))}</b>, not ${esc(niceDate(DATE))}. Please check the photo.</div>`:""}
     <div class="thumbs">${d.photos.sales.concat([d.photos.display]).concat(d.photos.waste?[d.photos.waste]:[]).map(u=>`<img src="${u}" alt="">`).join("")}</div>
     ${d.note?`<p class="hint">Note: ${esc(d.note)}</p>`:""}
     <label class="decl" id="decl-box"><input type="checkbox" id="decl"><span><b>${esc(d.who)}</b>, on behalf of ${esc(INFO.outlet.name)}: ${esc(INFO.declaration||DECL_DEFAULT)}</span></label>
@@ -1138,12 +1261,12 @@ async function send(d){
     $("#bar").hidden=true; window.scrollTo(0,0);
     const wa=r.wa?`https:\/\/wa.me/${esc(r.wa)}?text=${encodeURIComponent(r.summary)}`:"";
     const n=(+INFO.streak||0)+(INFO.existing?0:1); INFO.streak=n; INFO.existing=INFO.existing||{at:new Date().toISOString(),by:d.who};
-    $("#app").innerHTML=`${head()}<div class="card done2"><div class="tick2">✓</div><h2>${r.mode==="replaced"?"Report updated.":n>1?`Sent. ${n} nights in a row!`:"Sent. Thank you!"}</h2>
+    $("#app").innerHTML=`${head()}<div class="card done2"><div class="tick2">✓</div><h2>${r.mode==="replaced"?"Report updated.":n>1?`Sent. ${n} nights in a row!`:"Sent. Thank you!"}</h2>${(r.covers||[]).length?`<p class="hint" style="margin:0">It also covers ${r.covers.map(x=>esc(niceDate(x))).join(", ")}.</p>`:""}
       <p style="margin:0" class="hint">Thank you, ${esc(d.who)}${r.mode==="replaced"?"":n>1?" and the "+esc(INFO.outlet.name)+" team":""}. Ref <b style="font-family:var(--mono);color:var(--ink)">${esc(r.id)}</b></p>
       <div class="dr" aria-hidden="true">${COL().map(c=>`<i style="background:${esc(c.hex)}"></i>`).join("")}</div>
       ${wa?`<a class="cb ok full" href="${wa}" target="_blank" rel="noopener">Send summary to Chaleur on WhatsApp</a>`:""}
       <button class="cb ghost full" type="button" data-act="again">Edit this report</button>
-      <p class="hint">Made a mistake? Tap "Edit this report", fix it and send again. The newest report is the one that counts.</p></div><div class="card" id="remcard" style="margin-top:12px" hidden></div>`; remFill();
+      <p class="hint">Made a mistake? Tap "Edit this report", fix it and send again. The newest report is the one that counts.</p></div><div style="margin-top:12px">${wnBtn()}</div><div class="card" id="remcard" style="margin-top:12px" hidden></div>`; remFill();
     PH={sales:[],display:null,waste:null};
   }catch(e){ status(e.message||"Sending failed. Check your internet and try again.",true); $("#send").disabled=false; $("#edit").disabled=false; }
   SENDING=false;
@@ -1152,6 +1275,8 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-close]"); if(!t) return; const d=t.dataset;
   if(d.close&&(e.target===t||t.tagName==="BUTTON")){$("#sheet").innerHTML="";return;}
   if(d.act==="retry"){load();return;}
+  if(d.act==="wn"){openWn();return;}
+  if(d.cal){ keep(); DATE=d.cal; PH={sales:[],display:null,waste:null}; NOTE=""; PREV=null; PHSIG=""; window.scrollTo(0,0); load(); return; } /* v22.71: a night not sent → open it */
   if(d.step){const k=d.step,f=d.sf,n=d.sn; const r=ROWS[k]; const v=Math.max(0,(+r[f]||0)+(+n)); r[f]=v?String(v):""; const inp=document.querySelector(`input[data-k="${CSS.escape(k)}"][data-f="${f}"]`); if(inp) inp.value=r[f]; if(f==="w") softRefresh(); saveDraft(); return;}
   if(d.rm){const [key,i]=d.rm.split("|"); if(key==="sales") PH.sales.splice(+i,1); else PH[key]=null; keep(); const y=window.scrollY; render(); window.scrollTo(0,y); return;}
   if(d.act==="add"){keep();openAdd();return;}
@@ -1167,16 +1292,21 @@ function softRefresh(){ const hw=hasWaste(), box=$("#shot-waste"), tiles=$("#pti
   if(tiles){ if(hw&&!box) tiles.insertAdjacentHTML("beforeend",tile("waste","Waste")); else if(!hw&&box) box.remove(); tiles.classList.toggle("two",!hw); const pl=$("#plinks"); if(pl) pl.innerHTML=plinks(); }
   setBtn(); }
 document.addEventListener("input",e=>{const t=e.target;
+  if(WN&&t.id&&/^wn-/.test(t.id)){ if(t.id==="wn-q"){ const v=t.value.replace(/[^0-9]/g,""); WN.qty=v===""?"":Math.min(50,+v); const ob=$("#wn-overbox"); if(ob) ob.innerHTML=wnOverHtml(); } if(t.id==="wn-n") WN.note=t.value; if(t.id==="wn-ow"){ WN.overWhy=t.value; if(t.value.trim()){ WN.overOk=true; const o=document.querySelector('input[name="wnover"][value="ok"]'); if(o) o.checked=true; } } if(t.id==="wn-who"){ WHO=t.value; } return; }
   if(t.dataset.k){const v=t.value.replace(/[^0-9]/g,""); ROWS[t.dataset.k][t.dataset.f]=v===""?"":String(+v); if(t.dataset.f==="w") softRefresh(); saveDraft(); return;}
   if(t.id==="who"){WHO=t.value; setBtn();}
   if(t.id==="note") NOTE=t.value;
   if(t.id==="who"||t.id==="note") saveDraft();
 });
 document.addEventListener("change",async e=>{const t=e.target;
+  if(t.name==="cover"){ keep(); COVER=t.value; const y=window.scrollY; render(); window.scrollTo(0,y); return; }
+  if(WN&&t.name==="wnover"){ WN.overOk=t.value==="ok"; if(!WN.overOk){ const q=$("#wn-q"); if(q) q.focus(); } return; }
+  if(WN&&t.dataset.wnshot&&t.files&&t.files[0]){ try{ WN.photo=await shrink(t.files[0],1400); }catch(x){ WN.err="That photo couldn't be read. Please try again."; } wnDraw(); return; }
   if(t.id==="date"&&t.value){keep();DATE=t.value;PH={sales:[],display:null,waste:null};NOTE="";PREV=null;PHSIG="";return load();}
   if(t.dataset.shot&&t.files&&t.files[0]){const key=t.dataset.shot; keep(); status("Processing photo…"); const nx=$("#next"); if(nx) nx.disabled=true;
     /* v22.23: the sales report can be several photos picked at once from the gallery (up to 3 in all) */
-    try{ const files=key==="sales"?[...t.files].slice(0,Math.max(0,3-PH.sales.length)):[t.files[0]]; for(const f of files){ const u=await shrink(f,key==="sales"?2000:1400); if(key==="sales") PH.sales.push(u); else PH[key]=u; } }catch(err){status("That photo couldn't be read. Please try again.",true);}
+    try{ const files=key==="sales"?[...t.files].slice(0,Math.max(0,salesMax()-PH.sales.length)):[t.files[0]]; for(const f of files){ const u=await shrink(f,key==="sales"?2000:1400); if(key==="sales") PH.sales.push(u); else PH[key]=u; } }catch(err){status("That photo couldn't be read. Please try again.",true);}
+    if(AFTER_PHOTO&&key==="waste"&&PH.waste){ const f=AFTER_PHOTO; AFTER_PHOTO=null; f(); return; } /* v22.71: the waste photo asked for on the check screen */
     const y=window.scrollY; render(); window.scrollTo(0,y);}
 });
 /* ---- First-time guide (step-by-step, auto-advances, skippable) ----
