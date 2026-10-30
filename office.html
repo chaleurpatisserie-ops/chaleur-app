@@ -1935,7 +1935,7 @@ function nmCmpCalc(u,rg,who,outs){ const {a,b,part}=nmCmpRanges(u,rg), A=nmData(
   const ra=Object.fromEntries(A.rows.map(r=>[r.id,r])), rb=Object.fromEntries(B.rows.map(r=>[r.id,r])), K=["base","sold","waste"], vals=r=>Object.fromEntries(K.map(k=>[k,r?M[k](r):0]));
   const rows=[...new Set(A.rows.map(r=>r.id).concat(B.rows.map(r=>r.id)))].map(id=>({id,a:vals(ra[id]),b:vals(rb[id])})).filter(x=>K.some(k=>x.a[k]||x.b[k]))
     .sort((x,y)=>(CATS.indexOf(catOf(prod(x.id)))-CATS.indexOf(catOf(prod(y.id))))||prod(x.id).name.localeCompare(prod(y.id).name));
-  const sum=(s0,k)=>rows.reduce((t0,x)=>t0+x[s0][k],0), wp=s0=>{ const bs=sum(s0,"base"); return bs>0?Math.round(sum(s0,"waste")*100/bs):null; };
+  const sum=(s0,k)=>rows.reduce((t0,x)=>t0+x[s0][k],0), wp=s0=>{ const bs=one?sum(s0,"sold")+sum(s0,"waste"):sum(s0,"base"); return bs>0?Math.round(sum(s0,"waste")*100/bs):null; }; /* an outlet: waste ÷ (sold + waste) — what share of its cakes ended as waste (waste ÷ sent goes over 100% when older cakes are thrown) */
   return {a,b,part,one,baseL,rows,K,sum,wn:wp("a"),wo:wp("b"),lab:{base:baseL,sold:"Sold",waste:"Waste"},pol:{base:0,sold:1,waste:-1}}; }
 function nmCompare(u,rg,who,outs,SVv,pr,sub){ if(!u.cmp) return "";
   const C=nmCmpCalc(u,rg,who,outs), {a,b,part,one,baseL,rows,K,sum,wn,wo,lab,pol}=C; if(one) SVv=false; /* an outlet's panel: cakes only (it can be shown to the partner) */
@@ -1945,7 +1945,7 @@ function nmCompare(u,rg,who,outs,SVv,pr,sub){ if(!u.cmp) return "";
   const pc=(n,o)=>o>0?` (${n-o>=0?"+":"−"}${Math.abs(Math.round((n-o)*100/o))}%)`:n>0?" (new)":"";
   const tile=k=>{ const n=sum("a",k), o=sum("b",k), nv=sumV("a",k), ov=sumV("b",k);
     return `<div class="stat"><h3>${lab[k]}</h3><span class="v">${n} ${dl(n,o,pol[k])}</span><span class="small muted">was ${o}${pc(n,o)}${SVv&&(nv||ov)?` · ${RMs(nv)} vs ${RMs(ov)}`:""}</span></div>`; };
-  const wTile=`<div class="stat"><h3>Waste %</h3><span class="v">${wn==null?"—":wn+"%"} ${wn!=null&&wo!=null?dl(wn,wo,-1).replace(/(\d+)<\/span>$/,"$1 pts</span>"):""}</span><span class="small muted">was ${wo==null?"—":wo+"%"} · of ${baseL.toLowerCase()}</span></div>`;
+  const wTile=`<div class="stat"><h3>Waste %</h3><span class="v">${wn==null?"—":wn+"%"} ${wn!=null&&wo!=null?dl(wn,wo,-1).replace(/(\d+)<\/span>$/,"$1 pts</span>"):""}</span><span class="small muted">was ${wo==null?"—":wo+"%"} · ${one?"of sold + waste":"of "+baseL.toLowerCase()}</span></div>`;
   const mv=(k,dir)=>rows.map(x=>({x,d:x.a[k]-x.b[k]})).filter(o=>dir>0?o.d>0:o.d<0).sort((p0,q0)=>dir>0?q0.d-p0.d:p0.d-q0.d).slice(0,3).map(o=>`${esc(prod(o.x.id).name)} ${o.d>0?"+":"−"}${Math.abs(o.d)}`).join(" · ");
   const movers=[["Sold up",mv("sold",1)],["Sold down",mv("sold",-1)],["Waste up",mv("waste",1)]].filter(z=>z[1]).map(([h,t0])=>`<b>${h}:</b> ${t0}`).join(" &nbsp; ");
   const cell=(x,k)=>`<td class="r" data-l="${lab[k]}"><b class="mono">${x.a[k]}</b> ${dl(x.a[k],x.b[k],pol[k])}<div class="small muted">was ${x.b[k]}</div></td>`;
@@ -1962,7 +1962,7 @@ function nmPrintOut(pid){ const u=nmState(), rg=nmRange(u), C=nmCmpCalc(u,rg,pid
   const rowsH=C.rows.map(x=>`<tr><td>${esc(prod(x.id).name)}</td>${C.K.map(k=>`<td class="r b">${x.a[k]}</td><td class="r sm">${x.b[k]}</td><td class="r">${sg(x.a[k]-x.b[k])}</td>`).join("")}</tr>`).join("");
   const tot=`<tr class="tot"><td>Total</td>${C.K.map(k=>`<td class="r">${C.sum("a",k)}</td><td class="r">${C.sum("b",k)}</td><td class="r">${sg(C.sum("a",k)-C.sum("b",k))}</td>`).join("")}</tr>`;
   printDoc(`Chaleur x ${o.name} · compare`,`<div class="page"><div class="ph"><div><div class="co">Chaleur Atelier × ${esc(o.name)}</div><h1>Cakes: this period vs before</h1></div></div>
-    <div class="meta"><div><div class="lbl">This period</div><b>${esc(nmRl(C.a))}</b></div><div><div class="lbl">Compared with</div><b>${esc(nmRl(C.b))}</b></div><div><div class="lbl">Waste %</div><b>${C.wn==null?"—":C.wn+"%"}</b> <span class="sm">(was ${C.wo==null?"—":C.wo+"%"})</span></div></div>
+    <div class="meta"><div><div class="lbl">This period</div><b>${esc(nmRl(C.a))}</b></div><div><div class="lbl">Compared with</div><b>${esc(nmRl(C.b))}</b></div><div><div class="lbl">Waste % (of sold + waste)</div><b>${C.wn==null?"—":C.wn+"%"}</b> <span class="sm">(was ${C.wo==null?"—":C.wo+"%"})</span></div></div>
     <table><thead><tr><th>Cake</th>${C.K.map(k=>`<th class="r" colspan="3">${C.lab[k]}</th>`).join("")}</tr><tr><th></th>${C.K.map(()=>`<th class="r">now</th><th class="r">was</th><th class="r">±</th>`).join("")}</tr></thead><tbody>${rowsH}${tot}</tbody></table>
     <p class="sm" style="margin-top:10px">Sent = cakes delivered to ${esc(o.name)}. Sold and waste come from ${esc(o.name)}'s closing counts.${C.part==="y"?" This period runs up to yesterday; the period before covers the same days.":""}</p></div>`); }
 function vNumbers(){ for(const k in NMC) delete NMC[k]; const u=nmState(), rg=nmRange(u), D=nmData(rg.from,rg.to), t=today();
