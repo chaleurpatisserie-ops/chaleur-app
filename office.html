@@ -166,6 +166,10 @@ body:has(.bar:not([hidden])) .ca-hbtn{bottom:calc(96px + env(safe-area-inset-bot
 .ca-onb-ri{font-size:22px;text-align:center}.ca-onb-rt b{display:block;font-size:15px}.ca-onb-rt small{display:block;font-size:12.5px;opacity:.75;line-height:1.35}
 .ca-onb-b{border:0;border-radius:10px;background:var(--accent,#7b1c2b);color:#fff;font:700 14px inherit;padding:10px 14px;cursor:pointer;min-height:40px}.ca-onb-b:disabled{opacity:.5}
 .ca-onb-ok{color:#2e6b3a;font-weight:700;font-size:14px;white-space:nowrap}.ca-onb-no{font-size:12px;opacity:.7;text-align:right;display:block;max-width:110px}.ca-onb-msg{min-height:1em;color:#9a2a1a;font-size:13px;margin:4px 0 0;text-align:center}.ca-onb-n{font-size:12.5px;opacity:.75;text-align:center;margin:2px 0 8px;line-height:1.35}.ca-onb-n:empty{display:none}
+
+/* v22.74 */ tr.pmrneed{outline:2px solid #d97706;outline-offset:-2px;border-radius:12px} tr.pmrneed td{background:rgba(217,119,6,.14)} .pmrwhy[hidden]{display:none!important} .pmrwhy .btn[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* v22.75 */ .nmd{font-size:11px;font-weight:700;margin-left:2px;white-space:nowrap} .nmd.up{color:var(--ok)} .nmd.dn{color:var(--bad)} .nmd.z{color:var(--muted)}
 </style>
 <script>
 /* Chaleur sign-in (phone + PIN, remember me, log out) and the in-app helper. Shared by the office desk, kitchen and audit pages. */
@@ -1316,7 +1320,7 @@ const TAB_ALIAS={carry:"billing",bills:"billing",log:"daily"};
 function tabOfHash(h){ const pd=/^plan\/(\d{4}-\d{2}-\d{2})$/.exec(h||""); if(pd){ S.ui.prepDay=pd[1]; return "plan"; } if(h==="recipes"||/^recipes\//.test(h||"")){ rcFromHash(h); return "recipes"; } if(TAB_ALIAS[h]){ if(h==="log") S.ui.showLog=true; return TAB_ALIAS[h]; } return h; }
 const NCOL=8;
 let rq=false;
-const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null||d.doadd!=null)) return true; if(!can("deliv")) return false; return el.name==="pedwhy"||el.id==="ped-other"||d.doadd!=null||d.made!=null||d.make!=null||d.pmr!=null||d.pmrn!=null||el.id==="prep-snap-in"||d.prepsnap!=null||d.psend!=null||d.pskip!=null||d.frz!=null||d.padd!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
+const kitOK=el=>{const d=el.dataset||{}; if(SUPK()&&(d.do!=null||d.doline!=null||d.doadd!=null)) return true; if(!can("deliv")) return false; return el.name==="pedwhy"||el.id==="ped-other"||d.doadd!=null||d.made!=null||d.make!=null||d.pmr!=null||d.pmrn!=null||d.shortother!=null||el.id==="prep-snap-in"||d.prepsnap!=null||d.psend!=null||d.pskip!=null||d.frz!=null||d.padd!=null||d.short!=null||d.ckq!=null||d.ckc!=null||d.ckok!=null||d.rcl!=null||/^do-(rb|ra|n)$/.test(el.id||"");};
 /* 28 Sep: a background tab never gets an animation frame (the page stayed on "Loading…"), so a timer draws it too;
    and a drawing error is shown on the page instead of leaving "Loading…" for ever. */
 let prepWinAsked=false, fmLinkTried=false;
@@ -1813,6 +1817,7 @@ function stillAtOutlet(pid){
    HQ sold follows Alfred's rule: HQ has = yesterday's left + made − DOs out; sold = has − waste − left (only on days with a Made number and a count). ---- */
 function nmState(){ const u=S.ui.nm||(S.ui.nm={mode:"week",anchor:today(),who:""}); if(!u.anchor) u.anchor=today(); return u; }
 function nmRange(u){ const a=u.anchor; if(u.mode==="day") return {from:a,to:a,label:nice(a)};
+  if(u.mode==="custom"){ let f=u.from||add(today(),-6), e=u.to||today(); if(e<f){ const x=f; f=e; e=x; } if(Math.round((P(e)-P(f))/864e5)>92) f=add(e,-92); return {from:f,to:e,label:f===e?nice(f):`${nice(f)} – ${nice(e)}`}; } /* v22.75: up to 3 months */
   if(u.mode==="month"){ const from=a.slice(0,8)+"01", d=P(from); d.setUTCMonth(d.getUTCMonth()+1); const to=add(d.toISOString().slice(0,10),-1); return {from,to,label:P(from).toLocaleString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"})}; }
   const from=weekStartOf(a); return {from,to:add(from,6),label:`Week ${nice(from)} – ${nice(add(from,6))}`}; }
 function nmStep(u,n){ const a=u.anchor; if(u.mode==="day") return add(a,n); if(u.mode==="month"){ const d=P(a.slice(0,8)+"01"); d.setUTCMonth(d.getUTCMonth()+n); return d.toISOString().slice(0,10); } return add(weekStartOf(a),7*n); }
@@ -1903,6 +1908,45 @@ function numbersData(from,to){
     .filter(r=>r.toMake||r.made||r.waste||r.sold||r.hqLeft||r.oLeftAll||r.hqMiss||r.ordAll||r.invAll).sort((a,b)=>(CATS.indexOf(catOf(prod(a.id)))-CATS.indexOf(catOf(prod(b.id))))||prod(a.id).name.localeCompare(prod(b.id).name));
   return {rows,outs,hq,days,hqDays,invBy};
 }
+/* v22.75 (Alfred 30 Oct: "on the number page, i need a compare period. day week month. or custom range … so i can see this week last week
+   diff"): Period has Custom (from – to); Compare = off · the period before (same days) · pick dates. A period still running is compared up
+   to yesterday (today's closing count is not in yet) against the same days before; a whole week or month against the whole one before. */
+function nmCmpRanges(u,rg){ const t=today(), y=add(t,-1), dn=(f,e)=>Math.round((P(e)-P(f))/864e5);
+  const a={from:rg.from,to:rg.to}; let part="";
+  if(rg.from<=t&&rg.to>=t){ if(rg.from<=y){ a.to=y; part="y"; } else { a.to=t; part="t"; } }
+  const len=dn(a.from,a.to); let b;
+  if(u.cmp==="custom"&&u.cf&&u.ct) b=u.cf<=u.ct?{from:u.cf,to:u.ct}:{from:u.ct,to:u.cf};
+  else if(u.mode==="week") b={from:add(a.from,-7),to:add(a.to,-7)};
+  else if(u.mode==="month"){ const d=P(a.from.slice(0,8)+"01"); d.setUTCMonth(d.getUTCMonth()-1); const f=d.toISOString().slice(0,10), d2=P(f); d2.setUTCMonth(d2.getUTCMonth()+1); const end=add(d2.toISOString().slice(0,10),-1), tt=add(f,len); b={from:f,to:part?(tt<end?tt:end):end}; }
+  else b={from:add(a.from,-(len+1)),to:add(a.from,-1)};
+  return {a,b,part}; }
+const nmRl=r=>r.from===r.to?nice(r.from):`${nice(r.from)} – ${nice(r.to)}`;
+function nmPrevName(u,rg){ const t=today(), now=rg.from<=t&&rg.to>=t; if(u.mode==="day") return now?"yesterday":"the day before"; if(u.mode==="week") return now?"last week":"the week before";
+  if(u.mode==="month") return now?"last month":"the month before"; const n=Math.round((P(rg.to)-P(rg.from))/864e5)+1; return `the ${n} day${n===1?"":"s"} before`; }
+function nmCompare(u,rg,who,outs,SVv,pr){ if(!u.cmp) return "";
+  const {a,b,part}=nmCmpRanges(u,rg), A=numbersData(a.from,a.to), B=numbersData(b.from,b.to), one=who&&who!=="hq"?outs.find(p=>p.id===who):null;
+  const useMade=!one&&A.rows.some(r=>r.made!=null)&&B.rows.some(r=>r.made!=null), baseL=one?"Sent":useMade?"Made":"To make";
+  const M={base:r=>one?((r.sent||{})[one.id]||0):(useMade?(r.made||0):(r.toMake||0)), sold:r=>one?((r.oSoldBy||{})[one.id]||0):who==="hq"?(r.hqSold||0):(r.sold||0), waste:r=>one?((r.oWasteBy||{})[one.id]||0):who==="hq"?(r.hqWaste||0):(r.waste||0)};
+  const ra=Object.fromEntries(A.rows.map(r=>[r.id,r])), rb=Object.fromEntries(B.rows.map(r=>[r.id,r])), K=["base","sold","waste"], vals=r=>Object.fromEntries(K.map(k=>[k,r?M[k](r):0]));
+  const rows=[...new Set(A.rows.map(r=>r.id).concat(B.rows.map(r=>r.id)))].map(id=>({id,a:vals(ra[id]),b:vals(rb[id])})).filter(x=>K.some(k=>x.a[k]||x.b[k]))
+    .sort((x,y)=>(CATS.indexOf(catOf(prod(x.id)))-CATS.indexOf(catOf(prod(y.id))))||prod(x.id).name.localeCompare(prod(y.id).name));
+  const sum=(s,k)=>rows.reduce((t0,x)=>t0+x[s][k],0), sumV=(s,k)=>rows.reduce((t0,x)=>t0+x[s][k]*(pr(x.id)||0),0), RMs=v=>"RM "+fm(r2(v));
+  const dl=(n,o,pol)=>{ const d=r2(n-o); if(!d) return `<span class="nmd z">=</span>`; const good=pol===0?null:(pol>0?d>0:d<0); return `<span class="nmd ${good==null?"":good?"up":"dn"}">${d>0?"+":"−"}${Math.abs(d)}</span>`; };
+  const pc=(n,o)=>o>0?` (${n-o>=0?"+":"−"}${Math.abs(Math.round((n-o)*100/o))}%)`:n>0?" (new)":"";
+  const pol={base:0,sold:1,waste:-1}, lab={base:baseL,sold:"Sold",waste:"Waste"};
+  const tile=k=>{ const n=sum("a",k), o=sum("b",k), nv=sumV("a",k), ov=sumV("b",k);
+    return `<div class="stat"><h3>${lab[k]}</h3><span class="v">${n} ${dl(n,o,pol[k])}</span><span class="small muted">was ${o}${pc(n,o)}${SVv&&(nv||ov)?` · ${RMs(nv)} vs ${RMs(ov)}`:""}</span></div>`; };
+  const wp=(s)=>{ const bs=sum(s,"base"); return bs>0?Math.round(sum(s,"waste")*100/bs):null; }, wn=wp("a"), wo=wp("b");
+  const wTile=`<div class="stat"><h3>Waste %</h3><span class="v">${wn==null?"—":wn+"%"} ${wn!=null&&wo!=null?dl(wn,wo,-1).replace(/(\d+)<\/span>$/,"$1 pts</span>"):""}</span><span class="small muted">was ${wo==null?"—":wo+"%"} · of ${baseL.toLowerCase()}</span></div>`;
+  const mv=(k,dir)=>rows.map(x=>({x,d:x.a[k]-x.b[k]})).filter(o=>dir>0?o.d>0:o.d<0).sort((p,q)=>dir>0?q.d-p.d:p.d-q.d).slice(0,3).map(o=>`${esc(prod(o.x.id).name)} ${o.d>0?"+":"−"}${Math.abs(o.d)}`).join(" · ");
+  const movers=[["Sold up",mv("sold",1)],["Sold down",mv("sold",-1)],["Waste up",mv("waste",1)]].filter(z=>z[1]).map(([h,t0])=>`<b>${h}:</b> ${t0}`).join(" &nbsp; ");
+  const cell=(x,k)=>`<td class="r" data-l="${lab[k]}"><b class="mono">${x.a[k]}</b> ${dl(x.a[k],x.b[k],pol[k])}<div class="small muted">was ${x.b[k]}</div></td>`;
+  const totRow=`<tr class="tot"><td><b>Total</b></td>${K.map(k=>`<td class="r"><b class="mono">${sum("a",k)}</b> ${dl(sum("a",k),sum("b",k),pol[k])}<div class="small muted">was ${sum("b",k)}</div></td>`).join("")}</tr>`;
+  return `<div class="panel" id="nm-compare"><div class="spread" style="flex-wrap:wrap;gap:4px 12px"><h2 style="margin:0">Compare</h2><span class="small"><b>${esc(nmRl(a))}</b> vs <b>${esc(nmRl(b))}</b>${part==="y"?` <span class="muted">· up to yesterday — today's closing count is not in yet</span>`:part==="t"?` <span class="muted">· today so far</span>`:""}</span></div>
+    <div class="stats" style="margin-top:10px">${tile("base")}${tile("sold")}${tile("waste")}${one?"":wTile}</div>
+    ${movers?`<p class="small" style="margin:10px 0 0">${movers}</p>`:""}
+    ${rows.length?`<div class="tw" style="margin-top:8px"><table data-fit="1"><thead><tr><th>Cake</th>${K.map(k=>`<th class="r">${lab[k]}</th>`).join("")}</tr></thead><tbody>${rows.map(x=>`<tr><td>${cake(x.id)}</td>${K.map(k=>cell(x,k)).join("")}</tr>`).join("")}${totRow}</tbody></table></div>`:`<div class="empty">Nothing recorded in either period.</div>`}
+    <p class="small muted" style="margin:8px 0 0">Big number = ${esc(nmRl(a))}, "was" = ${esc(nmRl(b))}. Green = better (more sold, less waste), red = worse. ${one?`${esc(one.name)} only.`:who==="hq"?"Kitchen HQ only.":"HQ and outlets together."}</p></div>`; }
 function vNumbers(){ const u=nmState(), rg=nmRange(u), D=numbersData(rg.from,rg.to), t=today();
   const who=u.who, outs=D.outs, one=who&&who!=="hq"?outs.find(p=>p.id===who):null;
   /* v22.34 (Alfred 12 Oct: "in the report page I need to see all this data — value, waste value etc. All numbers in one page"): every
@@ -1940,9 +1984,10 @@ function vNumbers(){ const u=nmState(), rg=nmRange(u), D=numbersData(rg.from,rg.
   return `<div class="head"><div><h1>Numbers${TEAMV?` <span class="pill info">Team brief · cakes only</span>`:""}</h1><p class="lede">What was planned, made, sent, sold, left and wasted, per cake${SVv?", in cakes and in RM (retail price)":""}. HQ sold comes from FeedMe (the till) plus the Orderla online orders on the days the FeedMe report was read, otherwise from the counts. Waste % = waste ÷ made (or ÷ to make when no Made number was sent). Highlighted rows (bar on the left): a quarter or more went to waste (2 cakes or more); waste numbers are in red.</p></div>
       <div class="row noprint" style="gap:8px;flex-wrap:wrap">${TEAMV?`<button class="btn pri" data-act="printTeam">🖨 Print for the team</button><button class="btn" data-act="nmAll">Show the RM again</button>`:`<button class="btn" data-act="printPage" title="Print this page with every number, RM included">🖨 Print · all numbers</button>${showVal()?`<button class="btn" data-act="printTeam" title="For the team brief: cakes only, no RM">🖨 Print for the team · cakes only</button>`:""}`}</div></div>
     <div class="panel"><div class="spread"><div class="row" style="flex-wrap:wrap;gap:8px">
-      <span class="seg" role="group" aria-label="Period">${[["day","Day"],["week","Week"],["month","Month"]].map(([k,l])=>`<button class="btn sm ${u.mode===k?"on":""}" data-nmmode="${k}" aria-pressed="${u.mode===k}">${l}</button>`).join("")}</span>
-      <span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><button class="btn sm" data-nmstep="-1" aria-label="Previous">‹</button><b>${esc(rg.label)}</b><button class="btn sm" data-nmstep="1" aria-label="Next" ${nmStep(u,1)>t?"disabled":""}>›</button></span>${rg.to<t||rg.from>t?`<button class="btn sm" data-nmstep="0">Today</button>`:""}
-      <select data-nmwho="1" aria-label="Show"><option value="" ${!who?"selected":""}>Everything</option><option value="hq" ${who==="hq"?"selected":""}>Kitchen HQ only</option>${outs.map(p=>opt(p.id,p.name+" only",who)).join("")}</select></div></div>
+      <span class="seg" role="group" aria-label="Period">${[["day","Day"],["week","Week"],["month","Month"],["custom","Custom"]].map(([k,l])=>`<button class="btn sm ${u.mode===k?"on":""}" data-nmmode="${k}" aria-pressed="${u.mode===k}">${l}</button>`).join("")}</span>
+      ${u.mode==="custom"?`<span class="row" style="gap:6px;flex-wrap:wrap;align-items:center"><input type="date" data-ui="nmf" value="${rg.from}" max="${t}" aria-label="From"> – <input type="date" data-ui="nmt" value="${rg.to}" max="${t}" aria-label="To"></span>`:`<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><button class="btn sm" data-nmstep="-1" aria-label="Previous">‹</button><b>${esc(rg.label)}</b><button class="btn sm" data-nmstep="1" aria-label="Next" ${nmStep(u,1)>t?"disabled":""}>›</button></span>${rg.to<t||rg.from>t?`<button class="btn sm" data-nmstep="0">Today</button>`:""}`}
+      <select data-nmwho="1" aria-label="Show"><option value="" ${!who?"selected":""}>Everything</option><option value="hq" ${who==="hq"?"selected":""}>Kitchen HQ only</option>${outs.map(p=>opt(p.id,p.name+" only",who)).join("")}</select>
+      <select data-ui="nmcmp" aria-label="Compare">${opt("","Compare: off",u.cmp||"")}${opt("prev","Compare with "+nmPrevName(u,rg),u.cmp||"")}${opt("custom","Compare with dates…",u.cmp||"")}</select>${u.cmp==="custom"?`<span class="row" style="gap:6px;flex-wrap:wrap;align-items:center"><span class="small muted">with</span><input type="date" data-ui="nmcf" value="${esc(u.cf||"")}" max="${t}" aria-label="Compare from"> – <input type="date" data-ui="nmct" value="${esc(u.ct||"")}" max="${t}" aria-label="Compare to"></span>`:""}</div></div>
       <div class="stats" style="margin-top:12px">
         ${one?"":stat(T.madeRows?"Made":"To make",baseT,baseTV,T.madeRows?"from the prep list":"on the DOs · no Made sent yet")}
         ${one?stat(`Sent to ${esc(one.name)}`,oneW.sent,oneW.V.sent,"on delivery orders"):stat("Sent to outlets",T.sent,TV.sent,outs.map(p=>`${esc(p.code)} ${D.rows.reduce((a,r)=>a+(r.sent[p.id]||0),0)}`).join(" · "))}
@@ -1952,6 +1997,7 @@ function vNumbers(){ const u=nmState(), rg=nmRange(u), D=numbersData(rg.from,rg.
       </div>
       ${worst.length?`<p class="small" style="margin:10px 0 0"><b>Most wasted:</b> ${worst.map(r=>`${esc(prod(r.id).name)} ${who==="hq"?r.hqWaste:r.waste}${SVv&&pr(r.id)?` (${RMs((who==="hq"?r.hqWaste:r.waste)*pr(r.id))})`:""}`).join(" · ")}</p>`:""}
       ${noMade?`<p class="small muted" style="margin:8px 0 0">No Made numbers for this period: the prep list keeps Made for 30 days, and someone has to send it (snap the prep sheet). Until then the table uses To make.</p>`:""}</div>
+    ${nmCompare(u,rg,who,outs,SVv,pr)}
     ${!who&&D.rows.length?nmSplit(D,T.madeRows?"made":"toMake",SVv,pr):""}
     <div class="panel">${D.rows.length?`<div class="tw"><table data-fit="1"><thead>${head}</thead><tbody>${body}${tot}</tbody></table></div>`:`<div class="empty">Nothing recorded for ${esc(rg.label)}: no delivery orders, Made numbers or closing counts.</div>`}
       <p class="small muted" style="margin:8px 0 0">To make = the day's delivery orders + HQ display plan. Made = the prep list's Made. Sent = accepted quantity once delivered. Outlet sold = available − waste − left, from their closing counts. HQ sold = FeedMe (the till) + the Orderla online orders where FeedMe was read, otherwise yesterday's left + made − sent out − waste − left (days with a Made number). Waste and left come from the closing counts.${SVv?" RM = cakes × retail price (Setup › Cakes).":""}</p></div>`;
@@ -4729,7 +4775,11 @@ function lockedTable(d,P,canEd,noBar){ const L=P.lock, ed=canEd&&S.ui.lockEd===d
   const fl=(f,pid)=>f==="make"?"To make":f==="made"?"Made":pid==="orders"?"Order":((S.partners[pid]||{}).code||pid);
   const cell=(r,f,pid,lab)=>{ const v=f==="place"?((r.place||{})[pid]):r[f], shown=v==null?"—":v;
     const edH=ed&&f!=="made"; /* v22.36: Made is never edited here once submitted (Alfred) — only by sending the sheet again from the kitchen */
-    return `<td class="r mono pn" data-l="${esc(lab)}">${edH?`<input type="number" min="0" step="1" inputmode="numeric" class="mono" style="max-width:4em" data-lk="${d}|${r.id}|${f}${pid?"|"+pid:""}" value="${v==null?"":v}" aria-label="${esc(lab)} ${esc(prod(r.id).name)}">`:`<span class="pv">${shown}</span>`}${f==="make"&&SVv&&v>0&&retailOf(r.id)?`<div class="small muted">RM ${fm(v*retailOf(r.id))}</div>`:""}${f==="made"&&r.made!=null&&r.made<r.make?`<div><span class="pill warn" style="font-size:10px;padding:1px 6px">short ${r.make-r.made}</span></div>`:""}</td>`; };
+    return `<td class="r mono pn" data-l="${esc(lab)}">${edH?`<input type="number" min="0" step="1" inputmode="numeric" class="mono" style="max-width:4em" data-lk="${d}|${r.id}|${f}${pid?"|"+pid:""}" value="${v==null?"":v}" aria-label="${esc(lab)} ${esc(prod(r.id).name)}">`:`<span class="pv">${shown}</span>`}${f==="make"&&SVv&&v>0&&retailOf(r.id)?`<div class="small muted">RM ${fm(v*retailOf(r.id))}</div>`:""}${f==="made"&&r.made!=null&&r.made<r.make?`<div><span class="pill warn" style="font-size:10px;padding:1px 6px">short ${r.make-r.made}</span></div>${lkWhy(r.id)}`:""}</td>`; };
+  /* v22.74: why it was made short — shown under "short n"; when nobody said why, the kitchen or office picks it here */
+  const lkWhy=id=>{ const w=(P.reason||{})[id]; if(w) return `<div class="small muted" style="max-width:9em;margin-left:auto;white-space:normal">${esc(w)}</div>`; if(!canEd||(RO()&&!DELIV())) return `<div class="small bad">no reason</div>`;
+    if(S.ui.lkOther===d+"|"+id) return `<input data-shortother="${d}|${id}" placeholder="type why, then Enter" aria-label="Why short" style="max-width:9em;margin-top:2px">`;
+    return `<select data-short="${d}|${id}" class="lkwhy" aria-label="Why short" style="max-width:9em;margin-top:2px">${opt("","Why short?","")}${SHORT_WHY.map(x=>opt(x,x,"")).join("")}</select>`; };
   let lastCat=""; const ncol=3+(hasOrd?1:0)+cols.length;
   const body=rows.map(r=>{ const ct=catOf(prod(r.id)), hd=ct!==lastCat?`<tr class="catrow"><td colspan="${ncol}">${esc(CATL[ct]||ct)}</td></tr>`:""; lastCat=ct;
     return `${hd}<tr><td class="pcake">${cake(r.id)}</td>${cell(r,"make",null,"To make")}${cell(r,"made",null,"Made")}${hasOrd?cell(r,"place","orders","Order"):""}${cols.map(c=>cell(r,"place",c.pid,c.code)).join("")}</tr>`; }).join("");
@@ -4840,11 +4890,16 @@ function allocTable(d,rows,ordL,outs,hqPl){ const tr=[];
       return `<tr class="${first?"alfirst":""}"><td class="pcake" data-l="Cake">${first?cake(t.id):""}</td><td data-l="Dot">${dot}</td><td class="r mono" data-l="Qty"><b>${t.x?t.x.qty:t.qty}</b></td><td data-l="Goes to">${to}</td></tr>`; }).join("")}
     </tbody></table></div></div>`; }
 /* v22.18: the snapped sheet, read by the AI, for the kitchen to check before submitting Made */
+/* v22.74 (Alfred 30 Oct, the locked list showing "short 1" on two whole cakes: "this one if they nv do need to ask for reason"): a cake made
+   less than To make (a blank counts as 0) needs a reason before Made can be sent — one tap on the row */
+const SHORT_WHY=["Ingredient out","Short staff","Quality reject","Equipment","Other"];
+const pmrShort=(mk,mv,fb)=>!fb&&mk!=null&&mk>0&&(mv==null?0:mv)<mk;
+const pmrWhyRow=(id,v,on)=>`<div class="row pmrwhy" data-pmrwhyrow="${id}" style="gap:4px;flex-wrap:wrap;margin-top:4px"${on?"":" hidden"}><span class="small muted">Why short?</span>${SHORT_WHY.map(w=>`<button class="btn sm" data-pmrwhy="${id}|${w}" aria-pressed="${w==="Other"?String(!!v.other):String(v.note===w)}">${w}</button>`).join("")}</div>`;
 const pmrPill=(r,mv,fb)=>fb?(mv==null?`<span class="pill mute">not made</span>`:`<span class="pill ok">✓</span>`):mv==null?`<span class="pill mute" title="Blank = 0 made. Type a number if the sheet has one.">blank = 0</span>`:mv<r.make?`<span class="pill warn">${r.make-mv} short</span>`:mv>r.make?`<span class="pill info">${mv-r.make} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
 /* v22.24: a typed Made updates its own pill and the Submit button in place — no full redraw, so the next box keeps the keyboard */
 function pmrUpd(id){ const R=S.ui.prepRead; if(!R) return; const V=R.vals||{}, cell=document.querySelector(`[data-pmrpill="${id}"]`), btn=document.querySelector('button[data-act="prepMadeGo"]'); if(!cell||!btn) return;
   const fb=btn.dataset.fb==="1", mk=cell.dataset.make===""?null:+cell.dataset.make, v=V[id]||{}, mv=v.made===""||v.made==null?null:+v.made; cell.innerHTML=pmrPill({make:mk},mv,fb);
-  const tr=cell.closest("tr"); const nt=tr&&tr.querySelector("input[data-pmrn]"); if(nt) nt.placeholder=!fb&&mv!=null&&mv<mk?"why short?":"note (optional)";
+  const tr=cell.closest("tr"); const nt=tr&&tr.querySelector("input[data-pmrn]"); const sh=pmrShort(mk,mv,fb); if(nt) nt.placeholder=sh?(v.other?"type why short":"why short?"):"note (optional)"; const wr=tr&&tr.querySelector("[data-pmrwhyrow]"); if(wr) wr.hidden=!sh; if(tr&&!sh) tr.classList.remove("pmrneed");
   const cells=[...document.querySelectorAll("[data-pmrpill]")], typed=c=>{ const x=V[c.dataset.pmrpill]; return !!x&&x.made!==""&&x.made!=null; }, missing=fb?(cells.some(typed)?0:1):0, blanks=fb?0:cells.filter(c=>!typed(c)).length;
   btn.disabled=!!missing; btn.textContent="Submit made"+(missing?" (type at least one)":""); const bl=btn.nextElementSibling; if(bl&&bl.classList.contains("muted")) bl.textContent=blanks?`${blanks} blank = 0 made`:""; }
 function prepReadPanel(d,rows){ const R=S.ui.prepRead; if(!R||R.d!==d) return "";
@@ -4862,9 +4917,11 @@ function prepReadPanel(d,rows){ const R=S.ui.prepRead; if(!R||R.d!==d) return ""
     ${fb?`<p class="small" style="margin:4px 0 8px"><b>Type it from the sheet:</b> Made for every cake you made today. Leave the others empty.</p>`:""}
     ${res.printedDate&&res.printedDate!==d?`<p class="pill bad" style="margin:6px 0">This sheet looks like it is for ${nice(res.printedDate)}, not ${nice(d)}. Check you snapped today's sheet.</p>`:""}
     ${(res.unclear||[]).length?`<p class="small muted" style="margin:4px 0">Could not read: ${res.unclear.map(esc).join(" · ")}</p>`:""}
+    ${R.ask&&ids.some(id=>pmrShort(byId[id].make,V[id]&&V[id].made!==""&&V[id].made!=null?+V[id].made:null,fb)&&!String((V[id]||{}).note||"").trim())?`<p class="pill warn" style="margin:6px 0;white-space:normal;border-radius:12px">Made less than To make — tap why on each orange row, then Submit made.</p>`:""}
     <div class="tw nocard"><table class="prep pmr" data-fit="1" style="--pn:3"><thead><tr><th>Cake</th><th class="r">To make</th><th class="r">Made</th><th>Note</th><th></th></tr></thead><tbody>
     ${ids.map(id=>{ const r=byId[id], v=V[id]||{}, mv=v.made===""||v.made==null?null:+v.made, st=pmrPill(r,mv,fb);
-      return `<tr><td class="pcake">${cake(id)}</td><td class="r mono pn preq" data-l="To make"><span class="pv">${r.make==null?"—":r.make}</span></td><td class="r pn pmade" data-l="Made"><span class="row" style="gap:4px;justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-pmrstep="${id}|-1" aria-label="Less">−</button><input class="mono made" type="number" min="0" step="1" inputmode="numeric" data-pmr="${id}" value="${mv==null?"":mv}" aria-label="Made ${esc(prod(id).name)}"><button class="btn sm" data-pmrstep="${id}|1" aria-label="More">+</button></span></td><td class="pnote"><input data-pmrn="${id}" value="${esc(v.note||"")}" placeholder="${mv!=null&&mv<r.make?"why short?":"note (optional)"}" style="width:100%;min-width:120px" aria-label="Note"></td><td class="pact" data-pmrpill="${id}" data-make="${r.make==null?"":r.make}">${st}</td></tr>`; }).join("")}
+      const sh=pmrShort(r.make,mv,fb), need=sh&&!String(v.note||"").trim();
+      return `<tr id="pmr-${id}"${R.ask&&need?` class="pmrneed"`:""}><td class="pcake">${cake(id)}</td><td class="r mono pn preq" data-l="To make"><span class="pv">${r.make==null?"—":r.make}</span></td><td class="r pn pmade" data-l="Made"><span class="row" style="gap:4px;justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-pmrstep="${id}|-1" aria-label="Less">−</button><input class="mono made" type="number" min="0" step="1" inputmode="numeric" data-pmr="${id}" value="${mv==null?"":mv}" aria-label="Made ${esc(prod(id).name)}"><button class="btn sm" data-pmrstep="${id}|1" aria-label="More">+</button></span></td><td class="pnote"><input data-pmrn="${id}" value="${esc(v.note||"")}" placeholder="${sh?(v.other?"type why short":"why short?"):"note (optional)"}" style="width:100%;min-width:120px" aria-label="Note">${fb||r.make==null||!(r.make>0)?"":pmrWhyRow(id,v,sh)}</td><td class="pact" data-pmrpill="${id}" data-make="${r.make==null?"":r.make}">${st}</td></tr>`; }).join("")}
     </tbody></table></div>
     ${(res.extra||[]).length?`<p class="small muted">Also written on the sheet (not a printed row): ${res.extra.map(x=>`${esc(x.name)} ${x.made}`).join(", ")} — add the cake with ＋ Add a cake if it is real.</p>`:""}
     <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn pri" data-act="prepMadeGo" data-d="${d}" data-fb="${fb?1:""}" ${missing?"disabled":""}>Submit made${missing?" (type at least one)":""}</button>${blanks?`<span class="small muted">${blanks} blank = 0 made</span>`:""}<button class="btn" data-act="prepSnap" data-d="${d}">Snap again</button><button class="btn sm" data-act="prepReadNo">Cancel</button></div></div>`; }
@@ -5086,6 +5143,10 @@ document.addEventListener("change",async e=>{
   if(t.dataset.rci!=null) return; /* v22.39 Recipes: handled on "input" (view only for everyone) */
   if(t.dataset.flt){const [g,k]=t.dataset.flt.split(".");S.ui[g]={...(S.ui[g]||{}),[k]:t.value};render();return;}
   if(t.dataset.nmwho!=null){ nmState().who=t.value; render(); return; }
+  if(/^nm(f|t|cf|ct|cmp)$/.test(t.dataset.ui||"")){ const u=nmState(), k=t.dataset.ui, v=t.value; /* v22.75 */
+    if(k==="nmcmp"){ u.cmp=v; if(v==="custom"&&!(u.cf&&u.ct)){ const c=nmCmpRanges(Object.assign({},u,{cmp:"prev"}),nmRange(u)).b; u.cf=c.from; u.ct=c.to; } }
+    else if(/^\d{4}-\d{2}-\d{2}$/.test(v)) u[{nmf:"from",nmt:"to",nmcf:"cf",nmct:"ct"}[k]]=v;
+    render(); return; }
   if(t.dataset.bksel){ const S0=S.ui.bkSelDO||(S.ui.bkSelDO=new Set()); if(t.checked) S0.add(t.dataset.bksel); else S0.delete(t.dataset.bksel); render(); return; }
   if(t.dataset.bkselall){ const S0=S.ui.bkSelDO||(S.ui.bkSelDO=new Set()); const keys=[...document.querySelectorAll('#main input[data-bksel]')].map(i=>i.dataset.bksel); if(t.checked) keys.forEach(k=>S0.add(k)); else keys.forEach(k=>S0.delete(k)); render(); return; }
   if(RO()&&!t.dataset.ui&&!t.dataset.stp&&!t.dataset.st&&!(DELIV()&&kitOK(t))){toast("View only — your access doesn't include changing this");render();return;}
@@ -5106,7 +5167,10 @@ document.addEventListener("change",async e=>{
   if(t.dataset.ui==="bweek"&&t.value){S.ui.week=weekStartOf(t.value);S.ui.confirm=null;render();}
   if(t.dataset.ui==="opFrom"){S.ui.opFrom=t.value;}
   if(t.dataset.made){const [d,id]=t.dataset.made.split("|"); const v=String(t.value).split(/[.,]/)[0].replace(/[^0-9]/g,""); await savePrep(d,x=>{x.made=x.made||{}; if(v==="") delete x.made[id]; else x.made[id]=+v;}); toast(v===""?"Made cleared":"Made saved: outlets updated"); return;}
-  if(t.dataset.short){const [d,id]=t.dataset.short.split("|"); await savePrep(d,x=>{x.reason=x.reason||{}; x.reason[id]=t.value;}); return;}
+  if(t.dataset.shortother){ const [d,id]=t.dataset.shortother.split("|"), w=t.value.trim().slice(0,120); S.ui.lkOther=null; if(!w){ render(); return; } /* v22.74 */
+    await savePrep(d,x=>{x.reason=x.reason||{}; x.reason[id]=w; (x.edLog||(x.edLog=[])).push({at:new Date().toISOString(),by:(CA.get()||{}).name||AUTH.name||"",why:"",what:`${prod(id).name}: why short → ${w}`});}); render(); return;}
+  if(t.dataset.short){const [d,id]=t.dataset.short.split("|"); const w=t.value; if(w==="Other"&&t.classList.contains("lkwhy")){ S.ui.lkOther=d+"|"+id; render(); setTimeout(()=>{ const f=document.querySelector(`input[data-shortother="${d}|${id}"]`); if(f) f.focus(); },60); return; } /* v22.74: Other → type it */
+    await savePrep(d,x=>{x.reason=x.reason||{}; x.reason[id]=w; if(w) (x.edLog||(x.edLog=[])).push({at:new Date().toISOString(),by:(CA.get()||{}).name||AUTH.name||"",why:"",what:`${prod(id).name}: why short → ${w}`});}); render(); return;}
   if(t.dataset.padd){const d=t.dataset.padd, id=t.value; if(!id) return; S.ui.prepAdd=S.ui.prepAdd||{}; (S.ui.prepAdd[d]=S.ui.prepAdd[d]||[]).push(id); render(); toast(`${prod(id).name} added: type how many to prepare for each outlet`); return;}
   if(t.dataset.oled!=null){ const D=S.ui.olDraft||[]; if(D[+t.dataset.oled]) D[+t.dataset.oled].productId=t.value; return;}
   if(t.dataset.oledq!=null){ const D=S.ui.olDraft||[]; if(D[+t.dataset.oledq]) D[+t.dataset.oledq].qty=Math.max(1,Math.round(+t.value||1)); return;}
@@ -5126,13 +5190,15 @@ document.addEventListener("click",async e=>{
   if(d.ochase){ const [pid,date]=d.ochase.split("|"); b.disabled=true; try{ const r=await GS("outletChaseNow",pid,date); if(r.ok) toast(`Asked ${partner(pid).name}${r.names&&r.names.length?" — "+r.names.join(", "):""}`); else { const ph=((r.people||[]).find(x=>x.phone)||{}).phone||partner(pid).phone||""; toast(`${r.why} — WhatsApp opens with the message ready.`); window.open(wa(ph,r.text||""),"_blank","noopener"); } }catch(e){ toast(e.message); } b.disabled=false; return; }
   if(d.close&&e.target!==b) return;
   if(d.close){S.ui.modal=null;render();return;}
-  if(RO()&&!(SUPK()&&(d.edo||d.rdo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.act==="doCancelAsk"||d.act==="doCancelGo"||d.act==="doCancelNo"||d.doadd!=null||d.dorm!=null))&&!(DELIV()&&(d.prm||d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"||d.act==="makeDOsGo"||d.act==="makeDOsNo"||d.act==="olPull"||d.act==="prepSnap"||d.act==="prepReadNo"||d.act==="prepMadeGo"||d.act==="lockEdit"||d.act==="lockDone"||d.act==="prepEdAsk"||d.act==="prepEdCancel"||d.act==="prepEdGo"||d.act==="prepEdDone"||d.act==="prepDayNow"||d.pmrstep||d.dskip!=null||d.psmall!=null||d.act==="frzEdit"||d.act==="frzSave"||d.act==="frzCancel"))&&!(d.act==="b2bRefresh"||d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.attnav||d.act==="attAll"||d.billsel||d.act==="printPage"||d.act==="printTeam"||d.act==="nmAll"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF"||d.nmmode||d.nmstep!=null||((can("bills")||can("reports"))&&(d.bkdo||d.act==="bkSendSel")))){toast("View only — ask a manager to make changes");return;}
+  if(RO()&&!(SUPK()&&(d.edo||d.rdo||d.act==="newDO"||d.act==="goNewDO"||d.act==="saveDO"||d.act==="doCancelAsk"||d.act==="doCancelGo"||d.act==="doCancelNo"||d.doadd!=null||d.dorm!=null))&&!(DELIV()&&(d.prm||d.chk||d.cksplit||d.rcv||d.act==="saveChk"||d.act==="cancelChk"||d.act==="receiveDO"||d.act==="cancelDO"||d.act==="makeDOs"||d.act==="makeDOsGo"||d.act==="makeDOsNo"||d.act==="olPull"||d.act==="prepSnap"||d.act==="prepReadNo"||d.act==="prepMadeGo"||d.act==="lockEdit"||d.act==="lockDone"||d.act==="prepEdAsk"||d.act==="prepEdCancel"||d.act==="prepEdGo"||d.act==="prepEdDone"||d.act==="prepDayNow"||d.pmrstep||d.pmrwhy||d.dskip!=null||d.psmall!=null||d.act==="frzEdit"||d.act==="frzSave"||d.act==="frzCancel"))&&!(d.act==="b2bRefresh"||d.tab||d.goDaily||d.att||d.day||d.wk||d.setup||d.doc||d.vdo||d.lcopy||d.lqr||d.act==="qrClose"||d.act==="qrPrint"||d.tip||d.bopen||d.pprint||d.dnprint||d.act==="showHandled"||d.attnav||d.act==="attAll"||d.billsel||d.act==="printPage"||d.act==="printTeam"||d.act==="nmAll"||d.act==="printModal"||d.act==="clearDF"||d.act==="clearBF"||d.act==="clearLF"||d.nmmode||d.nmstep!=null||((can("bills")||can("reports"))&&(d.bkdo||d.act==="bkSendSel")))){toast("View only — ask a manager to make changes");return;}
   if(d.dorm&&S.ui.doEdit){const E=S.ui.doEdit; E.rows=doRowIds(E).filter(x=>x!==d.dorm); delete E.lines[d.dorm]; E.rowsTouched=true; render(); return;}
   if(d.psmall){ const [dd,pid,on]=d.psmall.split("|"), who=(CA.get()||{}).name||AUTH.name||"", at=new Date().toISOString(); b.disabled=true;
     try{ await savePrep(dd,x=>{ x.sendSmall=x.sendSmall||{}; if(on==="1") x.sendSmall[pid]={by:who,at}; else delete x.sendSmall[pid]; (x.skipLog||(x.skipLog=[])).push({at,by:who,pid,small:on==="1"?"send anyway":"skip again"}); x.skipLog=x.skipLog.slice(-40); });
       toast(on==="1"?`${partner(pid).name}: sending the extra drop anyway.`:`${partner(pid).name}: no extra drop.`); }catch(e){ toast((e&&e.message)||"Couldn't save"); }
     render(); return; }
   if(d.dskip&&S.ui.doPrev){const P=S.ui.doPrev, x=P.out.find(o=>o.pid===d.dskip); P.out=P.out.filter(o=>o.pid!==d.dskip); if(x) P.skip.push({name:x.p.name,d1:x.d1,why:"removed by you"}); (S.ui.doSkip||(S.ui.doSkip=new Set())).add(d.dskip); render(); return;}
+  if(d.pmrwhy&&S.ui.prepRead){ const [id,w]=d.pmrwhy.split("|"); const V=S.ui.prepRead.vals||(S.ui.prepRead.vals={}), v=V[id]||(V[id]={}); /* v22.74 */
+    if(w==="Other"){ v.other=1; if(SHORT_WHY.includes(v.note)) v.note=""; render(); setTimeout(()=>{ const f=document.querySelector(`input[data-pmrn="${id}"]`); if(f) f.focus(); },60); } else { v.other=0; v.note=w; render(); } return;}
   if(d.pmrstep&&S.ui.prepRead){ const [id,st]=d.pmrstep.split("|"); const V=S.ui.prepRead.vals||(S.ui.prepRead.vals={}), v=V[id]||(V[id]={}); v.made=String(Math.max(0,(v.made===""||v.made==null?0:+v.made)+(+st))); render(); return;}
   if(d.fmmap){ const v=(cfg().orderlaMap||{})[d.fmmap]; S.ui.olEdit=d.fmmap; S.ui.olDraft=(v&&v.cakes?v.cakes:[]).map(c=>({productId:c.productId,qty:c.qty||1})); render(); return;}
   if(d.olmap){ const x=olCatalog().find(c=>c.key===d.olmap); S.ui.olEdit=d.olmap; S.ui.olDraft=(x&&x.cakes?x.cakes:[]).map(c=>({productId:c.productId,qty:c.qty||1})); render(); return;}
@@ -5174,7 +5240,7 @@ document.addEventListener("click",async e=>{
   if(d.dnprint){printDN(d.dnprint);return;}
   if(d.att){const a=attention()[+d.att]; if(a&&a.go){S.ui.partner=a.pid;S.tab=a.go.tab;if(a.go.date)S.ui.date=a.go.date;if(a.go.week)S.ui.week=a.go.week;render();}return;}
   if(d.day){S.ui.date=add(S.ui.date||today(),+d.day);S.ui.editDay=false;render();return;}
-  if(d.nmmode){ nmState().mode=d.nmmode; render(); return; }
+  if(d.nmmode){ const u=nmState(); if(d.nmmode==="custom"&&u.mode!=="custom"){ const r=nmRange(u), t0=today(); u.from=r.from>t0?t0:r.from; u.to=r.to>t0?t0:r.to; } if(d.nmmode!=="custom"&&u.mode==="custom"&&u.to) u.anchor=u.to; u.mode=d.nmmode; render(); return; } /* v22.75: Custom starts from the period shown */
   if(d.nmstep!=null){ const u=nmState(); u.anchor=+d.nmstep?nmStep(u,+d.nmstep):today(); render(); return; }
   if(d.wk){S.ui.week=add(S.ui.week||weekStartOf(add(today(),-7)),+d.wk);S.ui.confirm=null;render();return;}
   if(d.setup){S.ui.setup=d.setup;S.ui.confirm=null;render();return;}
@@ -5414,6 +5480,9 @@ async function act(a,b){
   case "lockDone":{ S.ui.lockEd=null; S.ui.prepEd=null; S.ui.prepAsk=null; render(); return;}
   case "prepMadeGo":{ const R=S.ui.prepRead; if(!R||!R.res) return; const d=b.dataset.d||R.d, V=R.vals||{}; { const L0=((S.prep||{})[d]||{}).lock; if(L0){ toast(`Made for ${nice(d)} was already submitted by ${L0.by||"the kitchen"} (${fmtTs(L0.at)}). It can't be changed here.`); return; } } let ids=Object.keys(V).concat((R.rows||[]).filter(id=>!V[id]));
     const fb=!(R.rows||[]).length&&!((R.res||{}).rows||[]).length; if(fb) ids=ids.filter(id=>V[id]&&V[id].made!==""&&V[id].made!=null); if(fb&&!ids.length){ toast("Type the made number for at least one cake"); return; }
+    if(!fb){ const need=[...document.querySelectorAll("[data-pmrpill]")].map(c=>c.dataset.pmrpill).filter(id=>{ const c=document.querySelector(`[data-pmrpill="${id}"]`), mk=c.dataset.make===""?null:+c.dataset.make, v=V[id]||{};
+        return pmrShort(mk,v.made===""||v.made==null?null:+v.made,false)&&!String(v.note||"").trim(); }); /* v22.74 */
+      if(need.length){ R.ask=1; render(); toast(`${need.length} cake${need.length===1?"":"s"} made less than To make — tap why on ${need.length===1?"it":"each one"}`); const el=document.getElementById("pmr-"+need[0]); if(el) el.scrollIntoView({block:"center"}); return; } }
     if(!fb) ids.forEach(id=>{ if(V[id]==null||V[id].made===""||V[id].made==null) V[id]=Object.assign(V[id]||{},{made:"0"}); }); /* blank = 0 made */
     b.disabled=true; b.textContent="Saving…"; const who=(CA.get()||{}).name||""; let fbSnap=null; try{ fbSnap=prepSnap(d,planAll()); }catch(e){}
     try{ await savePrep(d,x=>{ const before=JSON.stringify(x.made||{}); x.made=x.made||{}; x.reason=x.reason||{}; for(const id of ids){ x.made[id]=Math.max(0,+V[id].made||0); const n=String(V[id].note||"").trim(); if(n) x.reason[id]=n.slice(0,120); else if(x.made[id]>=((x.make||{})[id]??-1)) delete x.reason[id]; }
