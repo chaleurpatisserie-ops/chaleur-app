@@ -1028,6 +1028,23 @@ body.ro #main input:not([type=date]),body.ro #main select,body.ro #main textarea
 .hd .tt{flex:1;min-width:0}.hd .hbtn{height:44px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--paper);font-weight:600;font-size:14px;color:var(--ink);box-shadow:0 3px 0 var(--line);flex:none;font-family:inherit}
 .b2bk h3{margin:0 0 4px}.b2bk .b2bo{border-top:1px dashed var(--line);padding:9px 0}.b2bk .b2bo:first-of-type{border-top:0}.b2bk .b2bo.today{background:var(--bad-bg);border-radius:10px;padding:9px 10px;border-top:0;margin:4px 0}.b2bk ul{margin:5px 0 2px 18px;padding:0}.b2bk li{margin:2px 0}.b2bk .b2bt{border-top:1px solid var(--line);padding-top:8px;margin-top:4px}
 </style>
+<style>/* v22.76 HQ Waste now */
+.hw-btn{display:flex;align-items:center;gap:12px;width:100%;border:1.5px solid var(--bad);background:var(--bad-bg);color:var(--ink);border-radius:16px;padding:12px 14px;font:600 15px var(--body);cursor:pointer;text-align:left;min-height:56px}
+.hw-btn b{display:block;font-size:16px}.hw-btn small{display:block;font-size:12.5px;color:var(--muted);font-weight:500;line-height:1.35}.hw-btn .ic{font-size:26px;flex:none}
+.hw-box{display:flex;flex-direction:column;gap:8px}.hw-box>*{flex-shrink:0}.hw-box .eb{margin-top:6px}
+.hw-chips{display:flex;flex-wrap:wrap;gap:6px}.hw-chip{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 12px;font:600 14px var(--body);color:var(--ink);cursor:pointer;min-height:42px}.hw-chip small{color:var(--muted);font-weight:600}
+.hw-chip[aria-pressed="true"]{border-color:var(--accent);background:var(--soft);color:var(--accent)}
+.hw-dots{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.hw-cd{display:flex;flex-direction:column;align-items:center;gap:3px;border:1.5px solid transparent;background:none;padding:6px 0;border-radius:10px;font:600 11px var(--body);color:var(--muted);cursor:pointer;min-width:0}
+.hw-cd i{width:26px;height:26px;border-radius:50%;box-shadow:0 0 0 1px var(--line)}.hw-cd.on{border-color:var(--accent);background:var(--soft);color:var(--accent)}
+.hw-step{display:flex;align-items:center;gap:6px;max-width:200px}.hw-step button{width:48px;height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);font:700 22px var(--body);color:var(--ink);cursor:pointer}.hw-step input{flex:1;min-width:0;height:48px;text-align:center;font:700 20px var(--body);border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink)}
+.hw-in{width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;font:15px var(--body);background:var(--paper);color:var(--ink);box-sizing:border-box}
+.hw-pt{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:96px;border:1.5px dashed var(--line);border-radius:14px;background:var(--seg);color:var(--ink);font:600 14px var(--body);cursor:pointer;position:relative;overflow:hidden}
+.hw-pt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}.hw-pt span{position:relative}.hw-pt.on{border-style:solid;border-color:var(--ok)}
+.hw-note{border-radius:12px;padding:10px 12px;background:var(--soft);font-size:14px;line-height:1.45}.hw-note.warn{background:var(--warn-bg)}
+.hw-opt{display:flex;gap:8px;align-items:flex-start;margin-top:6px}.hw-note .hw-in,.hw-note input[id]{margin-top:6px}
+.hw-done{border:1px solid var(--line);border-radius:12px;padding:8px 10px}.hw-l{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:8px 0;font-size:14px}.hw-l:first-of-type{border-top:0}.hw-l .tx{flex:1;min-width:0}.hw-l small{display:block;color:var(--muted);font-size:12px}
+.hw-row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}.hw-st .err{color:var(--bad)}
+</style>
 </head><body>
 <div class="w" id="app">
   <div id="hdr"></div>
@@ -1075,7 +1092,7 @@ function alert0(m){const s=$("#status");s.innerHTML=`<span class="err">${esc(m)}
 const TABS=[["today","To-do"],["opening","Opening"],["closing","Closing"],["plan","Plan"],["history","History"]]; /* v22.73: "History" (Reports is the office board now) */
 /* v22.53 (Alfred 17 Oct: "a lot of buttons not needed"): 4 chips, one row. The Plan page opens from the To-do (Plan for the next days); the prep list from the To-do link. */
 const CHIPS=TABS.filter(([k])=>k!=="plan");
-const TAB_ALIAS={lists:"history",setup:"history",get report(){ return new Date().getHours()<14?"opening":"closing"; }}; /* v22.73: the menu's "Kitchen report" opens the report that is due: opening before 2 pm, closing after */
+const TAB_ALIAS={lists:"history",setup:"history",waste:"today",get report(){ return new Date().getHours()<14?"opening":"closing"; }}; /* v22.73: the menu's "Kitchen report" opens the report that is due: opening before 2 pm, closing after */
 const SEEN={}; const partOf=(k,p)=>(INFO&&INFO.day&&INFO.day[k]&&INFO.day[k].parts&&INFO.day[k].parts[p])||(k==="opening"&&p==="prep"&&INFO&&INFO.prep&&INFO.prep.madeAt?{by:INFO.prep.madeBy+" (office page)",at:INFO.prep.madeAt,id:"desk",issues:[],desk:true}:null);
 /* v21.11 (Alfred): the display photo is checked for tidiness the moment it is taken; a messy display pops up with the photo and asks for a re-do.
    TIDY[key] = {state:"checking"|"ok"|"messy"|"skip", problems, tips, tries} — sending waits while checking, and is blocked on the first messy photo. */
@@ -1319,7 +1336,7 @@ function vToday(){
   const shared=`${INFO.proposals.length?`<div class="card info"><h3>Waiting for a supervisor (${INFO.proposals.length})</h3>${INFO.proposals.map(x=>`<div style="padding:8px 0;border-top:1px dashed var(--line)"><div>${esc(propText(x))}</div><div class="hint">${esc(x.by)} · ${esc(dtOf(x.at))}${x.why?` · “${esc(x.why)}”`:""}</div>${SUP()?`<div style="display:flex;gap:8px;margin-top:8px"><button class="cb sm ok" type="button" data-dec="${x.id}" data-ok="1">Approve</button><button class="cb sm ghost" type="button" data-dec="${x.id}" data-ok="0">Reject</button></div>`:""}</div>`).join("")}</div>`:""}
     ${INFO.brief&&(INFO.brief.warnings||[]).length?`<div class="card info"><h3>AI notes</h3><ul class="iss">${INFO.brief.warnings.map(w=>`<li>${esc(w)}</li>`).join("")}</ul><p class="hint">Updated ${esc(dtOf(INFO.brief.generatedAt))}</p></div>`:""}
     ${INFO.check&&INFO.check.items.length?`<div class="card info"><h3>Latest check</h3><ul class="iss">${INFO.check.items.map(i=>`<li class="${esc(i.sev)}">${esc(i.text)}</li>`).join("")}</ul><p class="hint">${esc(INFO.check.by)} · ${esc(dtOf(INFO.check.at))}</p></div>`:""}`;
-  return `<div class="stack">${head}${b2bCard()}${cards.join("")}${add}${extra}${mng}${shared}</div>`;
+  return `<div class="stack">${head}${typeof hwBtn==="function"?hwBtn():""}${b2bCard()}${cards.join("")}${add}${extra}${mng}${shared}</div>`; /* v22.76: HQ Waste now */
 }
 /* the to-do form (people with "Add and edit to-dos") */
 function openTask(type,team,id){ let x=null; if(id){ x=(INFO.tasks||[]).find(y=>y.id===id); if(!x){ toast("Reload the page to edit this to-do."); return; } }
@@ -1440,7 +1457,7 @@ function vReport(kind){
   const curP=(list.find(([p])=>!partOf(kind,p)&&s0.need.includes(p))||list.find(([p])=>!partOf(kind,p))||[])[0];
   return `<div class="stack">
     <div><div class="pbar"><i style="width:${needed.length?Math.round(needed.filter(([p])=>partOf(kind,p)).length*100/needed.length):0}%"></i></div><div class="lh"><span>${s0.done?"✓ "+(kind==="opening"?"Opening":"Closing")+" report complete":`${needed.filter(([p])=>partOf(kind,p)).length} of ${needed.length} parts sent`}</span><span>${DATE!==INFO.today?esc(niceD(DATE)):""}</span></div></div>
-    ${late?`<p class="err">Late: still to do ${esc(tMiss(kind,s0).map(p=>partName(kind,p)).join(", "))}.</p>`:""}
+    ${late?`<p class="err">Late: still to do ${esc(tMiss(kind,s0).map(p=>partName(kind,p)).join(", "))}.</p>`:""}${typeof hwBtn==="function"?hwBtn():""}
     ${legacy?`<div class="card"><b>Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}</b>. Sending a part now starts a new report.</div>`:""}
     ${list.map(([p,label],i)=>{ const x=partOf(kind,p), iss=(x&&x.issues)||[], bad=iss.some(z=>z.sev==="bad"), cur=!x&&p===curP;
       return `<div class="card pc ${x?"sent":""} ${cur?"cur":""}"><span class="no">${x?"✓":i+1}</span><div><div class="nm">${esc(label)}</div><div class="sb">${x?`${esc(x.by)} · ${esc(hmOf(x.at))}`:esc(p==="eq"?INFO.conf.equipment.length+" units · "+PHINT[kind][p]:PHINT[kind][p]||"")}${!x&&!s0.need.includes(p)?` · <i>optional today</i>`:""}${!x&&s0.need.includes(p)?` · <b class="when ${kind==="opening"&&isTimed(kind,p)?"t":""}">${esc(whenTxt(kind,p))}</b>`:""}</div></div>
@@ -1625,7 +1642,7 @@ function vCount(kind,part){ const s=st(kind), open=kind==="opening"; if(cMode(ki
     ${open?`<div class="ask2">How many on the display?</div>
       <div class="bigstep"><button type="button" data-kstep="${kind}|${esc(k)}|q|-1" aria-label="One less">−</button><input type="number" inputmode="numeric" min="0" value="${esc(r.q||"")}" placeholder="0" data-kv="${kind}|${esc(k)}|q" aria-label="On display"><button type="button" class="plus" data-kstep="${kind}|${esc(k)}|q|1" aria-label="One more">+</button></div>
       <div class="pre">${s.pre[k]!=null&&s.pre[k]!==""?`Pre-filled from last night: ${esc(s.pre[k])}`:"New colour: count what you see"}</div>`
-    :`<div class="ask2">${ex[k]!=null?`This morning: ${ex[k]} on display`:"Count what you see"}</div>
+    :`<div class="ask2">${ex[k]!=null?`This morning: ${ex[k]} on display`:"Count what you see"}</div>${typeof hwQ==="function"&&hwQ(k)?`<div class="pre">Waste now today: ${hwQ(k)} already recorded — don't count ${hwQ(k)===1?"it":"them"} again</div>`:""}
       <div class="wl"><div class="bx"><div class="eb">Waste</div><div class="sm"><button type="button" data-kstep="${kind}|${esc(k)}|w|-1" aria-label="Waste minus one">−</button><input type="number" inputmode="numeric" min="0" value="${esc(r.w||"")}" placeholder="0" data-kv="${kind}|${esc(k)}|w" aria-label="Waste"><button type="button" data-kstep="${kind}|${esc(k)}|w|1" aria-label="Waste plus one">+</button></div><div class="hint">thrown away</div></div>
         <div class="bx"><div class="eb">Left</div><div class="sm"><button type="button" data-kstep="${kind}|${esc(k)}|b|-1" aria-label="Left minus one">−</button><input type="number" inputmode="numeric" min="0" value="${esc(r.b||"")}" placeholder="0" data-kv="${kind}|${esc(k)}|b" aria-label="Left"><button type="button" data-kstep="${kind}|${esc(k)}|b|1" aria-label="Left plus one">+</button></div><div class="hint">still on display</div></div></div>`}
     <div style="text-align:center;margin-top:18px"><button class="lnk" type="button" data-cmode="list">See all · add a cake or an event item</button></div>`; }
@@ -1634,7 +1651,7 @@ function vCountList(kind,part){ const s=st(kind), open=kind==="opening", ex={}; 
   const cats={}; Object.keys(by).forEach(pid=>{const pr=prodOf(pid); (cats[pr.category]=cats[pr.category]||[]).push(pid);});
   const order=CATS.filter(c=>cats[c]).concat(Object.keys(cats).filter(c=>!CATS.includes(c)));
   const cols=CONFIG.colours, wn=Object.values(s.rows).reduce((a,x)=>a+(+x.w||0),0)+s.ev.reduce((a,x)=>a+(+x.w||0),0);
-  return `<p class="hint">${open?`<b>Wastage</b> = thrown away this morning, <b>Available</b> = all the stock you have now, display included. Empty = 0. Tap a colour dot to add a colour.`:`<b>Waste</b> = thrown away or damaged, <b>Left</b> = still on the display. Empty = 0. Tap a colour dot to add a colour.`}</p>
+  return `${!open&&typeof hwCountNote==="function"?hwCountNote():""}<p class="hint">${open?`<b>Wastage</b> = thrown away this morning, <b>Available</b> = all the stock you have now, display included. Empty = 0. Tap a colour dot to add a colour.`:`<b>Waste</b> = thrown away or damaged, <b>Left</b> = still on the display. Empty = 0. Tap a colour dot to add a colour.`}</p>
     ${order.map(c=>`<div class="catt">${esc(CATL[c]||c)}</div>${cats[c].map(pid=>{const pr=prodOf(pid), keys=(by[pid]||[]).sort((a,b)=>cols.findIndex(x=>x.name===a.split("|")[1])-cols.findIndex(x=>x.name===b.split("|")[1]));
       return `<div class="cake" id="cake-${esc(pid)}"><div class="hd2">${picH(pr)}<div class="tt"><div class="nm">${esc(pr.name)}</div><div class="sub">${keys.length?keys.length+" colour"+(keys.length>1?"s":""):"Tap the colour dot on the cake"}</div></div>
         <div class="dots" role="group" aria-label="Colour dots for ${esc(pr.name)}">${cols.map(c0=>{const k=pid+"|"+c0.name, on=!!s.rows[k]; return `<button type="button" class="cd${on?" on":""}" data-cd="${kind}|${esc(k)}" aria-pressed="${on}" aria-label="${esc(c0.name)}, made ${esc(CDAY(c0.name))}"><i style="background:${esc(c0.hex)}"></i><span>${esc(CDAY(c0.name))}</span></button>`;}).join("")}</div></div>
@@ -1702,7 +1719,7 @@ async function send(replace){ const kind=TAB, part=PART; if(SENDING||!part||miss
   const d={date:DATE,nonce:s.nonce[part]||(s.nonce[part]=nonce()),note:s.notes[part]||"",seen:SEEN[kind+"|"+part]!==undefined?SEEN[kind+"|"+part]:((partOf(kind,part)||{}).id||"")}; if(replace===true) d.replace=true;
   if(part==="eq") d.equip=INFO.conf.equipment.map(e=>{const x=s.equip[e.id]; return {id:e.id,t:String((x.neg?-1:1)*Math.abs(+String(x.t).replace(",","."))),door:!!x.door,photo:P2[p+"eq_"+e.id]};});
   if(part==="display"){ d.counts=s.order.map(k=>{const [pid,c]=k.split("|"); return {productId:pid,colour:c,qty:+s.rows[k].q||0,w:+s.rows[k].w||0};}).filter(x=>x.qty>0||x.w>0); d.events=s.ev.filter(x=>x.name.trim()&&+x.q>0).map(x=>({name:x.name,colour:x.colour,qty:+x.q})); d.photo=P2.op_display; if(P2.op_waste) d.photoWaste=P2.op_waste; if(TIDY.op_display&&TIDY.op_display.state==="messy") d.tidy={tidy:false,problems:TIDY.op_display.problems}; }
-  if(part==="count"){ d.lines=s.order.map(k=>{const [pid,c]=k.split("|"), r=s.rows[k]; return {productId:pid,colour:c,w:+r.w||0,b:+r.b||0};}); d.events=s.ev.filter(x=>x.name.trim()).map(x=>({name:x.name,colour:x.colour,w:+x.w||0,b:+x.b||0})); d.photos={display:P2.cl_display,waste:P2.cl_waste}; } if(TIDY.cl_display&&TIDY.cl_display.state==="messy") d.tidy={tidy:false,problems:TIDY.cl_display.problems};
+  if(part==="count"){ d.wn2=true; /* v22.76: only the waste found now; the day's Waste now is added by the server */ d.lines=s.order.map(k=>{const [pid,c]=k.split("|"), r=s.rows[k]; return {productId:pid,colour:c,w:+r.w||0,b:+r.b||0};}); d.events=s.ev.filter(x=>x.name.trim()).map(x=>({name:x.name,colour:x.colour,w:+x.w||0,b:+x.b||0})); d.photos={display:P2.cl_display,waste:P2.cl_waste}; } if(TIDY.cl_display&&TIDY.cl_display.state==="messy") d.tidy={tidy:false,problems:TIDY.cl_display.problems};
   if(part==="deliveries"){ d.deliveries={}; INFO.dos.filter(x=>!x.internal).forEach(x=>{ d.deliveries[x.id]=s.later[x.id]?"later":P2["op_do_"+x.id]; }); }
   if(part==="prep"){ const R=s.prep||{}, sh=(INFO.prep||{}).sheet, rows=psRows(sh,R).filter(r=>!psFB(sh,R)||psTyped(R,r)); d.made={}; d.notes={}; d.rows=rows.map(r=>({id:r.id,toMake:r.fb?null:(+r.toMake||0)})); rows.forEach(r=>{ const v=(R.vals||{})[r.id]||{}; d.made[r.id]=+v.made||0; const n=String(v.note||"").trim(); if(n) d.notes[r.id]=n; }); d.photo=(R.res||{}).photo||{}; d.src=(R.res||{}).aiError?"typed":"photo"; }
   if(part==="lists"){ d.today=[1,2,3].map(j=>P2["cl_lt"+j]).filter(Boolean); d.days=[1,2,3].map(i=>[1,2].map(j=>P2["cl_ld"+i+"_"+j]).filter(Boolean)); }
@@ -2002,4 +2019,71 @@ CA.tour.define({key:"kitchen",steps:tourSteps,ready:()=>!!INFO&&!V2&&!!TOK&&(TAB
   const qt=new URLSearchParams(location.search).get("team"); if(qt==="am"||qt==="pm") teamSet(qt);
   const s=CA.get(); if(!s) return signIn(); TOK=s.t; boot2(); })();
 </script>
+<script>
+/* v22.76 HQ Waste now (Alfred 30 Oct: "i need the add on wastage thing for hq also, hq also always have wastage midway"): like the outlets'
+   Waste now — any time of the day the team records a cake thrown away from the HQ display (cake, colour dot, how many, why, photo), signed in,
+   saved straight away; the closing HQ display count adds it to tonight's waste (don't count it again). */
+let HW=null; const hwTok=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const hwList=()=>((INFO&&INFO.wasteNow)||[]);
+function hwBtn(){ const L=hwList(), n=L.reduce((a,e)=>a+(+e.qty||0),0);
+  return `<button class="hw-btn" type="button" data-hwopen="1"><span class="ic">🗑</span><span><b>Waste now · HQ display</b><small>${n?`${n} cake${n===1?"":"s"} recorded today · `:""}A cake dropped, damaged or expired during the day? Record it with a photo, then throw it away.</small></span></button>`; }
+function hwCountNote(){ const L=hwList(); if(!L.length) return "";
+  return `<div class="hw-note"><b>Already thrown away today (Waste now)</b> — added to tonight's waste, <b>don't count ${L.reduce((a,e)=>a+(+e.qty||0),0)===1?"it":"them"} again</b>:<br>${L.map(e=>`${e.qty} × ${esc(prodOf(e.productId).name)} ${esc(capw(e.colour))} · ${esc(e.reason)} · ${esc(hmOf(e.at))}${e.by?" · "+esc(e.by):""}`).join("<br>")}</div>`; }
+const hwQ=k=>hwList().filter(e=>e.productId+"|"+e.colour===k).reduce((a,e)=>a+(+e.qty||0),0);
+async function hwOpen(){ HW={info:null,pid:"",col:"",qty:1,reason:"",note:"",photo:null,overOk:false,overWhy:"",busy:false,err:"",ok:"",tok:hwTok()}; hwDraw();
+  try{ HW.info=await run("hqWasteNowInfo"); }catch(e){ HW.err=(e&&e.message)||"Could not load. Check your internet and try again."; } hwDraw(); }
+function hwHad(pid,col){ const I=(HW&&HW.info)||{}, s=(I.stock||[]).filter(x=>x.productId===pid&&(!col||x.colour===col)).reduce((a,x)=>a+(+x.qty||0),0), u=(I.entries||[]).filter(x=>x.productId===pid&&(!col||x.colour===col)).reduce((a,x)=>a+(+x.qty||0),0); return Math.max(0,s-u); }
+function hwOverHtml(){ if(!HW||!HW.pid||!HW.col) return ""; const had=hwHad(HW.pid,HW.col), q=+HW.qty||0; if(q<=had) return "";
+  return `<div class="hw-note warn">The display had <b>${had}</b> ${esc(prodOf(HW.pid).name)} ${esc(capw(HW.col))} this morning, not ${q}.
+    <label class="hw-opt"><input type="radio" name="hwover" value="fix" ${HW.overOk?"":"checked"}><span>I made a mistake — <b>let me fix the number</b>.</span></label>
+    <label class="hw-opt"><input type="radio" name="hwover" value="ok" ${HW.overOk?"checked":""}><span>Yes, <b>${q} is right</b> because:</span></label><input id="hw-ow" value="${esc(HW.overWhy)}" placeholder="e.g. taken from the kitchen chiller"></div>`; }
+function hwDraw(){ let box=document.getElementById("hwsheet"); if(!box){ box=document.createElement("div"); box.id="hwsheet"; document.body.appendChild(box); } if(!HW){ box.innerHTML=""; return; } const I=HW.info; let body="";
+  if(!I) body=HW.err?`<div class="hw-note warn">${esc(HW.err)}</div>`:`<p class="hint"><span class="spin"></span> Loading…</p>`;
+  else { const prods=((INFO&&INFO.products)||[]).filter(p=>p.active!==false), stockP=[...new Set((I.stock||[]).map(x=>x.productId))].filter(id=>prods.some(p=>p.id===id)), others=prods.filter(p=>!stockP.includes(p.id));
+    const cakeBtn=p=>`<button type="button" class="hw-chip" data-hwp="${esc(p.id)}" aria-pressed="${HW.pid===p.id}">${esc(p.name)}${stockP.includes(p.id)?` <small>${hwHad(p.id)}</small>`:""}</button>`;
+    body=`${I.moved?`<div class="hw-note warn">Tonight's display count is already sent — this waste goes on <b>tomorrow's</b> count (${esc(niceD(I.date))}).</div>`:""}
+    ${(I.entries||[]).length?`<div class="hw-done"><div class="eb">Already recorded · ${esc(niceD(I.date))}</div>${I.entries.map(e=>`<div class="hw-l"><span class="tx"><b>${e.qty} × ${esc(prodOf(e.productId).name)}</b><small>${esc(capw(e.colour))} · ${esc(e.reason)}${e.note?" — "+esc(e.note):""} · ${esc(hmOf(e.at))} · ${esc(e.by)}${e.url?" · photo ✓":""}</small></span><button type="button" class="lnk" data-hwundo="${esc(e.id)}">Undo</button></div>`).join("")}</div>`:""}
+    <div class="eb">1 · Which cake?</div><div class="hw-chips">${stockP.map(id=>cakeBtn(prodOf(id))).join("")||`<span class="hint">Nothing on the display count — pick below.</span>`}</div>
+    ${others.length?`<details ${HW.pid&&!stockP.includes(HW.pid)?"open":""}><summary class="lnk">Another cake</summary><div class="hw-chips" style="margin-top:6px">${others.map(cakeBtn).join("")}</div></details>`:""}
+    ${HW.pid?`<div class="eb">2 · The colour dot on the cake</div><div class="hw-dots">${CONFIG.colours.map(c=>{ const h=hwHad(HW.pid,c.name); return `<button type="button" class="hw-cd${HW.col===c.name?" on":""}" data-hwc="${esc(c.name)}" aria-pressed="${HW.col===c.name}" aria-label="${esc(c.name)}, made ${esc(CDAY(c.name))}"><i style="background:${esc(c.hex)}"></i><span>${esc(CDAY(c.name))}${h?" · "+h:""}</span></button>`; }).join("")}</div>`:""}
+    ${HW.col?`<div class="eb">3 · How many?</div><div class="hw-step"><button type="button" data-hwq="-1" aria-label="One less">−</button><input type="number" inputmode="numeric" min="1" max="50" id="hw-q" value="${esc(HW.qty)}" aria-label="How many"><button type="button" data-hwq="1" aria-label="One more">+</button></div>
+      <div id="hw-overbox">${hwOverHtml()}</div>
+      <div class="eb">4 · Why?</div><div class="hw-chips">${(I.reasons||[]).map(x=>`<button type="button" class="hw-chip" data-hwr="${esc(x)}" aria-pressed="${HW.reason===x}">${esc(x)}</button>`).join("")}</div>
+      <input id="hw-n" class="hw-in" value="${esc(HW.note)}" placeholder="${HW.reason==="Other"?"What happened? (needed)":"Anything to add? (optional)"}">
+      <div class="eb">5 · Photo of the cake</div>
+      <button type="button" class="hw-pt ${HW.photo?"on":""}" data-pick="hwshot=1" data-pick-title="Waste photo">${HW.photo?`<img src="${HW.photo}" alt="">`:""}<span>${HW.photo?"✓ Done · tap to retake":"📷 Take a photo before you throw it away"}</span></button>
+      <input type="file" accept="image/*" capture="environment" data-hwshot="1" hidden><input type="file" accept="image/*" data-hwshot="1" hidden>`:""}`; }
+  box.innerHTML=`<div class="sheet"><div class="box hw-box" role="dialog" aria-modal="true" aria-label="Waste now"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 style="margin:0">🗑 Waste now · HQ display</h3>${I?`<span class="pill">${esc(niceD(I.date))}</span>`:""}</div>
+    <p class="hint" style="margin:4px 0 0">Record a cake you throw away during the day, then throw it away — no need to keep it until closing. It is added to tonight's waste.</p>
+    ${body}<div class="hw-st" id="hw-st" role="status">${HW.err&&I?`<span class="err">${esc(HW.err)}</span>`:HW.ok?esc(HW.ok):""}</div>
+    <div class="hw-row"><button class="cb ghost" type="button" data-hwx="1">Close</button>${I&&HW.col?`<button class="cb ok" type="button" data-hwsave="1" ${HW.busy?"disabled":""}>${HW.busy?"Saving…":"Save waste"}</button>`:""}</div></div></div>`; }
+async function hwSave(){ const q=+HW.qty||0, had=hwHad(HW.pid,HW.col), st=m=>{ HW.ok=""; const el=$("#hw-st"); if(el) el.innerHTML=`<span class="err">${esc(m)}</span>`; };
+  const n=$("#hw-n"); if(n) HW.note=n.value; const ow=$("#hw-ow"); if(ow) HW.overWhy=ow.value;
+  if(!HW.pid) return st("Pick the cake."); if(!HW.col) return st("Tap the colour dot on the cake."); if(q<1||q>50) return st("How many cakes? (1 to 50)");
+  if(q>had&&!HW.overOk) return st("Fix the number, or tick that it is right and write why.");
+  if(q>had&&HW.overWhy.trim().length<3) return st("Write why it is more than the display had.");
+  if(!HW.reason) return st("Tap why the cake is thrown away."); if(HW.reason==="Other"&&HW.note.trim().length<3) return st("Write what happened.");
+  if(!HW.photo) return st("Take a photo of the cake first.");
+  HW.busy=true; HW.err=""; hwDraw();
+  try{ const r=await run("hqWasteNowAdd",{productId:HW.pid,colour:HW.col,qty:q,reason:HW.reason,note:HW.note.trim(),photo:HW.photo,over:q>had?HW.overWhy.trim():"",token:HW.tok});
+    Object.assign(HW.info,{entries:r.entries,date:r.date,moved:r.moved}); const nm=prodOf(r.entries[r.entries.length-1].productId).name;
+    Object.assign(HW,{pid:"",col:"",qty:1,reason:"",note:"",photo:null,overOk:false,overWhy:"",busy:false,tok:hwTok(),ok:`✓ Saved: ${q} × ${nm}. You can throw ${q>1?"them":"it"} away now.`});
+    if(INFO&&r.date===DATE) INFO.wasteNow=r.entries; hwDraw(); }
+  catch(e){ HW.busy=false; hwDraw(); st((e&&e.message)||"Could not save. Try again."); } }
+document.addEventListener("click",async e=>{ const o=e.target.closest&&e.target.closest("[data-hwopen]"); if(o){ e.preventDefault(); e.stopPropagation(); hwOpen(); return; }
+  if(!HW) return; const b=e.target.closest&&e.target.closest("[data-hwp],[data-hwc],[data-hwq],[data-hwr],[data-hwsave],[data-hwx],[data-hwundo]"); if(!b) return; e.stopPropagation(); const d=b.dataset;
+  const keepTyped=()=>{ const n=$("#hw-n"); if(n) HW.note=n.value; const ow=$("#hw-ow"); if(ow) HW.overWhy=ow.value; const q=$("#hw-q"); if(q) HW.qty=Math.max(1,Math.min(50,+q.value||1)); };
+  if(d.hwx){ HW=null; hwDraw(); if(typeof render==="function") render(); return; }
+  if(d.hwp){ HW.pid=d.hwp; const cs=(HW.info.stock||[]).filter(x=>x.productId===d.hwp); HW.col=cs.length===1?cs[0].colour:""; HW.ok=""; hwDraw(); return; }
+  if(d.hwc){ keepTyped(); HW.col=d.hwc; hwDraw(); return; }
+  if(d.hwq){ keepTyped(); HW.qty=Math.max(1,Math.min(50,(+HW.qty||0)+(+d.hwq))); hwDraw(); return; }
+  if(d.hwr){ keepTyped(); HW.reason=d.hwr; hwDraw(); return; }
+  if(d.hwsave){ keepTyped(); await hwSave(); return; }
+  if(d.hwundo){ b.disabled=true; try{ const r=await run("hqWasteNowUndo",HW.info.date,d.hwundo); HW.info.entries=r.entries; if(INFO&&r.date===DATE) INFO.wasteNow=r.entries; HW.ok="Removed."; HW.err=""; }catch(x){ HW.err=(x&&x.message)||"Could not remove."; } hwDraw(); return; } },true);
+document.addEventListener("input",e=>{ if(!HW) return; const t=e.target; if(t.id==="hw-q"){ HW.qty=Math.max(1,Math.min(50,+t.value||1)); const ob=$("#hw-overbox"); if(ob) ob.innerHTML=hwOverHtml(); } if(t.id==="hw-n") HW.note=t.value; if(t.id==="hw-ow") HW.overWhy=t.value; });
+document.addEventListener("change",async e=>{ if(!HW) return; const t=e.target; if(t.name==="hwover"){ HW.overOk=t.value==="ok"; return; }
+  if(t.dataset&&t.dataset.hwshot&&t.files&&t.files[0]){ try{ HW.photo=await shrink(t.files[0]); }catch(x){ HW.err="That photo couldn't be read. Please try again."; } hwDraw(); } });
+if((location.hash||"")==="#waste"){ setTimeout(function hwAuto(){ if(typeof INFO!=="undefined"&&INFO) hwOpen(); else setTimeout(hwAuto,400); },300); }
+</script>
+
 </body></html>
