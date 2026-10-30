@@ -446,36 +446,20 @@ const CA=(function(){
 
   /* ===== v22.7 ONE MENU for every page (Alfred 1 Oct: "both this interface should be the same … only one for each thing").
      The pages, their areas, access and search words live here once; Home, the office desk and the kitchen page all draw the same menu. ===== */
-  const AREAS=["Kitchen HQ","Outlet Delivery","Recipes","Back office","Help & support"]; /* v22.40: Recipes is the 3rd area (Alfred 14 Oct) */
-  const AREAD={"Kitchen HQ":"Opening and closing, prep list, morning and noon to-do, kitchen reports, numbers","Outlet Delivery":"Today, deliveries, outlet reports, bills, audits","Recipes":"Cakes with pictures, components by category, recipe calculator, the mould library, plan & order, ordering","Back office":"Reports, setup, staff, problem reports","Help & support":"How-to guide, the helper, report a problem, team treat"};
+  const AREAS=["Kitchen","Outlets","Office","Help & support"]; /* v22.73: 8 pages in 3 groups (Alfred 30 Oct) */
+  const AREAD={"Kitchen":"Prep list, kitchen report (opening, closing), recipes","Outlets":"Deliveries, closing reports, bills","Office":"Reports, numbers, setup","Help & support":"How-to guide, the helper, report a problem, team treat"};
   /* [area, title, description, link, access (ticks: any of; or a function of can), search words, daily-for] */
 const PAGES=[
- /* v22.4 (Alfred 29 Sep): 6 clear Kitchen HQ pages. "Decoration & delivery list" → Morning to-do, "Production list" → Noon to-do;
-    the production plan (lists for the next days) is inside the Noon to-do (and the Plan chip on the kitchen page), no longer its own page here. */
- ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries","kitchen.html#opening",["kitchen","kapprove","see_kitchen"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
- ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists","kitchen.html#closing",["kitchen","kapprove","see_kitchen"],"closing report waste left lists evening",["kitchen:pm"]],
- ["Kitchen HQ","Prep list","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports","see_plan"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
- ["Kitchen HQ","Morning to-do · decorate & deliver","Morning team: today's cakes, custom & Grab orders, finish & decorate, pack & deliver the DOs","kitchen.html?team=am#today",["kitchen","kapprove","todo","see_kitchen"],"morning decoration decorate delivery list to-do custom order grab pack deliver",["kitchen:am"]],
- ["Kitchen HQ","Noon to-do · production","Noon team: today's production list, prep reminders, and the plan for the next days","kitchen.html?team=pm#today",["kitchen","kapprove","todo","see_kitchen"],"noon production list plan mise en place photo next days to-do reminders",["kitchen:pm"]],
- ["Kitchen HQ","Kitchen reports","Past reports, temperatures and photos · fridges, display cakes and reminders","kitchen.html#history",["kitchen","kapprove","view","see_khist"],"history temperature fridge freezer streak calendar setup display list reminder limit",[]],
- ["Kitchen HQ","Numbers","To make, made, sent, sold, left and waste per cake · day, week or month","office.html#numbers",["reports","view","kapprove","see_numbers"],"numbers waste wastage made produced prepared sold left figures report",[]],
- ["Outlet Delivery","Today","Clear the board: missing reports, chase outlets, bills to approve","office.html#today",["chase","view","see_today"],"attention chase whatsapp missing report board",["office","outlets"]],
- ["Outlet Delivery","Deliveries","Check colours, mark delivered, edit before it goes out","office.html#deliveries",["deliv","doedit","see_do"],"do delivery order colour dot",["kitchen","office"]],
- ["Outlet Delivery","Outlet reports","Each outlet's nightly count, corrections and all changes","office.html#daily",["reports","view","see_daily","see_log"],"closing report correction paste waste balance sold",["office","outlets"]],
- ["Outlet Delivery","Bills","Each week's invoice, carry forward and credit note; what the outlet still holds; every past bill","office.html#billing",(c)=>c("see_billing")||c("see_carry")||c("see_bills")||(c("money")&&(c("reports")||c("bills"))),"invoice bill cf cn credit bukku payment weekly",["office"]],
- ["Outlet Delivery","Spot audit","Visit an outlet: display, prices, chiller","audit.html",["audit"],"audit visit outlet check",["outlets"]],
- ["Outlet Delivery","Audits","Every spot audit and taste check, with photos and PDF","office.html#audits",["audit","kapprove","see_audits"],"spot audit results qc history pdf score taste check",[]],
- /* v22.40 (Alfred 14 Oct): "recipe should be in one of the 4 main menu, make it the 3rd … 1. product index > each cake with picture > each component 2. Component > category > each recipe 3. calculator > search button" */
- ["Recipes","Cakes","Every cake with its picture: open one to see its components and scale the whole cake","office.html#recipes/cakes",["kitchen","kapprove","reports","view","setup"],"recipe recipes cake cakes product index picture photo build component scale",["kitchen"]],
- ["Recipes","Components","Every recipe by category: sponge, mousse & cream, filling, glaze, crunch, décor…","office.html#recipes/components",["kitchen","kapprove","reports","view","setup"],"recipe recipes component components category sponge mousse filling glaze crunch dough coating decor ingredient method",[]],
- ["Recipes","Calculator","Search a recipe and scale it: what I have, target total, trays or pieces","office.html#recipes/calc",["kitchen","kapprove","reports","view","setup"],"recipe calculator scale batch search weight gram",[]],
- ["Recipes","Moulds","The mould library: every mould with its photo, box, sheets and cavities; count them and take a better photo","office.html#recipes/moulds",["kitchen","kapprove","reports","view","setup"],"mould mold library silicone cavity cavities sheet box tin tray ring frame photo",[]],
- ["Recipes","Ingredients","Every ingredient with its price (RM a kg) from the Bukku bills and price lists; filter missing price, price update, to check","office.html#recipes/ings",(c)=>c("money")&&["kitchen","kapprove","reports","view","setup","admin"].some(c),"ingredient ingredients price prices bukku bill bills supplier price list missing price update cost per kg",[]],
- ["Recipes","Costing","What every cake (one piece) and component (a batch, a kg) costs, food cost %","office.html#recipes/cost",(c)=>c("money")&&["kitchen","kapprove","reports","view","setup","admin"].some(c),"cost costing cake component recipe food cost margin per piece per kg",[]],
- ["Back office","Reports","Every report: done and not done, what was sent, photos, reminders and Chase on WhatsApp","reports.html",(c,s)=>c("see_reports")||/owner|manager/i.test(labelOf(s)||""),"reports report done undone missing photos chase reminder whatsapp",[]],
- ["Back office","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup","see_setup"],"outlet cake product price shelf life whatsapp wasapbot bukku key go-live fresh start holiday limits",[]],
- ["Back office","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
- ["Back office","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems","see_feedback"],"feedback problem report reply urgent helper questions",[]],
+ /* v22.73 (Alfred 30 Oct: "the system seems abit over complicated also, toomany pages and button that team actually dont use" → "Can do lesser page?" →
+    picked 8 pages: Home · Prep list · Kitchen report · Recipes · Outlets · Reports · Numbers · Setup). A page that holds several parts shows them as a
+    strip at its top (CA.menu.subnav); Spot audit, Audits, Problem reports and Grab packs are off the menu (their data stays). */
+ ["Kitchen","Prep list","What to make today and what each outlet gets: open it and print","office.html#plan",["kitchen","deliv","doedit","reports","see_plan"],"prep list planned made delivery order do print sheet suggestion plan 2-day batch",["kitchen","office","outlets"]],
+ ["Kitchen","Kitchen report","Opening and closing reports · fridges, temperatures, past reports","kitchen.html#report",["kitchen","kapprove","see_kitchen","see_khist"],"opening closing report fridge freezer temperature display count waste left mise en place lists history stock check sunday to-do",["kitchen"]],
+ ["Kitchen","Recipes","Cakes with pictures, components by category, the recipe calculator","office.html#recipes/cakes",["kitchen","kapprove","reports","view","setup"],"recipe recipes cake cakes component components calculator scale picture mould moulds ingredient ingredients price costing food cost",["kitchen"]],
+ ["Outlets","Outlets","Deliveries and colour check, the outlets' closing reports, the weekly bills","office.html#deliveries",(c)=>c("deliv")||c("doedit")||c("see_do")||c("reports")||c("view")||c("see_daily")||c("see_log")||c("see_billing")||c("see_carry")||c("see_bills")||(c("money")&&(c("reports")||c("bills"))),"delivery deliveries do colour dot deliver outlet closing report correction waste balance sold bill bills invoice cf cn credit bukku payment weekly",["office","outlets","kitchen:am"]],
+ ["Office","Reports","What needs doing today (missing reports, chasing, bills to approve) and every report by day","office.html#today",["chase","view","see_today","reports"],"today attention chase whatsapp missing report board reports done not done late",["office","outlets"]],
+ ["Office","Numbers","To make, made, sent, sold, left and waste per cake · day, week or month","office.html#numbers",["reports","view","kapprove","see_numbers"],"numbers waste wastage made produced prepared sold left figures report",[]],
+ ["Office","Setup","Outlets, cakes, prices, staff & access, WhatsApp, points","office.html#setup",["setup","see_setup","staff"],"setup outlet cake product price shelf life whatsapp wasapbot bukku key go-live holiday limits staff pin access team problem reports",[]],
 ];
 const HELP=[["How-to guide","Step by step for your job, and I'm stuck answers","#guide"],["Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat & points","This month's treat, the jar and the leaderboard","#team"]];
 const ICON={
@@ -485,10 +469,19 @@ const ICON={
  "Recipes":["#f6e7d6",`<svg viewBox="0 0 30 30"><path d="M6 4h15a3 3 0 0 1 3 3v19H9a3 3 0 0 1-3-3z" fill="#fff" stroke="#7b1c2b" stroke-width="2"/><path d="M6 23a3 3 0 0 1 3-3h15" fill="none" stroke="#7b1c2b" stroke-width="2"/><path d="M11 9h8M11 13h6" stroke="#c9955b" stroke-width="2" stroke-linecap="round"/><circle cx="21" cy="5" r="3" fill="#e0707a"/></svg>`],
  "Back office":["#fbf1d3",`<svg viewBox="0 0 30 30"><rect x="6" y="5" width="18" height="22" rx="3" fill="#fff" stroke="#2b1b1e" stroke-width="2"/><rect x="11" y="3" width="8" height="5" rx="2" fill="#2b1b1e"/><path d="M10 13h10M10 17h7M10 21h9" stroke="#a0620a" stroke-width="2"/></svg>`],
  "Help & support":["#dcefe2",`<svg viewBox="0 0 30 30"><path d="M4 6h22v14H13l-6 5v-5H4z" fill="#1e8449"/><text x="15" y="17" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Jost,sans-serif">?</text></svg>`]};
+ICON["Kitchen"]=ICON["Kitchen HQ"]; ICON["Outlets"]=ICON["Outlet Delivery"]; ICON["Office"]=ICON["Back office"]; /* v22.73 group names */
 
   const pageOK=(x,s)=>{ const c=p=>permsOf(s).includes(p); return typeof x[4]==="function"?!!x[4](c,s):x[4].some(c); };
   const pagesFor=s=>PAGES.filter(x=>pageOK(x,s));
-  const myArea=s=>(areaOf(s)||"office")==="kitchen"?"Kitchen HQ":"Outlet Delivery";
+  const myArea=s=>(areaOf(s)||"office")==="kitchen"?"Kitchen":"Outlets";
+  /* v22.73: the parts of a merged page, as a strip at its top (only the parts the person can open; nothing when only one) */
+  const SUBNAV={
+    out:[["Deliveries","office.html#deliveries",["deliv","doedit","see_do"]],["Closing reports","office.html#daily",["reports","view","see_daily","see_log"]],["Bills","office.html#billing",c=>c("see_billing")||c("see_carry")||c("see_bills")||(c("money")&&(c("reports")||c("bills")))]],
+    rep:[["Today's board","office.html#today",["chase","view","see_today","reports"]],["Every report by day","reports.html",["chase","view","see_today","reports"]]],
+    set:[["Setup","office.html#setup",["setup","see_setup"]],["Staff & access","office.html#staff",["staff"]],["Problem reports","office.html#feedback",["problems","see_feedback"]]]};
+  function subnav(g,cur){ const s=get(); if(!s) return ""; const c=p=>permsOf(s).includes(p), it=(SUBNAV[g]||[]).filter(x=>typeof x[2]==="function"?!!x[2](c):x[2].some(c)); if(it.length<2) return "";
+    if(!document.getElementById("ca-subnav-css")){ const st=document.createElement("style"); st.id="ca-subnav-css"; st.textContent=".ca-subnav{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}.ca-subnav a{flex:1 1 auto;text-align:center;padding:10px 12px;border:1px solid var(--line,#e8dcd6);border-radius:999px;text-decoration:none;color:var(--ink,#2b1b1e);font:600 14px var(--body,system-ui,sans-serif);background:var(--paper,#fff);min-height:44px;display:flex;align-items:center;justify-content:center}.ca-subnav a[aria-current=page]{background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);border-color:var(--accent,#7b1c2b)}@media print{.ca-subnav{display:none}}"; document.head.appendChild(st); }
+    return `<nav class="ca-subnav" aria-label="Parts of this page">${it.map(([t,h])=>`<a href="${h}" ${h===cur?'aria-current="page"':""}>${esc(t)}</a>`).join("")}</nav>`; }
   const helpItems=()=>HELP.map(([t,d,v])=>/^#/.test(v)?{t,d,href:"index.html"+v,sec:"Help & support",k:"help guide ask report problem treat points"}:{t,d,help:v,sec:"Help & support",k:"help ask report problem mine"});
   /* the four areas in a fixed order (the same everywhere); a person only sees the pages their access allows */
   const sections=s=>AREAS.map(sec=>({name:sec,items:sec==="Help & support"?helpItems():pagesFor(s).filter(x=>x[0]===sec).map(x=>({t:x[1],d:x[2],href:x[3],k:x[5]||"",sec}))})).filter(x=>x.items.length);
@@ -502,7 +495,7 @@ const ICON={
     if(q){ const words=q.split(/\s+/), all=secs.flatMap(x=>x.items), hit=all.filter(it=>{ const hay=(it.t+" "+it.d+" "+it.k+" "+it.sec).toLowerCase(); return words.every(w=>hay.includes(w)); });
       return hit.length?`<div class="mlab">${hit.length} page${hit.length===1?"":"s"}</div><div class="card mlist">${hit.map(row).join("")}</div>`:`<div class="card mnone">Nothing found for “${esc(MQ.trim())}”. Try another word, or tap <b>? Ask</b>.</div>`; }
     if(MOPEN==null||(MOPEN&&!secs.some(x=>x.name===MOPEN))) MOPEN=secs.some(x=>x.name===myArea(s))?myArea(s):(secs.length?secs[0].name:""); /* "" = all areas closed (v21.13) */
-    return secs.map(sec=>{ const op=MOPEN===sec.name, ic=icon(sec.name);
+    return secs.map(sec=>{ const op=true, ic=icon(sec.name); /* v22.73: few pages — every group open */
       return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${esc(AREAD[sec.name]||"")}</small></span><span class="chev" aria-hidden="true">${op?"▲":`${sec.items.length} ▼`}</span></button>
         ${op?`<div class="its">${sec.items.map((it,i)=>it.help?`<button type="button" data-help="${esc(it.help)}"><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></button>`:`<a href="${esc(it.href)}" data-mgo="1" ${isHere(it.href)?'aria-current="page"':""}><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join(""); }
   function menuEl(){ let m=document.getElementById("camenu"); if(!m){ m=document.createElement("div"); m.id="camenu"; document.body.appendChild(m); } return m; }
@@ -686,7 +679,7 @@ const ICON={
     return {maybe,a2hs,perms,close}; })();
   const bootV58=()=>{ setTimeout(ONB.maybe,1000); };
   if(!/closing/.test(location.pathname)){ if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bootV58); else bootV58(); }
-  const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
+  const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get()),subnav};
   return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose(),b2b:B2B,push:PUSH,loc:LOC,onb:ONB};
 })();
 </script>
@@ -1359,6 +1352,7 @@ function doRender(){
   /* v22.8 (Alfred 2 Oct: "make sure all page can be download and view as pdf"): every desk page gets a Print button (v22.19, Alfred 7 Oct: "all the pdf button … change the words to print") (the print dialog → Save as PDF; the print styles hide buttons/menus and set A4). */
   if(S.loaded.size>=NCOL&&S.db&&S.tab!=="plan"&&!/data-act="printPage"/.test(html)){ /* v22.45 (Alfred: "we dont need 2 print here, keep the print prep sheet only") */ html=html.replace(/<div class="head"><div>([\s\S]*?)<\/div>(<div class="row">)?/,(m0,inner,row)=>row?`<div class="head"><div>${inner}</div><div class="row"><button class="btn" data-act="printPage" title="Print this page (or choose Save as PDF in the print window)">🖨 Print</button>`:`<div class="head"><div>${inner}</div><div class="row"><button class="btn" data-act="printPage" title="Print this page (or choose Save as PDF in the print window)">🖨 Print</button></div>`); }
   $("#testbar").innerHTML=S.loaded.size>=NCOL&&cfg().mode!=="live"?`<div class="testbar">Testing mode — sample data may be shown. When you're ready, set the cutoff date in Setup › Go-live.</div>`:"";
+  { const g=({deliveries:"out",daily:"out",billing:"out",today:"rep",setup:"set",staff:"set",feedback:"set"})[S.tab]; if(g&&S.loaded.size>=NCOL&&CA.menu.subnav) html=CA.menu.subnav(g,"office.html#"+S.tab)+html; } /* v22.73: the parts of a merged page */
   $("#main").innerHTML=html;
   $("#modal").innerHTML=S.ui.modal?vModal():"";
   cardify(document.getElementById("main")); cardify(document.getElementById("modal")); fitTables(document.getElementById("main")); fitTables(document.getElementById("modal")); rcPickUp(document.getElementById("main"));
@@ -1394,6 +1388,7 @@ function curPartner(){ if(!S.ui.partner||!S.partners[S.ui.partner]) S.ui.partner
 
 /* ---- attention items (shared by Today tab and Claude's check) ---- */
 const TIPS={
+  slow:"<b>Why:</b> this cake wastes more than 40% at this outlet over the last 14 days, so the prep list now gives it 1 on the counter instead of the outlet's minimum. <b>Keep at 1</b> = leave it at 1 (it goes back to the minimum by itself when it sells again). <b>Stop sending here</b> = the outlet no longer carries it (tick it again in Setup › Outlets › Cakes this outlet carries).",
   report:"Tap Chase on WhatsApp: the message includes the outlet's own link. If the outlet was closed that day, Ignore with the note “closed”. If they sent numbers by WhatsApp, use Paste WhatsApp report.",
   photo:"Photos protect both sides if numbers are questioned. Ask for them, or Ignore if you don't need them for these days.",
   salesread:"Open the report, look at the sales photo and compare it with the count. If it matches, Ignore.",
@@ -1465,6 +1460,13 @@ function attention(){
     if(ev.priceBad.length) push({sev:"warn",kind:"audit",key:`auditp|${a.id}`,pid:a.partnerId,text:`<b>${esc(partner(a.partnerId).name)}</b> audit ${nice(a.date)} — wrong sell price: ${ev.priceBad.map(x=>`${esc(x.name)} RM${fm(x.shown)} (should be RM${fm(x.approved)})`).join(", ")}`,go:{tab:"audits"}});
     if(ev.fails.length) push({sev:"warn",kind:"audit",key:`auditf|${a.id}`,pid:a.partnerId,text:`<b>${esc(partner(a.partnerId).name)}</b> audit ${nice(a.date)} — failed: ${ev.fails.map(esc).join(", ")}`,go:{tab:"audits"}});
   }
+  /* v22.73 slow-cake rule: one item per outlet cake that wasted more than 40% there in 14 days — Keep at 1 / Stop sending here */
+  for(const p of partners().filter(x=>!x.internal&&!x.sample)){ const h=salesHistory(p.id,14), L=[];
+    for(const [id,arr] of Object.entries(h)){ if(!S.products[id]||S.products[id].active===false||arr.length<5) continue; const s0=arr.reduce((a,x)=>a+x.sold,0), w0=arr.reduce((a,x)=>a+x.waste,0); if(!(s0+w0)||w0/(s0+w0)<=.4) continue;
+      const car=(p.carries||[]); if(car.length&&!car.includes(id)) continue; if(HD[`slow|${p.id}|${id}`]) continue; L.push({id,s0,w0,pct:Math.round(w0/(s0+w0)*100)}); }
+    /* the 3 worst at a time (worst first), so the board is not flooded; the next ones come when these are answered */
+    L.sort((a,b)=>b.pct-a.pct||b.w0-a.w0); const more=Math.max(0,L.length-3);
+    L.slice(0,3).forEach((x,i)=>push({sev:"warn",kind:"slow",key:`slow|${p.id}|${x.id}`,pid:p.id,text:`<b>${esc(p.name)}</b> — ${esc(prod(x.id).name)} is slow here: ${x.w0} thrown away, ${x.s0} sold in 14 days (${x.pct}% waste). It now gets 1 on the counter.${i===2&&more?` <span class="muted">${more} more slow cake${more===1?"":"s"} here after these.</span>`:""}`,fix:{kind:"slow",pid:p.id,productId:x.id,opts:["keep","stop"]}})); }
   const order={bad:0,warn:1,info:2}, KOK=["report","photo","photocheck","missing","extra","variance","expiry","last","salesread"];
   return items.filter(a=>can("reports")||can("view")||KOK.includes(a.kind)).sort((a,b)=>order[a.sev]-order[b.sev]);
 }
@@ -1474,8 +1476,13 @@ function findRepLine(pid,productId,colour,upto,needB){
     const ls=(r.lines||[]).map((l,ix)=>({l,ix})).filter(x=>x.l.productId===productId&&(!colour||x.l.colour===colour)&&(!needB||+x.l.b>0));
     if(ls.length) return {w,date:d,ls};}
   return null;}
+const FIX_LBL={sold:"Sold",wasted:"Wasted",remaining:"Remaining",keep:"Keep at 1",stop:"Stop sending here"};
 async function resolveAtt(a,as){
-  const f=a.fix; if(!f) return false; if(as==="sold"&&f.kind==="missing") return true; if(as==="remaining"&&f.kind==="expiry") return true;
+  const f=a.fix; if(!f) return false;
+  if(f.kind==="slow"){ if(as==="keep") return true; if(as!=="stop") return false; /* v22.73: take the cake off what the outlet carries (Setup › Outlets ticks it back) */
+    const p=clone(partner(f.pid)); let car=(p.carries||[]).filter(x=>S.products[x]);
+    if(!car.length){ const pl=planOutlet(f.pid,{}); car=[...new Set(pl.lines.map(l=>l.productId))].filter(x=>S.products[x]&&S.products[x].active!==false); }
+    p.carries=car.filter(x=>x!==f.productId); await put(`partners/${f.pid}`,p); return true; } if(as==="sold"&&f.kind==="missing") return true; if(as==="remaining"&&f.kind==="expiry") return true;
   const hit=f.kind==="expiry"?findRepLine(f.pid,f.productId,f.colour,f.date,true):findRepLine(f.pid,f.productId,null,f.date,false);
   if(!hit){toast("Couldn't find the report line to change — fix it in Outlet reports");return false;}
   const w=clone(hit.w), r=w.days[hit.date], life=+prod(f.productId).shelfDays||3;
@@ -1491,7 +1498,7 @@ async function resolveAtt(a,as){
 const FRESH_NAMES={weeks:"outlet weeks (DOs, daily reports, bills)",audits:"spot audits",alerts:"daily checks",feedback:"problem reports",hq:"kitchen days (to-do ticks, QC, temps)",game:"points",reward:"treat votes",handled:"handled items",partners:"outlets and terms",products:"cakes and shelf life",prices:"prices",calendar:"holidays","config/settings":"settings","config/counters":"numbering","config/general":"company details","config/kitchen":"kitchen setup","config/game":"points setup","config/wa":"WhatsApp setup","config/reader":"photo check setup","config/drive":"Drive folder links","config/prep":"Plan & prep numbers",prep:"Plan & prep numbers","hq/config":"fridge list and rules","hq/tasks":"to-dos and reminders","hq/rules":"kitchen rules","hq/carries":"what each outlet carries",config:"other records"};
 function freshName(k){return FRESH_NAMES[k]||k.replace(/^config\//,"").replace(/^hq\//,"kitchen ")}
 function handledList(){const H=S.handled||{}; const ks=Object.keys(H).sort((a,b)=>String(H[b].at).localeCompare(String(H[a].at))).slice(0,40);
-  return `<div class="items" style="opacity:.85">${ks.map(k=>{const h=H[k];return `<div class="item"><span class="sev info"></span><div>${esc(h.text||k)}<div class="small muted">${h.as==="ignored"?"Ignored":"Booked as "+esc(h.as)}${h.note?` · “${esc(h.note)}”`:""} · ${esc(h.by||"")} · ${esc(new Date(h.at).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}))}</div></div><div class="row">${RO()?"":`<button class="btn sm" data-unign="${esc(k)}">Undo</button>`}</div></div>`}).join("")}</div><p class="small muted" style="margin:0">Undo puts the item back on the list. It doesn't reverse a Sold / Wasted / Remaining change; fix that on the daily report.</p>`;}
+  return `<div class="items" style="opacity:.85">${ks.map(k=>{const h=H[k];return `<div class="item"><span class="sev info"></span><div>${esc(h.text||k)}<div class="small muted">${h.as==="ignored"?"Ignored":h.as==="keep"?"Kept at 1":h.as==="stop"?"Stopped at this outlet":"Booked as "+esc(h.as)}${h.note?` · “${esc(h.note)}”`:""} · ${esc(h.by||"")} · ${esc(new Date(h.at).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}))}</div></div><div class="row">${RO()?"":`<button class="btn sm" data-unign="${esc(k)}">Undo</button>`}</div></div>`}).join("")}</div><p class="small muted" style="margin:0">Undo puts the item back on the list. It doesn't reverse a Sold / Wasted / Remaining change; fix that on the daily report.</p>`;}
 function attFocus(att){
   const t=today(), H=S.handled||{}, cleared=Object.values(H).filter(h=>String(h.at||"").slice(0,10)===t).length, n=att.length, tot=n+cleared;
   const deg=tot?Math.round(cleared/tot*360):360;
@@ -1499,8 +1506,8 @@ function attFocus(att){
   const head=`<div class="ringrow"><div class="ring" style="--deg:${deg}deg" role="img" aria-label="${n} to clear"><i>${n}</i></div><div><h1>${n?`${n} item${n===1?"":"s"} left`:"All clear"}</h1><div class="sub">${al?`Daily check ran ${esc(alT)}${cleared?` · ${cleared} cleared today`:""}`:"The daily check runs after every report and at 4am and 4pm."}</div></div></div>`;
   if(!n) return head+`<div class="clear"><h2>Board clear</h2><p style="margin:0">Nothing urgent. Reports and stock look in order.</p>${Object.keys(H).length?`<button class="btn sm" data-act="showHandled">${S.ui.showHandled?"Hide handled":"Show handled"}</button>`:""}</div>${S.ui.showHandled?handledList():""}`;
   const i=Math.max(0,Math.min(n-1,S.ui.attIdx||0)), a=att[i], idx=attention().findIndex(x=>x.key===a.key), sevL={bad:"Urgent",warn:"Today",info:"Note"}[a.sev]||"";
-  const primary=a.action?a.action.replace(/class="btn sm wa"/,'class="big wa"'):a.fix&&!RO()?`<div class="g3">${a.fix.opts.map(o=>`<button class="btn" data-fix="${esc(a.key)}" data-as="${o}">${({sold:"Sold",wasted:"Wasted",remaining:"Remaining"})[o]}</button>`).join("")}</div>`:a.go?`<button class="big" data-att="${idx}">Open</button>`:"";
-  const second=[a.fix&&!RO()&&a.action?a.fix.opts.map(o=>`<button class="btn sm" data-fix="${esc(a.key)}" data-as="${o}">${({sold:"Sold",wasted:"Wasted",remaining:"Remaining"})[o]}</button>`).join(""):"",
+  const primary=a.action?a.action.replace(/class="btn sm wa"/,'class="big wa"'):a.fix&&!RO()?`<div class="g3">${a.fix.opts.map(o=>`<button class="btn" data-fix="${esc(a.key)}" data-as="${o}">${FIX_LBL[o]}</button>`).join("")}</div>`:a.go?`<button class="big" data-att="${idx}">Open</button>`:"";
+  const second=[a.fix&&!RO()&&a.action?a.fix.opts.map(o=>`<button class="btn sm" data-fix="${esc(a.key)}" data-as="${o}">${FIX_LBL[o]}</button>`).join(""):"",
     a.go&&(a.action||(a.fix&&!RO()))?`<button class="btn" data-att="${idx}">Open</button>`:"", a.tip?`<button class="btn" data-tip="${esc(a.key)}">${S.ui.tipOpen===a.key?"Hide tip":"How to fix"}</button>`:"", RO()?"":`<button class="btn" data-ign="${esc(a.key)}" style="color:var(--muted)">Ignore</button>`].filter(Boolean);
   return head+`<div class="focus"><div class="sevl"><b class="${a.sev}">${sevL}</b><span class="small muted">${i+1} of ${n}</span></div>
     <div class="ft">${a.text}</div>${S.ui.tipOpen===a.key&&a.tip?`<div class="howto">${a.tip}</div>`:""}
@@ -1510,7 +1517,7 @@ function attFocus(att){
 }
 function attList(att){
   return `<div class="panel"><div class="spread"><h2>All items</h2><div class="row"><span class="small muted">${att.length} item${att.length===1?"":"s"}</span>${(()=>{const n=Object.keys(S.handled||{}).length;return n?`<button class="btn sm" data-act="showHandled">${S.ui.showHandled?"Hide handled":`Handled (${n})`}</button>`:""})()}</div></div>${S.ui.showHandled?handledList():""}
-        ${att.length?`<div class="items">${att.map((a,i)=>`<div class="item"><span class="sev ${a.sev}"></span><div>${a.text}${S.ui.tipOpen===a.key&&a.tip?`<div class="howto">${a.tip}</div>`:""}${S.ui.ign===a.key?`<div class="ign"><input id="ign-note" placeholder="Short note, e.g. outlet closed" aria-label="Note"><button class="btn sm pri" data-ignsave="${esc(a.key)}">Save</button><button class="btn sm" data-igncancel="1">Cancel</button></div>`:""}</div><div class="row">${a.action||""}${a.fix&&!RO()?a.fix.opts.map(o=>`<button class="btn sm" data-fix="${esc(a.key)}" data-as="${o}">${({sold:"Sold",wasted:"Wasted",remaining:"Remaining"})[o]}</button>`).join(""):""}${a.go?`<button class="btn sm" data-att="${i}">Open</button>`:""}${a.tip?`<button class="btn sm" data-tip="${esc(a.key)}">${S.ui.tipOpen===a.key?"Hide tip":"How to fix"}</button>`:""}${RO()?"":`<button class="btn sm" data-ign="${esc(a.key)}">Ignore</button>`}</div></div>`).join("")}</div>`:`<div class="empty">All clear.</div>`}
+        ${att.length?`<div class="items">${att.map((a,i)=>`<div class="item"><span class="sev ${a.sev}"></span><div>${a.text}${S.ui.tipOpen===a.key&&a.tip?`<div class="howto">${a.tip}</div>`:""}${S.ui.ign===a.key?`<div class="ign"><input id="ign-note" placeholder="Short note, e.g. outlet closed" aria-label="Note"><button class="btn sm pri" data-ignsave="${esc(a.key)}">Save</button><button class="btn sm" data-igncancel="1">Cancel</button></div>`:""}</div><div class="row">${a.action||""}${a.fix&&!RO()?a.fix.opts.map(o=>`<button class="btn sm" data-fix="${esc(a.key)}" data-as="${o}">${FIX_LBL[o]}</button>`).join(""):""}${a.go?`<button class="btn sm" data-att="${i}">Open</button>`:""}${a.tip?`<button class="btn sm" data-tip="${esc(a.key)}">${S.ui.tipOpen===a.key?"Hide tip":"How to fix"}</button>`:""}${RO()?"":`<button class="btn sm" data-ign="${esc(a.key)}">Ignore</button>`}</div></div>`).join("")}</div>`:`<div class="empty">All clear.</div>`}
       </div>`;
 }
 function vToday(att){
@@ -1528,7 +1535,7 @@ function vToday(att){
   for(const p of ps){if(p.internal) continue; const c=calcWeek(p.id,wk);for(const k of Object.values(c.keys)){wkSold+=k.sold;wkWaste+=k.waste;wkVal+=k.sold*k.rate}}
   return `<div class="head"><div><p class="small muted" style="margin:0">Office · ${nice(t)}</p><h1>Today</h1></div></div>
     ${S.ui.attAll?`<div class="ringrow" style="margin-bottom:4px"><div class="ring" style="--deg:0deg"><i>${att.length}</i></div><div><h1>${att.length?`${att.length} to clear today`:"All clear"}</h1><div class="sub"><button class="btn sm" data-act="attAll">One at a time</button></div></div></div>${attList(att)}`:attFocus(att)}
-    <div class="qa"><button class="btn" data-act="goNewDO">New delivery order</button>${can("audit")?`<button class="btn pri" data-act="goAudit">Start spot audit</button>`:""}</div>
+    <div class="qa"><button class="btn" data-act="goNewDO">New delivery order</button></div>
     <div class="cols">
       <div style="display:flex;flex-direction:column;gap:18px">
         <div class="panel"><div class="spread"><h2>Closing reports</h2><span class="small muted">last 7 days</span></div>${ps.length?matrix:`<div class="empty">Add outlets in Setup.</div>`}
@@ -2515,18 +2522,22 @@ function planOutlet(pid,taken){
     const neverSold=(hist[id]||[]).reduce((a,x)=>a+(x.sold||0),0)===0, counterSet=counter, mxs=RS.filter(r=>r.max!=null).map(r=>r.max), full=R?(R.max!=null?R.max:(R.min||0)):0;
     let maxCap=mxs.length?(Math.max(...mxs)>0?Math.max(...mxs)+(f.so>.3?1:0):0):null; /* v22.32: max 0 = not carried there — never lifted */
     const dayLbl=span>1&&RS.length>1?`${WD[dow(d1)]}–${WD[dow(add(d1,span-1))]}`:(R?R.day:WD[dow(d1)]);
-    const need=Math.max(Math.ceil(demand*(1+buffer)),isGood&&demand>0?Math.ceil(demand)+1:0); const hqStep=hqStepOf(p,id,counter,need); if(hqStep) counter=hqStep.to; let target=Math.max(need,counter); /* v22.72 */ if(maxCap!=null) target=Math.min(target,Math.max(maxCap,counter));
+    const need=Math.max(Math.ceil(demand*(1+buffer)),isGood&&demand>0?Math.ceil(demand)+1:0); const hqStep=hqStepOf(p,id,counter,need); if(hqStep) counter=hqStep.to;
+    /* v22.73 (Alfred 30 Oct, picked "Slow-cake rule"): at an outlet, a cake that wasted more than 40% there in the last 14 days (5+ counted days)
+       gets 1 on the counter instead of the outlet's minimum; back to the minimum when it sells again. Needs attention asks Keep at 1 / Stop sending here. */
+    const slowCut=!p.internal&&wasteful&&counter>1?counter:0; if(slowCut) counter=1;
+    let target=Math.max(need,counter); /* v22.72 */ if(maxCap!=null) target=Math.min(target,Math.max(maxCap,counter));
     let suggest=Math.max(0,target-usable); const gapF=Math.max(0,target-usableF);
     const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
     if(p.internal){ const nf=(hist[id]||[]).filter(x=>x.fm).length; if(nf) notes.push(`HQ sales from FeedMe on ${nf} of ${(hist[id]||[]).length} days`); }
     if(neverSold&&counter&&!dead) notes.push(`not sold here yet — min ${counter} kept`);
-    if(dead) notes.push(`sold ${sold14} in 14 days here — min ${counter} kept (drop list)`); else if(wasteful) notes.push(`waste ${Math.round(wr14*100)}% in 14 days — no buffer, min ${counter} kept`); else if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`);
+    if(slowCut) notes.push(`slow here: ${waste14} wasted, ${sold14} sold in 14 days (${Math.round(wr14*100)}%) — 1 on the counter, not ${slowCut}`); else if(dead) notes.push(`sold ${sold14} in 14 days here — min ${counter} kept (drop list)`); else if(wasteful) notes.push(`waste ${Math.round(wr14*100)}% in 14 days — no buffer, min ${counter} kept`); else if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`);
     if(f.so>.3) notes.push(`sold out ${Math.round(f.so*100)}% of days — buffer +20%${R&&R.max!=null?", max lifted by 1":""}`); else if(isGood) notes.push(`good seller here — buffer +20% (at least +1)`);
     if(hqStep) notes.push(`${dayLbl}: ${counter} on the counter, not ${hqStep.from} — it sells about ${(Math.round(f.per(d1)*10)/10).toFixed(1)} a day (needs ${need}); ${hqStep.from} only when the forecast needs it`);
     else if(counter&&target===counter&&need<counter) notes.push(`${dayLbl}: min ${counter} of each ${(R||RS[0]).one} on the counter (Setup › Outlets)`); if(maxCap!=null&&need>maxCap) notes.push(`${dayLbl}: max ${maxCap} of each ${(R||RS[0]).one} (Setup › Outlets)`);
     if(d2&&diffDays(d2,d1)>life) notes.push(`gap to next delivery (${diffDays(d2,d1)}d) is longer than shelf life`);
     const why=`sells ${(Math.round(f.per(d1)*10)/10).toFixed(1)}/day · ${span} day${span>1?"s":""} to cover → ${need}${counter&&counter>need?` · counter min ${counter}`:""} · has ${stockNow} (${usable} still fresh) → ${suggest}`;
-    lines.push({productId:id,good:isGood,aw:f.aw,ae:f.ae,perDay:f.per(d1),stockNow,stockRep,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n,refDate:ref?ref.date:"",why,dead,wasteful,sold14,waste14,days14:h14.length,target,counter,counterSet,full,gapF});
+    lines.push({productId:id,slowCut,good:isGood,aw:f.aw,ae:f.ae,perDay:f.per(d1),stockNow,stockRep,usable,demand,buffer,suggest,notes,wr:f.wr,n:f.n,refDate:ref?ref.date:"",why,dead,wasteful,sold14,waste14,days14:h14.length,target,counter,counterSet,full,gapF});
   }
   wholePick(p,lines,d1,taken);
   const hol=[]; for(let i=0;i<(d2?diffDays(d2,d1):3);i++){for(const e of dayEvents(add(d1,i))) if(!hol.includes(e)) hol.push(e);}
@@ -5157,7 +5168,7 @@ document.addEventListener("click",async e=>{
   if(d.igncancel){S.ui.ign=null;render();return;}
   if(d.ignsave){const a=attention().find(x=>x.key===d.ignsave)||{text:""}; b.disabled=true; await setHandled(d.ignsave,{as:"ignored",note:(($("#ign-note")||{}).value||"").trim(),text:plain(a.text)}); S.ui.ign=null; toast("Ignored. Find it under Handled to undo."); return;}
   if(d.unign){await setHandled(d.unign,null); toast("Back on the list"); return;}
-  if(d.fix){const a=attention().find(x=>x.key===d.fix); if(!a) return; b.disabled=true; const ok=await resolveAtt(a,d.as); if(ok){await setHandled(a.key,{as:d.as,note:"",text:plain(a.text)}); toast(({sold:"Booked as sold",wasted:"Recorded as waste",remaining:"Kept as remaining stock"})[d.as]);} b.disabled=false; return;}
+  if(d.fix){const a=attention().find(x=>x.key===d.fix); if(!a) return; b.disabled=true; const ok=await resolveAtt(a,d.as); if(ok){await setHandled(a.key,{as:d.as,note:"",text:plain(a.text)}); toast(({sold:"Booked as sold",wasted:"Recorded as waste",remaining:"Kept as remaining stock",keep:`${prod((a.fix||{}).productId).name}: kept at 1 on the counter`,stop:`${prod((a.fix||{}).productId).name}: no more deliveries to ${partner((a.fix||{}).pid).name} — tick it again in Setup › Outlets to bring it back`})[d.as]);} b.disabled=false; return;}
   if(d.bopen){const [p,ws]=d.bopen.split("|");S.ui.partner=p;S.ui.week=ws;S.ui.confirm=null;if(d.gotab){S.tab=d.gotab;location.hash=d.gotab;}render();window.scrollTo(0,0);return;}
   if(d.pprint){printPrep(d.pprint);return;}
   if(d.dnprint){printDN(d.dnprint);return;}
@@ -5549,11 +5560,13 @@ function stLabel(C,area,level,perms){ const base=(C.presets[area]||{})[level]||[
    The 16 ticks stay (the server enforces them) but are shown under the four menu areas, and next to them every page of that area with what the person can do there. */
 const ST_AREA={"Kitchen":"Kitchen HQ","Outlets & deliveries":"Outlet Delivery","Office":"Back office","Admin":"Back office"};
 /* the "Can see" key of each page (v22.9): ticking it opens that page read-only even when the action ticks would not */
-const ST_SEE={"kitchen.html#opening":"see_kitchen","kitchen.html#closing":"see_kitchen","kitchen.html?team=am#today":"see_kitchen","kitchen.html?team=pm#today":"see_kitchen","office.html#plan":"see_plan","kitchen.html#history":"see_khist","office.html#numbers":"see_numbers",
+const ST_SEE={"kitchen.html#report":"see_kitchen","kitchen.html#opening":"see_kitchen","kitchen.html#closing":"see_kitchen","kitchen.html?team=am#today":"see_kitchen","kitchen.html?team=pm#today":"see_kitchen","office.html#plan":"see_plan","kitchen.html#history":"see_khist","office.html#numbers":"see_numbers",
  "office.html#deliveries":"see_do","office.html#billing":"see_billing","office.html#daily":"see_daily","office.html#today":"see_today","office.html#audits":"see_audits",
  "reports.html":"see_reports","office.html#setup":"see_setup","office.html#feedback":"see_feedback"};
 /* for each page: which ticks make it editable (any of), and in plain words what "Edit" means there; a page the menu shows without one of these is view only */
 const ST_EDIT={
+ "kitchen.html#report":[["kitchen","kapprove"],"send the opening and closing reports, tick jobs"],
+ "office.html#recipes/cakes":[["setup","kapprove"],"edit cakes and recipes (Setup / kitchen supervisor)"],
  "kitchen.html#opening":[["kitchen","kapprove"],"send the report parts, count the display"],
  "kitchen.html#closing":[["kitchen","kapprove"],"send the report parts, waste & left, lists"],
  "office.html#plan":[["deliv","doedit"],"type Made, add/remove cakes, draft DOs (Deliveries); change send quantities (Create and edit DOs)"],

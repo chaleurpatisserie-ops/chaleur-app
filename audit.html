@@ -446,36 +446,20 @@ const CA=(function(){
 
   /* ===== v22.7 ONE MENU for every page (Alfred 1 Oct: "both this interface should be the same … only one for each thing").
      The pages, their areas, access and search words live here once; Home, the office desk and the kitchen page all draw the same menu. ===== */
-  const AREAS=["Kitchen HQ","Outlet Delivery","Recipes","Back office","Help & support"]; /* v22.40: Recipes is the 3rd area (Alfred 14 Oct) */
-  const AREAD={"Kitchen HQ":"Opening and closing, prep list, morning and noon to-do, kitchen reports, numbers","Outlet Delivery":"Today, deliveries, outlet reports, bills, audits","Recipes":"Cakes with pictures, components by category, recipe calculator, the mould library, plan & order, ordering","Back office":"Reports, setup, staff, problem reports","Help & support":"How-to guide, the helper, report a problem, team treat"};
+  const AREAS=["Kitchen","Outlets","Office","Help & support"]; /* v22.73: 8 pages in 3 groups (Alfred 30 Oct) */
+  const AREAD={"Kitchen":"Prep list, kitchen report (opening, closing), recipes","Outlets":"Deliveries, closing reports, bills","Office":"Reports, numbers, setup","Help & support":"How-to guide, the helper, report a problem, team treat"};
   /* [area, title, description, link, access (ticks: any of; or a function of can), search words, daily-for] */
 const PAGES=[
- /* v22.4 (Alfred 29 Sep): 6 clear Kitchen HQ pages. "Decoration & delivery list" → Morning to-do, "Production list" → Noon to-do;
-    the production plan (lists for the next days) is inside the Noon to-do (and the Plan chip on the kitchen page), no longer its own page here. */
- ["Kitchen HQ","Kitchen opening","Opening report: fridges & freezers, HQ display count, outlet deliveries","kitchen.html#opening",["kitchen","kapprove","see_kitchen"],"opening report fridge freezer display count deliveries morning",["kitchen:am"]],
- ["Kitchen HQ","Kitchen closing","Closing report: fridges & freezers, waste & left, mise en place lists","kitchen.html#closing",["kitchen","kapprove","see_kitchen"],"closing report waste left lists evening",["kitchen:pm"]],
- ["Kitchen HQ","Prep list","What to make today for the HQ display and each outlet, what is left at each outlet, Made numbers","office.html#plan",["kitchen","deliv","doedit","reports","see_plan"],"prep list planned made delivery order do print sheet suggestion plan",["kitchen","office","outlets"]],
- ["Kitchen HQ","Morning to-do · decorate & deliver","Morning team: today's cakes, custom & Grab orders, finish & decorate, pack & deliver the DOs","kitchen.html?team=am#today",["kitchen","kapprove","todo","see_kitchen"],"morning decoration decorate delivery list to-do custom order grab pack deliver",["kitchen:am"]],
- ["Kitchen HQ","Noon to-do · production","Noon team: today's production list, prep reminders, and the plan for the next days","kitchen.html?team=pm#today",["kitchen","kapprove","todo","see_kitchen"],"noon production list plan mise en place photo next days to-do reminders",["kitchen:pm"]],
- ["Kitchen HQ","Kitchen reports","Past reports, temperatures and photos · fridges, display cakes and reminders","kitchen.html#history",["kitchen","kapprove","view","see_khist"],"history temperature fridge freezer streak calendar setup display list reminder limit",[]],
- ["Kitchen HQ","Numbers","To make, made, sent, sold, left and waste per cake · day, week or month","office.html#numbers",["reports","view","kapprove","see_numbers"],"numbers waste wastage made produced prepared sold left figures report",[]],
- ["Outlet Delivery","Today","Clear the board: missing reports, chase outlets, bills to approve","office.html#today",["chase","view","see_today"],"attention chase whatsapp missing report board",["office","outlets"]],
- ["Outlet Delivery","Deliveries","Check colours, mark delivered, edit before it goes out","office.html#deliveries",["deliv","doedit","see_do"],"do delivery order colour dot",["kitchen","office"]],
- ["Outlet Delivery","Outlet reports","Each outlet's nightly count, corrections and all changes","office.html#daily",["reports","view","see_daily","see_log"],"closing report correction paste waste balance sold",["office","outlets"]],
- ["Outlet Delivery","Bills","Each week's invoice, carry forward and credit note; what the outlet still holds; every past bill","office.html#billing",(c)=>c("see_billing")||c("see_carry")||c("see_bills")||(c("money")&&(c("reports")||c("bills"))),"invoice bill cf cn credit bukku payment weekly",["office"]],
- ["Outlet Delivery","Spot audit","Visit an outlet: display, prices, chiller","audit.html",["audit"],"audit visit outlet check",["outlets"]],
- ["Outlet Delivery","Audits","Every spot audit and taste check, with photos and PDF","office.html#audits",["audit","kapprove","see_audits"],"spot audit results qc history pdf score taste check",[]],
- /* v22.40 (Alfred 14 Oct): "recipe should be in one of the 4 main menu, make it the 3rd … 1. product index > each cake with picture > each component 2. Component > category > each recipe 3. calculator > search button" */
- ["Recipes","Cakes","Every cake with its picture: open one to see its components and scale the whole cake","office.html#recipes/cakes",["kitchen","kapprove","reports","view","setup"],"recipe recipes cake cakes product index picture photo build component scale",["kitchen"]],
- ["Recipes","Components","Every recipe by category: sponge, mousse & cream, filling, glaze, crunch, décor…","office.html#recipes/components",["kitchen","kapprove","reports","view","setup"],"recipe recipes component components category sponge mousse filling glaze crunch dough coating decor ingredient method",[]],
- ["Recipes","Calculator","Search a recipe and scale it: what I have, target total, trays or pieces","office.html#recipes/calc",["kitchen","kapprove","reports","view","setup"],"recipe calculator scale batch search weight gram",[]],
- ["Recipes","Moulds","The mould library: every mould with its photo, box, sheets and cavities; count them and take a better photo","office.html#recipes/moulds",["kitchen","kapprove","reports","view","setup"],"mould mold library silicone cavity cavities sheet box tin tray ring frame photo",[]],
- ["Recipes","Ingredients","Every ingredient with its price (RM a kg) from the Bukku bills and price lists; filter missing price, price update, to check","office.html#recipes/ings",(c)=>c("money")&&["kitchen","kapprove","reports","view","setup","admin"].some(c),"ingredient ingredients price prices bukku bill bills supplier price list missing price update cost per kg",[]],
- ["Recipes","Costing","What every cake (one piece) and component (a batch, a kg) costs, food cost %","office.html#recipes/cost",(c)=>c("money")&&["kitchen","kapprove","reports","view","setup","admin"].some(c),"cost costing cake component recipe food cost margin per piece per kg",[]],
- ["Back office","Reports","Every report: done and not done, what was sent, photos, reminders and Chase on WhatsApp","reports.html",(c,s)=>c("see_reports")||/owner|manager/i.test(labelOf(s)||""),"reports report done undone missing photos chase reminder whatsapp",[]],
- ["Back office","Setup","Outlets, cakes, prices, WhatsApp, points, fresh start","office.html#setup",["setup","see_setup"],"outlet cake product price shelf life whatsapp wasapbot bukku key go-live fresh start holiday limits",[]],
- ["Back office","Staff & access","Who can sign in, PINs and what each person can do","office.html#staff",["staff"],"team pin phone access permission",[]],
- ["Back office","Problem reports","What the team reported: reply, mark done","office.html#feedback",["problems","see_feedback"],"feedback problem report reply urgent helper questions",[]],
+ /* v22.73 (Alfred 30 Oct: "the system seems abit over complicated also, toomany pages and button that team actually dont use" → "Can do lesser page?" →
+    picked 8 pages: Home · Prep list · Kitchen report · Recipes · Outlets · Reports · Numbers · Setup). A page that holds several parts shows them as a
+    strip at its top (CA.menu.subnav); Spot audit, Audits, Problem reports and Grab packs are off the menu (their data stays). */
+ ["Kitchen","Prep list","What to make today and what each outlet gets: open it and print","office.html#plan",["kitchen","deliv","doedit","reports","see_plan"],"prep list planned made delivery order do print sheet suggestion plan 2-day batch",["kitchen","office","outlets"]],
+ ["Kitchen","Kitchen report","Opening and closing reports · fridges, temperatures, past reports","kitchen.html#report",["kitchen","kapprove","see_kitchen","see_khist"],"opening closing report fridge freezer temperature display count waste left mise en place lists history stock check sunday to-do",["kitchen"]],
+ ["Kitchen","Recipes","Cakes with pictures, components by category, the recipe calculator","office.html#recipes/cakes",["kitchen","kapprove","reports","view","setup"],"recipe recipes cake cakes component components calculator scale picture mould moulds ingredient ingredients price costing food cost",["kitchen"]],
+ ["Outlets","Outlets","Deliveries and colour check, the outlets' closing reports, the weekly bills","office.html#deliveries",(c)=>c("deliv")||c("doedit")||c("see_do")||c("reports")||c("view")||c("see_daily")||c("see_log")||c("see_billing")||c("see_carry")||c("see_bills")||(c("money")&&(c("reports")||c("bills"))),"delivery deliveries do colour dot deliver outlet closing report correction waste balance sold bill bills invoice cf cn credit bukku payment weekly",["office","outlets","kitchen:am"]],
+ ["Office","Reports","What needs doing today (missing reports, chasing, bills to approve) and every report by day","office.html#today",["chase","view","see_today","reports"],"today attention chase whatsapp missing report board reports done not done late",["office","outlets"]],
+ ["Office","Numbers","To make, made, sent, sold, left and waste per cake · day, week or month","office.html#numbers",["reports","view","kapprove","see_numbers"],"numbers waste wastage made produced prepared sold left figures report",[]],
+ ["Office","Setup","Outlets, cakes, prices, staff & access, WhatsApp, points","office.html#setup",["setup","see_setup","staff"],"setup outlet cake product price shelf life whatsapp wasapbot bukku key go-live holiday limits staff pin access team problem reports",[]],
 ];
 const HELP=[["How-to guide","Step by step for your job, and I'm stuck answers","#guide"],["Ask the helper","How-to questions, any language","ask"],["Report a problem","App, equipment, stock, safety","fb"],["My reports","What happened and the office's reply","mine"],["Team treat & points","This month's treat, the jar and the leaderboard","#team"]];
 const ICON={
@@ -485,10 +469,19 @@ const ICON={
  "Recipes":["#f6e7d6",`<svg viewBox="0 0 30 30"><path d="M6 4h15a3 3 0 0 1 3 3v19H9a3 3 0 0 1-3-3z" fill="#fff" stroke="#7b1c2b" stroke-width="2"/><path d="M6 23a3 3 0 0 1 3-3h15" fill="none" stroke="#7b1c2b" stroke-width="2"/><path d="M11 9h8M11 13h6" stroke="#c9955b" stroke-width="2" stroke-linecap="round"/><circle cx="21" cy="5" r="3" fill="#e0707a"/></svg>`],
  "Back office":["#fbf1d3",`<svg viewBox="0 0 30 30"><rect x="6" y="5" width="18" height="22" rx="3" fill="#fff" stroke="#2b1b1e" stroke-width="2"/><rect x="11" y="3" width="8" height="5" rx="2" fill="#2b1b1e"/><path d="M10 13h10M10 17h7M10 21h9" stroke="#a0620a" stroke-width="2"/></svg>`],
  "Help & support":["#dcefe2",`<svg viewBox="0 0 30 30"><path d="M4 6h22v14H13l-6 5v-5H4z" fill="#1e8449"/><text x="15" y="17" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Jost,sans-serif">?</text></svg>`]};
+ICON["Kitchen"]=ICON["Kitchen HQ"]; ICON["Outlets"]=ICON["Outlet Delivery"]; ICON["Office"]=ICON["Back office"]; /* v22.73 group names */
 
   const pageOK=(x,s)=>{ const c=p=>permsOf(s).includes(p); return typeof x[4]==="function"?!!x[4](c,s):x[4].some(c); };
   const pagesFor=s=>PAGES.filter(x=>pageOK(x,s));
-  const myArea=s=>(areaOf(s)||"office")==="kitchen"?"Kitchen HQ":"Outlet Delivery";
+  const myArea=s=>(areaOf(s)||"office")==="kitchen"?"Kitchen":"Outlets";
+  /* v22.73: the parts of a merged page, as a strip at its top (only the parts the person can open; nothing when only one) */
+  const SUBNAV={
+    out:[["Deliveries","office.html#deliveries",["deliv","doedit","see_do"]],["Closing reports","office.html#daily",["reports","view","see_daily","see_log"]],["Bills","office.html#billing",c=>c("see_billing")||c("see_carry")||c("see_bills")||(c("money")&&(c("reports")||c("bills")))]],
+    rep:[["Today's board","office.html#today",["chase","view","see_today","reports"]],["Every report by day","reports.html",["chase","view","see_today","reports"]]],
+    set:[["Setup","office.html#setup",["setup","see_setup"]],["Staff & access","office.html#staff",["staff"]],["Problem reports","office.html#feedback",["problems","see_feedback"]]]};
+  function subnav(g,cur){ const s=get(); if(!s) return ""; const c=p=>permsOf(s).includes(p), it=(SUBNAV[g]||[]).filter(x=>typeof x[2]==="function"?!!x[2](c):x[2].some(c)); if(it.length<2) return "";
+    if(!document.getElementById("ca-subnav-css")){ const st=document.createElement("style"); st.id="ca-subnav-css"; st.textContent=".ca-subnav{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}.ca-subnav a{flex:1 1 auto;text-align:center;padding:10px 12px;border:1px solid var(--line,#e8dcd6);border-radius:999px;text-decoration:none;color:var(--ink,#2b1b1e);font:600 14px var(--body,system-ui,sans-serif);background:var(--paper,#fff);min-height:44px;display:flex;align-items:center;justify-content:center}.ca-subnav a[aria-current=page]{background:var(--accent,#7b1c2b);color:var(--accent-ink,#fff);border-color:var(--accent,#7b1c2b)}@media print{.ca-subnav{display:none}}"; document.head.appendChild(st); }
+    return `<nav class="ca-subnav" aria-label="Parts of this page">${it.map(([t,h])=>`<a href="${h}" ${h===cur?'aria-current="page"':""}>${esc(t)}</a>`).join("")}</nav>`; }
   const helpItems=()=>HELP.map(([t,d,v])=>/^#/.test(v)?{t,d,href:"index.html"+v,sec:"Help & support",k:"help guide ask report problem treat points"}:{t,d,help:v,sec:"Help & support",k:"help ask report problem mine"});
   /* the four areas in a fixed order (the same everywhere); a person only sees the pages their access allows */
   const sections=s=>AREAS.map(sec=>({name:sec,items:sec==="Help & support"?helpItems():pagesFor(s).filter(x=>x[0]===sec).map(x=>({t:x[1],d:x[2],href:x[3],k:x[5]||"",sec}))})).filter(x=>x.items.length);
@@ -502,7 +495,7 @@ const ICON={
     if(q){ const words=q.split(/\s+/), all=secs.flatMap(x=>x.items), hit=all.filter(it=>{ const hay=(it.t+" "+it.d+" "+it.k+" "+it.sec).toLowerCase(); return words.every(w=>hay.includes(w)); });
       return hit.length?`<div class="mlab">${hit.length} page${hit.length===1?"":"s"}</div><div class="card mlist">${hit.map(row).join("")}</div>`:`<div class="card mnone">Nothing found for “${esc(MQ.trim())}”. Try another word, or tap <b>? Ask</b>.</div>`; }
     if(MOPEN==null||(MOPEN&&!secs.some(x=>x.name===MOPEN))) MOPEN=secs.some(x=>x.name===myArea(s))?myArea(s):(secs.length?secs[0].name:""); /* "" = all areas closed (v21.13) */
-    return secs.map(sec=>{ const op=MOPEN===sec.name, ic=icon(sec.name);
+    return secs.map(sec=>{ const op=true, ic=icon(sec.name); /* v22.73: few pages — every group open */
       return `<div class="card grp"><button type="button" data-msec="${esc(sec.name)}" aria-expanded="${op}"><span class="ico" style="background:${ic[0]}" aria-hidden="true">${ic[1]}</span><span class="nm"><b>${esc(sec.name)}</b><small>${esc(AREAD[sec.name]||"")}</small></span><span class="chev" aria-hidden="true">${op?"▲":`${sec.items.length} ▼`}</span></button>
         ${op?`<div class="its">${sec.items.map((it,i)=>it.help?`<button type="button" data-help="${esc(it.help)}"><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></button>`:`<a href="${esc(it.href)}" data-mgo="1" ${isHere(it.href)?'aria-current="page"':""}><span class="num" aria-hidden="true">${i+1}</span><span><b>${esc(it.t)}</b><small>${esc(it.d)}</small></span><span class="go" aria-hidden="true">›</span></a>`).join("")}</div>`:""}</div>`; }).join(""); }
   function menuEl(){ let m=document.getElementById("camenu"); if(!m){ m=document.createElement("div"); m.id="camenu"; document.body.appendChild(m); } return m; }
@@ -686,7 +679,7 @@ const ICON={
     return {maybe,a2hs,perms,close}; })();
   const bootV58=()=>{ setTimeout(ONB.maybe,1000); };
   if(!/closing/.test(location.pathname)){ if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bootV58); else bootV58(); }
-  const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get())};
+  const menu={open:menuOpen,close:menuClose,on:()=>MON,redraw:()=>{ if(MON) drawMenu(); },sections:()=>sections(get()),pages:()=>pagesFor(get()),ok:x=>pageOK(x,get()),row,icon,areas:AREAS,desc:AREAD,myArea:()=>myArea(get()),subnav};
   return {get,save,clear,run,isAuthErr,loginForm,logout,toLogin,chip,helper,openHelp:v=>openHelp(v),ROLE,esc,nextHref,nextList,HOME,canView,vaSelect,loadVA,permsOf,labelOf,areaOf,can,update,tour:TOUR,menu,PAGES,HELP,ICON,pick,pickClose,prepWin,prepWinClose:()=>pwClose(),b2b:B2B,push:PUSH,loc:LOC,onb:ONB};
 })();
 </script>
