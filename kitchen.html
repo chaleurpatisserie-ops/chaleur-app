@@ -1041,7 +1041,7 @@ body.ro #main input:not([type=date]),body.ro #main select,body.ro #main textarea
 .hw-pt{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:96px;border:1.5px dashed var(--line);border-radius:14px;background:var(--seg);color:var(--ink);font:600 14px var(--body);cursor:pointer;position:relative;overflow:hidden}
 .hw-pt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}.hw-pt span{position:relative}.hw-pt.on{border-style:solid;border-color:var(--ok)}
 .hw-note{border-radius:12px;padding:10px 12px;background:var(--soft);font-size:14px;line-height:1.45}.hw-note.warn{background:var(--warn-bg)}
-.hw-opt{display:flex;gap:8px;align-items:flex-start;margin-top:6px}.hw-note .hw-in,.hw-note input[id]{margin-top:6px}
+.hw-opt{display:flex;gap:8px;align-items:flex-start;margin-top:6px;text-align:left;justify-content:flex-start}.hw-opt input{width:auto!important;flex:none;margin:3px 0 0}.hw-opt span{flex:1;text-align:left}.hw-note .hw-in,.hw-note input[id]{margin-top:6px}
 .hw-done{border:1px solid var(--line);border-radius:12px;padding:8px 10px}.hw-l{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:8px 0;font-size:14px}.hw-l:first-of-type{border-top:0}.hw-l .tx{flex:1;min-width:0}.hw-l small{display:block;color:var(--muted);font-size:12px}
 .hw-row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}.hw-st .err{color:var(--bad)}
 </style>
@@ -1623,7 +1623,7 @@ function vEq(kind){ const s=st(kind), p=pre(kind), E=INFO.conf.equipment, n=E.le
     <div class="rd"><div class="sign" role="group" aria-label="Plus or minus"><button type="button" aria-pressed="${x.neg}" data-sign="${kind}|${esc(e.id)}|1" aria-label="Minus">−</button><button type="button" aria-pressed="${!x.neg}" data-sign="${kind}|${esc(e.id)}|0" aria-label="Plus">+</button></div>
       <input class="tin" id="t-${kind}-${esc(e.id)}" inputmode="decimal" data-temp="${kind}|${esc(e.id)}" value="${esc(x.t)}" aria-label="${esc(e.name)} temperature" placeholder="__" autocomplete="off"><span class="u">°C</span></div>
     <div class="ew" id="ew-${esc(e.id)}">${eqPill(e,z.v)}</div>
-    <div class="ask">Type what the thermometer says</div>
+    <div class="ask">Type what the thermometer says${e.type==="freezer"?" — the minus (−) is already on":" · tap − if it shows minus"}</div>
     <div class="kp" role="group" aria-label="Number pad">${["1","2","3","4","5","6","7","8","9","±","0","⌫"].map(c=>`<button type="button" data-kp="${c==="±"?"pm":c==="⌫"?"bs":c}" aria-label="${c==="±"?"Plus or minus":c==="⌫"?"Delete":c}">${c}</button>`).join("")}</div>
     <div class="eqx"><label class="dr"><input type="checkbox" data-door="${kind}|${esc(e.id)}" ${x.door?"checked":""}><span>Door shut</span></label>
       <div class="ph" id="mi-${esc(k)}">${P2[k]?`<img src="${P2[k]}" alt="">`:""}<button type="button" class="phb" data-pick="kshot=${esc(k)}" data-pick-title="${esc(e.name||"Photo")}">📷 ${P2[k]?"Retake":"Photo"}</button><input type="file" accept="image/&#42;" capture="environment" data-kshot="${esc(k)}" hidden><input type="file" accept="image/&#42;" data-kshot="${esc(k)}" hidden></div></div></div>`; }
