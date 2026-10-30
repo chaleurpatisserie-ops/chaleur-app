@@ -1029,8 +1029,8 @@ body.ro #main input:not([type=date]),body.ro #main select,body.ro #main textarea
 .b2bk h3{margin:0 0 4px}.b2bk .b2bo{border-top:1px dashed var(--line);padding:9px 0}.b2bk .b2bo:first-of-type{border-top:0}.b2bk .b2bo.today{background:var(--bad-bg);border-radius:10px;padding:9px 10px;border-top:0;margin:4px 0}.b2bk ul{margin:5px 0 2px 18px;padding:0}.b2bk li{margin:2px 0}.b2bk .b2bt{border-top:1px solid var(--line);padding-top:8px;margin-top:4px}
 </style>
 <style>/* v22.76 HQ Waste now */
-.hw-btn{display:flex;align-items:center;gap:12px;width:100%;border:1.5px solid var(--bad);background:var(--bad-bg);color:var(--ink);border-radius:16px;padding:12px 14px;font:600 15px var(--body);cursor:pointer;text-align:left;min-height:56px}
-.hw-btn b{display:block;font-size:16px}.hw-btn small{display:block;font-size:12.5px;color:var(--muted);font-weight:500;line-height:1.35}.hw-btn .ic{font-size:26px;flex:none}
+.hw-btn{display:flex;align-items:center;gap:10px;width:100%;border:1.5px solid var(--bad);background:var(--bad-bg);color:var(--ink);border-radius:14px;padding:8px 12px;font:600 14px var(--body);cursor:pointer;text-align:left;min-height:48px}.hw-btn .hw-n{display:inline;font-size:12.5px;color:var(--bad)}.hw-chips[hidden]{display:none!important}
+.hw-btn b{display:block;font-size:15px}.hw-btn small{display:block;font-size:12px;color:var(--muted);font-weight:500;line-height:1.3}.hw-btn .ic{font-size:20px;flex:none}
 .hw-box{display:flex;flex-direction:column;gap:8px}.hw-box>*{flex-shrink:0}.hw-box .eb{margin-top:6px}
 .hw-chips{display:flex;flex-wrap:wrap;gap:6px}.hw-chip{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 12px;font:600 14px var(--body);color:var(--ink);cursor:pointer;min-height:42px}.hw-chip small{color:var(--muted);font-weight:600}
 .hw-chip[aria-pressed="true"]{border-color:var(--accent);background:var(--soft);color:var(--accent)}
@@ -1457,7 +1457,7 @@ function vReport(kind){
   const curP=(list.find(([p])=>!partOf(kind,p)&&s0.need.includes(p))||list.find(([p])=>!partOf(kind,p))||[])[0];
   return `<div class="stack">
     <div><div class="pbar"><i style="width:${needed.length?Math.round(needed.filter(([p])=>partOf(kind,p)).length*100/needed.length):0}%"></i></div><div class="lh"><span>${s0.done?"✓ "+(kind==="opening"?"Opening":"Closing")+" report complete":`${needed.filter(([p])=>partOf(kind,p)).length} of ${needed.length} parts sent`}</span><span>${DATE!==INFO.today?esc(niceD(DATE)):""}</span></div></div>
-    ${late?`<p class="err">Late: still to do ${esc(tMiss(kind,s0).map(p=>partName(kind,p)).join(", "))}.</p>`:""}${typeof hwBtn==="function"?hwBtn():""}
+    ${late?`<p class="err">Late: still to do ${esc(tMiss(kind,s0).map(p=>partName(kind,p)).join(", "))}.</p>`:""}${kind==="opening"&&typeof hwBtn==="function"?hwBtn():""}
     ${legacy?`<div class="card"><b>Sent in one go by ${esc(r.by)} at ${esc(hmOf(r.at))}</b>. Sending a part now starts a new report.</div>`:""}
     ${list.map(([p,label],i)=>{ const x=partOf(kind,p), iss=(x&&x.issues)||[], bad=iss.some(z=>z.sev==="bad"), cur=!x&&p===curP;
       return `<div class="card pc ${x?"sent":""} ${cur?"cur":""}"><span class="no">${x?"✓":i+1}</span><div><div class="nm">${esc(label)}</div><div class="sb">${x?`${esc(x.by)} · ${esc(hmOf(x.at))}`:esc(p==="eq"?INFO.conf.equipment.length+" units · "+PHINT[kind][p]:PHINT[kind][p]||"")}${!x&&!s0.need.includes(p)?` · <i>optional today</i>`:""}${!x&&s0.need.includes(p)?` · <b class="when ${kind==="opening"&&isTimed(kind,p)?"t":""}">${esc(whenTxt(kind,p))}</b>`:""}</div></div>
@@ -1573,7 +1573,7 @@ function missCard(kind,it,v){ const k=esc(it.key), ok=missFilled(it,v);
 function vSales(kind){ const s=st(kind), none=!!s.later.sales, n=[1,2,3].filter(j=>j===1||P2["cl_fs"+(j-1)]);
   return `<p class="hint">On the FeedMe POS open <b>Reports › Product sales</b> for today and snap the screen — the whole table, name and Qty columns readable. Long table? Scroll and take a second photo.</p>
     <div class="card"><h3>FeedMe product sales · ${esc(niceD(DATE))}</h3><div class="stack">${none?`<p class="hint">No report tonight — the sold count waits for the FeedMe email.</p>`:n.map(j=>shotBox("cl_fs"+j,j===1?"The report":"More of the report","")).join("")}</div>
-      <label class="pill" style="margin-top:10px;padding:10px 12px;gap:8px"><input type="checkbox" data-later="sales" ${none?"checked":""} style="width:20px;height:20px"><span>No report tonight (POS down, report not available)</span></label>
+      <label class="pill" style="margin-top:10px;padding:10px 12px;gap:8px;white-space:normal;max-width:100%;border-radius:14px;box-sizing:border-box"><input type="checkbox" data-later="sales" ${none?"checked":""} style="width:20px;height:20px"><span>No report tonight (POS down, report not available)</span></label>
       ${none?`<label class="f" style="margin-top:8px">Why?<input data-pwhy="sales" value="${esc(s.notes.saleswhy||"")}" placeholder="e.g. FeedMe app would not open"></label>`:""}</div>
     ${noteBox(kind,"sales")}`; }
 /* v22.21 (Alfred 7 Oct): the filled prep sheet in the opening report — "so they can do it all at once". Snap it, the AI reads the
@@ -1587,7 +1587,7 @@ const psTyped=(R,r)=>{ const v=((R&&R.vals)||{})[r.id]; return !!v&&v.made!==""&
 const psPill=(r,mv,fb)=>fb?(mv==null?`<span class="pill">not made</span>`:`<span class="pill ok">✓</span>`):mv==null?`<span class="pill">blank = 0</span>`:mv<r.toMake?`<span class="pill warn">${r.toMake-mv} short</span>`:mv>r.toMake?`<span class="pill info">${mv-r.toMake} extra → HQ</span>`:`<span class="pill ok">✓</span>`;
 /* v22.24: a typed Made updates its own pill — no full redraw, so the next box keeps the keyboard */
 function psPillUpd(id){ const s0=st("opening"), R=s0.prep||{}, sh=(INFO.prep||{}).sheet, rows=psRows(sh,R), r=rows.find(x=>x.id===id); if(!r) return; const v=(R.vals||{})[id]||{}, mv=v.made===""||v.made==null?null:+v.made;
-  const el=document.querySelector(`[data-pspill="${id}"]`); if(el) el.innerHTML=psPill(r,mv,psFB(sh,R)); const nt=document.querySelector(`input[data-psn="${id}"]`); if(nt) nt.placeholder=!psFB(sh,R)&&mv!=null&&mv<r.toMake?"why short?":"note (optional)"; }
+  const el=document.querySelector(`[data-pspill="${id}"]`); if(el) el.innerHTML=psPill(r,mv,psFB(sh,R)); const sh0=!psFB(sh,R)&&r.toMake>0&&(mv==null?0:mv)<r.toMake, nt=document.querySelector(`input[data-psn="${id}"]`); if(nt) nt.placeholder=sh0?(v.other?"type why short":"why short?"):"note (optional)"; const wr=document.querySelector(`[data-pswrow="${id}"]`); if(wr) wr.hidden=!sh0; }
 function vPrepPart(kind){ const s=st(kind), I=INFO.prep||{}, sh=I.sheet, R=s.prep||{};
   if(PSBUSY) return `<div class="card"><b>Reading the prep sheet…</b><p class="hint">This takes a few seconds. Keep this page open.</p></div>`;
   const n=(s.prepPh||[]).length||(P2.op_prep?1:0);
@@ -1601,10 +1601,10 @@ function vPrepPart(kind){ const s=st(kind), I=INFO.prep||{}, sh=I.sheet, R=s.pre
     res.printedDate&&res.printedDate!==DATE?`<p class="err">This sheet looks like it is for ${esc(niceD(res.printedDate))}, not ${esc(niceD(DATE))}. Check you snapped today's sheet.</p>`:"",
     (res.unclear||[]).length?`<p class="hint">Could not read: ${res.unclear.map(esc).join(" · ")}</p>`:"",
     (res.extra||[]).length?`<p class="hint">Also written on the sheet (not a printed row): ${res.extra.map(x=>esc(x.name)+" "+x.made).join(", ")} — tell the supervisor to add it on the Prep list if it is real.</p>`:""].join("");
-  return msg+(res.free?`<p class="hint">Read without a printed record: check the cake names too.</p>`:"")+`<div class="card" style="padding:4px 14px">${rows.map(r=>{ const v=V[r.id]||{}, mv=v.made===""||v.made==null?null:+v.made, short=!fb&&mv!=null&&mv<r.toMake;
+  return msg+(res.free?`<p class="hint">Read without a printed record: check the cake names too.</p>`:"")+`<div class="card" style="padding:4px 14px">${rows.map(r=>{ const v=V[r.id]||{}, mv=v.made===""||v.made==null?null:+v.made, short=!fb&&r.toMake>0&&(mv==null?0:mv)<r.toMake; /* v22.77: blank = 0 made */
       return `<div style="border-top:1px solid var(--cline);padding:10px 0"><div class="ln2 c1"><div><b>${esc(r.name)}</b><small style="display:block" class="hint">${fb?"":`To make ${r.toMake} · `}<span data-pspill="${esc(r.id)}">${psPill(r,mv,fb)}</span></small></div>
         <div class="stp"><span class="lb">Made</span><div class="ctl"><button type="button" data-psq="${esc(r.id)}|-1" aria-label="One less">−</button><input type="number" inputmode="numeric" value="${mv==null?"":mv}" data-psv="${esc(r.id)}" aria-label="Made ${esc(r.name)}"><button type="button" data-psq="${esc(r.id)}|1" aria-label="One more">+</button></div></div></div>
-        <input data-psn="${esc(r.id)}" value="${esc(v.note||"")}" placeholder="${short?"why short?":"note (optional)"}" aria-label="Note ${esc(r.name)}" style="width:100%;margin-top:6px"></div>`; }).join("")}</div>
+        <input data-psn="${esc(r.id)}" value="${esc(v.note||"")}" placeholder="${short?(v.other?"type why short":"why short?"):"note (optional)"}" aria-label="Note ${esc(r.name)}" style="width:100%;margin-top:6px">${fb||!(r.toMake>0)?"":`<div class="hw-chips" style="margin-top:6px" data-pswrow="${esc(r.id)}"${short?"":" hidden"}>${PS_WHY.map(w=>`<button type="button" class="hw-chip" data-psw="${esc(r.id)}|${esc(w)}" aria-pressed="${w==="Other"?String(!!v.other):String(v.note===w)}">${esc(w)}</button>`).join("")}</div>`}</div>`; }).join("")}</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"><button type="button" class="cb sm ghost" data-pick="kshot=op_prep" data-pick-title="Filled prep sheet">📷 Retake the photo</button><input type="file" accept="image/&#42;" capture="environment" data-kshot="op_prep" hidden><input type="file" accept="image/&#42;" multiple data-kshot="op_prep" hidden>${(res.photos&&res.photos.length?res.photos:(res.photo&&res.photo.url?[res.photo]:[])).map((ph,i,arr)=>ph&&ph.url?`<a class="cb sm ghost" href="${esc(ph.url)}" target="_blank" rel="noopener">Open ${arr.length>1?"photo "+(i+1):"the photo"}</a>`:"").join("")}</div>${noteBox(kind,"prep")}`; }
 /* fridges & freezers (3f): one unit per screen, keypad */
 function eqState(e,x,k){ const t=String(x.t).replace(",","."), ok=t!==""&&isFinite(+t), v=ok?(x.neg?-1:1)*Math.abs(+t):null; return {ok,v,door:!!x.door,photo:!!P2[k]}; }
@@ -1682,7 +1682,8 @@ function missingPart(kind,part){ const s=st(kind), p=pre(kind), m=[];
   if(part==="count"){ if(!P2.cl_display) m.push("HQ display photo"); const w=Object.values(s.rows).some(x=>+x.w>0)||s.ev.some(x=>+x.w>0); if(w&&!P2.cl_waste) m.push("waste photo"); }
   if(part==="deliveries") INFO.dos.filter(d=>!d.internal).forEach(d=>{ if(!s.later[d.id]&&!P2["op_do_"+d.id]) m.push(d.outlet+" delivery photo"); });
   if(part==="prep"){ const sh=(INFO.prep||{}).sheet, R=s.prep; if(!(R&&R.res)) m.push(P2.op_prep?"tap Read the sheet":"photo of the filled prep sheet");
-    else { const rows=psRows(sh,R); if(!rows.length) m.push("no cake rows read — snap again"); else if(psFB(sh,R)){ if(!rows.some(r=>psTyped(R,r))) m.push("Made for at least one cake"); } /* v22.24c (Alfred): a blank Made = 0 — nothing forced */ } }
+    else { const rows=psRows(sh,R); if(!rows.length) m.push("no cake rows read — snap again"); else if(psFB(sh,R)){ if(!rows.some(r=>psTyped(R,r))) m.push("Made for at least one cake"); } /* v22.24c (Alfred): a blank Made = 0 — nothing forced */
+      else { const need=rows.filter(r=>{ const v=(R.vals||{})[r.id]||{}, mv=v.made===""||v.made==null?0:+v.made; return r.toMake>0&&mv<r.toMake&&!String(v.note||"").trim(); }); if(need.length) m.push("why fewer were made: "+need.map(r=>r.name).join(", ")+" (tap a reason)"); } /* v22.77 */ } }
   if(part==="lists"){ if(!P2.cl_lt1) m.push("today's list photo"); [1,2,3].forEach(i=>{ if(!P2["cl_ld"+i+"_1"]) m.push(niceD(addD(DATE,i))+" list photo"); }); }
   if(part==="sales"){ if(s.later.sales){ if(!String(s.notes.saleswhy||"").trim()) m.push("why there is no report"); } else if(!P2.cl_fs1) m.push("photo of the FeedMe product sales report"); }
   if(part==="recipes"){ const open=missOpen(kind), V=s.miss||{}; if(open.length&&!open.some(it=>missFilled(it,V[it.key]))) m.push("at least one missing value (weigh it, snap the recipe, write the method or check the kitchen copy)"); }
@@ -2026,7 +2027,7 @@ CA.tour.define({key:"kitchen",steps:tourSteps,ready:()=>!!INFO&&!V2&&!!TOK&&(TAB
 let HW=null; const hwTok=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const hwList=()=>((INFO&&INFO.wasteNow)||[]);
 function hwBtn(){ const L=hwList(), n=L.reduce((a,e)=>a+(+e.qty||0),0);
-  return `<button class="hw-btn" type="button" data-hwopen="1"><span class="ic">🗑</span><span><b>Waste now · HQ display</b><small>${n?`${n} cake${n===1?"":"s"} recorded today · `:""}A cake dropped, damaged or expired during the day? Record it with a photo, then throw it away.</small></span></button>`; }
+  return `<button class="hw-btn" type="button" data-hwopen="1"><span class="ic">🗑</span><span><b>Waste now · HQ display</b><small>${n?`<b class="hw-n">${n} recorded today</b> · `:""}Dropped or spoiled during the day? Record it, then throw it away.</small></span></button>`; }
 function hwCountNote(){ const L=hwList(); if(!L.length) return "";
   return `<div class="hw-note"><b>Already thrown away today (Waste now)</b> — added to tonight's waste, <b>don't count ${L.reduce((a,e)=>a+(+e.qty||0),0)===1?"it":"them"} again</b>:<br>${L.map(e=>`${e.qty} × ${esc(prodOf(e.productId).name)} ${esc(capw(e.colour))} · ${esc(e.reason)} · ${esc(hmOf(e.at))}${e.by?" · "+esc(e.by):""}`).join("<br>")}</div>`; }
 const hwQ=k=>hwList().filter(e=>e.productId+"|"+e.colour===k).reduce((a,e)=>a+(+e.qty||0),0);
@@ -2086,4 +2087,12 @@ document.addEventListener("change",async e=>{ if(!HW) return; const t=e.target; 
 if((location.hash||"")==="#waste"){ setTimeout(function hwAuto(){ if(typeof INFO!=="undefined"&&INFO) hwOpen(); else setTimeout(hwAuto,400); },300); }
 </script>
 
+<script>
+/* v22.77: the reasons for a cake made less than To make (opening part 3) — same list as the office prep list */
+const PS_WHY=["Ingredient out","Short staff","Quality reject","Equipment","Other"];
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("[data-psw]"); if(!b) return; e.preventDefault(); e.stopPropagation();
+  const [id,w]=b.dataset.psw.split("|"), s0=st("opening"), R=s0.prep||(s0.prep={}), V=R.vals||(R.vals={}), v=V[id]||(V[id]={made:"",note:""});
+  if(w==="Other"){ v.other=1; if(PS_WHY.includes(v.note)) v.note=""; } else { v.other=0; v.note=w; }
+  try{ saveDraft("opening"); }catch(x){} render(); setTimeout(()=>{ if(w==="Other"){ const f=document.querySelector(`input[data-psn="${id}"]`); if(f) f.focus(); } try{ refresh(); }catch(x){} },60); },true);
+</script>
 </body></html>
