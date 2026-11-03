@@ -824,6 +824,15 @@ th:first-child,td:first-child{text-align:left}td{padding:8px 4px;border-bottom:1
 .cal .future{opacity:.45}.cal .ok{background:var(--ok-bg)}.cal .late{background:var(--warn-bg)}.cal .miss{background:var(--bad-bg);cursor:pointer;color:var(--bad-tx)}.cal .caught{background:var(--soft)}.cal .cur{box-shadow:0 0 0 2px var(--accent)}
 .calk{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--muted)}
 .mq{padding:12px;margin:0}.mq .nm{font-weight:700;margin-bottom:2px}
+/* v22.89 delivery check + weekly sales */
+.rtw89{overflow-x:auto}.t89{border-collapse:collapse;width:100%;font-size:14.5px}.t89 th,.t89 td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;vertical-align:middle}
+.t89 th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.t89 .r{text-align:right}.t89 tfoot td{border-bottom:0}
+.t89 input{width:72px;min-height:42px;text-align:right;font-size:16px;padding:6px 8px;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink)}
+.t89 tr.d89 td{background:var(--warn-bg)}.lnk89{border:0;background:none;color:var(--muted);font-size:15px;padding:2px 6px;cursor:pointer}
+.ph89{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ph89 figure{margin:0;position:relative}.ph89 img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:block}
+.ph89 figure button{position:absolute;top:4px;right:4px;border:0;border-radius:50%;width:30px;height:30px;background:rgba(0,0,0,.6);color:#fff;font-size:15px}
+.ph89 .pt{height:auto;min-height:96px;aspect-ratio:3/4}
+.posin{width:64px;min-height:38px;text-align:right;font-size:15px;padding:4px 6px;border:1.5px solid var(--line);border-radius:8px}
 </style></head><body>
 <div class="w" id="app"><div class="empty"><span class="spin"></span> Loading…</div></div>
 <div class="foot" id="bar" hidden><div class="in"><div class="st" id="status"></div><button class="cb big full" id="next" type="button">Send tonight's count</button></div></div>
@@ -847,7 +856,8 @@ function lastMon(t){ const d=new Date(t+"T12:00:00Z"); return dAdd(t,-((d.getUTC
 const backFrom=()=>(INFO&&INFO.backFrom)||lastMon(calToday());
 let INFO=null, KEY=(PRESET||store.get("chaleur.key")||"").trim().toUpperCase(), DATE=defaultDate();
 let DRAFTED=false, ROWS={}, ORDER=[], SHOWN=[], EXP=new Set(), PH={sales:[],display:null,waste:null}, NOTE="", WHO=store.get("chaleur.who")||"", PREV=null, SENDING=false, COLOK={};
-let COVER="", MISSOK=null, AFTER_PHOTO=null, WN=null; /* v22.71: catch-up choice, answers about cakes not accounted for, the Waste now sheet */
+let COVER="", MISSOK=null, AFTER_PHOTO=null, WN=null, POSFIX={}, WWHY={}; /* v22.89: POS numbers fixed by the outlet, why in-date cakes were wasted */
+let _x89=0; /* v22.71: catch-up choice, answers about cakes not accounted for, the Waste now sheet */
 const COL=()=>INFO.colours||CONFIG.colours;
 const colHex=n=>(COL().find(c=>c.name===n)||{}).hex||"#999";
 const colDay=n=>WD[COL().findIndex(c=>c.name===n)]||"";
@@ -882,6 +892,7 @@ async function load(){
   if(!INFO.stock.length&&!(ex&&(ex.lines||[]).length)) (INFO.carries||[]).forEach(p=>{ if(!SHOWN.includes(p)) SHOWN.push(p); });
   if(ex){ ex.lines.forEach(l=>{add(l.productId,l.colour); const r=ROWS[K(l.productId,l.colour)], w0=(+l.w||0)-(+l.wn||0); r.w=w0>0?String(w0):""; r.b=l.b?String(l.b):"";}); if(!NOTE) NOTE=ex.note||""; } /* v22.71: the box holds only the waste found at closing; the day's waste is added by the server */
   DRAFTED=loadDraft(ex);
+  setTimeout(x89Init,0); /* v22.89 */
   render();
 }
 
@@ -1116,7 +1127,7 @@ function render(){
     <label class="f">Your name<input id="who" value="${esc(WHO)}" placeholder="e.g. Aina" autocomplete="name"></label></div>
     <div class="banner ${DATE<calToday()?"warn":"info"}" id="nightsay" style="margin:0">You are sending the closing count for <b>${esc(niceDate(DATE))}${DATE===isoAdd(calToday(),-1)?" (last night)":DATE===calToday()?" (tonight)":" (late)"}</b>. Not the right night? Change the date above.</div>
   </div>
-  <div style="margin-top:12px">${wnBtn()}</div>${calHtml()}${catchHtml()}
+  <div style="margin-top:12px">${wnBtn()}</div>${calHtml()}<div id="x89c">${x89Html()}</div>${catchHtml()}
   ${ex?`<div class="banner ${ex.locked?"warn":"info"}" style="margin-top:12px">${ex.locked?"This week is already billed. Your changes will be sent to the office to review.":`A report for this day was already sent${ex.by?` by <b>${esc(ex.by)}</b>`:""}${ex.at?` at ${esc(new Date(ex.at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}))}`:""}. Fix anything below and send again — the new report replaces the old one.`}</div>`:""}
   ${DRAFTED?`<div class="banner info" style="margin-top:12px">We kept the counts and photos you hadn't sent yet.</div>`:""}
   <section class="sec">
@@ -1171,11 +1182,11 @@ function openAdd(){
 }
 function collect(){ WHO=($("#who")||{value:WHO}).value.trim(); NOTE=($("#note")||{value:NOTE}).value; store.set("chaleur.who",WHO);
   return {key:KEY,date:DATE,who:WHO,note:NOTE,lines:ORDER.map(k=>ROWS[k]).filter(r=>r.w!==""||r.b!==""||true).map(r=>({productId:r.productId,colour:r.colour,w:+r.w||0,b:+r.b||0})),photos:{sales:[...PH.sales],display:PH.display,waste:hasWaste()?PH.waste:null},baseAt:(INFO.existing&&INFO.existing.at)||"",
-  wn2:true, covers:covering()?INFO.missed.slice():[], missAns:(MISSOK||[]).slice()}; }
+  wn2:true, covers:covering()?INFO.missed.slice():[], missAns:(MISSOK||[]).slice(), posFix:{...POSFIX}, wasteWhy:ORDER.filter(k=>+ROWS[k].w>0&&WWHY[k]&&WWHY[k].qty===+ROWS[k].w).map(k=>({productId:ROWS[k].productId,colour:ROWS[k].colour,qty:+ROWS[k].w,reason:WWHY[k].reason,note:WWHY[k].note||""}))}; }
 
 async function review(){
   const m=missing(); if(m.length){ status("Still needed: "+m.join(", ")+".",true); const first=!PH.sales.length?"#shot-sales":!PH.display?"#shot-display":hasWaste()&&!PH.waste?"#shot-waste":"#who"; const el=$(first); if(el){el.classList&&el.classList.add("need"); el.scrollIntoView({behavior:"smooth",block:"center"});} return; }
-  keep(); MISSOK=null; { const q=colourSuspects(); if(q.length) return renderColourAsk(q); } { const w=wasteOver(); if(w.length) return renderWasteAsk(w); }
+  keep(); MISSOK=null; { const q=colourSuspects(); if(q.length) return renderColourAsk(q); } { const w=wasteOver(); if(w.length) return renderWasteAsk(w); } { const u=wasteWhyNeed(); if(u.length) return renderWasteWhy(u); }
   const d=collect(); window.scrollTo(0,0);
   $("#app").innerHTML=`${head()}<div class="card" style="text-align:center;padding:26px"><span class="spin"></span><p style="margin:12px 0 0">Reading your sales photo and checking the numbers…</p><p class="hint">This takes a few seconds.</p></div>`;
   $("#bar").hidden=true;
@@ -1186,25 +1197,54 @@ async function review(){
    with two ready answers — "thrown away, I add a waste photo now" (the cakes move to Waste) or "not sure, tell Chaleur" (charged as sold, with a
    note). The screen says plainly that cakes not accounted for are charged as sold. */
 function renderMissAsk(d,miss){ window.scrollTo(0,0); $("#bar").hidden=true;
+  /* v22.89 (Alfred 3 Nov): "if there are unexpected damage or cake missing or wastage, we should ask them for reason with a drop down: Expired cake
+     this dont need explain. damage when delivery, need to attach delivery damage picture and inform upon recieving, damage by staff, no need to ask
+     more, but we will record it." + the POS number can be fixed when the photo was read wrong */
+  const RS=[["","Where did it go? Pick one…"],["expired","Expired — thrown away"],["deliv","Damaged on delivery — thrown away"],["staff","Damaged by staff — thrown away"],["found","Found it — in another chiller or the back"],["unsure","Not sure — charged as sold"]];
   $("#app").innerHTML=`${head()}<div class="card stack"><h3 style="font:700 22px var(--display);margin:0">${miss.length===1?"A cake is":"Some cakes are"} not accounted for</h3>
-    <p class="hint">Your sales report and your count don't add up. <b>Cakes not accounted for are charged as sold.</b> Where did ${miss.length===1?"it":"they"} go?</p>
-    ${miss.map((c,i)=>`<div class="card mq" data-mq="${esc(c.productId)}"><div class="nm">${esc(c.name||prod(c.productId).name)}: <b>${c.diff}</b> not accounted for</div><div class="hint" style="margin:0 0 4px">You had ${c.avail} · sold ${c.sold??0} · waste ${c.waste||0} · left ${c.balance||0}</div>
-      <label class="opt"><input type="radio" name="mq-${i}" value="wasted" checked><span>${c.diff===1?"It was":"They were"} <b>thrown away</b> — I add a waste photo now.</span></label>
-      <label class="opt"><input type="radio" name="mq-${i}" value="unsure"><span><b>Not sure</b> — tell Chaleur (charged as sold).</span></label>
+    <p class="hint">Your sales report and your count don't add up. <b>Cakes not accounted for are charged as sold.</b> Check the POS number first (it is read from your photo), then say where ${miss.length===1?"it":"they"} went.</p>
+    ${miss.map((c,i)=>`<div class="card mq" data-mq="${esc(c.productId)}"><div class="nm">${esc(c.name||prod(c.productId).name)}: <b>${c.diff}</b> not accounted for</div><div class="hint" style="margin:0 0 6px">You had ${c.avail} · waste ${c.waste||0} · left ${c.balance||0}</div>
+      <label class="f">Sold on your POS${c.read!=null&&c.sold!==c.read?` <span style="text-transform:none">(read ${c.read})</span>`:""}<input type="number" inputmode="numeric" min="0" max="999" data-posfix="${esc(c.productId)}" value="${c.sold??0}"></label>
+      <label class="f" style="margin-top:6px">Where did ${c.diff===1?"it":"they"} go?<select id="mq-r-${i}">${RS.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("")}</select></label>
+      <div class="hint" id="mq-h-${i}" style="margin-top:4px"></div>
       <input id="mq-n-${i}" placeholder="What happened? (optional)" style="margin-top:4px"></div>`).join("")}
-    <p class="hint" style="margin:0">Found ${miss.length===1?"it":"them"} in another chiller? Tap <b>Back</b> and add ${miss.length===1?"it":"them"} to <b>Left</b>.</p>
     <div class="row2" style="margin-top:6px"><button class="cb ghost" type="button" id="mq-back">Back</button><button class="cb ok" type="button" id="mq-go">Continue</button></div><div class="st" id="status"></div></div>`;
-  miss.forEach((c,i)=>{ const n=document.getElementById("mq-n-"+i); if(n) n.addEventListener("input",()=>{ const u=document.querySelector(`input[name="mq-${i}"][value="unsure"]`); if(u&&n.value.trim()) u.checked=true; }); });
+  const HT={deliv:"Next time, report it when the delivery arrives: scan the QR on the delivery note. Add the photo of the damaged cakes as the waste photo.",found:"Tap Continue to go back and add it to Left.",unsure:"Chaleur is told, and it is charged as sold."};
+  miss.forEach((c,i)=>{ const r=document.getElementById("mq-r-"+i), h=document.getElementById("mq-h-"+i); if(r) r.addEventListener("change",()=>{ if(h) h.textContent=HT[r.value]||""; }); });
   $("#mq-back").onclick=()=>{ restoreBar(); render(); };
-  $("#mq-go").onclick=()=>{ const ans=miss.map((c,i)=>({productId:c.productId,qty:c.diff,ans:(document.querySelector(`input[name="mq-${i}"]:checked`)||{}).value==="wasted"?"wasted":"unsure",note:((document.getElementById("mq-n-"+i)||{}).value||"").trim()}));
-    const apply=()=>{ for(const a of ans){ if(a.ans!=="wasted") continue;
+  $("#mq-go").onclick=()=>{ const ans=[];
+    for(let i=0;i<miss.length;i++){ const c=miss[i], v=(document.getElementById("mq-r-"+i)||{}).value||""; if(!v){ status(`Pick where the ${c.name||prod(c.productId).name} went.`,true); const el=document.getElementById("mq-r-"+i); if(el) el.focus(); return; }
+      if(v==="found"){ restoreBar(); render(); status(`Add the ${c.name||prod(c.productId).name} you found to Left, then check again.`,true); return; }
+      ans.push({productId:c.productId,qty:c.diff,ans:v,note:((document.getElementById("mq-n-"+i)||{}).value||"").trim()}); }
+    const apply=()=>{ for(const a of ans){ if(a.ans==="unsure") continue;
         let k=ORDER.filter(x=>ROWS[x].productId===a.productId).sort((x,y)=>(+ROWS[y].b||0)-(+ROWS[x].b||0)||(EXP.has(y)?1:0)-(EXP.has(x)?1:0))[0];
-        if(!k){ const s=INFO.stock.find(x=>x.productId===a.productId), col=s?s.colour:COL()[0].name; k=K(a.productId,col); if(!ROWS[k]){ ROWS[k]={productId:a.productId,colour:col,w:"",b:""}; ORDER.push(k); if(!SHOWN.includes(a.productId)) SHOWN.push(a.productId); } }
-        ROWS[k].w=String((+ROWS[k].w||0)+a.qty);
+        if(!k){ const s0=INFO.stock.find(x=>x.productId===a.productId), col=s0?s0.colour:COL()[0].name; k=K(a.productId,col); if(!ROWS[k]){ ROWS[k]={productId:a.productId,colour:col,w:"",b:""}; ORDER.push(k); if(!SHOWN.includes(a.productId)) SHOWN.push(a.productId); } }
+        ROWS[k].w=String((+ROWS[k].w||0)+a.qty); WWHY[k]={reason:{expired:"Expired",deliv:"Damaged on delivery",staff:"Damaged by staff"}[a.ans]||"Thrown away",note:a.note,qty:+ROWS[k].w};
         const c=(PREV.check||[]).find(x=>x.productId===a.productId); if(c){ c.waste=(+c.waste||0)+a.qty; c.diff-=a.qty; } }
       MISSOK=ans; saveDraft(); renderPreview(collect()); };
-    if(ans.some(a=>a.ans==="wasted")&&!PH.waste){ renderWastePhoto(apply); return; }
+    if(ans.some(a=>a.ans!=="unsure")&&!PH.waste){ renderWastePhoto(apply); return; }
     apply(); }; }
+/* v22.89: waste on a cake still in date gets one question (expired cakes need no reason) */
+function wasteWhyNeed(){ return ORDER.filter(k=>{ const r=ROWS[k]; return +r.w>0&&sfOf(r.productId,r.colour)===""&&!(WWHY[k]&&WWHY[k].qty===+r.w); }); }
+function renderWasteWhy(u){ window.scrollTo(0,0); $("#bar").hidden=true;
+  const RS=[["","Why? Pick one…"],["Damaged on delivery","Damaged on delivery"],["Damaged by staff","Damaged by staff"],["Other","Other — I write what happened"]];
+  $("#app").innerHTML=`${head()}<div class="card stack"><h3 style="font:700 22px var(--display);margin:0">Waste on cakes still in date</h3>
+    <p class="hint">${u.length===1?"This cake is":"These cakes are"} not past ${u.length===1?"its":"their"} shelf life yet. Why ${u.length===1?"was it":"were they"} thrown away? (Expired cakes need no reason.)</p>
+    ${u.map((k,i)=>{ const r=ROWS[k]; return `<div class="card" style="padding:12px;margin:0"><div style="font-weight:700;margin-bottom:6px">${esc(prod(r.productId).name)} · ${esc(capw(r.colour))} · waste <b>${+r.w}</b></div>
+      <select id="ww-r-${i}">${RS.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("")}</select><div class="hint" id="ww-h-${i}" style="margin-top:4px"></div>
+      <input id="ww-n-${i}" placeholder="What happened? (optional)" style="margin-top:4px"></div>`; }).join("")}
+    <div class="row2" style="margin-top:6px"><button class="cb ghost" type="button" id="ww-back">Back</button><button class="cb ok" type="button" id="ww-go">Continue</button></div><div class="st" id="status"></div></div>`;
+  u.forEach((k,i)=>{ const r=document.getElementById("ww-r-"+i), h=document.getElementById("ww-h-"+i), n=document.getElementById("ww-n-"+i); if(r) r.addEventListener("change",()=>{ if(h) h.textContent=r.value==="Damaged on delivery"?"Next time, report it when the delivery arrives: scan the QR on the delivery note. The waste photo must show the damaged cakes.":""; if(n) n.placeholder=r.value==="Other"?"What happened? (needed)":"What happened? (optional)"; }); });
+  $("#ww-back").onclick=()=>{ restoreBar(); render(); };
+  $("#ww-go").onclick=()=>{ for(let i=0;i<u.length;i++){ const k=u[i], v=(document.getElementById("ww-r-"+i)||{}).value||"", n=((document.getElementById("ww-n-"+i)||{}).value||"").trim();
+      if(!v){ status(`Pick why the ${prod(ROWS[k].productId).name} was thrown away.`,true); return; } if(v==="Other"&&n.length<3){ status("Write what happened.",true); const el=document.getElementById("ww-n-"+i); if(el) el.focus(); return; }
+      WWHY[k]={reason:v,note:n,qty:+ROWS[k].w}; }
+    saveDraft(); review(); }; }
+/* v22.89: the POS numbers read from the photo can be fixed */
+function posApply(){ for(const c of (PREV&&PREV.check)||[]){ if(c.read==null) c.read=c.sold==null?0:+c.sold; const f=POSFIX[c.productId]; c.sold=f!=null?f:c.read; c.diff=(+c.avail||0)-(+c.waste||0)-(+c.balance||0)-(+c.sold||0); } }
+function posIn(c){ return `<input type="number" inputmode="numeric" min="0" max="999" class="posin" data-posfix="${esc(c.productId)}" value="${c.sold??0}" aria-label="Sold on the POS: ${esc(c.name||prod(c.productId).name)}">${c.read!=null&&c.sold!==c.read?`<div class="hint">read ${c.read}</div>`:""}`; }
+document.addEventListener("change",e=>{ const t=e.target; if(!t||!t.matches||!t.matches("[data-posfix]")||!PREV) return; const q=parseInt(t.value,10); if(!(q>=0&&q<=999)){ t.value=""; return; }
+  const c=(PREV.check||[]).find(x=>x.productId===t.dataset.posfix); if(!c) return; if(c.read==null) c.read=c.sold==null?0:+c.sold; if(q===c.read) delete POSFIX[t.dataset.posfix]; else POSFIX[t.dataset.posfix]=q; MISSOK=null; renderPreview(collect()); });
 function renderWastePhoto(then){ window.scrollTo(0,0); $("#bar").hidden=true;
   $("#app").innerHTML=`${head()}<div class="card stack"><h3 style="font:700 22px var(--display);margin:0">Add the waste photo</h3>
     <p class="hint">A photo of the cakes you threw away (in the bin or the waste bag).</p>
@@ -1212,6 +1252,7 @@ function renderWastePhoto(then){ window.scrollTo(0,0); $("#bar").hidden=true;
     <div class="row2" style="margin-top:6px"><button class="cb ghost" type="button" id="wp-back">Back</button></div><div class="st" id="status"></div></div>`;
   AFTER_PHOTO=then; $("#wp-back").onclick=()=>{ AFTER_PHOTO=null; restoreBar(); render(); }; }
 function renderPreview(d){
+  posApply();
   const r=PREV.read||{}, ch=PREV.check||[], probs=ch.filter(c=>c.diff);
   { const miss=r.ok?ch.filter(c=>c.diff>0):[]; if(miss.length&&!MISSOK) return renderMissAsk(d,miss); }
   const unsure=(MISSOK||[]).filter(a=>a.ans==="unsure");
@@ -1224,10 +1265,10 @@ function renderPreview(d){
     ${r.ok?(probs.filter(c=>!(c.diff>0&&unsure.some(a=>a.productId===c.productId))).length?`<div class="banner warn"><b>${probs.length} cake${probs.length>1?"s don't":" doesn't"} add up.</b> Please recount these, or tap <b>Edit</b>. If your count is right, send anyway and add a note.</div>`:unsure.length?"":`<div class="banner info">✓ Everything adds up with your sales report.</div>`)
       :`<div class="banner info">${esc(r.note||"The sales photo will be checked by the office.")}</div>`}
     ${(()=>{const bad=d.lines.filter(l=>l.b>0&&sfOf(l.productId,l.colour)==="bad");return bad.length?`<div class="banner warn">${bad.map(l=>`${esc(prod(l.productId).name)} ${esc(l.colour)}`).join(", ")}: counted as <b>Left</b> but past shelf life. Please throw them away and move them to <b>Waste</b> (tap Edit).</div>`:"";})()}
-    <div style="overflow-x:auto"><table><thead><tr><th>Cake</th>${r.ok?"<th>Sold</th>":""}<th>Waste</th><th>Left</th>${r.ok?"<th>Check</th>":""}</tr></thead><tbody>
-    ${(ch.length?ch:aggregate(d.lines)).map(c=>`<tr><td>${esc(c.name||prod(c.productId).name)}</td>${r.ok?`<td>${c.sold??0}</td>`:""}<td>${c.waste||""}</td><td>${c.balance||""}</td>${r.ok?`<td>${c.diff?`<span class="pill warn">${c.diff>0?c.diff+" missing":(-c.diff)+" extra"}</span>`:`<span class="pill ok">OK</span>`}</td>`:""}</tr>`).join("")||`<tr><td colspan="5" class="hint">No cakes counted.</td></tr>`}
+    <div style="overflow-x:auto"><table><thead><tr><th>Cake</th>${r.ok?"<th>Sold (POS)</th>":""}<th>Waste</th><th>Left</th>${r.ok?"<th>Check</th>":""}</tr></thead><tbody>
+    ${(ch.length?ch:aggregate(d.lines)).map(c=>`<tr><td>${esc(c.name||prod(c.productId).name)}</td>${r.ok?`<td>${posIn(c)}</td>`:""}<td>${c.waste||""}</td><td>${c.balance||""}</td>${r.ok?`<td>${c.diff?`<span class="pill warn">${c.diff>0?c.diff+" missing":(-c.diff)+" extra"}</span>`:`<span class="pill ok">OK</span>`}</td>`:""}</tr>`).join("")||`<tr><td colspan="5" class="hint">No cakes counted.</td></tr>`}
     </tbody></table></div>
-    <p class="hint">Total waste <b>${tot("w")+wnList().reduce((a,e)=>a+(+e.qty||0),0)}</b>${wnList().length?` (${wnList().reduce((a,e)=>a+(+e.qty||0),0)} recorded during the day)`:""} · total left <b>${tot("b")}</b>${r.ok?` · sold <b>${Object.values(r.sold||{}).reduce((a,b)=>a+b,0)}</b>`:""}</p>
+    <p class="hint">Total waste <b>${tot("w")+wnList().reduce((a,e)=>a+(+e.qty||0),0)}</b>${wnList().length?` (${wnList().reduce((a,e)=>a+(+e.qty||0),0)} recorded during the day)`:""} · total left <b>${tot("b")}</b>${r.ok?` · sold <b>${(PREV.check||[]).reduce((a,c)=>a+(+c.sold||0),0)}</b>${r.ok?`<br><b>Sold (POS)</b> is read from your sales photo. Read wrong? Fix the number in the table. Chaleur sees what was read and what you typed.`:""}`:""}</p>
     ${r.ok&&(r.other||[]).length?`<p class="hint">Also on the sales report (not matched to our cakes): ${r.other.map(o=>esc(o.seen)+" ×"+o.qty).join(", ")}</p>`:""}
     ${r.ok&&r.note?`<p class="hint">Note from the reader: ${esc(r.note)}</p>`:""}
     ${(()=>{const bad=(PREV.photos||[]).filter(x=>!x.ok);return bad.length?`<div class="banner warn"><b>${bad.length===1?"This photo doesn't":"These photos don't"} look right:</b><br>${bad.map(x=>`${esc(x.label)}: ${esc(x.why)}`).join("<br>")}<br>Please tap <b>Edit</b> and take ${bad.length===1?"it":"them"} again. If the photo is right, you can still send; Chaleur will check it.</div>`:"";})()}
@@ -1247,6 +1288,125 @@ const DECL_DEFAULT="I confirm that this closing count — waste, cakes left and 
 function aggregate(lines){const by={};lines.forEach(l=>{const x=by[l.productId]||(by[l.productId]={productId:l.productId,waste:0,balance:0});x.waste+=l.w;x.balance+=l.b;});return Object.values(by);}
 
 function restoreBar(){$("#bar .in").innerHTML=`<div class="st" id="status"></div><button class="cb big full" id="next" type="button">Send tonight's count</button>`;$("#next").onclick=review;}
+/* ---- v22.89 (Alfred 3 Nov): "leave it in the do with a qr, if they recieved something wrong they can scan and report back and ask for changes and tell
+   reason, if nothing wrong they will just do as it is" → the QR on the delivery note opens #do=<DO number>: what came, why, send; Chaleur approves.
+   "the weakly sales … submit by the week. example last weak mon to sun (date from … to …)" → #week: last week's POS sales, Mon–Sun with the dates. ---- */
+let D89=null, W89=null, WKI=null, H89=true;
+const o89=()=>{ let el=document.getElementById("ov89"); if(!el){ el=document.createElement("div"); el.id="ov89"; document.body.appendChild(el); } return el; };
+const n89=iso=>{ try{ const d=new Date(iso+"T00:00:00"); return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}); }catch(e){ return iso; } };
+const at89=iso=>{ try{ return new Date(iso).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"}).replace(",",""); }catch(e){ return ""; } };
+function x89Html(){ const w=WKI; let h="";
+  if(w&&!w.needLink){ h+=w.sent?`<button class="cb ghost full" type="button" data-wk89="1" style="margin-top:12px">📊 Weekly sales sent ✓ <small style="font-weight:500;color:var(--muted)">· ${esc(n89(w.from))} – ${esc(n89(w.to))}</small></button>`
+    :`<div class="banner warn" style="margin-top:12px"><b>📊 Weekly sales: please send last week's sales</b><br>Mon ${esc(n89(w.from).replace(/^\w+ /,""))} – Sun ${esc(n89(w.to).replace(/^\w+ /,""))}. Snap the POS sales report for the week, or type it per cake.<div style="margin-top:8px"><button class="cb sm" type="button" data-wk89="1">Send last week's sales</button></div></div>`; }
+  return h+`<button class="cb ghost full" type="button" data-do89="" style="margin-top:12px">📦 Delivery not right? <small style="font-weight:500;color:var(--muted)">· scan the QR on the delivery note</small></button>`; }
+async function x89Init(){ try{ WKI=await run("weekSalesInfo",KEY); }catch(e){ WKI=null; } const c=document.getElementById("x89c"); if(c) c.innerHTML=x89Html(); hash89(); }
+function hash89(){ if(!H89) return; H89=false; const h=location.hash||""; const m=/^#do=(.+)$/.exec(h); if(m) return doOpen(decodeURIComponent(m[1])); if(h==="#week") return wkOpen(); }
+function x89Close(){ D89=null; W89=null; o89().innerHTML=""; try{ if(/^#do=|^#week/.test(location.hash)) history.replaceState(null,"",location.pathname+location.search); }catch(e){} }
+const sh89=(title,body,foot)=>`<div class="sheet" data-x89="1"><div class="box stack" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 style="font:700 22px var(--display);margin:0">${title}</h3><button class="cb ghost sm" type="button" data-x89="1">Close</button></div>${body}${foot||""}</div></div>`;
+/* ---- the delivery check ---- */
+async function doOpen(no){ D89={no:String(no||"").trim(),info:null,err:"",busy:false,got:{},add:[],reason:"",other:"",note:"",edit:false,ok:"",photo:null}; doDraw(); if(D89.no) doLoad(); }
+async function doLoad(){ const D=D89; if(!D) return; D.err=""; D.info=null; doDraw();
+  try{ const r=await run("outletDo",KEY,D.no); if(D!==D89) return; if(r&&r.needLink){ D.err="This link is not valid. Please ask Chaleur for your outlet's link."; } else { D.info=r; D.got={}; (r.do.lines||[]).forEach(l=>{ const v=l.accepted!=null?l.accepted:l.qty; D.got[l.productId]=(D.got[l.productId]||0)+v; }); D.base={...D.got}; } }
+  catch(e){ if(D===D89) D.err=(e&&e.message)||"Could not load. Check your internet and try again."; } doDraw(); }
+function doIssueHtml(is,I){ if(!is) return ""; const nm=id=>{ const p=(I.products||[]).find(x=>x.id===id); return p?p.name:id; }, L=(is.lines||[]).map(x=>`${esc(nm(x.productId))} ${x.sent} → <b>${x.got}</b>`).join(" · ");
+  if(is.status==="open") return `<div class="banner info" style="margin:0"><b>Sent to Chaleur</b> ${esc(at89(is.at))}${is.who?` by ${esc(is.who)}`:""} — waiting for Chaleur to check.<br>${L}<br><span class="hint">Why: ${esc(is.reason)}${is.note?` — ${esc(is.note)}`:""}</span></div>`;
+  if(is.status==="approved") return `<div class="banner info" style="margin:0"><b>✓ Fixed by Chaleur</b>${is.by?` (${esc(is.by)})`:""}: the delivery now shows what you received.<br>${L}${is.reply?`<br><span class="hint">${esc(is.reply)}</span>`:""}</div>`;
+  return `<div class="banner warn" style="margin:0"><b>Not changed — Chaleur says:</b> ${esc(is.reply||"")}<br><span class="hint">Your report: ${L}</span></div>`; }
+function doDraw(){ const box=o89(), D=D89; if(!D){ box.innerHTML=""; return; } const I=D.info; let b="";
+  if(!D.no) b=`<p class="hint" style="margin:0">Scan the QR on the delivery note, or type the DO number printed on it.</p><label class="f">DO number<input id="do89-no" placeholder="e.g. DO-C-26040" autocapitalize="characters" value=""></label><button class="cb" type="button" data-do89go="1">Open</button>`;
+  else if(D.err) b=`<div class="banner warn" style="margin:0">${esc(D.err)}</div><button class="cb ghost" type="button" data-do89="">Type another DO number</button>`;
+  else if(!I) b=`<div class="empty"><span class="spin"></span> Loading the delivery…</div>`;
+  else { const O=I.do, is=O.issue, form=!is||is.status!=="open"||D.edit, P=I.products||[], nm=id=>{ const p=P.find(x=>x.id===id); return p?p.name:id; };
+    const rows={}; (O.lines||[]).forEach(l=>{ const r=rows[l.productId]||(rows[l.productId]={id:l.productId,name:l.name,on:0}); r.on+=l.accepted!=null?l.accepted:l.qty; });
+    const R=Object.values(rows), onIds=R.map(r=>r.id), avail=P.filter(p=>!onIds.includes(p.id)&&!D.add.some(a=>a.id===p.id));
+    b=`<p style="margin:0"><b>${esc(O.no)}</b> · ${esc(n89(O.date))} · ${esc(I.outlet.name)}</p>${O.billed?`<div class="banner warn" style="margin:0">This week is already billed. Chaleur will fix it on the next bill.</div>`:""}${doIssueHtml(is,I)}`;
+    if(!form) b+=`<p class="hint" style="margin:0">Count your cakes as they really are tonight.</p><button class="cb ghost" type="button" data-do89edit="1">Change my report</button>`;
+    else b+=`<p class="hint" style="margin:0"><b>All correct?</b> Nothing to do — just close this. <b>Something different?</b> Type what really came, say why, and send.</p>
+      <div class="rtw89"><table class="t89"><thead><tr><th>Cake</th><th class="r">On the DO</th><th class="r">We got</th></tr></thead><tbody>${R.map(r=>`<tr${+D.got[r.id]!==r.on?` class="d89"`:""}><td>${esc(r.name)}</td><td class="r">${r.on}</td><td class="r"><input type="number" inputmode="numeric" min="0" max="99" data-do89q="${esc(r.id)}" value="${esc(D.got[r.id])}" aria-label="${esc(r.name)}: how many came"></td></tr>`).join("")}
+      ${D.add.map((a,i)=>`<tr class="d89"><td>${esc(nm(a.id))} <small class="hint">not on the DO</small> <button type="button" class="lnk89" data-do89rm="${i}" aria-label="Remove">✕</button></td><td class="r">0</td><td class="r"><input type="number" inputmode="numeric" min="1" max="99" data-do89a="${i}" value="${esc(a.q)}" aria-label="${esc(nm(a.id))}: how many came"></td></tr>`).join("")}</tbody></table></div>
+      ${avail.length?`<label class="f">A cake that came but is not on the DO<select data-do89add="1"><option value="">Pick the cake…</option>${avail.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}</select></label>`:""}
+      <div class="eb">Why?</div><div class="chips">${(I.reasons||[]).concat(["Other"]).map(x=>`<button type="button" class="chip" data-do89r="${esc(x)}" aria-pressed="${D.reason===x}">${esc(x)}</button>`).join("")}</div>
+      ${D.reason==="Other"?`<input id="do89-other" value="${esc(D.other)}" placeholder="What happened? (needed)">`:""}
+      ${/damag/i.test(D.reason)?`<div class="eb">Photo of the damaged cakes (needed)</div><div class="ph89">${D.photo?`<figure><img src="${D.photo}" alt="Damaged cakes"><button type="button" data-do89phx="1" aria-label="Remove photo">✕</button></figure>`:`<button type="button" class="pt" data-do89pick="1"><span class="mk">📷</span><span class="lb">Add photo</span></button>`}</div><input type="file" accept="image/*" hidden id="do89-f">`:""}
+      <input id="do89-note" value="${esc(D.note)}" placeholder="Anything to add? (optional)">
+      <label class="f">Your name<input id="do89-who" value="${esc(WHO)}" placeholder="e.g. Aina" autocomplete="name"></label>`;
+    b+=`<div class="st" id="do89-st" role="status">${D.err2?`<span class="err">${esc(D.err2)}</span>`:D.ok?esc(D.ok):""}</div>`;
+    if(form) b+=`<div class="row2"><button class="cb ghost" type="button" data-x89="1">Close</button><button class="cb ok" type="button" data-do89send="1" ${D.busy?"disabled":""}>${D.busy?"Sending…":"Send to Chaleur"}</button></div>`; }
+  box.innerHTML=sh89("📦 Delivery check",b); }
+function doCollect(){ const D=D89; if(!D) return; document.querySelectorAll("[data-do89q]").forEach(i=>{ D.got[i.dataset.do89q]=i.value; }); document.querySelectorAll("[data-do89a]").forEach(i=>{ const a=D.add[+i.dataset.do89a]; if(a) a.q=i.value; });
+  const g=id=>{ const el=document.getElementById(id); return el?el.value:null; }; const o=g("do89-other"), n=g("do89-note"), w=g("do89-who"); if(o!=null) D.other=o; if(n!=null) D.note=n; if(w!=null){ WHO=w.trim(); store.set("chaleur.who",WHO); } }
+async function doSend(){ const D=D89; if(!D||!D.info||D.busy) return; doCollect(); D.err2=""; D.ok="";
+  const st=m=>{ D.err2=m; doDraw(); }, lines=[];
+  for(const [id,v] of Object.entries(D.got)){ const q=parseInt(v,10); if(!(q>=0&&q<=99)) return st("How many came: a whole number for every cake (0 if none came)."); lines.push({productId:id,got:q}); }
+  for(const a of D.add){ const q=parseInt(a.q,10); if(!(q>=1&&q<=99)) return st("How many of the cake not on the DO came?"); lines.push({productId:a.id,got:q}); }
+  if(!lines.some(l=>l.got!==(D.base[l.productId]||0))) return st("Nothing is different from the DO. If everything came, just close this.");
+  if(!D.reason) return st("Tap why."); const why=D.reason==="Other"?D.other.trim():D.reason; if(why.length<3) return st("Write what happened.");
+  if(/damag/i.test(D.reason)&&!D.photo) return st("Add a photo of the damaged cakes.");
+  if((WHO||"").trim().length<2) return st("Write your name.");
+  D.busy=true; doDraw();
+  try{ const r=await run("outletDoReport",KEY,D.no,WHO.trim(),lines,why,D.note.trim(),/damag/i.test(D.reason)?D.photo:null); if(D!==D89) return; D.info=r; D.edit=false; D.add=[]; D.photo=null; D.ok="✓ Sent. Chaleur will check it and fix the delivery."; }
+  catch(e){ D.err2=(e&&e.message)||"Not sent. Check your internet and try again."; } D.busy=false; doDraw(); }
+/* ---- weekly sales ---- */
+async function wkOpen(){ W89={info:WKI,err:"",busy:false,again:false,photos:[],vals:{},add:[],note:"",reading:false,read:null,ok:""}; wkDraw();
+  try{ const r=await run("weekSalesInfo",KEY); if(!W89) return; W89.info=WKI=r; const c=document.getElementById("x89c"); if(c) c.innerHTML=x89Html(); }catch(e){ if(W89&&!W89.info) W89.err=(e&&e.message)||"Could not load. Check your internet and try again."; } wkDraw(); }
+function wkDraw(){ const box=o89(), W=W89; if(!W){ box.innerHTML=""; return; } const I=W.info; let b="";
+  if(W.err&&!I) b=`<div class="banner warn" style="margin:0">${esc(W.err)}</div>`;
+  else if(!I) b=`<div class="empty"><span class="spin"></span> Loading…</div>`;
+  else { const wk=`Mon ${esc(n89(I.from).replace(/^\w+ /,""))} – Sun ${esc(n89(I.to).replace(/^\w+ /,""))}`, nm=id=>{ const c=(I.cakes||[]).find(x=>x.id===id)||((INFO&&INFO.products)||[]).find(x=>x.id===id); return c?c.name:id; };
+    b=`<p style="margin:0"><b>Last week: ${wk}</b> · ${esc(I.outlet.name)}</p>`;
+    if(I.sent&&!W.again){ const L=Object.entries(I.sent.lines||{}); b+=`<div class="banner info" style="margin:0"><b>✓ Sent</b> ${esc(at89(I.sent.at))}${I.sent.by?` by ${esc(I.sent.by)}`:""} · ${I.sent.photos} photo${I.sent.photos===1?"":"s"}</div>
+      <div class="rtw89"><table class="t89"><thead><tr><th>Cake</th><th class="r">Sold (POS)</th></tr></thead><tbody>${L.map(([id,q])=>`<tr><td>${esc(nm(id))}</td><td class="r">${q}</td></tr>`).join("")}</tbody><tfoot><tr><td><b>Total</b></td><td class="r"><b>${L.reduce((a,x)=>a+x[1],0)}</b></td></tr></tfoot></table></div>
+      <p class="hint" style="margin:0">Chaleur compares it with your nightly counts before the weekly bill.</p><button class="cb ghost" type="button" data-wk89again="1">Send again (replaces it)</button>`; }
+    else { const ids=(I.cakes||[]).map(c=>c.id).concat(W.add), others=((INFO&&INFO.products)||[]).filter(p=>!ids.includes(p.id));
+      b+=`<div class="eb">1 · Photo of the POS sales report for ${wk}</div><p class="hint" style="margin:0">One report for the whole week, or the 7 daily reports (up to 8 photos).</p>
+      <div class="ph89">${W.photos.map((p,i)=>`<figure><img src="${p}" alt="Sales report ${i+1}"><button type="button" data-wk89rm="${i}" aria-label="Remove photo ${i+1}">✕</button></figure>`).join("")}${W.photos.length<8?`<button type="button" class="pt" data-wk89pick="1"><span class="mk">📷</span><span class="lb">${W.photos.length?"Add another":"Add photo"}</span></button>`:""}</div>
+      <input type="file" accept="image/*" multiple hidden id="wk89-f">
+      ${I.reader&&W.photos.length?`<button class="cb ghost" type="button" data-wk89read="1" ${W.reading?"disabled":""}>${W.reading?"Reading the photos…":"Read the numbers from the photos"}</button>`:""}
+      ${W.read?`<div class="banner ${W.read.ok?"info":"warn"}" style="margin:0">${W.read.ok?"Filled in from the photos — check every number against the report.":"Could not read the photos. Type the numbers."}${(W.read.other||[]).length?`<br><span class="hint">Also on the report, not matched: ${W.read.other.map(x=>esc(x.seen)+" "+(+x.qty||0)).join(", ")}</span>`:""}${W.read.note?`<br><span class="hint">${esc(W.read.note)}</span>`:""}</div>`:""}
+      <div class="eb">2 · Sold per cake (from the POS)</div>
+      <div class="rtw89"><table class="t89"><thead><tr><th>Cake</th><th class="r">Sold</th></tr></thead><tbody>${ids.map(id=>`<tr><td>${esc(nm(id))}</td><td class="r"><input type="number" inputmode="numeric" min="0" max="9999" data-wk89q="${esc(id)}" value="${esc(W.vals[id]==null?"":W.vals[id])}" placeholder="0" aria-label="${esc(nm(id))}: sold last week"></td></tr>`).join("")}</tbody></table></div>
+      ${others.length?`<label class="f">Another cake<select data-wk89add="1"><option value="">Pick the cake…</option>${others.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}</select></label>`:""}
+      <input id="wk89-note" value="${esc(W.note)}" placeholder="Anything to add? (optional)">
+      <label class="f">Your name<input id="wk89-who" value="${esc(WHO)}" placeholder="e.g. Aina" autocomplete="name"></label>
+      <div class="st" id="wk89-st" role="status">${W.err?`<span class="err">${esc(W.err)}</span>`:W.ok?esc(W.ok):""}</div>
+      <div class="row2"><button class="cb ghost" type="button" data-x89="1">Close</button><button class="cb ok" type="button" data-wk89send="1" ${W.busy?"disabled":""}>${W.busy?"Sending…":"Send to Chaleur"}</button></div>`; } }
+  box.innerHTML=sh89("📊 Weekly sales",b); }
+function wkCollect(){ const W=W89; if(!W) return; document.querySelectorAll("[data-wk89q]").forEach(i=>{ W.vals[i.dataset.wk89q]=i.value; }); const n=document.getElementById("wk89-note"), w=document.getElementById("wk89-who"); if(n) W.note=n.value; if(w){ WHO=w.value.trim(); store.set("chaleur.who",WHO); } }
+async function wkRead(){ const W=W89; if(!W||W.reading) return; wkCollect(); W.reading=true; W.err=""; wkDraw();
+  try{ const r=await run("weekSalesRead",KEY,W.info.ws,W.photos); if(W!==W89) return; W.read=r; if(r.ok){ for(const id of Object.keys(W.vals)) if(W.vals[id]===""||W.vals[id]==null) W.vals[id]=0; Object.entries(r.sold||{}).forEach(([id,q])=>{ if(!(W.info.cakes||[]).some(c=>c.id===id)&&!W.add.includes(id)) W.add.push(id); W.vals[id]=q; }); (W.info.cakes||[]).forEach(c=>{ if(W.vals[c.id]===""||W.vals[c.id]==null) W.vals[c.id]=0; }); } }
+  catch(e){ if(W===W89) W.err=(e&&e.message)||"Could not read. Type the numbers."; } if(W===W89){ W.reading=false; wkDraw(); } }
+async function wkSend(){ const W=W89; if(!W||W.busy) return; wkCollect(); W.err=""; W.ok=""; const st=m=>{ W.err=m; wkDraw(); };
+  if(!W.photos.length) return st("Add the photo of the POS sales report first."); const L={}; let n=0;
+  for(const [id,v] of Object.entries(W.vals)){ if(v===""||v==null) continue; const q=parseInt(v,10); if(!(q>=0&&q<=9999)) return st("Sold: whole numbers only."); L[id]=q; n++; }
+  const miss=(W.info.cakes||[]).filter(c=>W.vals[c.id]===""||W.vals[c.id]==null); if(!n) return st("Type how many of each cake the POS shows for the week (0 if none).");
+  if(miss.length) return st("Type a number for every cake (0 if none): "+miss.map(c=>c.name).join(", ")+".");
+  if((WHO||"").trim().length<2) return st("Write your name.");
+  W.busy=true; wkDraw();
+  try{ const r=await run("weekSalesSubmit",KEY,W.info.ws,WHO.trim(),L,W.photos,W.note.trim(),!!(W.read&&W.read.ok)); if(W!==W89) return; W.info=WKI=r; W.again=false; W.photos=[]; W.ok=""; const c=document.getElementById("x89c"); if(c) c.innerHTML=x89Html(); }
+  catch(e){ if(W===W89) W.err=(e&&e.message)||"Not sent. Check your internet and try again."; } if(W===W89){ W.busy=false; wkDraw(); } }
+document.addEventListener("click",e=>{ const t=e.target&&e.target.closest?e.target:null; if(!t) return; const g=s=>t.closest(s);
+  const x=g("[data-x89]"); if(x&&(x.tagName==="BUTTON"||e.target===x)){ x89Close(); return; }
+  const d=g("[data-do89]"); if(d){ doOpen(d.dataset.do89||""); return; }
+  if(g("[data-do89go]")){ const v=(document.getElementById("do89-no")||{value:""}).value.trim().toUpperCase(); if(v){ D89.no=v; doLoad(); } return; }
+  if(g("[data-do89edit]")&&D89){ D89.edit=true; D89.ok=""; doDraw(); return; }
+  const r=g("[data-do89r]"); if(r&&D89){ doCollect(); D89.reason=r.dataset.do89r; doDraw(); return; }
+  const rm=g("[data-do89rm]"); if(rm&&D89){ doCollect(); D89.add.splice(+rm.dataset.do89rm,1); doDraw(); return; }
+  if(g("[data-do89send]")){ doSend(); return; }
+  if(g("[data-do89pick]")){ const f=document.getElementById("do89-f"); if(f){ doCollect(); f.click(); } return; }
+  if(g("[data-do89phx]")&&D89){ doCollect(); D89.photo=null; doDraw(); return; }
+  if(g("[data-wk89]")){ wkOpen(); return; }
+  if(g("[data-wk89again]")&&W89){ W89.again=true; W89.vals={...(W89.info.sent&&W89.info.sent.lines||{})}; wkDraw(); return; }
+  if(g("[data-wk89pick]")){ const f=document.getElementById("wk89-f"); if(f){ wkCollect(); f.click(); } return; }
+  const wr=g("[data-wk89rm]"); if(wr&&W89){ wkCollect(); W89.photos.splice(+wr.dataset.wk89rm,1); wkDraw(); return; }
+  if(g("[data-wk89read]")){ wkRead(); return; }
+  if(g("[data-wk89send]")){ wkSend(); return; } });
+document.addEventListener("change",async e=>{ const t=e.target; if(!t||!t.matches) return;
+  if(t.matches("[data-do89add]")&&D89&&t.value){ doCollect(); D89.add.push({id:t.value,q:"1"}); doDraw(); return; }
+  if(t.matches("[data-wk89add]")&&W89&&t.value){ wkCollect(); W89.add.push(t.value); wkDraw(); return; }
+  if(t.id==="do89-f"&&D89&&t.files&&t.files[0]){ doCollect(); try{ D89.photo=await shrink(t.files[0],1400); }catch(x){} doDraw(); return; }
+  if(t.id==="wk89-f"&&W89){ wkCollect(); const fs=[...(t.files||[])].slice(0,8-W89.photos.length); for(const f of fs){ try{ W89.photos.push(await shrink(f,1600)); }catch(x){} } W89.read=null; wkDraw(); } });
+document.addEventListener("input",e=>{ const t=e.target; if(t&&t.matches&&t.matches("[data-do89q]")){ const tr=t.closest("tr"); if(tr&&D89&&D89.base) tr.classList.toggle("d89",String(+t.value)!==String(D89.base[t.dataset.do89q])); } });
+window.addEventListener("hashchange",()=>{ H89=true; if(KEY&&INFO) hash89(); });
 async function send(d){
   if(SENDING) return; SENDING=true; $("#send").disabled=true; $("#edit").disabled=true; status("Sending report and photos… keep this page open.");
   try{
