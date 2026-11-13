@@ -65,15 +65,21 @@ function todayIso_() { return iso_(now_()); }
 function stamp_() { return Utilities.formatDate(now_(), TZ, 'yyyy-MM-dd HH:mm:ss'); }
 function clean_(s, n) { return String(s == null ? '' : s).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n || 200); }
 const MEMO_ = {};
+/* sheet snapshot cached in CacheService (2 min); every write clears it */
+function rowsKey_(name) { return 'rows2_' + name; }
+function dropRows_(name) { delete MEMO_[name]; try { CacheService.getScriptCache().remove(rowsKey_(name)); } catch (e) {} }
+let FRESH_ = false; // writers read the sheet itself, never the cached copy
 function rows_(name) {
   if (MEMO_[name]) return MEMO_[name].map(o => Object.assign({}, o));
+  if (!FRESH_) try { const c = CacheService.getScriptCache().get(rowsKey_(name)); if (c) { MEMO_[name] = JSON.parse(c); return MEMO_[name].map(o => Object.assign({}, o)); } } catch (e) {}
   const sh = sheet_(name), v = sh.getDataRange().getValues(), h = v[0];
   const f = d => (d.getHours() || d.getMinutes() || d.getSeconds()) ? Utilities.formatDate(d, TZ, 'yyyy-MM-dd HH:mm:ss') : iso_(d);
   MEMO_[name] = v.slice(1).map((r, i) => { const o = { _row: i + 2 }; h.forEach((k, j) => { o[k] = r[j] instanceof Date ? f(r[j]) : r[j]; }); return o; });
+  try { const js = JSON.stringify(MEMO_[name]); if (js.length < 95000) CacheService.getScriptCache().put(rowsKey_(name), js, 120); } catch (e) {}
   return MEMO_[name].map(o => Object.assign({}, o));
 }
 function setRow_(name, row, obj) {
-  delete MEMO_[name];
+  dropRows_(name);
   const sh = sheet_(name), h = HEAD[name];
   sh.getRange(row, 1, 1, h.length).setValues([h.map(k => obj[k] == null ? '' : obj[k])]);
 }
@@ -154,6 +160,7 @@ function catalog() { return CATALOG.map(p => ({ sku: p.sku, code: p.code, name: 
 
 /* ---------- batches ---------- */
 function newBatch(tok, sku, ctype, count, made) {
+  FRESH_ = true;
   const u = user_(tok), p = product_(sku);
   const ct = p.ct.find(c => c.t === ctype); if (!ct) throw new Error('Pick a carton type.');
   count = Math.floor(+count);
@@ -168,12 +175,12 @@ function newBatch(tok, sku, ctype, count, made) {
     const used = rows_('Batches').filter(b => b.code === p.code && String(b.made) === made).map(b => String(b.run));
     let run = 'A'; while (used.indexOf(run) >= 0) run = String.fromCharCode(run.charCodeAt(0) + 1);
     const batch = p.code + '-' + ymd + '-' + run, bb = addMonths_(made, SHELF_MONTHS), at = stamp_();
-    delete MEMO_.Batches; delete MEMO_.Cartons;
+    dropRows_('Batches'); dropRows_('Cartons');
     sheet_('Batches').appendRow(HEAD.Batches.map(k => ({ batch: batch, sku: p.sku, code: p.code, name: p.name, ctype: ct.t, pcs: ct.pcs, cartons: count, made: made, bestBefore: bb, run: run, status: 'open', createdBy: u.name, createdAt: at, closedBy: '', closedAt: '', packed: 0, voided: '', madeChanged: made !== today ? 'yes' : '' })[k]));
     const w = String(count).length < 2 ? 2 : String(count).length;
     const cr = [];
     for (let i = 1; i <= count; i++) { const n = ('000' + i).slice(-w); cr.push([batch + '-' + n, batch, i, count, 'printed', '', '', '', '', 'HQ Freezer', at]); }
-    const sh = sheet_('Cartons'); sh.getRange(sh.getLastRow() + 1, 1, cr.length, cr[0].length).setValues(cr);
+    const sh = sheet_('Cartons'); sh.getRange(sh.getLastRow() + 1, 1, cr.length, cr[0].length).setValues(cr); dropRows_('Batches'); dropRows_('Cartons');
     log_(u.name, 'new batch', batch, { sku: sku, ctype: ct.t, count: count, made: made });
     return batchGet(tok, batch);
   } finally { lock.releaseLock(); }
@@ -192,10 +199,11 @@ function batchGet(tok, id) {
 }
 /* print history: one row per PDF download. kind = 'all' | 'reprint' */
 function printLog(tok, batch, ns, kind) {
+  FRESH_ = true;
   const u = user_(tok), b = rows_('Batches').find(x => x.batch === batch); if (!b) throw new Error('Batch not found.');
   ns = (ns || []).map(Number).filter(n => n >= 1 && n <= 999).sort((a, c) => a - c);
   const txt = ns.length === +b.cartons ? 'all ' + ns.length : ns.join(', ');
-  delete MEMO_.Prints;
+  dropRows_('Prints');
   sheet_('Prints').appendRow([stamp_(), u.name, batch, b.name, kind === 'reprint' ? 'reprint' : 'all', ns.length, txt]);
   return true;
 }
@@ -227,6 +235,7 @@ function folderFor_(batch) {
 }
 /* slot 1 = cakes in the open box (top), slot 2 = label side. data = dataURL (jpeg). nonce makes a re-send harmless. */
 function photo(tok, id, slot, data, nonce, takenAt) {
+  FRESH_ = true;
   const u = user_(tok); id = clean_(id, 40).toUpperCase(); slot = +slot === 2 ? 2 : 1;
   const m = /^data:image\/(jpeg|png|webp);base64,(.+)$/.exec(String(data || ''));
   if (!m) throw new Error('Photo missing.');
@@ -249,6 +258,7 @@ function photo(tok, id, slot, data, nonce, takenAt) {
   } finally { lock.releaseLock(); }
 }
 function voidCartons(tok, batch, ids) {
+  FRESH_ = true;
   const bb = rows_('Batches').find(x => x.batch === batch); if (!bb || bb.status !== 'open') throw new Error('This batch is not open.');
   const u = user_(tok), set = (ids || []).map(x => clean_(x, 40).toUpperCase());
   const cs = rows_('Cartons').filter(c => c.batch === batch && set.indexOf(c.carton) >= 0 && c.status !== 'packed');
@@ -257,6 +267,7 @@ function voidCartons(tok, batch, ids) {
   return batchGet(tok, batch);
 }
 function reopenCarton(tok, id) { // undo a void before close
+  FRESH_ = true;
   const u = user_(tok); const c = rows_('Cartons').find(x => x.carton === id); if (!c || c.status !== 'void') return carton(id, tok);
   const b = rows_('Batches').find(x => x.batch === c.batch); if (!b || b.status !== 'open') throw new Error('This batch is closed. Void stays.');
   c.status = c.photo1 && c.photo2 ? 'packed' : (c.photo1 || c.photo2 ? 'photo' : 'printed'); setRow_('Cartons', c._row, c); log_(u.name, 'unvoid', id, ''); return carton(id, tok);
@@ -264,6 +275,7 @@ function reopenCarton(tok, id) { // undo a void before close
 function tc_(s) { return String(s || '').toLowerCase().replace(/(^|[\s–-])([a-z])/g, (m, a, c) => a + c.toUpperCase()); }
 /* cancel a whole batch (wrong product, wrong date...): only while nothing is packed. All its stickers become void. */
 function cancelBatch(tok, id, reason) {
+  FRESH_ = true;
   const u = user_(tok);
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
@@ -291,6 +303,7 @@ function report_(b, cs, by) {
     'Closed by ' + tc_(by), 'Photos: ' + folder].join('\n');
 }
 function closeBatch(tok, id, voidRest) {
+  FRESH_ = true;
   const u = user_(tok);
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
