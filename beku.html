@@ -47,7 +47,7 @@ a{color:var(--ink)}
 .seg button{min-height:44px;border-radius:999px;border:0;background:transparent;font:500 14px 'DM Sans',sans-serif;color:var(--ink);cursor:pointer}
 .seg button.on{background:var(--ink);color:var(--milk);font-weight:700}
 .stp{display:flex;align-items:center;gap:12px}
-.stp span{font-family:'Fredoka',sans-serif;font-weight:700;font-size:32px;min-width:56px;text-align:center}
+.stp input::-webkit-outer-spin-button,.stp input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.stp input{-moz-appearance:textfield}.stp span{font-family:'Fredoka',sans-serif;font-weight:700;font-size:32px;min-width:56px;text-align:center}
 input[type=tel],input[type=password],input[type=text],input[type=date],input[type=number]{width:100%;min-height:52px;border-radius:16px;border:2px solid var(--hair);background:var(--milk);font:500 17px 'DM Sans',sans-serif;padding:0 14px;color:var(--ink)}
 label.lb{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-weight:500}
 .grid{display:grid;gap:8px}
@@ -2512,13 +2512,17 @@ async function newBatch() {
       '<div class="eb">1 · Product</div><div class="chips">' + c.map(x => '<button class="chip" data-sku="' + x.sku + '" style="' + (x.sku === st.sku ? 'border-color:' + fc(x.fam, 1) + ';background:' + fc(x.fam, 0) + ';color:' + fc(x.fam, 1) + ';font-weight:700' : '') + '"><span class="d" style="background:' + fc(x.fam, x.sku === st.sku ? 1 : 2) + '"></span>' + esc(title(x.name)) + '</button>').join('') + '</div>' +
       '<div class="eb">2 · Carton type</div><div class="seg">' + cts.map(x => '<button data-ct="' + x.t + '" class="' + (x.t === st.ct ? 'on' : '') + '">' + x.t + (x.pcs ? ' · ' + x.pcs + ' pcs' : '') + '</button>').join('') + (cts.length === 1 ? '<span></span>' : '') + '</div>' +
       (ctObj ? '<div class="sub" style="font-size:13px">' + esc(ctObj.pack) + ' · ' + esc(ctObj.net) + '</div>' : '') +
-      '<div class="row"><div class="eb">3 · Cartons</div><div class="stp"><button class="ib" data-n="-1" aria-label="One less">' + ic('minus') + '</button><span>' + st.n + '</span><button class="ib" data-n="1" aria-label="One more">' + ic('plus') + '</button></div></div>' +
+      '<div class="row"><div class="eb">3 · Cartons</div><div class="stp"><button class="ib" data-n="-1" aria-label="One less">' + ic('minus') + '</button><input id="cn" type="number" inputmode="numeric" min="1" max="200" value="' + st.n + '" aria-label="Number of cartons" style="width:84px;min-height:52px;text-align:center;font:700 28px Fredoka,sans-serif;border-radius:16px;border:2px solid var(--hair);background:var(--milk);color:var(--ink);padding:0"><button class="ib" data-n="1" aria-label="One more">' + ic('plus') + '</button></div></div>' +
       '<div class="line" style="padding:0"><div class="row" style="padding:12px 16px;border-bottom:1px solid var(--hair)"><div><div class="sub" style="font-size:13px">Production date</div><div style="font-weight:700;font-size:16px' + (changed ? ';color:var(--bubblegum-d)' : '') + '">' + (changed ? 'Changed to ' : 'Today · ') + dmy(st.made) + '</div></div><label class="btn s" style="width:auto;min-height:44px;font-size:14px;position:relative">Change<input type="date" id="md" max="' + today + '" value="' + st.made + '" style="position:absolute;inset:0;opacity:0"></label></div>' +
       '<div class="row" style="padding:12px 16px"><div><div class="sub" style="font-size:13px">Best before</div><div style="font-weight:700;font-size:16px">' + dmy(addMonths(st.made, 9)) + '</div></div><span class="spec" style="color:var(--muted)">AUTO · +9 MONTHS</span></div></div>' +
       '<button class="btn" id="mk"' + (p ? '' : ' disabled') + '>' + (p ? 'Make ' + st.n + ' stickers' : 'Pick a product first') + '</button></div>';
     app.querySelectorAll('[data-sku]').forEach(b => b.onclick = () => { st.sku = b.dataset.sku; draw(); });
     app.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => { st.ct = b.dataset.ct; draw(); });
     app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { st.n = Math.max(1, Math.min(200, st.n + +b.dataset.n)); draw(); });
+    const cn = $('#cn');
+    cn.onfocus = () => cn.select();
+    cn.oninput = () => { const v = Math.floor(+cn.value); if (v >= 1 && v <= 200) { st.n = v; const mk = $('#mk'); if (mk && p) mk.textContent = 'Make ' + st.n + ' stickers'; } };
+    cn.onchange = () => { const v = Math.floor(+cn.value); st.n = v >= 1 ? Math.min(200, v) : 1; if (!(v >= 1 && v <= 200)) toast('Cartons: 1 to 200'); draw(); };
     $('#md').onchange = e => {
       const v = e.target.value, t = nowParts().iso; if (!v) return;
       if (v > t) { toast('Production date cannot be in the future.'); return draw(); }
