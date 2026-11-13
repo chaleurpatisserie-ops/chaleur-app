@@ -231,6 +231,7 @@ function photo(tok, id, slot, data, nonce, takenAt) {
   } finally { lock.releaseLock(); }
 }
 function voidCartons(tok, batch, ids) {
+  const bb = rows_('Batches').find(x => x.batch === batch); if (!bb || bb.status !== 'open') throw new Error('This batch is not open.');
   const u = user_(tok), set = (ids || []).map(x => clean_(x, 40).toUpperCase());
   const cs = rows_('Cartons').filter(c => c.batch === batch && set.indexOf(c.carton) >= 0 && c.status !== 'packed');
   cs.forEach(c => { c.status = 'void'; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c); });
@@ -239,9 +240,26 @@ function voidCartons(tok, batch, ids) {
 }
 function reopenCarton(tok, id) { // undo a void before close
   const u = user_(tok); const c = rows_('Cartons').find(x => x.carton === id); if (!c || c.status !== 'void') return carton(id, tok);
+  const b = rows_('Batches').find(x => x.batch === c.batch); if (!b || b.status !== 'open') throw new Error('This batch is closed. Void stays.');
   c.status = c.photo1 && c.photo2 ? 'packed' : (c.photo1 || c.photo2 ? 'photo' : 'printed'); setRow_('Cartons', c._row, c); log_(u.name, 'unvoid', id, ''); return carton(id, tok);
 }
 function tc_(s) { return String(s || '').toLowerCase().replace(/(^|[\s–-])([a-z])/g, (m, a, c) => a + c.toUpperCase()); }
+/* cancel a whole batch (wrong product, wrong date...): only while nothing is packed. All its stickers become void. */
+function cancelBatch(tok, id, reason) {
+  const u = user_(tok);
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const b = rows_('Batches').find(x => x.batch === id); if (!b) throw new Error('Batch not found.');
+    if (b.status !== 'open') throw new Error('This batch is already ' + b.status + '.');
+    const cs = rows_('Cartons').filter(c => c.batch === id);
+    if (cs.some(c => c.status === 'packed' || c.status === 'photo')) throw new Error('Some cartons already have photos. Void the wrong cartons one by one, or close the batch.');
+    cs.forEach(c => { c.status = 'void'; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c); });
+    b.status = 'cancelled'; b.closedBy = u.name; b.closedAt = stamp_(); b.packed = 0; b.voided = 'all';
+    setRow_('Batches', b._row, b);
+    log_(u.name, 'cancel batch', id, clean_(reason, 200));
+    return { cancelled: true };
+  } finally { lock.releaseLock(); }
+}
 function report_(b, cs, by) {
   const packed = cs.filter(c => c.status === 'packed'), voided = cs.filter(c => c.status === 'void');
   const people = {}; packed.forEach(c => { if (c.photoBy) people[c.photoBy] = 1; });
@@ -275,7 +293,7 @@ function closeBatch(tok, id, voidRest) {
 }
 
 /* ---------- web app ---------- */
-const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints };
+const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch };
 function doPost(e) {
   let out;
   try {
