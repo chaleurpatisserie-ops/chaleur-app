@@ -2461,6 +2461,7 @@ async function route(force) {
     if (v === 'carton') return cartonView(decodeURIComponent(a));
     if (v === 'close') return closeView(decodeURIComponent(a));
     if (v === 'scan') return scanView();
+    if (v === 'prints') return printsView();
     return home();
   } catch (e) { fail(e); }
 }
@@ -2489,6 +2490,7 @@ async function home() {
     '<a class="tile" href="#scan" style="background:var(--baby-l);color:var(--baby-d)">' + ic('scan', null, 28) + '<div><div class="st">STEP 2</div><div class="n">Scan carton</div><small>Photo while packing</small></div></a>' +
     '<button class="tile" disabled style="background:var(--lilac-l);color:var(--lilac-d)">' + ic('truck', null, 28) + '<div><div class="st">STEP 3</div><div class="n">Pick &amp; send</div><small>Coming next</small></div></button>' +
     '<button class="tile" disabled style="background:var(--cocoa-l);color:var(--cocoa-d)">' + ic('stack', null, 28) + '<div><div class="st">ANYTIME</div><div class="n">Stock</div><small>Coming next</small></div></button></div>' +
+    '<a class="btn s" href="#prints" style="min-height:48px">' + ic('print') + 'Print history</a>' +
     '<div class="eb">Open batches</div><div id="bl"><div class="card" style="color:var(--muted)">Loading…</div></div></div>';
   cat().catch(() => {});
   try {
@@ -2603,6 +2605,7 @@ async function printView(id) {
     '<div><div class="disp" style="font-size:22px;font-weight:600">' + esc(title(b.name)) + '</div><div class="spec">' + list.length + ' stickers · ' + esc(b.ctype) + ' · ' + esc(b.pack) + '</div><div class="sub" style="font-size:13px">' + esc(list[0] ? list[0].carton : '') + ' to ' + esc(list.length ? list[list.length - 1].carton.split('-').pop() : '') + ' · made ' + b.madeDmy + (b.madeChanged ? ' (changed)' : '') + ' · best before ' + b.bbDmy + '</div></div>' +
     '<div class="line read" style="display:flex;flex-direction:column;gap:10px"><div class="eb">How to read the carton number</div><div style="font-weight:700;font-size:18px;display:flex;gap:4px;align-items:center;flex-wrap:wrap"><span style="background:var(--pistachio-l);color:var(--pistachio-d)">' + segs[0] + '</span>-<span style="background:var(--baby-l);color:var(--baby-d)">' + segs[1] + '</span>-<span style="background:var(--lemon-l);color:var(--lemon-d)">' + segs[2] + '</span>-<span style="background:var(--lilac-l);color:var(--lilac-d)">07</span></div>' +
     '<div class="txt"><b>' + segs[0] + '</b> product · <b>' + segs[1] + '</b> made (YY MM DD) · <b>' + segs[2] + '</b> run of the day (2nd run = B) · <b>07</b> carton number. Batch = first three parts.</div></div>' +
+    (b.prints && b.prints.length ? '<div class="alert y"><b>Already printed ' + b.prints.length + '×.</b> ' + b.prints.slice(0, 3).map(p => esc(title(p.who)) + ' · ' + esc(String(p.at).slice(5, 16).replace(/^(\d\d)-(\d\d)/, '$2/$1')) + ' · ' + (p.kind === 'reprint' ? 'reprint carton ' : '') + esc(p.cartons)).join('<br>') + '<br>Only print again if stickers were lost or damaged.</div>' : '') +
     '<div id="pr" class="card" style="color:var(--muted)">Making the sticker images… <span id="pc">0</span> / ' + list.length + '</div>' +
     '<div class="thumbs" id="th"></div></div>';
   const files = [], canvases = [];
@@ -2620,19 +2623,19 @@ async function printView(id) {
     '<a class="btn s" href="#batch/' + encodeURIComponent(id) + '">Done printing · go to packing</a>' +
     '<div class="sub" style="font-size:13px">Reprint one carton: tap its sticker below to download a PDF of just that one.</div>' +
     (bt ? '<button class="btn s" id="pb" style="min-height:44px;font-size:14px">Try direct Bluetooth print (test)</button><div id="bs" class="sub" style="font-size:13px"></div>' : '') + '</div>';
-  $('#pa').onclick = () => savePdf([...canvases], pdfName);
+  $('#pa').onclick = async () => { if (b.prints && b.prints.length && !confirm('This batch was printed before. Download all ' + canvases.length + ' stickers again?')) return; if (await savePdf([...canvases], pdfName)) { api('printLog', S.tok, b.batch, list.map(c => c.n), 'all').catch(() => {}); b.prints = (b.prints || []).concat([{}]); } };
   if (bt) $('#pb').onclick = () => btPrint(canvases, $('#pb'), $('#bs'));
-  app.querySelectorAll('#th a').forEach((a, i) => { a.onclick = e => { e.preventDefault(); savePdf([canvases[i]], list[i].carton + '.pdf'); }; });
+  app.querySelectorAll('#th a').forEach((a, i) => { a.onclick = async e => { e.preventDefault(); if (!confirm('Reprint sticker for carton ' + list[i].n + '?')) return; if (await savePdf([canvases[i]], list[i].carton + '.pdf')) api('printLog', S.tok, b.batch, [list[i].n], 'reprint').catch(() => {}); }; });
 }
 async function savePdf(canvases, name) {
   const pdf = await stickersPdf(canvases);
-  if (pdf.size > 9.5e6) { toast('PDF too big for NIIMBOT (' + (pdf.size / 1e6).toFixed(1) + ' MB). Download in smaller groups.', 6000); return; }
+  if (pdf.size > 9.5e6) { toast('PDF too big for NIIMBOT (' + (pdf.size / 1e6).toFixed(1) + ' MB). Download in smaller groups.', 6000); return false; }
   const f = new File([pdf], name, { type: 'application/pdf' });
   if (!/Android/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: [f] })) {
-    try { await navigator.share({ files: [f], title: name }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.share({ files: [f], title: name }); return true; } catch (e) { if (e.name === 'AbortError') return false; }
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = name; document.body.appendChild(a); a.click(); a.remove();
-  toast('Saved to Downloads: ' + name, 4000);
+  toast('Saved to Downloads: ' + name, 4000); return true;
 }
 
 /* ---------------- direct print to NIIMBOT B4 over Bluetooth (Android Chrome) ---------------- */
@@ -2664,6 +2667,16 @@ async function btPrint(canvases, btn, st) {
     try { if (NBC) await NBC.disconnect(); } catch (x) {} NBC = null;
   } finally { btn.disabled = false; }
 }
+/* ---------------- print history ---------------- */
+async function printsView() {
+  app.innerHTML = hdr('print history', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const ps = await api('prints', S.tok);
+  const dt = s => String(s).slice(8, 10) + '/' + String(s).slice(5, 7) + ' ' + String(s).slice(11, 16);
+  app.innerHTML = hdr('print history', '#') + '<div class="wrap">' + (ps.length ? '<div class="sub" style="font-size:13px">Every sticker PDF downloaded, newest first. Tap one to open the batch.</div>' + ps.map(p =>
+    '<a class="line" href="#batch/' + encodeURIComponent(p.batch) + '" style="text-decoration:none;display:flex;flex-direction:column;gap:4px"><div class="row"><b style="font-size:15px">' + esc(title(p.name)) + '</b>' + (p.kind === 'reprint' ? '<span class="temp" style="background:var(--lemon-l);color:var(--lemon-d);height:24px">REPRINT</span>' : '<span class="spec" style="color:var(--muted)">' + p.count + ' stickers</span>') + '</div>' +
+    '<div class="spec" style="color:var(--muted)">' + esc(p.batch) + '</div><div class="sub" style="font-size:13px">' + dt(p.at) + ' · ' + esc(title(p.who)) + ' · ' + (/^all/.test(p.cartons) ? 'all cartons' : 'carton ' + esc(p.cartons)) + '</div></a>').join('') : '<div class="card" style="color:var(--muted)">Nothing printed yet.</div>') + '</div>';
+}
+
 /* ---------------- batch (packing progress) ---------------- */
 async function batchView(id) {
   app.innerHTML = hdr('batch', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
