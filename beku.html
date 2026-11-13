@@ -2497,7 +2497,7 @@ async function home() {
     const bs = await api('batches', S.tok);
     const open = bs.filter(b => b.status === 'open'), closed = bs.filter(b => b.status !== 'open').slice(0, 5);
     const item = b => '<a class="card" href="#batch/' + encodeURIComponent(b.batch) + '" style="text-decoration:none;display:flex;flex-direction:column;gap:8px"><div class="row"><b style="font-size:15px">' + esc(title(b.name)) + '</b><span class="spec" style="color:var(--muted)">' + esc(b.batch) + '</span></div>' +
-      (b.status === 'open' ? '<div class="bar"><i style="width:' + Math.round(100 * b.done / Math.max(1, b.cartons - b.voidN)) + '%"></i></div><div class="sub" style="font-size:13px">' + b.done + ' of ' + b.cartons + ' cartons packed · ' + esc(b.ctype) + ' · by ' + esc(title(b.createdBy)) + '</div>' : '<div class="sub" style="font-size:13px">Closed · ' + b.done + ' ' + esc(b.ctype) + ' · ' + esc(String(b.closedAt).slice(0, 16)) + '</div>') + '</a>';
+      (b.status === 'open' ? '<div class="bar"><i style="width:' + Math.round(100 * b.done / Math.max(1, b.cartons - b.voidN)) + '%"></i></div><div class="sub" style="font-size:13px">' + b.done + ' of ' + b.cartons + ' cartons packed · ' + esc(b.ctype) + ' · by ' + esc(title(b.createdBy)) + '</div>' : '<div class="sub" style="font-size:13px">' + (b.status === 'cancelled' ? 'Cancelled' : 'Closed') + ' · ' + b.done + ' ' + esc(b.ctype) + ' · ' + esc(String(b.closedAt).slice(0, 16)) + '</div>') + '</a>';
     $('#bl').innerHTML = (open.length ? open.map(item).join('') : '<div class="card" style="color:var(--muted)">No open batch. Tap New batch to start.</div>') + (closed.length ? '<div class="eb" style="margin-top:6px">Recently closed</div>' + closed.map(item).join('') : '');
     $('#bl').style.cssText = 'display:flex;flex-direction:column;gap:10px';
   } catch (e) { fail(e); }
@@ -2600,6 +2600,7 @@ async function stickersPdf(canvases) {
 async function printView(id) {
   app.innerHTML = hdr('print stickers', '#batch/' + encodeURIComponent(id)) + '<div class="wrap"><div class="card">Loading…</div></div>';
   const b = await api('batchGet', S.tok, id), list = b.list.filter(c => c.status !== 'void');
+  if (b.status !== 'open') { app.innerHTML = hdr('print stickers', '#batch/' + encodeURIComponent(id)) + '<div class="wrap"><div class="alert r">This batch is ' + esc(b.status) + '. Stickers cannot be printed.</div></div>'; return; }
   const segs = b.batch.split('-');
   app.innerHTML = hdr('print stickers', '#batch/' + encodeURIComponent(id)) + '<div class="wrap">' +
     '<div><div class="disp" style="font-size:22px;font-weight:600">' + esc(title(b.name)) + '</div><div class="spec">' + list.length + ' stickers · ' + esc(b.ctype) + ' · ' + esc(b.pack) + '</div><div class="sub" style="font-size:13px">' + esc(list[0] ? list[0].carton : '') + ' to ' + esc(list.length ? list[list.length - 1].carton.split('-').pop() : '') + ' · made ' + b.madeDmy + (b.madeChanged ? ' (changed)' : '') + ' · best before ' + b.bbDmy + '</div></div>' +
@@ -2684,12 +2685,17 @@ async function batchView(id) {
   const cols = b.list.length > 30 ? 6 : 5;
   app.innerHTML = hdr(esc(title(b.name).toLowerCase()), '#') + '<div class="wrap">' +
     '<div class="spec" style="color:var(--muted)">' + esc(b.batch) + ' · ' + esc(b.ctype) + ' ' + (b.pcs || '') + ' pcs · made ' + b.madeDmy + '</div>' +
-    (b.status !== 'open' ? '<div class="alert g">Closed by ' + esc(title(b.closedBy)) + ' · ' + esc(String(b.closedAt).slice(0, 16)) + '</div>' : '') +
+    (b.status === 'cancelled' ? '<div class="alert r"><b>Cancelled</b> by ' + esc(title(b.closedBy)) + ' · ' + esc(String(b.closedAt).slice(0, 16)) + '. All stickers are void.</div>' : b.status !== 'open' ? '<div class="alert g">Closed by ' + esc(title(b.closedBy)) + ' · ' + esc(String(b.closedAt).slice(0, 16)) + '</div>' : '') +
     '<div><div class="row"><span class="disp" style="font-size:32px">' + done + '<span style="font-size:18px;color:var(--muted)"> / ' + live.length + '</span></span><span class="sub" style="font-size:14px">cartons with both photos</span></div><div class="bar" style="margin-top:8px"><i style="width:' + Math.round(100 * done / Math.max(1, live.length)) + '%"></i></div></div>' +
     '<div class="grid" style="grid-template-columns:repeat(' + cols + ',1fr)">' + b.list.map(c => '<a class="cell ' + (c.status === 'packed' ? 'ok' : c.status === 'photo' ? 'half' : c.status === 'void' ? 'void' : '') + '" href="#carton/' + encodeURIComponent(c.carton) + '">' + (c.status === 'packed' ? ic('check', null, 14) : '') + String(c.n).padStart(2, '0') + '</a>').join('') + '</div>' +
     '<div class="sub" style="font-size:13px">Green = both photos in · blue = 1 photo · grey = not yet · dashed = void. Tap a number to open that carton.</div>' +
     (b.status === 'open' ? '<div class="card txt" style="font-size:14px"><b>1</b> Stick the label on the side of the empty carton. <b>2</b> Pack ' + (b.pcs || '') + ' pcs. <b>3</b> Scan the QR. <b>4</b> Two photos: cakes from the top, then the label side.</div>' +
-      '<a class="btn" href="#scan">' + ic('scan', '#FFFDFA') + 'Scan a carton</a><a class="btn s" href="#print/' + encodeURIComponent(b.batch) + '">Reprint stickers</a><a class="btn s" href="#close/' + encodeURIComponent(b.batch) + '">Close batch</a>' : '') + '</div>';
+      '<a class="btn" href="#scan">' + ic('scan', '#FFFDFA') + 'Scan a carton</a><a class="btn s" href="#print/' + encodeURIComponent(b.batch) + '">Reprint stickers</a><a class="btn s" href="#close/' + encodeURIComponent(b.batch) + '">Close batch</a>' +
+      (done === 0 && !b.list.some(c => c.status === 'photo') ? '<button class="btn s" id="cb" style="min-height:44px;font-size:14px;color:var(--bubblegum-d)">Cancel this batch (wrong product / date)</button>' : '') : '') + '</div>';
+  const cb = $('#cb'); if (cb) cb.onclick = async () => {
+    const why = prompt('Cancel batch ' + b.batch + '? All ' + b.list.length + ' stickers become VOID. Type the reason (e.g. wrong product):'); if (why === null) return;
+    if (!why.trim()) return toast('Please type a reason.');
+    cb.disabled = true; try { await api('cancelBatch', S.tok, b.batch, why); toast('Batch cancelled. Throw all its stickers away.', 4000); batchView(b.batch); } catch (e) { fail(e); cb.disabled = false; } };
 }
 
 /* ---------------- scan ---------------- */
@@ -2729,7 +2735,7 @@ async function cartonView(id) {
   if (c.staffError) return fail(new Error(c.staffError));
   const s = c.staff, pend = (await qAll()).filter(x => x.cid === id), has = k => s['p' + k] || pend.some(x => x.slot === k);
   const closed = s.batchStatus !== 'open';
-  const slot = (k, lab, hint) => '<label class="slot' + (has(k) ? ' done' : '') + '"><span class="num">' + k + '</span><b style="font-size:14px">' + lab + '</b>' + (has(k) ? '<span style="font-size:13px;color:var(--pistachio-d);font-weight:700">' + (s['p' + k] ? '✓ Uploaded' : '✓ Saved, uploading…') + '</span><span style="font-size:12px;color:var(--muted)">Tap to retake</span>' : '<span style="font-size:12px;color:var(--muted)">' + hint + '</span>' + ic('cam', 'var(--ink)', 30)) + (closed || c.void ? '' : '<input type="file" accept="image/*" capture="environment" data-slot="' + k + '">') + '</label>';
+  const slot = (k, lab, hint) => c.void ? '' : '<label class="slot' + (has(k) ? ' done' : '') + '"><span class="num">' + k + '</span><b style="font-size:14px">' + lab + '</b>' + (has(k) ? '<span style="font-size:13px;color:var(--pistachio-d);font-weight:700">' + (s['p' + k] ? '✓ Uploaded' : '✓ Saved, uploading…') + '</span><span style="font-size:12px;color:var(--muted)">Tap to retake</span>' : '<span style="font-size:12px;color:var(--muted)">' + hint + '</span>' + ic('cam', 'var(--ink)', 30)) + (closed || c.void ? '' : '<input type="file" accept="image/*" capture="environment" data-slot="' + k + '">') + '</label>';
   app.innerHTML = hdr('carton ' + String(c.n).padStart(2, '0'), '#batch/' + encodeURIComponent(c.batch)) + '<div class="wrap">' +
     '<div class="row" style="justify-content:flex-start"><span class="temp" style="background:var(--pistachio-l);color:var(--pistachio-d)">' + ic('check', null, 14) + 'Matched</span><span class="spec" style="color:var(--muted)">' + esc(c.carton) + '</span></div>' +
     '<div class="card" style="background:' + fc(c.fam, 0) + ';color:' + fc(c.fam, 1) + '"><div class="disp" style="font-size:22px;font-weight:600">' + esc(title(c.name)) + '</div><div style="font-size:14px">Carton ' + c.n + ' of ' + c.of + ' · ' + esc(c.pack) + ' · best before ' + c.bestBefore + '</div></div>' +
@@ -2737,7 +2743,11 @@ async function cartonView(id) {
     (closed ? '<div class="alert y">This batch is closed. Photos can no longer be changed.</div>' : '') +
     '<div class="slots">' + slot(1, 'Cakes, from the top', 'Lid open, all cakes in the photo') + slot(2, 'Label side', 'Sticker readable, carton side') + '</div>' +
     (s.at ? '<div class="sub" style="font-size:13px">Last photo by ' + esc(title(s.by)) + ' · ' + esc(String(s.at).slice(0, 16)) + '</div>' : '') +
-    '<a class="btn" href="#scan">' + ic('scan', '#FFFDFA') + 'Scan next carton</a><a class="btn s" href="#batch/' + encodeURIComponent(c.batch) + '">Back to the batch</a></div>';
+    '<a class="btn" href="#scan">' + ic('scan', '#FFFDFA') + 'Scan next carton</a><a class="btn s" href="#batch/' + encodeURIComponent(c.batch) + '">Back to the batch</a>' +
+    (!closed && !c.void && s.status !== 'packed' ? '<button class="btn s" id="vd" style="min-height:44px;font-size:14px;color:var(--bubblegum-d)">Void this sticker (damaged / not used)</button>' : '') +
+    (!closed && c.void ? '<button class="btn s" id="uv" style="min-height:44px;font-size:14px">Undo void</button>' : '') + '</div>';
+  const vd = $('#vd'); if (vd) vd.onclick = async () => { if (!confirm('Void carton ' + c.n + '? Throw this sticker away. To replace it, reprint carton ' + c.n + ' from the print page.')) return; vd.disabled = true; try { await api('voidCartons', S.tok, c.batch, [id]); toast('Carton ' + c.n + ' voided'); cartonView(id); } catch (e) { fail(e); vd.disabled = false; } };
+  const uv = $('#uv'); if (uv) uv.onclick = async () => { uv.disabled = true; try { await api('reopenCarton', S.tok, id); toast('Void undone'); cartonView(id); } catch (e) { fail(e); uv.disabled = false; } };
   app.querySelectorAll('input[data-slot]').forEach(inp => inp.onchange = async () => {
     const f = inp.files[0]; if (!f) return; const k = +inp.dataset.slot;
     try {
@@ -2755,10 +2765,10 @@ async function closeView(id) {
   const b = await api('batchGet', S.tok, id), live = b.list.filter(c => c.status !== 'void'), done = live.filter(c => c.status === 'packed'), miss = live.filter(c => c.status !== 'packed'), vd = b.list.filter(c => c.status === 'void');
   const pend = (await qAll()).length;
   app.innerHTML = hdr('close batch', '#batch/' + encodeURIComponent(id)) + '<div class="wrap"><div class="spec" style="color:var(--muted)">' + esc(b.batch) + ' · ' + esc(title(b.name)) + '</div>' +
-    '<div class="line tbl" style="padding:0"><div><span>Packed with both photos</span><b>' + done.length + ' ' + esc(b.ctype) + '</b></div><div><span>Not packed yet</span><b>' + (miss.length ? miss.map(c => c.n).join(', ') : 'None ✓') + '</b></div><div><span>Void stickers</span><b>' + (vd.length ? vd.map(c => c.n).join(', ') : 'None') + '</b></div><div><span>Made · best before</span><b>' + b.madeDmy + ' · ' + b.bbDmy + '</b></div></div>' +
+    '<div class="line tbl" style="padding:0"><div><span>Packed with both photos</span><b>' + done.length + ' ' + esc(b.ctype) + '</b></div><div><span>Not packed yet</span><b>' + (miss.length ? 'Carton' + (miss.length > 1 ? 's ' : ' ') + miss.map(c => c.n).join(', ') : 'None ✓') + '</b></div><div><span>Void stickers</span><b>' + (vd.length ? 'Carton' + (vd.length > 1 ? 's ' : ' ') + vd.map(c => c.n).join(', ') : 'None') + '</b></div><div><span>Made · best before</span><b>' + b.madeDmy + ' · ' + b.bbDmy + '</b></div></div>' +
     (pend ? '<div class="alert y">' + pend + ' photo(s) still waiting to upload. Get signal first, then close.</div>' : '') +
-    (miss.length ? '<div class="alert r">Cartons ' + miss.map(c => c.n).join(', ') + ' have no full photos. If they were not packed, closing marks them <b>void</b>: throw those stickers away.</div>' : '') +
-    '<button class="btn" id="cl"' + (pend || !done.length ? ' disabled' : '') + '>' + ic('check', '#FFFDFA') + 'Close batch</button><div id="rep"></div></div>';
+    (miss.length ? '<div class="alert r">' + (miss.length > 1 ? 'Cartons ' + miss.map(c => c.n).join(', ') + ' have' : 'Carton ' + miss[0].n + ' has') + ' no full photos. If they were not packed, closing marks them <b>void</b>: throw those stickers away.</div>' : '') +
+    '<button class="btn" id="cl"' + (pend || !done.length ? ' disabled' : '') + '>' + ic('check', '#FFFDFA') + (miss.length ? 'Void ' + miss.length + ' unused sticker' + (miss.length > 1 ? 's' : '') + ' &amp; close batch' : 'Close batch') + '</button>' + (!done.length ? '<div class="sub" style="font-size:13px">No carton has both photos yet. Nothing packed? Go back and use <b>Cancel this batch</b>.</div>' : '') + '<div id="rep"></div></div>';
   $('#cl').onclick = async () => {
     if (miss.length && !confirm('Void cartons ' + miss.map(c => c.n).join(', ') + ' and close the batch?')) return;
     $('#cl').disabled = true;
