@@ -2623,8 +2623,7 @@ async function printView(id) {
     '<div class="card txt" style="font-size:14px;line-height:1.7"><b>Print in NIIMBOT</b><br>1. Tap <b>Download PDF</b>' + (isA ? '' : ', then <b>Save to Files</b>') + '.<br>2. Open <b>NIIMBOT</b> → new label <b>100×100</b>.<br>3. <b>Add</b> → swipe → <b>PDF Print</b> → pick <b>' + esc(pdfName) + '</b>.<br>4. Print. One page = one sticker.</div>' +
     '<a class="btn s" href="#batch/' + encodeURIComponent(id) + '">Done printing · go to packing</a>' +
     '<div class="sub" style="font-size:13px">Reprint one carton: tap its sticker below to download a PDF of just that one.</div>' +
-    (bt ? '<div class="line" style="display:flex;flex-direction:column;gap:10px"><div class="eb">Direct Bluetooth print (Android)</div><div class="seg" style="grid-template-columns:repeat(4,1fr)" id="dn">' + [1, 2, 3, 4].map(d => '<button data-d="' + d + '" class="' + (d === bdens() ? 'on' : '') + '">' + ['Lightest', 'Light', 'Normal', 'Dark'][d - 1] + '</button>').join('') + '</div><div class="sub" style="font-size:12px">Darkness. Smudged / letters bleed → lighter. Faded → darker.</div><button class="btn" id="pb" style="min-height:48px">' + ic('print', '#FFFDFA') + 'Print ' + list.length + ' on the B4</button><div id="bs" class="sub" style="font-size:13px"></div></div>' : '') + '</div>';
-  app.querySelectorAll('#dn [data-d]').forEach(x => x.onclick = () => { localStorage.setItem('beku_dens2', x.dataset.d); app.querySelectorAll('#dn button').forEach(y => y.classList.toggle('on', y === x)); });
+    (bt ? '<div class="line" style="display:flex;flex-direction:column;gap:10px"><div class="eb">Direct Bluetooth print (Android)</div><button class="btn" id="pb" style="min-height:48px">' + ic('print', '#FFFDFA') + 'Print ' + list.length + ' on the B4</button><div id="bs" class="sub" style="font-size:13px"></div></div>' : '') + '</div>';
   $('#pa').onclick = async () => { if (b.prints && b.prints.length && !confirm('This batch was printed before. Download all ' + canvases.length + ' stickers again?')) return; if (await savePdf([...canvases], pdfName)) { api('printLog', S.tok, b.batch, list.map(c => c.n), 'all').catch(() => {}); b.prints = (b.prints || []).concat([{}]); } };
   if (bt) $('#pb').onclick = async () => { if (b.prints && b.prints.length && !confirm('This batch was printed before. Print all ' + canvases.length + ' again?')) return; if (await btPrint(canvases, $('#pb'), $('#bs'))) { api('printLog', S.tok, b.batch, list.map(c => c.n), 'all').catch(() => {}); b.prints = (b.prints || []).concat([{}]); } };
   app.querySelectorAll('#th a').forEach((a, i) => { a.onclick = async e => { e.preventDefault(); if (!confirm('Reprint sticker for carton ' + list[i].n + '?')) return;
@@ -2644,7 +2643,7 @@ async function savePdf(canvases, name) {
 
 /* ---------------- direct print to NIIMBOT B4 over Bluetooth (Android Chrome) ---------------- */
 let NB = null, NBC = null;
-function bdens() { const d = +localStorage.getItem('beku_dens2'); return d >= 1 && d <= 5 ? d : 1; }
+function bdens() { return 1; } /* fixed: Lightest (Alfred, 13 Nov) */
 /* pure black/white copy: no grey edges for the print head to smear */
 function bw(cv) {
   const o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height; const x = o.getContext('2d');
@@ -2660,7 +2659,7 @@ async function btPrint(canvases, btn, st) {
     const nb = await loadNB();
     if (!NBC || !NBC.isConnected()) { say('Pick the B4 in the list…'); NBC = new nb.NiimbotBluetoothClient(); await NBC.connect(); }
     const meta = NBC.getModelMetadata(), task = NBC.getPrintTaskType() || 'B1';
-    say('Connected' + (meta ? ' to ' + meta.model : '') + '. Printing 0 / ' + canvases.length + ' (darkness ' + bdens() + ')…');
+    say('Connected' + (meta ? ' to ' + meta.model : '') + '. Printing 0 / ' + canvases.length + '…');
     const dens = Math.min(bdens(), meta && meta.densityMax || 5);
     const pt = NBC.protocol.newPrintTask(task, { totalPages: canvases.length, density: dens, labelType: nb.LabelType.WithGaps });
     NBC.stopHeartbeat();
