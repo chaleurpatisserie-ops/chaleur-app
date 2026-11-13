@@ -2620,12 +2620,12 @@ async function printView(id) {
   }
   const bt = !!navigator.bluetooth, isA = /Android/i.test(navigator.userAgent);
   const pdfName = b.batch + ' stickers.pdf';
-  $('#pr').outerHTML = '<div style="display:flex;flex-direction:column;gap:10px">' +
-    '<button class="btn" id="pa">' + ic('print', '#FFFDFA') + 'Download PDF · ' + files.length + ' stickers</button>' +
-    '<div class="card txt" style="font-size:14px;line-height:1.7"><b>Print in NIIMBOT</b><br>1. Tap <b>Download PDF</b>' + (isA ? '' : ', then <b>Save to Files</b>') + '.<br>2. Open <b>NIIMBOT</b> → new label <b>100×100</b>.<br>3. <b>Add</b> → swipe → <b>PDF Print</b> → pick <b>' + esc(pdfName) + '</b>.<br>4. Print. One page = one sticker.</div>' +
+  const btBlock = bt ? '<button class="btn" id="pb">' + ic('print', '#FFFDFA') + 'Print ' + list.length + ' on the B4</button><div id="bs" class="sub" style="font-size:13px">Turn on the B4 + Bluetooth. Tap print, pick the B4 in the list.</div>' : '';
+  const pdfBlock = '<button class="btn' + (bt ? ' s' : '') + '" id="pa">' + ic(bt ? 'share' : 'print', bt ? null : '#FFFDFA') + (bt ? 'Or download PDF for NIIMBOT' : 'Download PDF · ' + files.length + ' stickers') + '</button>' +
+    '<div class="card txt" style="font-size:' + (bt ? '13' : '14') + 'px;line-height:1.7"><b>PDF in NIIMBOT</b><br>1. Tap <b>Download PDF</b>' + (isA ? '' : ', then <b>Save to Files</b>') + '.<br>2. Open <b>NIIMBOT</b> → new label <b>100×100</b>.<br>3. <b>Add</b> → swipe → <b>PDF Print</b> → pick <b>' + esc(pdfName) + '</b>.<br>4. Print. One page = one sticker.</div>';
+  $('#pr').outerHTML = '<div style="display:flex;flex-direction:column;gap:10px">' + btBlock + pdfBlock +
     '<a class="btn s" href="#batch/' + encodeURIComponent(id) + '">Done printing · go to packing</a>' +
-    '<div class="sub" style="font-size:13px">Reprint one carton: tap its sticker below to download a PDF of just that one.</div>' +
-    (bt ? '<div class="line" style="display:flex;flex-direction:column;gap:10px"><div class="eb">Direct Bluetooth print (Android)</div><button class="btn" id="pb" style="min-height:48px">' + ic('print', '#FFFDFA') + 'Print ' + list.length + ' on the B4</button><div id="bs" class="sub" style="font-size:13px"></div></div>' : '') + '</div>';
+    '<div class="sub" style="font-size:13px">Reprint one carton: tap its sticker below.</div></div>';
   $('#pa').onclick = async () => { if (b.prints && b.prints.length && !confirm('This batch was printed before. Download all ' + canvases.length + ' stickers again?')) return; if (await savePdf([...canvases], pdfName)) { api('printLog', S.tok, b.batch, list.map(c => c.n), 'all').catch(() => {}); b.prints = (b.prints || []).concat([{}]); } };
   if (bt) $('#pb').onclick = async () => { if (b.prints && b.prints.length && !confirm('This batch was printed before. Print all ' + canvases.length + ' again?')) return; if (await btPrint(canvases, $('#pb'), $('#bs'))) { api('printLog', S.tok, b.batch, list.map(c => c.n), 'all').catch(() => {}); b.prints = (b.prints || []).concat([{}]); } };
   app.querySelectorAll('#th a').forEach((a, i) => { a.onclick = async e => { e.preventDefault(); if (!confirm('Reprint sticker for carton ' + list[i].n + '?')) return;
