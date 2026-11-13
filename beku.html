@@ -2437,7 +2437,8 @@ async function flush() {
   try {
     const all = await qAll(); showPend(all.length);
     for (const x of all) {
-      try { await api('photo', S.tok, x.cid, x.slot, x.data, x.nonce, x.at); await qDel(x.nonce); }
+      try { await api('photo', S.tok, x.cid, x.slot, x.data, x.nonce, x.at); await qDel(x.nonce);
+        const cc = CC[x.cid]; if (cc && cc.staff) { cc.staff['p' + x.slot] = true; if (cc.staff.p1 && cc.staff.p2) cc.staff.status = 'packed'; if (location.hash === '#carton/' + encodeURIComponent(x.cid)) cartonView(x.cid, true); } }
       catch (e) { if (e.server) { await qDel(x.nonce); toast(x.cid + ': ' + e.message, 5000); } else break; }
       showPend((await qAll()).length);
     }
@@ -2493,14 +2494,15 @@ async function home() {
     '<a class="btn s" href="#prints" style="min-height:48px">' + ic('print') + 'Print history</a>' +
     '<div class="eb">Open batches</div><div id="bl"><div class="card" style="color:var(--muted)">Loading…</div></div></div>';
   cat().catch(() => {});
-  try {
-    const bs = await api('batches', S.tok);
+  const draw = bs => {
     const open = bs.filter(b => b.status === 'open'), closed = bs.filter(b => b.status !== 'open').slice(0, 5);
     const item = b => '<a class="card" href="#batch/' + encodeURIComponent(b.batch) + '" style="text-decoration:none;display:flex;flex-direction:column;gap:8px"><div class="row"><b style="font-size:15px">' + esc(title(b.name)) + '</b><span class="spec" style="color:var(--muted)">' + esc(b.batch) + '</span></div>' +
       (b.status === 'open' ? '<div class="bar"><i style="width:' + Math.round(100 * b.done / Math.max(1, b.cartons - b.voidN)) + '%"></i></div><div class="sub" style="font-size:13px">' + b.done + ' of ' + b.cartons + ' cartons packed · ' + esc(b.ctype) + ' · by ' + esc(title(b.createdBy)) + '</div>' : '<div class="sub" style="font-size:13px">' + (b.status === 'cancelled' ? 'Cancelled' : 'Closed') + ' · ' + b.done + ' ' + esc(b.ctype) + ' · ' + esc(String(b.closedAt).slice(0, 16)) + '</div>') + '</a>';
     $('#bl').innerHTML = (open.length ? open.map(item).join('') : '<div class="card" style="color:var(--muted)">No open batch. Tap New batch to start.</div>') + (closed.length ? '<div class="eb" style="margin-top:6px">Recently closed</div>' + closed.map(item).join('') : '');
     $('#bl').style.cssText = 'display:flex;flex-direction:column;gap:10px';
-  } catch (e) { fail(e); }
+  };
+  try { const c = JSON.parse(localStorage.getItem('beku_bs') || 'null'); if (c) draw(c); } catch (e) {}
+  try { const bs = await api('batches', S.tok); localStorage.setItem('beku_bs', JSON.stringify(bs)); if ($('#bl')) draw(bs); } catch (e) { fail(e); }
 }
 
 /* ---------------- new batch ---------------- */
@@ -2690,9 +2692,14 @@ async function printsView() {
 }
 
 /* ---------------- batch (packing progress) ---------------- */
+const BC = {};
 async function batchView(id) {
-  app.innerHTML = hdr('batch', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
-  const b = await api('batchGet', S.tok, id), live = b.list.filter(c => c.status !== 'void'), done = live.filter(c => c.status === 'packed').length;
+  if (BC[id]) renderBatch(BC[id]); else app.innerHTML = hdr('batch', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  let b; try { b = BC[id] = await api('batchGet', S.tok, id); } catch (e) { return fail(e); }
+  if (decodeURIComponent(location.hash) === '#batch/' + id) renderBatch(b);
+}
+function renderBatch(b) {
+  const live = b.list.filter(c => c.status !== 'void'), done = live.filter(c => c.status === 'packed').length;
   const cols = b.list.length > 30 ? 6 : 5;
   app.innerHTML = hdr(esc(title(b.name).toLowerCase()), '#') + '<div class="wrap">' +
     '<div class="spec" style="color:var(--muted)">' + esc(b.batch) + ' · ' + esc(b.ctype) + ' ' + (b.pcs || '') + ' pcs · made ' + b.madeDmy + '</div>' +
@@ -2738,11 +2745,13 @@ async function compress(file) {
   const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
   cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height); return cv.toDataURL('image/jpeg', 0.72);
 }
-async function cartonView(id) {
+const CC = {};
+async function cartonView(id, local) {
   id = String(id).toUpperCase();
   if (location.search) history.replaceState(null, '', location.pathname + '#carton/' + encodeURIComponent(id));
-  app.innerHTML = hdr('carton', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
-  let c; try { c = await api('carton', id, S.tok); } catch (e) { app.innerHTML = hdr('carton', '#') + '<div class="wrap"><div class="alert r">' + esc(e.message) + ' (' + esc(id) + ')</div><a class="btn s" href="#scan">Scan again</a></div>'; return; }
+  let c = local && CC[id];
+  if (!c) app.innerHTML = hdr('carton', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  if (!c) try { c = CC[id] = await api('carton', id, S.tok); } catch (e) { app.innerHTML = hdr('carton', '#') + '<div class="wrap"><div class="alert r">' + esc(e.message) + ' (' + esc(id) + ')</div><a class="btn s" href="#scan">Scan again</a></div>'; return; }
   if (c.staffError) return fail(new Error(c.staffError));
   const s = c.staff, pend = (await qAll()).filter(x => x.cid === id), has = k => s['p' + k] || pend.some(x => x.slot === k);
   const closed = s.batchStatus !== 'open';
@@ -2764,7 +2773,7 @@ async function cartonView(id) {
     try {
       const data = await compress(f), nonce = id + '_' + k + '_' + Date.now();
       await qPut({ nonce: nonce, cid: id, slot: k, data: data, at: new Date().toLocaleString('sv-SE', { timeZone: TZ }) });
-      toast('Photo ' + k + ' saved'); flush(); cartonView(id);
+      toast('Photo ' + k + ' saved'); cartonView(id, true); flush();
     } catch (e) { toast('Could not read the photo: ' + e.message, 4000); }
   });
 }
