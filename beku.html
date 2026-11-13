@@ -2624,7 +2624,7 @@ async function printView(id) {
     '<a class="btn s" href="#batch/' + encodeURIComponent(id) + '">Done printing · go to packing</a>' +
     '<div class="sub" style="font-size:13px">Reprint one carton: tap its sticker below to download a PDF of just that one.</div>' +
     (bt ? '<div class="line" style="display:flex;flex-direction:column;gap:10px"><div class="eb">Direct Bluetooth print (Android)</div><div class="seg" style="grid-template-columns:repeat(4,1fr)" id="dn">' + [1, 2, 3, 4].map(d => '<button data-d="' + d + '" class="' + (d === bdens() ? 'on' : '') + '">' + ['Lightest', 'Light', 'Normal', 'Dark'][d - 1] + '</button>').join('') + '</div><div class="sub" style="font-size:12px">Darkness. Smudged / letters bleed → lighter. Faded → darker.</div><button class="btn" id="pb" style="min-height:48px">' + ic('print', '#FFFDFA') + 'Print ' + list.length + ' on the B4</button><div id="bs" class="sub" style="font-size:13px"></div></div>' : '') + '</div>';
-  app.querySelectorAll('#dn [data-d]').forEach(x => x.onclick = () => { localStorage.setItem('beku_dens', x.dataset.d); app.querySelectorAll('#dn button').forEach(y => y.classList.toggle('on', y === x)); });
+  app.querySelectorAll('#dn [data-d]').forEach(x => x.onclick = () => { localStorage.setItem('beku_dens2', x.dataset.d); app.querySelectorAll('#dn button').forEach(y => y.classList.toggle('on', y === x)); });
   $('#pa').onclick = async () => { if (b.prints && b.prints.length && !confirm('This batch was printed before. Download all ' + canvases.length + ' stickers again?')) return; if (await savePdf([...canvases], pdfName)) { api('printLog', S.tok, b.batch, list.map(c => c.n), 'all').catch(() => {}); b.prints = (b.prints || []).concat([{}]); } };
   if (bt) $('#pb').onclick = async () => { if (b.prints && b.prints.length && !confirm('This batch was printed before. Print all ' + canvases.length + ' again?')) return; if (await btPrint(canvases, $('#pb'), $('#bs'))) { api('printLog', S.tok, b.batch, list.map(c => c.n), 'all').catch(() => {}); b.prints = (b.prints || []).concat([{}]); } };
   app.querySelectorAll('#th a').forEach((a, i) => { a.onclick = async e => { e.preventDefault(); if (!confirm('Reprint sticker for carton ' + list[i].n + '?')) return;
@@ -2644,7 +2644,7 @@ async function savePdf(canvases, name) {
 
 /* ---------------- direct print to NIIMBOT B4 over Bluetooth (Android Chrome) ---------------- */
 let NB = null, NBC = null;
-function bdens() { const d = +localStorage.getItem('beku_dens'); return d >= 1 && d <= 5 ? d : 2; }
+function bdens() { const d = +localStorage.getItem('beku_dens2'); return d >= 1 && d <= 5 ? d : 1; }
 /* pure black/white copy: no grey edges for the print head to smear */
 function bw(cv) {
   const o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height; const x = o.getContext('2d');
