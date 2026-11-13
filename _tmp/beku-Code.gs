@@ -14,10 +14,12 @@ const CATALOG = [{"sku": "BK-PG-101", "code": "PG101", "name": "OOLONG PEAR", "f
 
 /* ---------- storage ---------- */
 function props_() { return PropertiesService.getScriptProperties(); }
+let SS_ = null;
 function ss_() {
+  if (SS_) return SS_;
   const id = props_().getProperty('SS_ID');
   if (!id) throw new Error('BEKU is not set up yet (run setup).');
-  return SpreadsheetApp.openById(id);
+  return (SS_ = SpreadsheetApp.openById(id));
 }
 function sheet_(name) {
   const ss = ss_(); let sh = ss.getSheetByName(name);
@@ -62,16 +64,20 @@ function iso_(d) { return Utilities.formatDate(d, TZ, 'yyyy-MM-dd'); }
 function todayIso_() { return iso_(now_()); }
 function stamp_() { return Utilities.formatDate(now_(), TZ, 'yyyy-MM-dd HH:mm:ss'); }
 function clean_(s, n) { return String(s == null ? '' : s).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n || 200); }
+const MEMO_ = {};
 function rows_(name) {
+  if (MEMO_[name]) return MEMO_[name].map(o => Object.assign({}, o));
   const sh = sheet_(name), v = sh.getDataRange().getValues(), h = v[0];
   const f = d => (d.getHours() || d.getMinutes() || d.getSeconds()) ? Utilities.formatDate(d, TZ, 'yyyy-MM-dd HH:mm:ss') : iso_(d);
-  return v.slice(1).map((r, i) => { const o = { _row: i + 2 }; h.forEach((k, j) => { o[k] = r[j] instanceof Date ? f(r[j]) : r[j]; }); return o; });
+  MEMO_[name] = v.slice(1).map((r, i) => { const o = { _row: i + 2 }; h.forEach((k, j) => { o[k] = r[j] instanceof Date ? f(r[j]) : r[j]; }); return o; });
+  return MEMO_[name].map(o => Object.assign({}, o));
 }
 function setRow_(name, row, obj) {
+  delete MEMO_[name];
   const sh = sheet_(name), h = HEAD[name];
   sh.getRange(row, 1, 1, h.length).setValues([h.map(k => obj[k] == null ? '' : obj[k])]);
 }
-function log_(who, action, ref, detail) { sheet_('Log').appendRow([stamp_(), who, action, ref, typeof detail === 'string' ? detail : JSON.stringify(detail || '')]); }
+function log_(who, action, ref, detail) { delete MEMO_.Log; sheet_('Log').appendRow([stamp_(), who, action, ref, typeof detail === 'string' ? detail : JSON.stringify(detail || '')]); }
 function product_(sku) { const p = CATALOG.find(x => x.sku === sku); if (!p) throw new Error('Unknown product.'); return p; }
 function addMonths_(isoDate, m) {
   const [y, mo, d] = isoDate.split('-').map(Number);
@@ -92,7 +98,14 @@ function normPhone_(s) {
   return d;
 }
 function normName_(s) { return String(s == null ? '' : s).toUpperCase().replace(/\s+/g, ' ').trim(); }
-function teamRows_() {
+function teamRows_(fresh) {
+  const cache = CacheService.getScriptCache();
+  if (!fresh) { const c = cache.get('team_v1'); if (c) return JSON.parse(c); }
+  const t = teamRowsRead_();
+  try { cache.put('team_v1', JSON.stringify(t), 600); } catch (e) {}
+  return t;
+}
+function teamRowsRead_() {
   const sh = SpreadsheetApp.openById(TEAM_SS_ID).getSheetByName('Team'); if (!sh) return [];
   return sh.getDataRange().getValues().slice(1).map(r => ({
     name: String(r[0] || '').trim(), pin: String(r[1] == null ? '' : r[1]).trim(),
@@ -106,7 +119,9 @@ function login(id, pin, remember) {
   id = clean_(id, 80); pin = String(pin == null ? '' : pin).trim();
   if (!id || !pin) throw new Error('Enter your phone number and PIN.');
   const cache = CacheService.getScriptCache(), ph = normPhone_(id);
-  const rows = teamRows_().filter(r => r.active && ((ph.length >= 8 && r.phone === ph) || normName_(r.name) === normName_(id)));
+  const pick = t => t.filter(r => r.active && ((ph.length >= 8 && r.phone === ph) || normName_(r.name) === normName_(id)));
+  let rows = pick(teamRows_());
+  if (!rows.some(r => r.pin !== '' && r.pin === pin)) rows = pick(teamRows_(true)); // PIN or staff may have just changed
   const k = 'lf_' + (ph || normName_(id)).slice(0, 60);
   if (+(cache.get(k) || 0) >= 5) throw new Error('Too many wrong PINs. Please wait 15 minutes.');
   if (+(cache.get('lf_all') || 0) >= 100) throw new Error('Too many sign-in attempts right now. Please wait 10 minutes.');
@@ -126,7 +141,8 @@ function user_(tok) {
   if (!raw) throw new Error('Please sign in again.');
   const s = JSON.parse(raw);
   if (!(Date.now() < +s.x)) { props_().deleteProperty(k); throw new Error('Your sign-in has expired. Please sign in again.'); }
-  const m = teamRows_().filter(r => r.active && normName_(r.name) === normName_(s.n) && (r.phone || '') === (s.p || '') && pinHash_(r.name, r.pin) === s.h);
+  const match = t => t.filter(r => r.active && normName_(r.name) === normName_(s.n) && (r.phone || '') === (s.p || '') && pinHash_(r.name, r.pin) === s.h);
+  let m = match(teamRows_()); if (m.length !== 1) m = match(teamRows_(true));
   if (m.length !== 1) { props_().deleteProperty(k); throw new Error('Please sign in again.'); }
   return { name: m[0].name, role: m[0].role };
 }
@@ -152,6 +168,7 @@ function newBatch(tok, sku, ctype, count, made) {
     const used = rows_('Batches').filter(b => b.code === p.code && String(b.made) === made).map(b => String(b.run));
     let run = 'A'; while (used.indexOf(run) >= 0) run = String.fromCharCode(run.charCodeAt(0) + 1);
     const batch = p.code + '-' + ymd + '-' + run, bb = addMonths_(made, SHELF_MONTHS), at = stamp_();
+    delete MEMO_.Batches; delete MEMO_.Cartons;
     sheet_('Batches').appendRow(HEAD.Batches.map(k => ({ batch: batch, sku: p.sku, code: p.code, name: p.name, ctype: ct.t, pcs: ct.pcs, cartons: count, made: made, bestBefore: bb, run: run, status: 'open', createdBy: u.name, createdAt: at, closedBy: '', closedAt: '', packed: 0, voided: '', madeChanged: made !== today ? 'yes' : '' })[k]));
     const w = String(count).length < 2 ? 2 : String(count).length;
     const cr = [];
@@ -178,6 +195,7 @@ function printLog(tok, batch, ns, kind) {
   const u = user_(tok), b = rows_('Batches').find(x => x.batch === batch); if (!b) throw new Error('Batch not found.');
   ns = (ns || []).map(Number).filter(n => n >= 1 && n <= 999).sort((a, c) => a - c);
   const txt = ns.length === +b.cartons ? 'all ' + ns.length : ns.join(', ');
+  delete MEMO_.Prints;
   sheet_('Prints').appendRow([stamp_(), u.name, batch, b.name, kind === 'reprint' ? 'reprint' : 'all', ns.length, txt]);
   return true;
 }
@@ -188,7 +206,7 @@ function prints(tok) {
 function batches(tok) {
   user_(tok);
   const cs = rows_('Cartons');
-  return rows_('Batches').filter(b => b.status === 'open' || String(b.closedAt).slice(0, 10) >= addMonths_(todayIso_(), -1).slice(0, 10))
+  return rows_('Batches').filter(b => b.status === 'open' || (b.status === 'closed' && String(b.closedAt).slice(0, 10) >= addMonths_(todayIso_(), -1).slice(0, 10)))
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 30)
     .map(b => { const mine = cs.filter(c => c.batch === b.batch); return Object.assign(batchInfo_(b), { done: mine.filter(c => c.status === 'packed').length, voidN: mine.filter(c => c.status === 'void').length }); });
 }
@@ -219,7 +237,7 @@ function photo(tok, id, slot, data, nonce, takenAt) {
     if (c.status === 'void') throw new Error('This carton number was voided. Do not use this sticker.');
     const b = rows_('Batches').find(x => x.batch === c.batch); if (b.status !== 'open') throw new Error('This batch is already closed.');
     const key = 'n_' + clean_(nonce, 60);
-    if (nonce && props_().getProperty(key)) return carton(id, tok);
+    if (nonce && props_().getProperty(key)) return { carton: id, dup: true };
     const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), 'image/' + m[1], id + '_' + slot + '.jpg');
     const f = folderFor_(c.batch).createFile(blob);
     c['photo' + slot] = f.getUrl(); c.photoBy = u.name; c.photoAt = clean_(takenAt, 30) || stamp_(); c.updatedAt = stamp_();
@@ -227,7 +245,7 @@ function photo(tok, id, slot, data, nonce, takenAt) {
     setRow_('Cartons', c._row, c);
     if (nonce) props_().setProperty(key, '1');
     log_(u.name, 'photo ' + slot, id, '');
-    return carton(id, tok);
+    return { carton: id, status: c.status, p1: !!c.photo1, p2: !!c.photo2 };
   } finally { lock.releaseLock(); }
 }
 function voidCartons(tok, batch, ids) {
