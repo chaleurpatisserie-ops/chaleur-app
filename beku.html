@@ -2562,25 +2562,29 @@ async function sticker(b, c) {
   return cv;
 }
 const toBlob = cv => new Promise(res => cv.toBlob(bl => res(bl), 'image/png'));
-/* one PDF, one 100x100 mm page per sticker (for NIIMBOT > Add > PDF Print) */
-function stickersPdf(canvases) {
+/* one PDF, one 100x100 mm page per sticker (for NIIMBOT > Add > PDF Print). 1-bit black/white, deflate: ~15 KB per sticker. */
+async function bits(cv) {
+  const w = cv.width, h = cv.height, d = cv.getContext('2d').getImageData(0, 0, w, h).data, row = Math.ceil(w / 8), out = new Uint8Array(row * h).fill(255);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; if (d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11 < 128) out[y * row + (x >> 3)] &= ~(128 >> (x & 7)); }
+  if (window.CompressionStream) { const z = new Response(new Blob([out]).stream().pipeThrough(new CompressionStream('deflate'))); return { data: new Uint8Array(await z.arrayBuffer()), filter: '/FlateDecode' }; }
+  return { data: out, filter: null };
+}
+async function stickersPdf(canvases) {
   const enc = new TextEncoder(), parts = [], offs = []; let len = 0;
   const add = x => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
   const n = canvases.length, PT = 283.46, kids = [];
   for (let i = 0; i < n; i++) kids.push((3 + i * 3) + ' 0 R');
-  add('%PDF-1.4\n%\xE2\xE3\n');
+  add('%PDF-1.4\n');
   const obj = (id, body) => { offs[id] = len; add(id + ' 0 obj\n'); body(); add('\nendobj\n'); };
   obj(1, () => add('<< /Type /Catalog /Pages 2 0 R >>'));
   obj(2, () => add('<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + n + ' >>'));
-  canvases.forEach((cv, i) => {
-    const p = 3 + i * 3, c = p + 1, im = p + 2;
-    const b64 = cv.toDataURL('image/jpeg', 0.95).split(',')[1], bin = atob(b64), jpg = new Uint8Array(bin.length);
-    for (let k = 0; k < bin.length; k++) jpg[k] = bin.charCodeAt(k);
+  for (let i = 0; i < n; i++) {
+    const cv = canvases[i], p = 3 + i * 3, c = p + 1, im = p + 2, img = await bits(cv);
     const cs = 'q ' + PT + ' 0 0 ' + PT + ' 0 0 cm /I Do Q';
     obj(p, () => add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + PT + ' ' + PT + '] /Resources << /XObject << /I ' + im + ' 0 R >> >> /Contents ' + c + ' 0 R >>'));
     obj(c, () => add('<< /Length ' + cs.length + ' >>\nstream\n' + cs + '\nendstream'));
-    obj(im, () => { add('<< /Type /XObject /Subtype /Image /Width ' + cv.width + ' /Height ' + cv.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpg.length + ' >>\nstream\n'); add(jpg); add('\nendstream'); });
-  });
+    obj(im, () => { add('<< /Type /XObject /Subtype /Image /Width ' + cv.width + ' /Height ' + cv.height + ' /ColorSpace /DeviceGray /BitsPerComponent 1' + (img.filter ? ' /Filter ' + img.filter : '') + ' /Length ' + img.data.length + ' >>\nstream\n'); add(img.data); add('\nendstream'); });
+  }
   const total = 3 + n * 3, xref = len;
   let x = 'xref\n0 ' + total + '\n0000000000 65535 f \n';
   for (let i = 1; i < total; i++) x += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
@@ -2604,14 +2608,27 @@ async function printView(id) {
     $('#pc').textContent = files.length;
     const u = URL.createObjectURL(bl); const a = document.createElement('a'); a.href = u; a.download = f.name; a.innerHTML = '<img src="' + u + '" alt="Sticker ' + esc(c.carton) + '">'; $('#th').appendChild(a);
   }
-  const bt = !!navigator.bluetooth;
+  const bt = !!navigator.bluetooth, isA = /Android/i.test(navigator.userAgent);
+  const pdfName = b.batch + ' stickers.pdf';
   $('#pr').outerHTML = '<div style="display:flex;flex-direction:column;gap:10px">' +
-    (bt ? '<button class="btn" id="pb">' + ic('print', '#FFFDFA') + 'Print ' + files.length + ' on the B4</button><div id="bs" class="sub" style="font-size:13px">Turn on the B4 and Bluetooth. Tap print, pick the B4 in the list. Stickers print straight away, no NIIMBOT app needed.</div>' : '') +
-    '<button class="btn' + (bt ? ' s' : '') + '" id="pa">' + ic(bt ? 'share' : 'print', bt ? null : '#FFFDFA') + (bt ? 'Or save a PDF for the NIIMBOT app' : 'Save ' + files.length + ' stickers (PDF) for NIIMBOT') + '</button>' +
-    '<a class="btn s" href="#batch/' + encodeURIComponent(id) + '">Done printing · go to packing</a><div class="sub" style="font-size:13px">Tap one sticker below to save just that one (for a reprint).</div></div>';
-  $('#pa').onclick = () => shareFiles([new File([stickersPdf(canvases)], b.batch + ' stickers.pdf', { type: 'application/pdf' })]);
+    '<button class="btn" id="pa">' + ic('print', '#FFFDFA') + 'Download PDF · ' + files.length + ' stickers</button>' +
+    '<div class="card txt" style="font-size:14px;line-height:1.7"><b>Print in NIIMBOT</b><br>1. Tap <b>Download PDF</b>' + (isA ? '' : ', then <b>Save to Files</b>') + '.<br>2. Open <b>NIIMBOT</b> → new label <b>100×100</b>.<br>3. <b>Add</b> → swipe → <b>PDF Print</b> → pick <b>' + esc(pdfName) + '</b>.<br>4. Print. One page = one sticker.</div>' +
+    '<a class="btn s" href="#batch/' + encodeURIComponent(id) + '">Done printing · go to packing</a>' +
+    '<div class="sub" style="font-size:13px">Reprint one carton: tap its sticker below to download a PDF of just that one.</div>' +
+    (bt ? '<button class="btn s" id="pb" style="min-height:44px;font-size:14px">Try direct Bluetooth print (test)</button><div id="bs" class="sub" style="font-size:13px"></div>' : '') + '</div>';
+  $('#pa').onclick = () => savePdf([...canvases], pdfName);
   if (bt) $('#pb').onclick = () => btPrint(canvases, $('#pb'), $('#bs'));
-  app.querySelectorAll('#th a').forEach((a, i) => { if (bt) a.onclick = e => { if (confirm('Print sticker ' + list[i].n + ' on the B4? (Cancel = save the image instead)')) { e.preventDefault(); btPrint([canvases[i]], $('#pb'), $('#bs')); } }; });
+  app.querySelectorAll('#th a').forEach((a, i) => { a.onclick = e => { e.preventDefault(); savePdf([canvases[i]], list[i].carton + '.pdf'); }; });
+}
+async function savePdf(canvases, name) {
+  const pdf = await stickersPdf(canvases);
+  if (pdf.size > 9.5e6) { toast('PDF too big for NIIMBOT (' + (pdf.size / 1e6).toFixed(1) + ' MB). Download in smaller groups.', 6000); return; }
+  const f = new File([pdf], name, { type: 'application/pdf' });
+  if (!/Android/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: [f] })) {
+    try { await navigator.share({ files: [f], title: name }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  toast('Saved to Downloads: ' + name, 4000);
 }
 
 /* ---------------- direct print to NIIMBOT B4 over Bluetooth (Android Chrome) ---------------- */
@@ -2639,28 +2656,10 @@ async function btPrint(canvases, btn, st) {
     say('Done ✓ ' + canvases.length + ' printed. Check they look right before packing.'); toast('Printed ' + canvases.length);
   } catch (e) {
     if (e && /cancel/i.test(e.message || '') ) say('Cancelled. Tap print to try again.');
-    else { say('Printer problem: ' + (e.message || e) + '. Use "save a PDF for the NIIMBOT app" instead.'); }
+    else { say('Printer problem: ' + (e.message || e) + '. Use Download PDF instead.'); }
     try { if (NBC) await NBC.disconnect(); } catch (x) {} NBC = null;
   } finally { btn.disabled = false; }
 }
-function shareFiles(files) {
-  const go = async () => {
-    try {
-      if (!/Android/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: files })) { await navigator.share({ files: files, title: 'BEKU stickers' }); return; }
-    } catch (e) { if (e.name === 'AbortError') return; }
-    toast('Saving ' + files.length + ' sticker(s) to Downloads…', 4000);
-    files.forEach((f, i) => setTimeout(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }, i * 400));
-  };
-  if (localStorage.getItem('beku_nohelp')) return go();
-  const d = document.createElement('div'); d.className = 'sheet';
-  d.innerHTML = '<div role="dialog" aria-label="Pick NIIMBOT"><div class="disp" style="font-size:26px">print the PDF in NIIMBOT</div><div style="font-size:15px;line-height:1.6">1. Tap <b>Save PDF</b>' + (/Android/i.test(navigator.userAgent) ? ' (it goes to Downloads)' : ', then <b>Save to Files</b>') + '.<br>2. Open the <b>NIIMBOT</b> app → new label <b>100×100</b>.<br>3. <b>Add → PDF Print</b> → pick the PDF.<br>4. Print. One page = one sticker.</div>' +
-    '<button class="btn s" id="sh">' + ic('share') + 'Save PDF</button><button class="btn" style="background:transparent;min-height:44px" id="nh">Don\'t show this again</button></div>';
-  document.body.appendChild(d);
-  d.onclick = e => { if (e.target === d) d.remove(); };
-  d.querySelector('#sh').onclick = () => { d.remove(); go(); };
-  d.querySelector('#nh').onclick = () => { localStorage.setItem('beku_nohelp', '1'); d.remove(); go(); };
-}
-
 /* ---------------- batch (packing progress) ---------------- */
 async function batchView(id) {
   app.innerHTML = hdr('batch', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
