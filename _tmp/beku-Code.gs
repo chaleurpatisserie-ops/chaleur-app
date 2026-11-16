@@ -240,6 +240,15 @@ function folderFor_(batch) {
   const root = DriveApp.getFolderById(props_().getProperty('ROOT_ID'));
   const it = root.getFoldersByName(batch); return it.hasNext() ? it.next() : root.createFolder(batch);
 }
+/* returns a photo as a data URL so staff can see it in the app (Drive files stay private). */
+function photoData(tok, id, slot) {
+  user_(tok); id = clean_(id, 40).toUpperCase(); slot = +slot === 2 ? 2 : 1;
+  const c = rows_('Cartons').find(x => x.carton === id); if (!c) throw new Error('Carton not found.');
+  const url = String(c['photo' + slot] || ''); if (!url) throw new Error('No photo yet.');
+  const m = /\/d\/([\w-]{10,})/.exec(url) || /[?&]id=([\w-]{10,})/.exec(url); if (!m) throw new Error('Photo link not readable.');
+  const b = DriveApp.getFileById(m[1]).getBlob();
+  return { slot: slot, data: 'data:' + (b.getContentType() || 'image/jpeg') + ';base64,' + Utilities.base64Encode(b.getBytes()) };
+}
 /* slot 1 = cakes in the open box (top), slot 2 = label side. data = dataURL (jpeg). nonce makes a re-send harmless. */
 function photo(tok, id, slot, data, nonce, takenAt) {
   FRESH_ = true;
@@ -481,7 +490,7 @@ function deliverySend(tok, id) {
 }
 
 /* ---------- web app ---------- */
-const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend };
+const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend };
 function doPost(e) {
   let out;
   try {
