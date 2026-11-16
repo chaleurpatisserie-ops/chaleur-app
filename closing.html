@@ -997,7 +997,7 @@ async function remFill(){ const el=$("#remcard"); if(!el||!KEY||typeof CA==='und
   if(st==="unsupported"){ el.hidden=true; return; }
   el.hidden=false;
   el.innerHTML=st==="on"?`<div class="row2" style="align-items:center"><span class="hint" style="margin:0">🔔 <b>Closing reminders are on</b> for ${o} on this phone.</span><button class="cb ghost" type="button" data-rem="off">Turn off</button></div>`
-    :`<div class="stack" style="gap:8px"><p class="hint" style="margin:0">🔔 <b>Get the closing reminder on this phone</b> — a notification before closing time and if the count is late. No WhatsApp needed.</p><button class="cb ghost full" type="button" data-rg="open">🔔 Turn on reminders — show me how</button></div>`; }
+    :`<div class="stack" style="gap:8px"><p class="hint" style="margin:0">🔔 <b>Get the closing reminder on this phone</b> — one notification a little after your usual sending time, only if the count is not in yet. No WhatsApp needed.</p><button class="cb ghost full" type="button" data-rg="open">🔔 Turn on reminders — show me how</button></div>`; }
 /* v22.59b (Alfred 22 Oct: "can u just show this instruction and on the webpage straight away guide them, make sure is compatible with all
    system"): when this phone does not get the outlet's reminders yet, a guide opens by itself on the form with the steps for THIS phone and
    browser — Android / computer: one button + Allow · blocked: where to allow it in this browser · iPhone / iPad (Safari, Chrome, Firefox,
@@ -1017,8 +1017,8 @@ function rgKind(st){ if(st==="on") return "on"; if(RG.app) return "inapp";
 const rgLink=()=>location.origin+location.pathname+"?o="+encodeURIComponent(KEY||"");
 const rgSteps=a=>`<ol class="rgs">${a.map(x=>`<li>${x}</li>`).join("")}</ol>`;
 function rgBody(k,err){ const o=INFO&&INFO.outlet?esc(INFO.outlet.name):"your outlet", B=RG.br, copy=`<button class="cb ghost full" type="button" data-rg="copy">📋 Copy link</button>`;
-  if(k==="done") return `<div class="rgok">✓</div><h3 class="rgh">Reminders are on</h3><p class="hint" style="font-size:15px">This phone now gets the closing reminder for <b>${o}</b> — before closing time, and if the count is late.</p><button class="cb ok full" type="button" data-rg="later">Done</button>`;
-  const intro=`<p class="hint" style="font-size:15px;margin:0 0 4px">Get a notification on this phone before closing time, and if tonight's count is late — no WhatsApp needed. Do it once on each phone.</p>`;
+  if(k==="done") return `<div class="rgok">✓</div><h3 class="rgh">Reminders are on</h3><p class="hint" style="font-size:15px">This phone now gets the closing reminder for <b>${o}</b> — one reminder a little after your usual sending time, only if the count is not in yet.</p><button class="cb ok full" type="button" data-rg="later">Done</button>`;
+  const intro=`<p class="hint" style="font-size:15px;margin:0 0 4px">Get one reminder on this phone, a little after the time you usually send the count and only if tonight's count is not in yet — no WhatsApp needed. Do it once on each phone.</p>`;
   const fail=err?`<div class="banner warn" style="margin:8px 0">${esc(err)}</div>`:"";
   if(k==="tap") return intro+fail+rgSteps(["Tap <b>Turn on reminders</b> below.","Your phone asks to show notifications — tap <b>Allow</b>."])+`<button class="cb ok full" type="button" data-rg="on">🔔 Turn on reminders</button>`;
   if(k==="denied"){ const how=RG.ios?["Open the iPhone <b>Settings</b> › <b>Notifications</b>.","Tap <b>CA Closing</b> and switch on <b>Allow Notifications</b>.","Come back here and tap <b>Try again</b>."]
@@ -1421,6 +1421,7 @@ async function send(d){
   if(SENDING) return; SENDING=true; $("#send").disabled=true; $("#edit").disabled=true; status("Sending report and photos… keep this page open.");
   try{
     const r=await run("submitClosing",{...d,token:PREV&&PREV.token}); clearDraft();
+    try{ run("closeNotify",{key:d.key,date:d.date}).catch(()=>{}); }catch(x){} /* v23.02: the report goes to the team group now */
     $("#bar").hidden=true; window.scrollTo(0,0);
     const wa=r.wa?`https:\/\/wa.me/${esc(r.wa)}?text=${encodeURIComponent(r.summary)}`:"";
     const n=(+INFO.streak||0)+(INFO.existing?0:1); INFO.streak=n; INFO.existing=INFO.existing||{at:new Date().toISOString(),by:d.who};
