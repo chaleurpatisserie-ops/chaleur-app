@@ -64,9 +64,9 @@ label.lb{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--m
 .slot{border-radius:20px;border:2px dashed var(--hair);min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;text-align:center;position:relative;overflow:hidden;cursor:pointer;background:var(--milk)}
 .slot.done{border:2px solid var(--pistachio-m);background:var(--pistachio-l)}
 .slot img{width:100%;height:120px;object-fit:cover;border-radius:12px}
-.slot input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.slot input{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:200px}
 .num{width:26px;height:26px;border-radius:99px;background:var(--ink);color:var(--milk);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.sheet{position:fixed;inset:0;background:rgba(42,30,46,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.sheet{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(42,30,46,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
 .sheet>div{background:var(--ink);color:var(--milk);width:100%;max-width:520px;border-radius:32px 32px 0 0;padding:20px 20px 28px;display:flex;flex-direction:column;gap:12px}
 .sheet .btn.s{background:var(--milk)}
 .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.thumbs img{width:100%;border-radius:8px;border:1px solid var(--hair);background:#fff}
@@ -2453,6 +2453,7 @@ async function route(force) {
   const h = location.hash.replace(/^#\/?/, ''), [v, a] = h.split('/');
   window.scrollTo(0, 0);
   try {
+    if (!S.tok && !S.caTried) { S.caTried = true; if (await caSignIn()) return route(); }
     if (c && !S.tok) return pub(c);
     if (!S.tok) return signin();
     if (c && !v) return cartonView(c);
@@ -2461,7 +2462,9 @@ async function route(force) {
     if (v === 'batch') return batchView(decodeURIComponent(a));
     if (v === 'carton') return cartonView(decodeURIComponent(a));
     if (v === 'close') return closeView(decodeURIComponent(a));
-    if (v === 'scan') return scanView();
+    if (v === 'scan') return scanView(a ? decodeURIComponent(a) : '');
+    if (v === 'stock') return stockView();
+    if (v === 'send') return a ? deliveryView(decodeURIComponent(a)) : deliveriesView();
     if (v === 'prints') return printsView();
     return home();
   } catch (e) { fail(e); }
@@ -2469,6 +2472,14 @@ async function route(force) {
 window.addEventListener('hashchange', () => route());
 
 /* ---------------- sign in ---------------- */
+/* Signed in to the Chaleur back-office app on this phone? Use that (same website). The BEKU server checks it with the back-office server. */
+async function caSignIn() {
+  let t = '';
+  try { const raw = localStorage.getItem('chaleur.s') || sessionStorage.getItem('chaleur.s'); const o = raw && JSON.parse(raw); if (o && o.t && (!o.exp || o.exp > Date.now())) t = o.t; } catch (e) {}
+  if (!/^s1\.[a-f0-9]{64}$/.test(t)) return false;
+  app.innerHTML = '<div class="top"><div class="t">' + LOGO + '</div></div><div class="wrap"><div class="card" style="color:var(--muted)">Signing you in from the Chaleur app…</div></div>';
+  try { const r = await api('loginCA', t, true); S.tok = r.token; S.name = r.name; localStorage.setItem('beku_tok', r.token); localStorage.setItem('beku_name', r.name); flush(); return true; } catch (e) { return false; }
+}
 function signin() {
   app.innerHTML = '<div class="top"><div class="t">' + LOGO + '<h1 class="disp" style="margin-top:14px">sign in</h1><div class="sub">Same phone and PIN as the Chaleur back office.</div></div></div>' +
     '<form class="wrap" id="f"><label class="lb">Phone number<input type="tel" id="ph" autocomplete="tel" required></label><label class="lb">PIN<input type="password" id="pin" inputmode="numeric" autocomplete="current-password" required></label>' +
@@ -2489,8 +2500,8 @@ async function home() {
     '<div class="tiles">' +
     '<a class="tile" href="#new" style="background:var(--pistachio-l);color:var(--pistachio-d)">' + ic('box', null, 28) + '<div><div class="st">STEP 1</div><div class="n">New batch</div><small>Print stickers</small></div></a>' +
     '<a class="tile" href="#scan" style="background:var(--baby-l);color:var(--baby-d)">' + ic('scan', null, 28) + '<div><div class="st">STEP 2</div><div class="n">Scan carton</div><small>Photo while packing</small></div></a>' +
-    '<button class="tile" disabled style="background:var(--lilac-l);color:var(--lilac-d)">' + ic('truck', null, 28) + '<div><div class="st">STEP 3</div><div class="n">Pick &amp; send</div><small>Coming next</small></div></button>' +
-    '<button class="tile" disabled style="background:var(--cocoa-l);color:var(--cocoa-d)">' + ic('stack', null, 28) + '<div><div class="st">ANYTIME</div><div class="n">Stock</div><small>Coming next</small></div></button></div>' +
+    '<a class="tile" href="#send" style="background:var(--lilac-l);color:var(--lilac-d)">' + ic('truck', null, 28) + '<div><div class="st">STEP 3</div><div class="n">Pick &amp; send</div><small>Deliveries</small></div></a>' +
+    '<a class="tile" href="#stock" style="background:var(--cocoa-l);color:var(--cocoa-d)">' + ic('stack', null, 28) + '<div><div class="st">ANYTIME</div><div class="n">Stock</div><small>HQ Freezer</small></div></a></div>' +
     '<a class="btn s" href="#prints" style="min-height:48px">' + ic('print') + 'Print history</a>' +
     '<div class="eb">Open batches</div><div id="bl"><div class="card" style="color:var(--muted)">Loading…</div></div></div>';
   cat().catch(() => {});
@@ -2620,13 +2631,20 @@ async function printView(id) {
   }
   const bt = !!navigator.bluetooth, isA = /Android/i.test(navigator.userAgent);
   const pdfName = b.batch + ' stickers.pdf';
-  const btBlock = bt ? '<button class="btn" id="pb">' + ic('print', '#FFFDFA') + 'Print ' + list.length + ' on the B4</button><div id="bs" class="sub" style="font-size:13px">Turn on the B4 + Bluetooth. Tap print, pick the B4 in the list.</div>' : '';
+  const isI = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const here = location.origin + location.pathname + '#print/' + encodeURIComponent(id);
+  const btBlock = bt ? '<button class="btn" id="pb">' + ic('print', '#FFFDFA') + 'Print ' + list.length + ' on the B4</button><div id="bs" class="sub" style="font-size:13px">Turn on the B4 + Bluetooth. <b>Close the NIIMBOT app first</b> (it holds the printer). Tap print, pick the B4 in the list.</div>'
+    : '<div class="alert y" style="display:flex;flex-direction:column;gap:8px"><b>Direct printing needs another browser on this phone.</b>' +
+      (isI ? '<span>iPhone: install the free <b>Bluefy</b> app (Safari cannot use Bluetooth). Copy the link, open Bluefy, paste it, sign in once. Then you can print straight to the B4.</span><a class="btn s" style="min-height:44px" href="https://apps.apple.com/app/id1492822055" target="_blank" rel="noopener">Get Bluefy (App Store)</a>'
+        : '<span>Android: open this page in <b>Google Chrome</b>.</span><a class="btn s" style="min-height:44px" href="intent://' + location.host + location.pathname + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent('https://play.google.com/store/apps/details?id=com.android.chrome') + ';end">Open in Chrome</a>') +
+      '<button class="btn s" style="min-height:44px" id="cpl">Copy this page link</button><span style="font-size:13px">Or print with the PDF below.</span></div>';
   const pdfBlock = '<button class="btn' + (bt ? ' s' : '') + '" id="pa">' + ic(bt ? 'share' : 'print', bt ? null : '#FFFDFA') + (bt ? 'Or download PDF for NIIMBOT' : 'Download PDF · ' + files.length + ' stickers') + '</button>' +
     '<div class="card txt" style="font-size:' + (bt ? '13' : '14') + 'px;line-height:1.7"><b>PDF in NIIMBOT</b><br>1. Tap <b>Download PDF</b>' + (isA ? '' : ', then <b>Save to Files</b>') + '.<br>2. Open <b>NIIMBOT</b> → new label <b>100×100</b>.<br>3. <b>Add</b> → swipe → <b>PDF Print</b> → pick <b>' + esc(pdfName) + '</b>.<br>4. Print. One page = one sticker.</div>';
   $('#pr').outerHTML = '<div style="display:flex;flex-direction:column;gap:10px">' + btBlock + pdfBlock +
     '<a class="btn s" href="#batch/' + encodeURIComponent(id) + '">Done printing · go to packing</a>' +
     '<div class="sub" style="font-size:13px">Reprint one carton: tap its sticker below.</div></div>';
   $('#pa').onclick = async () => { if (b.prints && b.prints.length && !confirm('This batch was printed before. Download all ' + canvases.length + ' stickers again?')) return; if (await savePdf([...canvases], pdfName)) { api('printLog', S.tok, b.batch, list.map(c => c.n), 'all').catch(() => {}); b.prints = (b.prints || []).concat([{}]); } };
+  const cpl = $('#cpl'); if (cpl) cpl.onclick = async () => { try { await navigator.clipboard.writeText(here); toast('Link copied'); } catch (e) { prompt('Copy this link:', here); } };
   if (bt) $('#pb').onclick = async () => { if (b.prints && b.prints.length && !confirm('This batch was printed before. Print all ' + canvases.length + ' again?')) return; if (await btPrint(canvases, $('#pb'), $('#bs'))) { api('printLog', S.tok, b.batch, list.map(c => c.n), 'all').catch(() => {}); b.prints = (b.prints || []).concat([{}]); } };
   app.querySelectorAll('#th a').forEach((a, i) => { a.onclick = async e => { e.preventDefault(); if (!confirm('Reprint sticker for carton ' + list[i].n + '?')) return;
     if (bt && confirm('Print carton ' + list[i].n + ' straight to the B4 by Bluetooth? (Cancel = download PDF)')) { if (await btPrint([canvases[i]], $('#pb'), $('#bs'))) api('printLog', S.tok, b.batch, [list[i].n], 'reprint').catch(() => {}); return; }
@@ -2677,7 +2695,7 @@ async function btPrint(canvases, btn, st) {
     say('Done ✓ ' + canvases.length + ' printed. Check they look right before packing.'); toast('Printed ' + canvases.length); return true;
   } catch (e) {
     if (e && /cancel/i.test(e.message || '') ) say('Cancelled. Tap print to try again.');
-    else { say('Printer problem: ' + (e.message || e) + '. Use Download PDF instead.'); }
+    else { say('Printer problem: ' + (e.message || e) + '. Check: B4 switched on and not printing for another phone · NIIMBOT app closed · Bluetooth and Location on. Then try again, or use Download PDF.'); }
     try { if (NBC) await NBC.disconnect(); } catch (x) {} NBC = null; return false;
   } finally { btn.disabled = false; }
 }
@@ -2699,13 +2717,13 @@ async function batchView(id) {
   if (decodeURIComponent(location.hash) === '#batch/' + id) renderBatch(b);
 }
 function renderBatch(b) {
-  const live = b.list.filter(c => c.status !== 'void'), done = live.filter(c => c.status === 'packed').length;
+  const live = b.list.filter(c => c.status !== 'void'), done = live.filter(c => ['packed', 'picked', 'sent'].indexOf(c.status) >= 0).length;
   const cols = b.list.length > 30 ? 6 : 5;
   app.innerHTML = hdr(esc(title(b.name).toLowerCase()), '#') + '<div class="wrap">' +
     '<div class="spec" style="color:var(--muted)">' + esc(b.batch) + ' · ' + esc(b.ctype) + ' ' + (b.pcs || '') + ' pcs · made ' + b.madeDmy + '</div>' +
     (b.status === 'cancelled' ? '<div class="alert r"><b>Cancelled</b> by ' + esc(title(b.closedBy)) + ' · ' + esc(String(b.closedAt).slice(0, 16)) + '. All stickers are void.</div>' : b.status !== 'open' ? '<div class="alert g">Closed by ' + esc(title(b.closedBy)) + ' · ' + esc(String(b.closedAt).slice(0, 16)) + '</div>' : '') +
     '<div><div class="row"><span class="disp" style="font-size:32px">' + done + '<span style="font-size:18px;color:var(--muted)"> / ' + live.length + '</span></span><span class="sub" style="font-size:14px">cartons with both photos</span></div><div class="bar" style="margin-top:8px"><i style="width:' + Math.round(100 * done / Math.max(1, live.length)) + '%"></i></div></div>' +
-    '<div class="grid" style="grid-template-columns:repeat(' + cols + ',1fr)">' + b.list.map(c => '<a class="cell ' + (c.status === 'packed' ? 'ok' : c.status === 'photo' ? 'half' : c.status === 'void' ? 'void' : '') + '" href="#carton/' + encodeURIComponent(c.carton) + '">' + (c.status === 'packed' ? ic('check', null, 14) : '') + String(c.n).padStart(2, '0') + '</a>').join('') + '</div>' +
+    '<div class="grid" style="grid-template-columns:repeat(' + cols + ',1fr)">' + b.list.map(c => '<a class="cell ' + (['packed', 'picked', 'sent'].indexOf(c.status) >= 0 ? 'ok' : c.status === 'photo' ? 'half' : c.status === 'void' ? 'void' : '') + '" href="#carton/' + encodeURIComponent(c.carton) + '">' + (['packed', 'picked', 'sent'].indexOf(c.status) >= 0 ? ic('check', null, 14) : '') + String(c.n).padStart(2, '0') + '</a>').join('') + '</div>' +
     '<div class="sub" style="font-size:13px">Green = both photos in · blue = 1 photo · grey = not yet · dashed = void. Tap a number to open that carton.</div>' +
     (b.status === 'open' ? '<div class="card txt" style="font-size:14px"><b>1</b> Stick the label on the side of the empty carton. <b>2</b> Pack ' + (b.pcs || '') + ' pcs. <b>3</b> Scan the QR. <b>4</b> Two photos: cakes from the top, then the label side.</div>' +
       '<a class="btn" href="#scan">' + ic('scan', '#FFFDFA') + 'Scan a carton</a><a class="btn s" href="#print/' + encodeURIComponent(b.batch) + '">Reprint stickers</a><a class="btn s" href="#close/' + encodeURIComponent(b.batch) + '">Close batch</a>' +
@@ -2721,31 +2739,82 @@ let stream = null;
 function stopCam() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
 window.addEventListener('hashchange', stopCam);
 function idFrom(txt) { const m = /[?&]c=([^&#]+)/.exec(txt); const v = decodeURIComponent(m ? m[1] : txt).trim().toUpperCase(); return /^[A-Z]+\d+-\d{6}-[A-Z]-\d{2,3}$/.test(v) ? v : ''; }
-async function scanView() {
-  app.innerHTML = hdr('scan carton', '#') + '<div class="wrap"><div id="cam"></div><div class="card txt" style="font-size:14px">Point at the QR on the carton sticker. Or use your phone camera app: scanning the QR opens this app on that carton.</div>' +
-    '<label class="lb">Or type the carton number<input type="text" id="cid" placeholder="PG101-261113-A-07" autocapitalize="characters"></label><button class="btn s" id="og">Open carton</button></div>';
-  $('#og').onclick = () => { const v = idFrom($('#cid').value); if (!v) return toast('That is not a carton number.'); location.hash = '#carton/' + encodeURIComponent(v); };
-  if (!('BarcodeDetector' in window)) { $('#cam').innerHTML = '<div class="alert y">This phone\'s browser cannot scan inside the app. Use the phone camera app on the QR instead.</div>'; return; }
+let JQ = null;
+function loadJQ() { return JQ ? Promise.resolve(JQ) : new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'beku/jsqr.js'; sc.onload = () => { JQ = window.jsQR; res(JQ); }; sc.onerror = () => rej(new Error('Could not load the scanner. Check internet.')); document.head.appendChild(sc); }); }
+/* Camera scanner. Uses the phone's built-in reader where it has one (Android Chrome), else jsQR (iPhone). onHit(id) returns true to keep scanning. */
+async function startScanner(box, onHit) {
+  stopCam();
+  let det = null;
+  try { if ('BarcodeDetector' in window && (await BarcodeDetector.getSupportedFormats()).indexOf('qr_code') >= 0) det = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) {}
   try {
-    const det = new BarcodeDetector({ formats: ['qr_code'] });
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    const v = document.createElement('video'); v.setAttribute('playsinline', ''); v.muted = true; v.srcObject = stream; $('#cam').appendChild(v); await v.play();
+    const jq = det ? null : await loadJQ();
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    const v = document.createElement('video'); v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); v.muted = true; v.autoplay = true; v.srcObject = stream;
+    box.innerHTML = ''; box.appendChild(v); await v.play();
+    const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true });
+    let last = '', lastAt = 0;
     const tick = async () => {
-      if (!stream) return;
-      try { const r = await det.detect(v); const hit = r.map(x => idFrom(x.rawValue)).find(Boolean); if (hit) { stopCam(); if (navigator.vibrate) navigator.vibrate(80); location.hash = '#carton/' + encodeURIComponent(hit); return; } } catch (e) {}
-      setTimeout(tick, 250);
+      if (!stream || !document.body.contains(v)) return;
+      let raw = '';
+      try {
+        if (det) { const r = await det.detect(v); raw = (r.find(x => idFrom(x.rawValue)) || {}).rawValue || ''; }
+        else if (v.videoWidth) { const k = Math.min(1, 640 / v.videoWidth); cv.width = Math.round(v.videoWidth * k); cv.height = Math.round(v.videoHeight * k); cx.drawImage(v, 0, 0, cv.width, cv.height); const r = jq(cx.getImageData(0, 0, cv.width, cv.height).data, cv.width, cv.height, { inversionAttempts: 'dontInvert' }); raw = r ? r.data : ''; }
+      } catch (e) {}
+      const hit = raw && idFrom(raw);
+      if (hit && !(hit === last && Date.now() - lastAt < 3000)) {
+        last = hit; lastAt = Date.now(); if (navigator.vibrate) navigator.vibrate(80);
+        const more = await onHit(hit); if (!more) { stopCam(); return; }
+      }
+      setTimeout(tick, det ? 200 : 120);
     };
     tick();
-  } catch (e) { $('#cam').innerHTML = '<div class="alert y">Camera not available (' + esc(e.message) + '). Use the phone camera app on the QR instead.</div>'; }
+  } catch (e) {
+    box.innerHTML = '<div class="alert y">Camera not available (' + esc(e.message || e.name) + '). ' + (/iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone: Settings → Safari → Camera → Allow, then tap refresh.' : 'Allow the camera for this site, then tap refresh.') + ' Or type the carton number below.</div>';
+  }
+}
+async function scanView(target) {
+  const del = /^D\d{6}-\d+$/.test(target || '') ? target : '';
+  app.innerHTML = hdr(del ? 'scan to send' : 'scan carton', del ? '#send/' + encodeURIComponent(del) : '#') + '<div class="wrap"><div id="cam"><div class="card" style="color:var(--muted)">Starting camera…</div></div>' +
+    (del ? '<div id="sl" class="card txt" style="font-size:14px">Scan each carton for <b>' + esc(del) + '</b>. Keep scanning; each one is added.</div><a class="btn" href="#send/' + encodeURIComponent(del) + '">Done scanning</a>'
+      : '<div class="card txt" style="font-size:14px">Point at the QR on the carton sticker.</div>') +
+    '<label class="lb">Or type the carton number<input type="text" id="cid" placeholder="PG101-261113-A-07" autocapitalize="characters"></label><button class="btn s" id="og">' + (del ? 'Add carton' : 'Open carton') + '</button></div>';
+  const onHit = async id => {
+    if (!del) { location.hash = '#carton/' + encodeURIComponent(id); return false; }
+    await pickInto(del, id, m => { const sl = $('#sl'); if (sl) sl.innerHTML = m; });
+    return true;
+  };
+  $('#og').onclick = async () => { const v = idFrom($('#cid').value); if (!v) return toast('That is not a carton number.'); $('#cid').value = ''; await onHit(v); };
+  startScanner($('#cam'), onHit);
+}
+async function pickInto(del, id, say) {
+  try {
+    let r = await api('pick', S.tok, del, id, false);
+    if (r.warn) { if (!confirm(r.warn + '\n\nOK = send this newer carton anyway. Cancel = skip it.')) { say('Skipped ' + esc(id) + '. Scan an older carton.'); toast('Skipped ' + id); return; } r = await api('pick', S.tok, del, id, true); }
+    const n = r.info ? r.info.count : 0;
+    say(r.already ? esc(id) + ' is already in this delivery. <b>' + n + '</b> cartons.' : '✓ Added <b>' + esc(id) + '</b> (' + esc(r.name || '') + '). <b>' + n + '</b> cartons so far.');
+    toast(r.already ? 'Already added' : '✓ ' + id);
+  } catch (e) { say('<span style="color:var(--bubblegum-d)"><b>Not added:</b> ' + esc(e.message) + '</span>'); toast(e.message, 5000); if (navigator.vibrate) navigator.vibrate([60, 60, 60]); }
 }
 
 /* ---------------- carton (staff) ---------------- */
 async function compress(file) {
-  const bmp = await createImageBitmap(file); const k = Math.min(1, 1280 / Math.max(bmp.width, bmp.height));
-  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
-  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height); return cv.toDataURL('image/jpeg', 0.72);
+  /* createImageBitmap is missing on older iPhones: fall back to an <img>. */
+  let src, W, H;
+  try { src = await createImageBitmap(file, { imageOrientation: 'from-image' }); W = src.width; H = src.height; }
+  catch (e) {
+    src = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('This photo cannot be read. Use the camera button, not a HEIC/Live photo.')); im.src = URL.createObjectURL(file); });
+    W = src.naturalWidth; H = src.naturalHeight;
+  }
+  const k = Math.min(1, 1280 / Math.max(W, H)), cv = document.createElement('canvas'); cv.width = Math.round(W * k); cv.height = Math.round(H * k);
+  cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height); return cv.toDataURL('image/jpeg', 0.72);
 }
 const CC = {};
+const PV = {};
+function showPhoto(src, cap) {
+  const d = document.createElement('div'); d.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;gap:10px';
+  d.innerHTML = '<img src="' + src + '" style="max-width:100%;max-height:82vh;object-fit:contain;border-radius:8px"><div style="color:#fff;font-size:14px">' + esc(cap) + '</div><button class="btn s" style="max-width:220px">Close</button>';
+  d.onclick = () => d.remove(); document.body.appendChild(d);
+}
 async function cartonView(id, local) {
   id = String(id).toUpperCase();
   if (location.search) history.replaceState(null, '', location.pathname + '#carton/' + encodeURIComponent(id));
@@ -2755,19 +2824,26 @@ async function cartonView(id, local) {
   if (c.staffError) return fail(new Error(c.staffError));
   const s = c.staff, pend = (await qAll()).filter(x => x.cid === id), has = k => s['p' + k] || pend.some(x => x.slot === k);
   const closed = s.batchStatus !== 'open';
-  const slot = (k, lab, hint) => c.void ? '' : '<label class="slot' + (has(k) ? ' done' : '') + '"><span class="num">' + k + '</span><b style="font-size:14px">' + lab + '</b>' + (has(k) ? '<span style="font-size:13px;color:var(--pistachio-d);font-weight:700">' + (s['p' + k] ? '✓ Uploaded' : '✓ Saved, uploading…') + '</span><span style="font-size:12px;color:var(--muted)">Tap to retake</span>' : '<span style="font-size:12px;color:var(--muted)">' + hint + '</span>' + ic('cam', 'var(--ink)', 30)) + (closed || c.void ? '' : '<input type="file" accept="image/*" capture="environment" data-slot="' + k + '">') + '</label>';
+  const slot = (k, lab, hint) => c.void ? '' : '<label class="slot' + (has(k) ? ' done' : '') + '"><span class="num">' + k + '</span><b style="font-size:14px">' + lab + '</b>' + (has(k) ? '<img class="pv" data-k="' + k + '" alt="Photo ' + k + '" src="' + (pend.filter(x => x.slot === k).map(x => x.data).pop() || PV[id + '_' + k] || '') + '" style="position:relative;z-index:2;background:#eee' + (pend.some(x => x.slot === k) || PV[id + '_' + k] ? '' : ';min-height:120px') + '">' + '<span style="font-size:13px;color:var(--pistachio-d);font-weight:700">' + (s['p' + k] ? '✓ Uploaded' : '✓ Saved, uploading…') + '</span><span style="font-size:12px;color:var(--muted)">' + (closed ? 'Tap photo to enlarge' : 'Tap photo to enlarge · tap here to retake') + '</span>' : '<span style="font-size:12px;color:var(--muted)">' + hint + '</span>' + ic('cam', 'var(--ink)', 30)) + (closed || c.void ? '' : '<input type="file" accept="image/*" capture="environment" data-slot="' + k + '">') + '</label>';
   app.innerHTML = hdr('carton ' + String(c.n).padStart(2, '0'), '#batch/' + encodeURIComponent(c.batch)) + '<div class="wrap">' +
     '<div class="row" style="justify-content:flex-start"><span class="temp" style="background:var(--pistachio-l);color:var(--pistachio-d)">' + ic('check', null, 14) + 'Matched</span><span class="spec" style="color:var(--muted)">' + esc(c.carton) + '</span></div>' +
     '<div class="card" style="background:' + fc(c.fam, 0) + ';color:' + fc(c.fam, 1) + '"><div class="disp" style="font-size:22px;font-weight:600">' + esc(title(c.name)) + '</div><div style="font-size:14px">Carton ' + c.n + ' of ' + c.of + ' · ' + esc(c.pack) + ' · best before ' + c.bestBefore + '</div></div>' +
     (c.void ? '<div class="alert r"><b>Void.</b> This carton number was cancelled. Do not use this sticker.</div>' : '') +
     (closed ? '<div class="alert y">This batch is closed. Photos can no longer be changed.</div>' : '') +
     '<div class="slots">' + slot(1, 'Cakes, from the top', 'Lid open, all cakes in the photo') + slot(2, 'Label side', 'Sticker readable, carton side') + '</div>' +
+    (closed || c.void ? '' : '<div class="sub" style="font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">Camera not opening? <label class="btn s" style="width:auto;min-height:40px;font-size:13px;position:relative;overflow:hidden">Photo 1 from gallery<input type="file" accept="image/*" data-slot="1" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0"></label><label class="btn s" style="width:auto;min-height:40px;font-size:13px;position:relative;overflow:hidden">Photo 2 from gallery<input type="file" accept="image/*" data-slot="2" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0"></label></div>') +
+    (s.status === 'picked' || s.status === 'sent' ? '<div class="alert g">' + (s.status === 'sent' ? 'Sent' : 'Picked for delivery') + ' · <a href="#send/' + encodeURIComponent(s.delivery) + '">' + esc(s.delivery) + '</a> · ' + esc(s.location) + '</div>' : '') +
     (s.at ? '<div class="sub" style="font-size:13px">Last photo by ' + esc(title(s.by)) + ' · ' + esc(String(s.at).slice(0, 16)) + '</div>' : '') +
     '<a class="btn" href="#scan">' + ic('scan', '#FFFDFA') + 'Scan next carton</a><a class="btn s" href="#batch/' + encodeURIComponent(c.batch) + '">Back to the batch</a>' +
     (!closed && !c.void && s.status !== 'packed' ? '<button class="btn s" id="vd" style="min-height:44px;font-size:14px;color:var(--bubblegum-d)">Void this sticker (damaged / not used)</button>' : '') +
     (!closed && c.void ? '<button class="btn s" id="uv" style="min-height:44px;font-size:14px">Undo void</button>' : '') + '</div>';
   const vd = $('#vd'); if (vd) vd.onclick = async () => { if (!confirm('Void carton ' + c.n + '? Throw this sticker away. To replace it, reprint carton ' + c.n + ' from the print page.')) return; vd.disabled = true; try { await api('voidCartons', S.tok, c.batch, [id]); toast('Carton ' + c.n + ' voided'); cartonView(id); } catch (e) { fail(e); vd.disabled = false; } };
   const uv = $('#uv'); if (uv) uv.onclick = async () => { uv.disabled = true; try { await api('reopenCarton', S.tok, id); toast('Void undone'); cartonView(id); } catch (e) { fail(e); uv.disabled = false; } };
+  app.querySelectorAll('img.pv').forEach(im => {
+    const k = +im.dataset.k, key = id + '_' + k;
+    im.onclick = e => { e.preventDefault(); e.stopPropagation(); if (im.src && im.src.indexOf('data:') === 0) showPhoto(im.src, 'Carton ' + c.n + ' · photo ' + k); };
+    if (!im.getAttribute('src') && s['p' + k]) api('photoData', S.tok, id, k).then(r => { PV[key] = r.data; im.src = r.data; im.style.minHeight = ''; }).catch(() => { im.replaceWith(document.createTextNode('')); });
+  });
   app.querySelectorAll('input[data-slot]').forEach(inp => inp.onchange = async () => {
     const f = inp.files[0]; if (!f) return; const k = +inp.dataset.slot;
     try {
@@ -2782,7 +2858,7 @@ async function cartonView(id, local) {
 async function closeView(id) {
   app.innerHTML = hdr('close batch', '#batch/' + encodeURIComponent(id)) + '<div class="wrap"><div class="card">Loading…</div></div>';
   await flush();
-  const b = await api('batchGet', S.tok, id), live = b.list.filter(c => c.status !== 'void'), done = live.filter(c => c.status === 'packed'), miss = live.filter(c => c.status !== 'packed'), vd = b.list.filter(c => c.status === 'void');
+  const b = await api('batchGet', S.tok, id), live = b.list.filter(c => c.status !== 'void'), done = live.filter(c => ['packed', 'picked', 'sent'].indexOf(c.status) >= 0), miss = live.filter(c => ['packed', 'picked', 'sent'].indexOf(c.status) < 0), vd = b.list.filter(c => c.status === 'void');
   const pend = (await qAll()).length;
   app.innerHTML = hdr('close batch', '#batch/' + encodeURIComponent(id)) + '<div class="wrap"><div class="spec" style="color:var(--muted)">' + esc(b.batch) + ' · ' + esc(title(b.name)) + '</div>' +
     '<div class="line tbl" style="padding:0"><div><span>Packed with both photos</span><b>' + done.length + ' ' + esc(b.ctype) + '</b></div><div><span>Not packed yet</span><b>' + (miss.length ? 'Carton' + (miss.length > 1 ? 's ' : ' ') + miss.map(c => c.n).join(', ') : 'None ✓') + '</b></div><div><span>Void stickers</span><b>' + (vd.length ? 'Carton' + (vd.length > 1 ? 's ' : ' ') + vd.map(c => c.n).join(', ') : 'None') + '</b></div><div><span>Made · best before</span><b>' + b.madeDmy + ' · ' + b.bbDmy + '</b></div></div>' +
@@ -2798,6 +2874,56 @@ async function closeView(id) {
       $('#rep').innerHTML = '<div class="alert g"><b>Batch closed.</b> ' + r.packed + ' ' + esc(b.ctype) + ' in stock at HQ Freezer.</div><div class="eb" style="margin-top:12px">Report to the BEKU WhatsApp</div><div class="card txt" style="white-space:pre-line;border-radius:16px 16px 16px 4px">' + esc(r.report) + '</div><a class="btn w" href="' + r.wa + '" target="_blank" rel="noopener">' + ic('share', '#fff') + 'Send report on WhatsApp</a><a class="btn s" href="#">Home</a>';
       $('#rep').style.cssText = 'display:flex;flex-direction:column;gap:10px';
     } catch (e) { fail(e); $('#cl').disabled = false; }
+  };
+}
+
+/* ---------------- stock ---------------- */
+async function stockView() {
+  app.innerHTML = hdr('stock', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const st = await api('stock', S.tok);
+  const tot = st.reduce((a, p) => a + p.inStock, 0);
+  app.innerHTML = hdr('stock', '#') + '<div class="wrap"><div class="row"><div><div class="disp" style="font-size:32px">' + tot + '</div><div class="sub" style="font-size:14px">cartons in HQ Freezer (packed, not sent)</div></div><a class="btn s" href="#send" style="width:auto">' + ic('truck') + 'Pick &amp; send</a></div>' +
+    (st.length ? st.map(p => '<div class="card" style="background:' + fc(p.fam, 0) + ';color:' + fc(p.fam, 1) + ';display:flex;flex-direction:column;gap:8px"><div class="row"><b style="font-size:16px">' + esc(title(p.name)) + '</b><span class="disp" style="font-size:24px">' + p.inStock + '</span></div>' +
+      p.lots.map(l => '<div class="row" style="font-size:13px;color:var(--ink);background:var(--milk);border-radius:12px;padding:8px 10px"><span><b>' + esc(l.batch) + '</b> · ' + esc(l.ctype) + '<br><span style="color:' + (l.expired ? 'var(--bubblegum-d)' : l.soon ? 'var(--lemon-d)' : 'var(--muted)') + '">' + (l.expired ? 'EXPIRED ' : l.soon ? 'Expires soon · ' : 'Best before ') + l.bbDmy + '</span></span><span style="text-align:right"><b>' + l.inStock + '</b> in stock' + (l.picked ? '<br>' + l.picked + ' picked' : '') + '</span></div>').join('') + '</div>').join('')
+      : '<div class="card" style="color:var(--muted)">No packed cartons in stock yet.</div>') +
+    '<div class="sub" style="font-size:12px">Oldest best-before is listed first in each product. Send oldest first.</div></div>';
+}
+
+/* ---------------- pick & send ---------------- */
+async function deliveriesView() {
+  app.innerHTML = hdr('pick &amp; send', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const r = await api('deliveries', S.tok);
+  const open = r.list.filter(d => d.status === 'open'), done = r.list.filter(d => d.status !== 'open');
+  const item = d => '<a class="card" href="#send/' + encodeURIComponent(d.id) + '" style="text-decoration:none;display:flex;flex-direction:column;gap:4px"><div class="row"><b style="font-size:15px">' + esc(d.customer) + '</b><span class="spec" style="color:var(--muted)">' + esc(d.id) + '</span></div><div class="sub" style="font-size:13px">' +
+    (d.status === 'open' ? d.count + ' carton(s) scanned · by ' + esc(title(d.createdBy)) : (d.status === 'sent' ? 'Sent ' : 'Cancelled ') + esc(String(d.sentAt).slice(0, 16)) + ' · ' + d.count + ' carton(s)') + (d.ref ? ' · Inv/DO ' + esc(d.ref) : '') + '</div></a>';
+  app.innerHTML = hdr('pick &amp; send', '#') + '<div class="wrap">' +
+    '<form class="line" id="nf" style="display:flex;flex-direction:column;gap:10px"><div class="eb">New delivery</div><label class="lb">Customer<input type="text" id="cu" list="cul" required autocomplete="off" placeholder="e.g. Kirin Coffee"></label><datalist id="cul">' + r.customers.map(c => '<option value="' + esc(c) + '">').join('') + '</datalist>' +
+    '<label class="lb">Bukku invoice / DO no. (optional)<input type="text" id="rf" placeholder="e.g. IV-00123"></label><button class="btn" id="nb">' + ic('plus', '#FFFDFA') + 'Start delivery</button></form>' +
+    '<div class="eb">Open</div>' + (open.length ? open.map(item).join('') : '<div class="card" style="color:var(--muted)">No open delivery.</div>') +
+    (done.length ? '<div class="eb">Recent</div>' + done.map(item).join('') : '') + '</div>';
+  $('#nf').onsubmit = async e => { e.preventDefault(); $('#nb').disabled = true; try { const d = await api('deliveryNew', S.tok, $('#cu').value, $('#rf').value); location.hash = '#send/' + encodeURIComponent(d.id); } catch (er) { fail(er); $('#nb').disabled = false; } };
+}
+async function deliveryView(id) {
+  app.innerHTML = hdr('delivery', '#send') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const d = await api('deliveryGet', S.tok, id), open = d.status === 'open';
+  app.innerHTML = hdr(esc(d.customer.toLowerCase()), '#send') + '<div class="wrap">' +
+    '<div class="spec" style="color:var(--muted)">' + esc(d.id) + (d.ref ? ' · INV/DO ' + esc(d.ref) : '') + ' · ' + (open ? 'OPEN' : d.status.toUpperCase() + ' ' + esc(String(d.sentAt).slice(0, 16))) + '</div>' +
+    '<div class="row"><span class="disp" style="font-size:32px">' + d.count + '</span><span class="sub" style="font-size:14px">cartons ' + (open ? 'scanned' : d.status) + '</span></div>' +
+    (d.lines.length ? d.lines.map(l => '<div class="line" style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>' + esc(title(l.name)) + '</b><span>× ' + l.n + ' ' + esc(l.ctype) + '</span></div>' +
+      l.cartons.map(c => '<div class="row" style="font-size:13px"><span>' + esc(c.carton) + ' <span style="color:var(--muted)">· BB ' + esc(c.bestBefore) + '</span></span>' + (open ? '<button class="ib" style="width:32px;height:32px" data-un="' + esc(c.carton) + '" aria-label="Remove ' + esc(c.carton) + '">' + ic('minus', null, 16) + '</button>' : '') + '</div>').join('') + '</div>').join('')
+      : '<div class="card" style="color:var(--muted)">No cartons yet. Tap Scan cartons.</div>') +
+    (open ? '<a class="btn" href="#scan/' + encodeURIComponent(d.id) + '">' + ic('scan', '#FFFDFA') + 'Scan cartons</a>' +
+      '<button class="btn w" id="sd"' + (d.count ? '' : ' disabled') + '>' + ic('truck', '#fff') + 'Mark sent · ' + d.count + ' carton(s)</button>' +
+      '<button class="btn s" id="ed" style="min-height:44px;font-size:14px">Edit customer / invoice no.</button>' +
+      '<button class="btn s" id="cx" style="min-height:44px;font-size:14px;color:var(--bubblegum-d)">Cancel this delivery</button>' : '<div id="rep"></div>') +
+    '</div>';
+  app.querySelectorAll('[data-un]').forEach(bt => bt.onclick = async () => { if (!confirm('Take ' + bt.dataset.un + ' out of this delivery? Put it back in the freezer.')) return; try { await api('unpick', S.tok, id, bt.dataset.un); deliveryView(id); } catch (e) { fail(e); } });
+  const ed = $('#ed'); if (ed) ed.onclick = async () => { const cu = prompt('Customer:', d.customer); if (cu === null) return; const rf = prompt('Bukku invoice / DO no.:', d.ref || ''); if (rf === null) return; try { await api('deliveryEdit', S.tok, id, cu, rf); deliveryView(id); } catch (e) { fail(e); } };
+  const cx = $('#cx'); if (cx) cx.onclick = async () => { if (!confirm('Cancel this delivery? Scanned cartons go back to stock.')) return; try { await api('deliveryCancel', S.tok, id); location.hash = '#send'; } catch (e) { fail(e); } };
+  const sd = $('#sd'); if (sd) sd.onclick = async () => {
+    if (!confirm('Mark ' + d.count + ' carton(s) as sent to ' + d.customer + '?')) return; sd.disabled = true;
+    try { const r = await api('deliverySend', S.tok, id); await deliveryView(id); $('#rep').innerHTML = '<div class="alert g"><b>Sent.</b> Stock updated.</div><div class="card txt" style="white-space:pre-line">' + esc(r.report) + '</div><a class="btn w" href="' + r.wa + '" target="_blank" rel="noopener">' + ic('share', '#fff') + 'Send report on WhatsApp</a>'; $('#rep').style.cssText = 'display:flex;flex-direction:column;gap:10px'; }
+    catch (e) { fail(e); sd.disabled = false; }
   };
 }
 
