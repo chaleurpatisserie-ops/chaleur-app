@@ -2470,6 +2470,7 @@ async function route(force) {
     if (v === 'close') return closeView(decodeURIComponent(a));
     if (v === 'scan') return scanView(a ? decodeURIComponent(a) : '');
     if (v === 'stock') return stockView();
+    if (v === 'check') return checkView(decodeURIComponent(a));
     if (v === 'send') return a ? deliveryView(decodeURIComponent(a)) : deliveriesView();
     if (v === 'prints') return printsView();
     return home();
@@ -2508,10 +2509,11 @@ async function home() {
     '<a class="tile" href="#new" style="background:var(--pistachio-l);color:var(--pistachio-d)">' + ic('box', null, 28) + '<div><div class="st">STEP 1</div><div class="n">New batch</div><small>Print stickers</small></div></a>' +
     '<a class="tile" href="#scan" style="background:var(--baby-l);color:var(--baby-d)">' + ic('scan', null, 28) + '<div><div class="st">STEP 2</div><div class="n">Scan carton</div><small>Photo while packing</small></div></a>' +
     '<a class="tile" id="tsend" href="#send" style="background:var(--lilac-l);color:var(--lilac-d)">' + ic('truck', null, 28) + '<div><div class="st">STEP 3</div><div class="n">Pick &amp; send</div><small>Deliveries</small></div></a>' +
-    '<a class="tile" href="#stock" style="background:var(--cocoa-l);color:var(--cocoa-d)">' + ic('stack', null, 28) + '<div><div class="st">ANYTIME</div><div class="n">Stock</div><small>HQ Freezer</small></div></a></div>' +
+    '<a class="tile" id="tstock" href="#stock" style="background:var(--cocoa-l);color:var(--cocoa-d)">' + ic('stack', null, 28) + '<div><div class="st">ANYTIME</div><div class="n">Stock</div><small>HQ Freezer</small></div></a></div>' +
     '<a class="btn s" href="#prints" style="min-height:48px">' + ic('print') + 'Print history</a>' +
     '<div class="eb">Open batches</div><div id="bl"><div class="card" style="color:var(--muted)">Loading…</div></div></div>';
   cat().catch(() => {});
+  api('checkStatus', S.tok).then(cs => { const t = $('#tstock'); if (t && (cs.due || cs.open)) t.insertAdjacentHTML('beforeend', '<span class="bdg" style="font-size:12px">' + (cs.open ? 'COUNTING' : 'CHECK DUE') + '</span>'); }).catch(() => {});
   api('ordersToPack', S.tok).then(os => {
     const t = todayIso(), today = os.filter(o => o.deliveryDate === t), late = os.filter(o => o.deliveryDate && o.deliveryDate < t), n = today.length + late.length;
     const dn = $('#dn'), ts = $('#tsend'); if (!dn || !ts) return;
@@ -2788,7 +2790,15 @@ async function startScanner(box, onHit) {
   }
 }
 async function scanView(target) {
-  const del = /^D\d{6}-\d+$/.test(target || '') ? target : '';
+  const del = /^D\d{6}-\d+$/.test(target || '') ? target : '', chk = /^SC\d{6}-\d+$/.test(target || '') ? target : '';
+  if (chk) {
+    app.innerHTML = hdr('stock check', '#check/' + encodeURIComponent(chk)) + '<div class="wrap"><div id="cam"><div class="card" style="color:var(--muted)">Starting camera…</div></div>' +
+      '<div id="sl" class="card txt" style="font-size:14px">Scan <b>every carton</b> in the freezer, one by one. Each one is counted once.</div><a class="btn" href="#check/' + encodeURIComponent(chk) + '">Done scanning · see result</a>' +
+      '<label class="lb">Or type the carton number<input type="text" id="cid" placeholder="PG101-261113-A-07" autocapitalize="characters"></label><button class="btn s" id="og">Count carton</button></div>';
+    const hit = async id => { await countInto(chk, id, m => { const sl = $('#sl'); if (sl) sl.innerHTML = m; }); return true; };
+    $('#og').onclick = async () => { const v = idFrom($('#cid').value); if (!v) return toast('That is not a carton number.'); $('#cid').value = ''; await hit(v); };
+    startScanner($('#cam'), hit); return;
+  }
   app.innerHTML = hdr(del ? 'scan to send' : 'scan carton', del ? '#send/' + encodeURIComponent(del) : '#') + '<div class="wrap"><div id="cam"><div class="card" style="color:var(--muted)">Starting camera…</div></div>' +
     (del ? '<div id="sl" class="card txt" style="font-size:14px">Scan each carton for <b>' + esc(del) + '</b>. Keep scanning; each one is added.</div><a class="btn" href="#send/' + encodeURIComponent(del) + '">Done scanning</a>'
       : '<div class="card txt" style="font-size:14px">Point at the QR on the carton sticker.</div>') +
@@ -2895,13 +2905,75 @@ async function closeView(id) {
 /* ---------------- stock ---------------- */
 async function stockView() {
   app.innerHTML = hdr('stock', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
-  const st = await api('stock', S.tok);
+  const [st, cs] = await Promise.all([api('stock', S.tok), api('checkStatus', S.tok).catch(() => null)]);
   const tot = st.reduce((a, p) => a + p.inStock, 0);
-  app.innerHTML = hdr('stock', '#') + '<div class="wrap"><div class="row"><div><div class="disp" style="font-size:32px">' + tot + '</div><div class="sub" style="font-size:14px">cartons in HQ Freezer (packed, not sent)</div></div><a class="btn s" href="#send" style="width:auto">' + ic('truck') + 'Pick &amp; send</a></div>' +
+  app.innerHTML = hdr('stock', '#') + '<div class="wrap">' + checkCard(cs) + '<div class="row"><div><div class="disp" style="font-size:32px">' + tot + '</div><div class="sub" style="font-size:14px">cartons in HQ Freezer (packed, not sent)</div></div><a class="btn s" href="#send" style="width:auto">' + ic('truck') + 'Pick &amp; send</a></div>' +
     (st.length ? st.map(p => '<div class="card" style="background:' + fc(p.fam, 0) + ';color:' + fc(p.fam, 1) + ';display:flex;flex-direction:column;gap:8px"><div class="row"><b style="font-size:16px">' + esc(title(p.name)) + '</b><span class="disp" style="font-size:24px">' + p.inStock + '</span></div>' +
       p.lots.map(l => '<div class="row" style="font-size:13px;color:var(--ink);background:var(--milk);border-radius:12px;padding:8px 10px"><span><b>' + esc(l.batch) + '</b> · ' + esc(l.ctype) + '<br><span style="color:' + (l.expired ? 'var(--bubblegum-d)' : l.soon ? 'var(--lemon-d)' : 'var(--muted)') + '">' + (l.expired ? 'EXPIRED ' : l.soon ? 'Expires soon · ' : 'Best before ') + l.bbDmy + '</span></span><span style="text-align:right"><b>' + l.inStock + '</b> in stock' + (l.picked ? '<br>' + l.picked + ' picked' : '') + '</span></div>').join('') + '</div>').join('')
       : '<div class="card" style="color:var(--muted)">No packed cartons in stock yet.</div>') +
     '<div class="sub" style="font-size:12px">Oldest best-before is listed first in each product. Send oldest first.</div></div>';
+  bindCheckCard();
+}
+
+/* ---------------- stock check ---------------- */
+function checkCard(cs) {
+  if (!cs) return '';
+  if (cs.open) return '<a class="dnote" href="#check/' + encodeURIComponent(cs.open) + '" style="background:var(--lemon-d)">' + ic('scan', '#fff', 26) + '<div>Stock check in progress<small>Tap to continue counting</small></div></a>';
+  return '<div class="card" style="display:flex;flex-direction:column;gap:8px' + (cs.due ? ';box-shadow:inset 4px 0 0 #E5484D' : '') + '"><div class="row"><b style="font-size:16px">Stock check</b>' + (cs.due ? '<span style="color:#E5484D;font-weight:700;font-size:13px">DUE NOW</span>' : '<span class="sub" style="font-size:13px">next ' + esc(dmyIso(cs.dueOn)) + '</span>') + '</div>' +
+    '<div class="sub" style="font-size:13px">' + (cs.last ? 'Last: ' + esc(cs.last.at) + ' by ' + esc(title(cs.last.by)) : 'Never done yet.') + ' Count every carton in the HQ Freezer every ' + cs.every + ' days.</div>' +
+    '<button class="btn' + (cs.due ? '' : ' s') + '" id="cks">' + ic('scan', cs.due ? '#FFFDFA' : null) + 'Start stock check</button>' +
+    (cs.recent.length ? '<div class="sub" style="font-size:12.5px">Past checks: ' + cs.recent.map(r => '<a href="#check/' + encodeURIComponent(r.id) + '">' + esc(r.at.slice(0, 10)) + '</a>').join(' · ') + '</div>' : '') + '</div>';
+}
+function dmyIso(i) { return i ? i.slice(8, 10) + '/' + i.slice(5, 7) + '/' + i.slice(0, 4) : ''; }
+function bindCheckCard() {
+  const b = $('#cks'); if (b) b.onclick = async () => {
+    if (!confirm('Start a stock check now?\n\nScan EVERY carton in the HQ Freezer. Do not pick or send cartons until you finish.')) return;
+    b.disabled = true; try { const k = await api('checkStart', S.tok); location.hash = '#check/' + encodeURIComponent(k.id); } catch (e) { fail(e); b.disabled = false; }
+  };
+}
+async function checkView(id) {
+  app.innerHTML = hdr('stock check', '#stock') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const k = await api('checkGet', S.tok, id);
+  const open = k.status === 'open', res = k.resolved || {};
+  const pct = k.expected ? Math.round(100 * k.found / k.expected) : 100;
+  const miss = k.missing.map(m => { const r = res[m.carton];
+    return '<div class="row" style="font-size:13px;gap:8px"><span><b>' + esc(m.carton) + '</b><br><span class="sub">' + esc(title(m.name)) + (m.bb ? ' · BB ' + esc(m.bb) : '') + '</span></span>' +
+      (r ? '<b style="color:' + (r.kind === 'found' ? 'var(--pistachio-d)' : '#E5484D') + '">' + esc(r.kind.toUpperCase()) + '</b>' :
+        !open && k.mgr ? '<span style="display:flex;gap:6px"><button class="ib" style="width:auto;padding:0 10px;font:500 12px DM Sans" data-rs="found" data-c="' + esc(m.carton) + '">Found</button><button class="ib" style="width:auto;padding:0 10px;font:500 12px DM Sans;color:#E5484D" data-rs="lost" data-c="' + esc(m.carton) + '">Lost</button><button class="ib" style="width:auto;padding:0 10px;font:500 12px DM Sans;color:#E5484D" data-rs="damaged" data-c="' + esc(m.carton) + '">Damaged</button></span>' : '<span class="sub">missing</span>') + '</div>'; }).join('');
+  app.innerHTML = hdr('stock check', '#stock') + '<div class="wrap">' +
+    '<div class="spec" style="color:var(--muted)">' + esc(k.id) + ' · HQ Freezer · ' + (open ? 'COUNTING · started ' + esc(k.startedAt.slice(11, 16)) + ' by ' + esc(title(k.startedBy)) : String(k.status).toUpperCase() + ' ' + esc(k.doneAt.slice(0, 16)) + ' by ' + esc(title(k.doneBy))) + '</div>' +
+    '<div class="row"><div><div class="disp" style="font-size:40px">' + k.found + '<span style="font-size:22px;color:var(--muted)"> / ' + k.expected + '</span></div><div class="sub" style="font-size:14px">cartons found</div></div>' +
+      '<div style="text-align:right;font-size:13px">' + (k.missing.length ? '<b style="color:#E5484D">' + k.missing.length + ' not found yet</b>' : '<b style="color:var(--pistachio-d)">All found ✓</b>') + (k.odd.length ? '<br><b style="color:var(--lemon-d)">' + k.odd.length + ' should not be here</b>' : '') + '</div></div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+    (open ? '<a class="btn" href="#scan/' + encodeURIComponent(k.id) + '">' + ic('scan', '#FFFDFA') + 'Scan cartons</a>' : '') +
+    '<div class="line tbl" style="padding:0"><div style="font-weight:700"><span>Product</span><b>found / expected</b></div>' + (k.products.length ? k.products.map(p => '<div><span>' + esc(title(p.name)) + '</span><b style="color:' + (p.found === p.exp ? 'var(--pistachio-d)' : 'var(--ink)') + '">' + (p.found === p.exp ? '✓ ' : '') + p.found + ' / ' + p.exp + '</b></div>').join('') : '<div><span class="sub">No cartons expected in stock.</span><b></b></div>') + '</div>' +
+    (k.expired.length ? '<div class="alert r"><b>Expired, take out of the freezer:</b> ' + k.expired.map(esc).join(', ') + '</div>' : '') +
+    (k.odd.length ? '<div class="eb">Should not be here (' + k.odd.length + ')</div><div class="card" style="display:flex;flex-direction:column;gap:8px">' + k.odd.map(o => '<div class="row" style="font-size:13px"><span><b>' + esc(o.carton) + '</b><br><span class="sub">' + esc(o.name === '?' ? 'Not in the system' : title(o.name)) + '</span></span><span style="color:var(--lemon-d);font-weight:700;text-align:right">system: ' + esc(o.status) + (o.delivery ? '<br>' + esc(o.delivery) : '') + '</span></div>').join('') + '<div class="sub" style="font-size:12px">Usually a carton scanned at dispatch but not loaded, or a sticker reused. Tell the manager.</div></div>' : '') +
+    (k.missing.length ? '<div class="eb">' + (open ? 'Not found yet' : 'Missing') + ' (' + k.missing.length + ')</div><div class="card" style="display:flex;flex-direction:column;gap:10px">' + miss + (!open && !k.mgr ? '<div class="sub" style="font-size:12px">A manager marks each one Found, Lost or Damaged.</div>' : '') + '</div>' : '') +
+    (open ? '<label class="lb">Note (optional)<input type="text" id="cnote" placeholder="e.g. freezer door left open"></label><button class="btn w" id="cfin">' + ic('check', '#fff') + 'Done counting</button><button class="btn s" id="ccx" style="min-height:44px;font-size:14px;color:var(--bubblegum-d)">Cancel this check</button>'
+      : '<div id="crep"></div>') + '</div>';
+  const f = $('#cfin'); if (f) f.onclick = async () => {
+    if (k.missing.length && !confirm(k.missing.length + ' carton(s) not found yet.\n\nOK = finish anyway (they are reported as missing). Cancel = keep scanning.')) return;
+    f.disabled = true;
+    try { const r = await api('checkFinish', S.tok, id, $('#cnote').value); await checkView(id); $('#crep').innerHTML = '<div class="alert g"><b>Stock check finished.</b> ' + (r.queued ? 'Report posted to the BEKU ORDER group.' : 'Could not post to the group: send it below.') + '</div><div class="card txt" style="white-space:pre-line">' + esc(r.report) + '</div>' + (r.queued ? '' : '<a class="btn w" href="https://wa.me/?text=' + encodeURIComponent(r.report) + '" target="_blank" rel="noopener">' + ic('share', '#fff') + 'Send report on WhatsApp</a>'); $('#crep').style.cssText = 'display:flex;flex-direction:column;gap:10px'; }
+    catch (e) { fail(e); f.disabled = false; }
+  };
+  const cx = $('#ccx'); if (cx) cx.onclick = async () => { if (!confirm('Cancel this stock check? Nothing is changed in stock.')) return; try { await api('checkCancel', S.tok, id); location.hash = '#stock'; } catch (e) { fail(e); } };
+  app.querySelectorAll('[data-rs]').forEach(b => b.onclick = async () => {
+    const kind = b.dataset.rs, c = b.dataset.c;
+    if (kind !== 'found' && !confirm('Mark ' + c + ' as ' + kind.toUpperCase() + '?\n\nIt leaves the stock for good.')) return;
+    try { await api('checkResolve', S.tok, id, c, kind); checkView(id); } catch (e) { fail(e); }
+  });
+}
+async function countInto(chk, id, say) {
+  try {
+    const r = await api('checkScan', S.tok, chk, id), s = r.sum;
+    const col = r.verdict === 'found' ? 'var(--pistachio-d)' : r.verdict === 'dup' ? 'var(--muted)' : '#E5484D';
+    say('<b style="color:' + col + ';font-size:16px">' + (r.verdict === 'found' ? '✓ ' : r.verdict === 'dup' ? '' : '⚠️ ') + esc(r.msg) + '</b><br>' + esc(id) + (r.name ? ' · ' + esc(r.name) : '') + (r.expired ? '<br><b style="color:#E5484D">EXPIRED (' + esc(r.bb) + ') – take it out</b>' : '') +
+      '<div class="disp" style="font-size:30px;margin-top:6px">' + s.found + ' <span style="font-size:18px;color:var(--muted)">/ ' + s.expected + ' found</span></div>');
+    toast(r.verdict === 'found' ? '✓ ' + id : r.msg, r.verdict === 'found' ? 1500 : 4000);
+    if (r.verdict !== 'found' && r.verdict !== 'dup' && navigator.vibrate) navigator.vibrate([60, 60, 60]);
+  } catch (e) { say('<span style="color:var(--bubblegum-d)"><b>Not counted:</b> ' + esc(e.message) + '</span>'); toast(e.message, 5000); }
 }
 
 /* ---------------- pick & send ---------------- */
