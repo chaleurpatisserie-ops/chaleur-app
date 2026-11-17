@@ -2919,8 +2919,8 @@ async function stockView() {
 function checkCard(cs) {
   if (!cs) return '';
   if (cs.open) return '<a class="dnote" href="#check/' + encodeURIComponent(cs.open) + '" style="background:var(--lemon-d)">' + ic('scan', '#fff', 26) + '<div>Stock check in progress<small>Tap to continue counting</small></div></a>';
-  return '<div class="card" style="display:flex;flex-direction:column;gap:8px' + (cs.due ? ';box-shadow:inset 4px 0 0 #E5484D' : '') + '"><div class="row"><b style="font-size:16px">Stock check</b>' + (cs.due ? '<span style="color:#E5484D;font-weight:700;font-size:13px">DUE NOW</span>' : '<span class="sub" style="font-size:13px">next ' + esc(dmyIso(cs.dueOn)) + '</span>') + '</div>' +
-    '<div class="sub" style="font-size:13px">' + (cs.last ? 'Last: ' + esc(cs.last.at) + ' by ' + esc(title(cs.last.by)) : 'Never done yet.') + ' Count every carton in the HQ Freezer every ' + cs.every + ' days.</div>' +
+  return '<div class="card" style="display:flex;flex-direction:column;gap:8px' + (cs.due ? ';box-shadow:inset 4px 0 0 #E5484D' : '') + '"><div class="row"><b style="font-size:16px">Stock check</b>' + (cs.due ? '<span style="color:#E5484D;font-weight:700;font-size:13px">DUE NOW</span>' : '<span class="sub" style="font-size:13px">' + (cs.last ? 'next ' : 'first ') + esc(dmyIso(cs.dueOn)) + '</span>') + '</div>' +
+    '<div class="sub" style="font-size:13px">' + (cs.last ? 'Last: ' + esc(cs.last.at) + ' by ' + esc(title(cs.last.by)) : 'Never done yet.') + ' Count every carton in the HQ Freezer once a month, on the 15th.</div>' +
     '<button class="btn' + (cs.due ? '' : ' s') + '" id="cks">' + ic('scan', cs.due ? '#FFFDFA' : null) + 'Start stock check</button>' +
     (cs.recent.length ? '<div class="sub" style="font-size:12.5px">Past checks: ' + cs.recent.map(r => '<a href="#check/' + encodeURIComponent(r.id) + '">' + esc(r.at.slice(0, 10)) + '</a>').join(' · ') + '</div>' : '') + '</div>';
 }
