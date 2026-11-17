@@ -37,7 +37,7 @@ function sheet_(name) {
 const HEAD = {
   Batches: ['batch', 'sku', 'code', 'name', 'ctype', 'pcs', 'cartons', 'made', 'bestBefore', 'run', 'status', 'createdBy', 'createdAt', 'closedBy', 'closedAt', 'packed', 'voided', 'madeChanged'],
   Cartons: ['carton', 'batch', 'n', 'of', 'status', 'photo1', 'photo2', 'photoBy', 'photoAt', 'location', 'updatedAt', 'delivery'],
-  Deliveries: ['id', 'customer', 'ref', 'status', 'cartons', 'createdBy', 'createdAt', 'sentBy', 'sentAt', 'note', 'invoice', 'deliveryDate', 'address', 'group', 'need'],
+  Deliveries: ['id', 'customer', 'ref', 'status', 'cartons', 'createdBy', 'createdAt', 'sentBy', 'sentAt', 'note', 'invoice', 'deliveryDate', 'address', 'group', 'need', 'photo', 'photoBy', 'photoAt'],
   Log: ['at', 'who', 'action', 'ref', 'detail'],
   Prints: ['at', 'who', 'batch', 'name', 'kind', 'count', 'cartons']
 };
@@ -262,7 +262,7 @@ function photo(tok, id, slot, data, nonce, takenAt) {
   try {
     const c = rows_('Cartons').find(x => x.carton === id); if (!c) throw new Error('Carton not found.');
     if (c.status === 'void') throw new Error('This carton number was voided. Do not use this sticker.');
-    const b = rows_('Batches').find(x => x.batch === c.batch); if (b.status !== 'open') throw new Error('This batch is already closed.');
+    const b = rows_('Batches').find(x => x.batch === c.batch); if (b.status !== 'open') throw new Error('Packing for this batch is already done.');
     const key = 'n_' + clean_(nonce, 60);
     if (nonce && props_().getProperty(key)) return { carton: id, dup: true };
     const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), 'image/' + m[1], id + '_' + slot + '.jpg');
@@ -422,7 +422,7 @@ function ordersToPack(tok) {
   return orders_().filter(o => !o.deliveryDate || o.deliveryDate >= cut).map(o => {
     const d = ds.find(x => String(x.invoice || x.ref) === o.invoice);
     const got = d ? cs.filter(c => c.delivery === d.id && (c.status === 'picked' || c.status === 'sent')).length : 0;
-    return { invoice: o.invoice, customer: o.customer, deliveryDate: o.deliveryDate, ddDmy: o.deliveryDate ? dmy_(o.deliveryDate) : '', paid: o.paid, items: o.items,
+    return { invoice: o.invoice, customer: o.customer, deliveryDate: o.deliveryDate, ddDmy: o.deliveryDate ? dmy_(o.deliveryDate) : '', items: o.items,
       need: o.items.reduce((a, i) => a + i.n, 0), got: got, delivery: d ? d.id : '', status: d ? d.status : 'new' };
   }).filter(o => o.status !== 'sent').sort((a, b) => (a.deliveryDate || '9').localeCompare(b.deliveryDate || '9'));
 }
@@ -443,11 +443,13 @@ function deliveryFromOrder(tok, invoice) {
   } finally { lock.releaseLock(); }
 }
 /* queue a message for the BEKU ORDER staff group. The WhatsApp bot (its own 5-min trigger) posts rows whose "Sent at" is empty, then fills Sent at / Error. */
-function notify_(kind, ref, customer, text, cartons, batches) {
+function notify_(kind, ref, customer, text, cartons, batches, photo, custText, custGroup) {
   try {
     const ss = SpreadsheetApp.openById(BOT_SS_ID); let sh = ss.getSheetByName(BOT_TAB);
-    if (!sh) { sh = ss.insertSheet(BOT_TAB); sh.appendRow(['Queued', 'Kind', 'Invoice / batch', 'Customer', 'Message', 'Cartons', 'Batches', 'Sent at', 'Error']); sh.setFrozenRows(1); }
-    sh.appendRow([stamp_(), kind, ref, customer || '', text, cartons || '', batches || '', '', '']);
+    const H = ['Queued', 'Kind', 'Invoice / batch', 'Customer', 'Message', 'Cartons', 'Batches', 'Sent at', 'Error', 'Photo', 'Customer message', 'Customer group', 'Customer sent at'];
+    if (!sh) { sh = ss.insertSheet(BOT_TAB); sh.appendRow(H); sh.setFrozenRows(1); }
+    else H.forEach((h, i) => { if (i >= 9 && String(sh.getRange(1, i + 1).getValue()) !== h) sh.getRange(1, i + 1).setValue(h); });
+    sh.appendRow([stamp_(), kind, ref, customer || '', text, cartons || '', batches || '', '', '', photo || '', custText || '', custGroup || '', '']);
     return true;
   } catch (e) { try { log_('system', 'notify failed', ref, String(e && e.message || e)); } catch (x) {} return false; }
 }
@@ -462,7 +464,7 @@ function deliveryInfo_(d, cs, bs) {
   const extra = mine.filter(c => need.length && !need.some(i => i.sku && (bs[c.batch] || {}).sku === i.sku)).map(c => c.carton);
   const complete = need.length ? need.every(i => i.got === i.n) && !extra.length : true;
   return { id: d.id, customer: d.customer, ref: d.ref, invoice: d.invoice || '', deliveryDate: d.deliveryDate ? isoOf_(d.deliveryDate) : '', ddDmy: d.deliveryDate && isoOf_(d.deliveryDate) ? dmy_(isoOf_(d.deliveryDate)) : '', address: d.address || '',
-    status: d.status, createdBy: d.createdBy, createdAt: d.createdAt, sentBy: d.sentBy, sentAt: d.sentAt, note: d.note, count: mine.length, need: need, extra: extra, complete: complete,
+    status: d.status, createdBy: d.createdBy, createdAt: d.createdAt, sentBy: d.sentBy, sentAt: d.sentAt, note: d.note, count: mine.length, need: need, extra: extra, complete: complete, photo: !!d.photo, photoBy: d.photoBy || '', photoAt: d.photoAt ? String(d.photoAt) : '',
     lines: Object.keys(lines).map(k => lines[k]).sort((a, b) => String(a.sku).localeCompare(String(b.sku))) };
 }
 function bmap_() { const bs = {}; rows_('Batches').forEach(b => { bs[b.batch] = b; }); return bs; }
@@ -552,6 +554,31 @@ function deliveryCancel(tok, id) {
   d.status = 'cancelled'; d.sentBy = u.name; d.sentAt = stamp_(); setRow_('Deliveries', d._row, d); log_(u.name, 'cancel delivery', id, '');
   return { cancelled: true };
 }
+/* dispatch photo for a delivery (required before Mark sent). Shared by link so the WhatsApp bot can post it. */
+function deliveryPhoto(tok, id, data) {
+  FRESH_ = true;
+  const u = user_(tok);
+  const m = /^data:image\/(jpeg|png|webp);base64,(.+)$/.exec(String(data || '')); if (!m) throw new Error('Photo missing.');
+  if (m[2].length > 2.5e6) throw new Error('Photo too big.');
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const d = rows_('Deliveries').find(x => x.id === id); if (!d) throw new Error('Delivery not found.');
+    if (d.status !== 'open') throw new Error('This delivery is already ' + d.status + '.');
+    const root = DriveApp.getFolderById(props_().getProperty('ROOT_ID')), it = root.getFoldersByName('Deliveries'), fo = it.hasNext() ? it.next() : root.createFolder('Deliveries');
+    const f = fo.createFile(Utilities.newBlob(Utilities.base64Decode(m[2]), 'image/' + m[1], id + '_' + clean_(d.invoice || d.ref || '', 30) + '_dispatch.jpg'));
+    try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+    d.photo = f.getUrl(); d.photoBy = u.name; d.photoAt = stamp_(); setRow_('Deliveries', d._row, d);
+    log_(u.name, 'dispatch photo', id, '');
+    return deliveryGet(tok, id);
+  } finally { lock.releaseLock(); }
+}
+function deliveryPhotoData(tok, id) {
+  user_(tok);
+  const d = rows_('Deliveries').find(x => x.id === id); if (!d || !d.photo) throw new Error('No photo yet.');
+  const mm = /\/d\/([\w-]{10,})/.exec(String(d.photo)); if (!mm) throw new Error('Photo link not readable.');
+  const b = DriveApp.getFileById(mm[1]).getBlob();
+  return { data: 'data:' + (b.getContentType() || 'image/jpeg') + ';base64,' + Utilities.base64Encode(b.getBytes()) };
+}
 function deliverySend(tok, id, force) {
   FRESH_ = true;
   const u = user_(tok);
@@ -561,6 +588,7 @@ function deliverySend(tok, id, force) {
     if (d.status !== 'open') throw new Error('This delivery is already ' + d.status + '.');
     const cs = rows_('Cartons').filter(c => c.delivery === id && c.status === 'picked');
     if (!cs.length) throw new Error('No cartons scanned yet.');
+    if (!d.photo) throw new Error('Take the dispatch photo first.');
     const pre = deliveryInfo_(d, rows_('Cartons'), bmap_());
     if (!pre.complete && !force) return { short: pre.need.filter(i => i.got !== i.n).map(i => tc_(i.name) + ': ' + i.got + ' of ' + i.n).concat(pre.extra.length ? [pre.extra.length + ' carton(s) not in the order'] : []) };
     cs.forEach(c => { c.status = 'sent'; c.location = d.customer; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c); });
@@ -572,14 +600,17 @@ function deliverySend(tok, id, force) {
       .concat([''], info.lines.map(l => '• *' + tc_(l.name) + '* × ' + l.n + ' ' + l.ctype + uniq(l.cartons.map(c => c.batch)).map(bt => { const cc = l.cartons.filter(c => c.batch === bt); return '\n   batch ' + bt + ' (BB ' + cc[0].bestBefore + ') – carton ' + cc.map(c => c.carton.split('-').pop()).join(', '); }).join('')))
       .concat(info.need.length && !info.complete ? ['', '⚠️ Not matching the order: ' + info.need.filter(i => i.got !== i.n).map(i => tc_(i.name) + ' ' + i.got + '/' + i.n).concat(info.extra.length ? [info.extra.length + ' extra carton(s)'] : []).join(', ')] : [])
       .concat(['', 'Total ' + cs.length + ' carton' + (cs.length > 1 ? 's' : '') + ' · by ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16), 'Ref ' + id]).join('\n');
-    const queued = notify_('delivery', d.invoice || d.ref || id, d.customer, text, cs.map(c => c.carton).join(' '), Object.keys(bl).join(' '));
+    const cust = ['Hi! Your beku° order' + (d.invoice || d.ref ? ' *' + (d.invoice || d.ref) + '*' : '') + ' is on the way 🚚', '']
+      .concat(info.lines.map(l => '• ' + tc_(l.name) + ' × ' + l.n + ' ' + l.ctype))
+      .concat(['', (info.ddDmy ? 'Delivery date: ' + info.ddDmy + '\n' : '') + 'Photo: your cartons at dispatch (keep frozen at -18°C on arrival).', 'Thank you! – beku°']).join('\n');
+    const queued = notify_('delivery', d.invoice || d.ref || id, d.customer, text, cs.map(c => c.carton).join(' '), Object.keys(bl).join(' '), d.photo, d.group ? cust : '', d.group || '');
     log_(u.name, 'send delivery', id, cs.length + ' cartons');
     return { sent: true, info: info, report: text, queued: queued, wa: 'https://wa.me/?text=' + encodeURIComponent(text) };
   } finally { lock.releaseLock(); }
 }
 
 /* ---------- web app ---------- */
-const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder };
+const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder, deliveryPhoto: deliveryPhoto, deliveryPhotoData: deliveryPhotoData };
 function doPost(e) {
   let out;
   try {
