@@ -2404,6 +2404,9 @@ const $ = s => document.querySelector(s);
 const app = $('#app');
 let S = { tok: localStorage.getItem('beku_tok') || '', name: localStorage.getItem('beku_name') || '', cat: null };
 
+/* logo -> back to the CA app the staff came from (back office or staff app) */
+try { if (/\/office\.html/.test(document.referrer)) sessionStorage.setItem('beku_from', 'office.html'); else if (/\/(index\.html)?(\?|#|$)/.test(document.referrer.replace(/^https?:\/\/[^/]+\/chaleur-app/, ''))) sessionStorage.setItem('beku_from', 'index.html'); } catch (e) {}
+function caBack() { try { return sessionStorage.getItem('beku_from') || 'index.html'; } catch (e) { return 'index.html'; } }
 function api(fn, ...args) {
   return fetch(API, { method: 'POST', credentials: 'omit', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })
     .then(r => r.json()).then(j => { if (!j.ok) { const e = new Error(j.error || 'Something went wrong.'); e.server = true; throw e; } return j.result; });
@@ -2495,7 +2498,7 @@ function signin() {
 /* ---------------- home ---------------- */
 async function home() {
   const first = title(S.name.split(' ')[0] || '');
-  app.innerHTML = '<div class="top" style="justify-content:space-between"><div>' + LOGO + '</div><div style="display:flex;gap:8px;align-items:center"><button class="ib" style="width:auto;padding:0 14px;font:500 14px DM Sans" onclick="if(confirm(\'Sign out?\'))signOut()">' + esc(first) + '</button><button class="ib" aria-label="Refresh" onclick="route(true)">' + ic('refresh') + '</button></div></div>' +
+  app.innerHTML = '<div class="top" style="justify-content:space-between"><a href="' + caBack() + '" aria-label="Switch to the Chaleur Atelier app" title="Switch to Chaleur Atelier" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--muted);font:500 12px DM Sans,sans-serif">' + LOGO + '<span style="border:1px solid currentColor;border-radius:999px;padding:2px 8px">⇄ CA</span></a><div style="display:flex;gap:8px;align-items:center"><button class="ib" style="width:auto;padding:0 14px;font:500 14px DM Sans" onclick="if(confirm(\'Sign out?\'))signOut()">' + esc(first) + '</button><button class="ib" aria-label="Refresh" onclick="route(true)">' + ic('refresh') + '</button></div></div>' +
     '<div class="wrap"><div><h1 class="disp" style="margin:0;font-size:40px;line-height:1">hi ' + esc(first.toLowerCase()) + '.</h1><div style="font-size:15px;color:var(--muted)"><span data-clock>' + nowParts().today + ' · ' + nowParts().now + '</span> · HQ Freezer</div></div>' +
     '<div class="tiles">' +
     '<a class="tile" href="#new" style="background:var(--pistachio-l);color:var(--pistachio-d)">' + ic('box', null, 28) + '<div><div class="st">STEP 1</div><div class="n">New batch</div><small>Print stickers</small></div></a>' +
@@ -2897,7 +2900,7 @@ async function deliveriesView() {
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: TZ });
   const ord = o => '<button class="card" data-inv="' + esc(o.invoice) + '" style="text-align:left;border:0;width:100%;display:flex;flex-direction:column;gap:4px;font:inherit;color:inherit;cursor:pointer' + (o.deliveryDate && o.deliveryDate <= today ? ';box-shadow:inset 4px 0 0 var(--bubblegum-d)' : '') + '"><div class="row"><b style="font-size:15px">' + esc(o.customer) + '</b><span class="spec" style="color:var(--muted)">' + esc(o.invoice) + '</span></div>' +
     '<div style="font-size:13px">' + o.items.map(i => esc(title(i.name)) + ' × ' + i.n + (i.sku ? '' : ' <span style="color:var(--bubblegum-d)">(?)</span>')).join(' · ') + '</div>' +
-    '<div class="sub" style="font-size:12.5px">' + (o.ddDmy ? 'Deliver ' + o.ddDmy + (o.deliveryDate === today ? ' · <b>TODAY</b>' : '') : 'No delivery date') + ' · ' + (o.status === 'open' ? '<b>' + o.got + '/' + o.need + ' scanned</b>' : o.need + ' carton(s), not started') + (o.paid ? ' · ' + esc(o.paid) : '') + '</div></button>';
+    '<div class="sub" style="font-size:12.5px">' + (o.ddDmy ? 'Deliver ' + o.ddDmy + (o.deliveryDate === today ? ' · <b>TODAY</b>' : '') : 'No delivery date') + ' · ' + (o.status === 'open' ? '<b>' + o.got + '/' + o.need + ' scanned</b>' : o.need + ' carton(s), not started') + '</div></button>';
 
   const item = d => '<a class="card" href="#send/' + encodeURIComponent(d.id) + '" style="text-decoration:none;display:flex;flex-direction:column;gap:4px"><div class="row"><b style="font-size:15px">' + esc(d.customer) + '</b><span class="spec" style="color:var(--muted)">' + esc(d.id) + '</span></div><div class="sub" style="font-size:13px">' +
     (d.status === 'open' ? d.count + ' carton(s) scanned · by ' + esc(title(d.createdBy)) : (d.status === 'sent' ? 'Sent ' : 'Cancelled ') + esc(String(d.sentAt).slice(0, 16)) + ' · ' + d.count + ' carton(s)') + (d.ref ? ' · Inv/DO ' + esc(d.ref) : '') + '</div></a>';
