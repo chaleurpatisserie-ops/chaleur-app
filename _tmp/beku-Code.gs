@@ -38,6 +38,8 @@ const HEAD = {
   Batches: ['batch', 'sku', 'code', 'name', 'ctype', 'pcs', 'cartons', 'made', 'bestBefore', 'run', 'status', 'createdBy', 'createdAt', 'closedBy', 'closedAt', 'packed', 'voided', 'madeChanged'],
   Cartons: ['carton', 'batch', 'n', 'of', 'status', 'photo1', 'photo2', 'photoBy', 'photoAt', 'location', 'updatedAt', 'delivery'],
   Deliveries: ['id', 'customer', 'ref', 'status', 'cartons', 'createdBy', 'createdAt', 'sentBy', 'sentAt', 'note', 'invoice', 'deliveryDate', 'address', 'group', 'need', 'photo', 'photoBy', 'photoAt'],
+  Checks: ['id', 'status', 'location', 'startedBy', 'startedAt', 'expected', 'doneBy', 'doneAt', 'report', 'note', 'resolved'],
+  CheckScans: ['check', 'carton', 'by', 'at', 'verdict'],
   Log: ['at', 'who', 'action', 'ref', 'detail'],
   Prints: ['at', 'who', 'batch', 'name', 'kind', 'count', 'cartons']
 };
@@ -383,6 +385,118 @@ function stock(tok) {
     .sort((a, b) => a.code.localeCompare(b.code));
 }
 
+/* ---------- stock check (HQ Freezer) ---------- */
+const CHECK_DAYS = 14;
+function isMgr_(u) { return /owner|manager|office|admin|director/.test(String(u.role || '')); }
+function checkSummary_(k, cs, bs, scans) {
+  const exp = String(k.expected || '').split(' ').filter(Boolean), seen = {}, odd = [];
+  scans.forEach(s => { seen[s.carton] = s; });
+  const byId = {}; cs.forEach(c => { byId[c.carton] = c; });
+  const prod = {}, P = sku => prod[sku] || (prod[sku] = { sku: sku, name: (CATALOG.find(x => x.sku === sku) || {}).name || sku, exp: 0, found: 0 });
+  const missing = [];
+  exp.forEach(id => { const c = byId[id], b = c && bs[c.batch]; const p = P(b ? b.sku : '?'); p.exp++; if (seen[id]) p.found++; else missing.push({ carton: id, name: p.name, status: c ? c.status : '?', bb: b ? dmy_(String(b.bestBefore)) : '' }); });
+  const today = todayIso_();
+  scans.forEach(s => { if (exp.indexOf(s.carton) < 0) { const c = byId[s.carton], b = c && bs[c.batch]; odd.push({ carton: s.carton, name: b ? (CATALOG.find(x => x.sku === b.sku) || {}).name || b.name : '?', status: c ? c.status : 'unknown', delivery: c ? c.delivery || '' : '', by: s.by }); } });
+  const expired = scans.map(s => byId[s.carton]).filter(c => c && bs[c.batch] && String(bs[c.batch].bestBefore) < today).map(c => c.carton);
+  return { id: k.id, status: k.status, startedBy: k.startedBy, startedAt: String(k.startedAt), doneBy: k.doneBy, doneAt: String(k.doneAt || ''), expected: exp.length,
+    found: exp.length - missing.length, scanned: scans.length, products: Object.keys(prod).map(x => prod[x]).sort((a, b) => String(a.sku).localeCompare(String(b.sku))),
+    missing: missing, odd: odd, expired: expired, resolved: k.resolved ? JSON.parse(k.resolved) : {} };
+}
+function checkScans_(id) { return rows_('CheckScans').filter(s => s.check === id); }
+function checkStatus(tok) {
+  user_(tok);
+  const ks = rows_('Checks'), open = ks.find(k => k.status === 'open'), done = ks.filter(k => k.status === 'done').sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
+  const last = done[0], lastDay = last ? String(last.doneAt).slice(0, 10) : '';
+  const due = !open && (!lastDay || addDays_(lastDay, CHECK_DAYS) <= todayIso_());
+  return { open: open ? open.id : '', last: last ? { id: last.id, at: String(last.doneAt).slice(0, 16), by: last.doneBy } : null, due: due, dueOn: lastDay ? addDays_(lastDay, CHECK_DAYS) : '', every: CHECK_DAYS,
+    recent: done.slice(0, 6).map(k => ({ id: k.id, at: String(k.doneAt).slice(0, 16), by: k.doneBy, note: k.note || '' })) };
+}
+function checkStart(tok) {
+  FRESH_ = true;
+  const u = user_(tok), lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const ex = rows_('Checks').find(k => k.status === 'open'); if (ex) return checkGet(tok, ex.id);
+    const bs = bmap_();
+    const exp = rows_('Cartons').filter(c => (c.status === 'packed' || c.status === 'picked') && bs[c.batch] && bs[c.batch].status !== 'cancelled').map(c => c.carton);
+    const ymd = todayIso_().slice(2).replace(/-/g, ''), pre = 'SC' + ymd + '-', n = rows_('Checks').filter(k => String(k.id).indexOf(pre) === 0).length + 1, id = pre + ('0' + n).slice(-2);
+    sheet_('Checks'); dropRows_('Checks');
+    sheet_('Checks').appendRow([id, 'open', 'HQ Freezer', u.name, stamp_(), exp.join(' '), '', '', '', '', '']);
+    log_(u.name, 'stock check start', id, exp.length + ' expected');
+    return checkGet(tok, id);
+  } finally { lock.releaseLock(); }
+}
+function checkGet(tok, id) {
+  const u = user_(tok);
+  const k = rows_('Checks').find(x => x.id === id); if (!k) throw new Error('Stock check not found.');
+  const out = checkSummary_(k, rows_('Cartons'), bmap_(), checkScans_(id)); out.mgr = isMgr_(u); return out;
+}
+function checkScan(tok, id, cid) {
+  FRESH_ = true;
+  const u = user_(tok); cid = clean_(cid, 40).toUpperCase();
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const k = rows_('Checks').find(x => x.id === id); if (!k) throw new Error('Stock check not found.');
+    if (k.status !== 'open') throw new Error('This stock check is finished.');
+    const c = rows_('Cartons').find(x => x.carton === cid), bs = bmap_(), b = c && bs[c.batch];
+    const exp = String(k.expected || '').split(' ').indexOf(cid) >= 0;
+    const name = b ? tc_((CATALOG.find(x => x.sku === b.sku) || {}).name || b.name) : '';
+    const already = checkScans_(id).some(s => s.carton === cid);
+    let verdict = exp ? 'found' : !c ? 'unknown' : 'odd';
+    if (!already) { sheet_('CheckScans'); dropRows_('CheckScans'); sheet_('CheckScans').appendRow([id, cid, u.name, stamp_(), verdict]); }
+    const msg = already ? 'Already counted' : verdict === 'found' ? 'Counted' : verdict === 'unknown' ? 'Not a BEKU carton in the system' : 'In the system as ' + (c.status === 'sent' ? 'SENT' + (c.delivery ? ' (' + c.delivery + ')' : '') : String(c.status).toUpperCase()) + ', should not be here';
+    const expired = b && String(b.bestBefore) < todayIso_();
+    return { carton: cid, name: name, verdict: already ? 'dup' : verdict, msg: msg, expired: !!expired, bb: b ? dmy_(String(b.bestBefore)) : '', sum: checkGet(tok, id) };
+  } finally { lock.releaseLock(); }
+}
+function checkUnscan(tok, id, cid) {
+  FRESH_ = true;
+  const u = user_(tok), k = rows_('Checks').find(x => x.id === id); if (!k || k.status !== 'open') throw new Error('This stock check is finished.');
+  const s = checkScans_(id).find(x => x.carton === cid); if (!s) return checkGet(tok, id);
+  sheet_('CheckScans').deleteRow(s._row); dropRows_('CheckScans'); log_(u.name, 'stock check unscan', id, cid);
+  return checkGet(tok, id);
+}
+function checkFinish(tok, id, note) {
+  FRESH_ = true;
+  const u = user_(tok), lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const k = rows_('Checks').find(x => x.id === id); if (!k) throw new Error('Stock check not found.');
+    if (k.status !== 'open') throw new Error('This stock check is already finished.');
+    const sm = checkSummary_(k, rows_('Cartons'), bmap_(), checkScans_(id));
+    const text = ['🧊 *BEKU STOCK CHECK* – HQ Freezer', 'Counted by ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16), '',
+      (sm.missing.length || sm.odd.length ? '⚠️ ' : '✅ ') + '*' + sm.found + ' of ' + sm.expected + ' cartons found*', '']
+      .concat(sm.products.map(p => (p.found === p.exp ? '✓ ' : '✗ ') + tc_(p.name) + ': ' + p.found + ' / ' + p.exp))
+      .concat(sm.missing.length ? ['', '❌ *Missing (' + sm.missing.length + ')*'].concat(sm.missing.map(m => '• ' + m.carton + ' · ' + tc_(m.name))) : [])
+      .concat(sm.odd.length ? ['', '⚠️ *Should not be here (' + sm.odd.length + ')*'].concat(sm.odd.map(o => '• ' + o.carton + ' · ' + (o.name === '?' ? 'unknown' : tc_(o.name)) + ' · system: ' + o.status + (o.delivery ? ' ' + o.delivery : ''))) : [])
+      .concat(sm.expired.length ? ['', '📅 *Expired, take out (' + sm.expired.length + ')*'].concat(sm.expired.map(x => '• ' + x)) : [])
+      .concat(note ? ['', 'Note: ' + clean_(note, 300)] : []).concat(['', 'Ref ' + id]).join('\n');
+    k.status = 'done'; k.doneBy = u.name; k.doneAt = stamp_(); k.report = text; k.note = clean_(note || '', 300); setRow_('Checks', k._row, k);
+    const queued = notify_('stockcheck', id, '', text, sm.missing.map(m => m.carton).join(' '), '');
+    log_(u.name, 'stock check done', id, sm.found + '/' + sm.expected);
+    const out = checkSummary_(k, rows_('Cartons'), bmap_(), checkScans_(id)); out.report = text; out.queued = queued; return out;
+  } finally { lock.releaseLock(); }
+}
+function checkCancel(tok, id) {
+  FRESH_ = true;
+  const u = user_(tok), k = rows_('Checks').find(x => x.id === id); if (!k || k.status !== 'open') throw new Error('Nothing to cancel.');
+  k.status = 'cancelled'; k.doneBy = u.name; k.doneAt = stamp_(); setRow_('Checks', k._row, k); log_(u.name, 'stock check cancel', id, '');
+  return checkStatus(tok);
+}
+/* manager only: a missing carton is written off as lost or damaged (leaves stock). */
+function checkResolve(tok, id, cid, kind) {
+  FRESH_ = true;
+  const u = user_(tok); if (!isMgr_(u)) throw new Error('Only a manager can write off a carton.');
+  kind = kind === 'damaged' ? 'damaged' : kind === 'found' ? 'found' : 'lost';
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const k = rows_('Checks').find(x => x.id === id); if (!k || k.status !== 'done') throw new Error('Finish the stock check first.');
+    const c = rows_('Cartons').find(x => x.carton === cid); if (!c) throw new Error('Carton not found.');
+    if (kind !== 'found') { if (c.status !== 'packed' && c.status !== 'picked') throw new Error('Carton is ' + c.status + ' now.'); c.status = kind; c.location = kind.toUpperCase() + ' (' + id + ')'; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c); }
+    const r = k.resolved ? JSON.parse(k.resolved) : {}; r[cid] = { kind: kind, by: u.name, at: stamp_() }; k.resolved = JSON.stringify(r); setRow_('Checks', k._row, k);
+    log_(u.name, 'stock check ' + kind, id, cid);
+    return checkGet(tok, id);
+  } finally { lock.releaseLock(); }
+}
+
 /* ---------- orders from the WhatsApp bot sheet (read only) ---------- */
 function norm_(s) { return String(s || '').toUpperCase().replace(/[–—-]/g, ' ').replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
 function skuFor_(name) {
@@ -610,7 +724,7 @@ function deliverySend(tok, id, force) {
 }
 
 /* ---------- web app ---------- */
-const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder, deliveryPhoto: deliveryPhoto, deliveryPhotoData: deliveryPhotoData };
+const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder, deliveryPhoto: deliveryPhoto, deliveryPhotoData: deliveryPhotoData, checkStatus: checkStatus, checkStart: checkStart, checkGet: checkGet, checkScan: checkScan, checkUnscan: checkUnscan, checkFinish: checkFinish, checkCancel: checkCancel, checkResolve: checkResolve };
 function doPost(e) {
   let out;
   try {
