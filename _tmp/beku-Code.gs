@@ -386,7 +386,8 @@ function stock(tok) {
 }
 
 /* ---------- stock check (HQ Freezer) ---------- */
-const CHECK_DAYS = 14;
+const CHECK_DAY = 15, CHECK_FROM = '2026-12-15'; // stock check once a month on the 15th, first one 15 Dec 2026
+function the15th_(iso, add) { const y = +iso.slice(0, 4), m = +iso.slice(5, 7) - 1 + (add || 0); const d = new Date(Date.UTC(y, m, CHECK_DAY)); return d.toISOString().slice(0, 10); }
 function isMgr_(u) { return /owner|manager|office|admin|director/.test(String(u.role || '')); }
 function checkSummary_(k, cs, bs, scans) {
   const exp = String(k.expected || '').split(' ').filter(Boolean), seen = {}, odd = [];
@@ -407,8 +408,11 @@ function checkStatus(tok) {
   user_(tok);
   const ks = rows_('Checks'), open = ks.find(k => k.status === 'open'), done = ks.filter(k => k.status === 'done').sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
   const last = done[0], lastDay = last ? String(last.doneAt).slice(0, 10) : '';
-  const due = !open && (!lastDay || addDays_(lastDay, CHECK_DAYS) <= todayIso_());
-  return { open: open ? open.id : '', last: last ? { id: last.id, at: String(last.doneAt).slice(0, 16), by: last.doneBy } : null, due: due, dueOn: lastDay ? addDays_(lastDay, CHECK_DAYS) : '', every: CHECK_DAYS,
+  const today = todayIso_(), cur = +today.slice(8, 10) >= CHECK_DAY ? the15th_(today, 0) : the15th_(today, -1);
+  let due = false, dueOn;
+  if (cur < CHECK_FROM) dueOn = CHECK_FROM;
+  else { const doneThis = done.some(k => String(k.doneAt).slice(0, 10) >= cur); due = !open && !doneThis; dueOn = doneThis ? the15th_(cur, 1) : cur; }
+  return { open: open ? open.id : '', last: last ? { id: last.id, at: String(last.doneAt).slice(0, 16), by: last.doneBy } : null, due: due, dueOn: dueOn, every: 'month',
     recent: done.slice(0, 6).map(k => ({ id: k.id, at: String(k.doneAt).slice(0, 16), by: k.doneBy, note: k.note || '' })) };
 }
 function checkStart(tok) {
