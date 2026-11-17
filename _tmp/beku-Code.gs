@@ -7,6 +7,8 @@ const TEAM_SS_ID = '1YUKdFbidUwwXUC2fJKIpQe2hNIhIYh91gPBDTf9A5-0'; // back-offic
 const TZ = 'Asia/Kuala_Lumpur';
 const SHELF_MONTHS = 9;
 const BEKU_WA = '60143490928';
+const BOT_SS_ID = '1QahunHiZ_0g8d0BCaWIXI6AfI9D8guFZtEIiwzHtcGg'; // BEKU Customers & Leads (WhatsApp bot sheet): Orders tab read only; posts queued in tab 'BEKU packing'
+const BOT_TAB = 'BEKU packing';
 const SITE = 'https://chaleurpatisserie-ops.github.io/chaleur-app/';
 
 /* ---------- catalog (from the BEKU carton labels, 13 Nov 2026) ---------- */
@@ -35,7 +37,7 @@ function sheet_(name) {
 const HEAD = {
   Batches: ['batch', 'sku', 'code', 'name', 'ctype', 'pcs', 'cartons', 'made', 'bestBefore', 'run', 'status', 'createdBy', 'createdAt', 'closedBy', 'closedAt', 'packed', 'voided', 'madeChanged'],
   Cartons: ['carton', 'batch', 'n', 'of', 'status', 'photo1', 'photo2', 'photoBy', 'photoAt', 'location', 'updatedAt', 'delivery'],
-  Deliveries: ['id', 'customer', 'ref', 'status', 'cartons', 'createdBy', 'createdAt', 'sentBy', 'sentAt', 'note'],
+  Deliveries: ['id', 'customer', 'ref', 'status', 'cartons', 'createdBy', 'createdAt', 'sentBy', 'sentAt', 'note', 'invoice', 'deliveryDate', 'address', 'group', 'need'],
   Log: ['at', 'who', 'action', 'ref', 'detail'],
   Prints: ['at', 'who', 'batch', 'name', 'kind', 'count', 'cartons']
 };
@@ -312,7 +314,7 @@ function report_(b, cs, by) {
   const times = packed.map(c => String(c.photoAt)).filter(Boolean).sort();
   const t = s => s ? s.slice(11, 16) : '';
   const folder = props_().getProperty('ROOT_ID') ? folderFor_(b.batch).getUrl() : '';
-  return ['BEKU packing done ✅', tc_(b.name) + ' · ' + b.batch,
+  return ['🧊 *BEKU PACKING DONE* ✅', '*' + tc_(b.name) + '* · batch ' + b.batch,
     packed.length + ' ' + b.ctype + ' packed' + (voided.length ? ' (' + voided.map(c => String(c.n)).join(', ') + ' void)' : '') + ' · ' + packed.length + '/' + packed.length + ' photos',
     'Made ' + dmy_(String(b.made)) + ' · Best before ' + dmy_(String(b.bestBefore)),
     'By ' + (Object.keys(people).map(tc_).join(', ') || tc_(by)) + (times.length ? ' · ' + t(times[0]) + '–' + t(times[times.length - 1]) : ''),
@@ -336,7 +338,8 @@ function closeBatch(tok, id, voidRest) {
     setRow_('Batches', b._row, b);
     const text = report_(b, cs, u.name);
     log_(u.name, 'close batch', id, { packed: packed, voided: b.voided });
-    return { closed: true, packed: packed, report: text, wa: 'https://wa.me/' + BEKU_WA + '?text=' + encodeURIComponent(text) };
+    const queued = notify_('batch', b.batch, '', text, cs.filter(isPk).map(c => c.carton).join(' '), b.batch);
+    return { closed: true, packed: packed, report: text, queued: queued, wa: 'https://wa.me/?text=' + encodeURIComponent(text) };
   } finally { lock.releaseLock(); }
 }
 
@@ -380,12 +383,86 @@ function stock(tok) {
     .sort((a, b) => a.code.localeCompare(b.code));
 }
 
+/* ---------- orders from the WhatsApp bot sheet (read only) ---------- */
+function norm_(s) { return String(s || '').toUpperCase().replace(/[–—-]/g, ' ').replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
+function skuFor_(name) {
+  const n = norm_(name); if (!n) return '';
+  const ex = CATALOG.find(p => norm_(p.name) === n); if (ex) return ex.sku;
+  const part = CATALOG.filter(p => n.indexOf(norm_(p.name)) >= 0 || norm_(p.name).indexOf(n) >= 0);
+  return part.length === 1 ? part[0].sku : '';
+}
+function isoOf_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+  const s = String(v || '').trim(); let m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s); if (m) return m[3] + '-' + ('0' + m[1]).slice(-2) + '-' + ('0' + m[2]).slice(-2);
+  m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s); return m ? m[0] : '';
+}
+function addDays_(iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function orders_() {
+  if (MEMO_.orders) return MEMO_.orders;
+  const ch = CacheService.getScriptCache(), hit = ch.get('orders_v1'); if (hit) return (MEMO_.orders = JSON.parse(hit));
+  let out = [];
+  try {
+    const sh = SpreadsheetApp.openById(BOT_SS_ID).getSheetByName('Orders');
+    const v = sh ? sh.getDataRange().getValues() : []; const h = (v[0] || []).map(x => String(x).trim().toLowerCase());
+    const col = re => h.findIndex(x => re.test(x));
+    const cInv = col(/invoice/), cName = col(/business name/), cItems = col(/items/), cDel = col(/delivery date/), cAddr = col(/address/), cTo = col(/whatsapp/), cPay = col(/payment/), cDate = col(/^date$/);
+    if (cInv >= 0) out = v.slice(1).filter(r => String(r[cInv] || '').trim()).map(r => ({
+      invoice: String(r[cInv]).trim(), customer: String(r[cName] || '').trim(), date: isoOf_(r[cDate]), deliveryDate: isoOf_(r[cDel]),
+      address: String(r[cAddr] || '').trim(), group: String(r[cTo] || '').trim(), paid: String(r[cPay] || '').trim(),
+      items: String(r[cItems] || '').split(/;|\n/).map(x => x.trim()).filter(Boolean).map(x => { const m = /^(.*?)\s*[x×]\s*(\d+)\s*$/i.exec(x); const name = m ? m[1].trim() : x; return { name: name, n: m ? +m[2] : 1, sku: skuFor_(name) }; })
+    }));
+  } catch (e) { out = []; }
+  ch.put('orders_v1', JSON.stringify(out), 60);
+  return (MEMO_.orders = out);
+}
+/* orders still to send: delivery date from 3 days ago onward (or no date), not already sent */
+function ordersToPack(tok) {
+  user_(tok);
+  const ds = rows_('Deliveries').filter(d => d.status !== 'cancelled'), cut = addDays_(todayIso_(), -3), cs = rows_('Cartons');
+  return orders_().filter(o => !o.deliveryDate || o.deliveryDate >= cut).map(o => {
+    const d = ds.find(x => String(x.invoice || x.ref) === o.invoice);
+    const got = d ? cs.filter(c => c.delivery === d.id && (c.status === 'picked' || c.status === 'sent')).length : 0;
+    return { invoice: o.invoice, customer: o.customer, deliveryDate: o.deliveryDate, ddDmy: o.deliveryDate ? dmy_(o.deliveryDate) : '', paid: o.paid, items: o.items,
+      need: o.items.reduce((a, i) => a + i.n, 0), got: got, delivery: d ? d.id : '', status: d ? d.status : 'new' };
+  }).filter(o => o.status !== 'sent').sort((a, b) => (a.deliveryDate || '9').localeCompare(b.deliveryDate || '9'));
+}
+function deliveryFromOrder(tok, invoice) {
+  FRESH_ = true;
+  const u = user_(tok); invoice = clean_(invoice, 40);
+  const o = orders_().find(x => x.invoice === invoice); if (!o) throw new Error('Order ' + invoice + ' not found in the order list.');
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const ex = rows_('Deliveries').find(x => x.status !== 'cancelled' && String(x.invoice || x.ref) === invoice);
+    if (ex) return deliveryGet(tok, ex.id);
+    const ymd = todayIso_().slice(2).replace(/-/g, ''), pre = 'D' + ymd + '-';
+    const n = rows_('Deliveries').filter(d => String(d.id).indexOf(pre) === 0).length + 1, id = pre + ('0' + n).slice(-2);
+    sheet_('Deliveries'); dropRows_('Deliveries');
+    sheet_('Deliveries').appendRow([id, o.customer, invoice, 'open', 0, u.name, stamp_(), '', '', '', invoice, o.deliveryDate, o.address, o.group, JSON.stringify(o.items)]);
+    log_(u.name, 'delivery from order', id, invoice);
+    return deliveryGet(tok, id);
+  } finally { lock.releaseLock(); }
+}
+/* queue a message for the BEKU ORDER staff group. The WhatsApp bot (its own 5-min trigger) posts rows whose "Sent at" is empty, then fills Sent at / Error. */
+function notify_(kind, ref, customer, text, cartons, batches) {
+  try {
+    const ss = SpreadsheetApp.openById(BOT_SS_ID); let sh = ss.getSheetByName(BOT_TAB);
+    if (!sh) { sh = ss.insertSheet(BOT_TAB); sh.appendRow(['Queued', 'Kind', 'Invoice / batch', 'Customer', 'Message', 'Cartons', 'Batches', 'Sent at', 'Error']); sh.setFrozenRows(1); }
+    sh.appendRow([stamp_(), kind, ref, customer || '', text, cartons || '', batches || '', '', '']);
+    return true;
+  } catch (e) { try { log_('system', 'notify failed', ref, String(e && e.message || e)); } catch (x) {} return false; }
+}
+
 /* ---------- deliveries (pick & send) ---------- */
 function deliveryInfo_(d, cs, bs) {
   const mine = cs.filter(c => c.delivery === d.id && (c.status === 'picked' || c.status === 'sent'));
   const lines = {};
   mine.forEach(c => { const b = bs[c.batch] || {}; const k = b.sku + '|' + b.ctype; if (!lines[k]) lines[k] = { sku: b.sku, name: b.name, ctype: b.ctype, n: 0, cartons: [] }; lines[k].n++; lines[k].cartons.push({ carton: c.carton, batch: c.batch, bestBefore: dmy_(String(b.bestBefore || '')) }); });
-  return { id: d.id, customer: d.customer, ref: d.ref, status: d.status, createdBy: d.createdBy, createdAt: d.createdAt, sentBy: d.sentBy, sentAt: d.sentAt, note: d.note, count: mine.length,
+  let need = []; try { need = d.need ? JSON.parse(d.need) : []; } catch (e) { need = []; }
+  need = need.map(i => ({ name: i.name, sku: i.sku, n: +i.n || 0, got: mine.filter(c => i.sku && (bs[c.batch] || {}).sku === i.sku).length }));
+  const extra = mine.filter(c => need.length && !need.some(i => i.sku && (bs[c.batch] || {}).sku === i.sku)).map(c => c.carton);
+  const complete = need.length ? need.every(i => i.got === i.n) && !extra.length : true;
+  return { id: d.id, customer: d.customer, ref: d.ref, invoice: d.invoice || '', deliveryDate: d.deliveryDate ? isoOf_(d.deliveryDate) : '', ddDmy: d.deliveryDate && isoOf_(d.deliveryDate) ? dmy_(isoOf_(d.deliveryDate)) : '', address: d.address || '',
+    status: d.status, createdBy: d.createdBy, createdAt: d.createdAt, sentBy: d.sentBy, sentAt: d.sentAt, note: d.note, count: mine.length, need: need, extra: extra, complete: complete,
     lines: Object.keys(lines).map(k => lines[k]).sort((a, b) => String(a.sku).localeCompare(String(b.sku))) };
 }
 function bmap_() { const bs = {}; rows_('Batches').forEach(b => { bs[b.batch] = b; }); return bs; }
@@ -442,6 +519,12 @@ function pick(tok, id, cid, force) {
     if (c.status === 'sent') throw new Error(cid + ' was already sent (' + c.delivery + ').');
     if (c.status !== 'packed') throw new Error(cid + ' has no packing photos yet. Finish packing first.');
     if (String(b.bestBefore) < todayIso_()) throw new Error(cid + ' is past its best-before date (' + dmy_(String(b.bestBefore)) + '). Do not send.');
+    if (!force && d.need) {
+      let need = []; try { need = JSON.parse(d.need); } catch (e) {}
+      const it = need.find(i => i.sku === b.sku);
+      if (need.length && !it) return { warn: tc_(b.name) + ' is NOT in order ' + (d.invoice || d.ref) + '. Add it anyway?', carton: cid };
+      if (it) { const got = cs.filter(x => x.delivery === id && x.status === 'picked' && bs[x.batch] && bs[x.batch].sku === b.sku).length; if (got >= +it.n) return { warn: 'Order ' + (d.invoice || d.ref) + ' needs only ' + it.n + ' carton(s) of ' + tc_(b.name) + ' and you already have ' + got + '. Add one more anyway?', carton: cid }; }
+    }
     if (!force) {
       const older = cs.filter(x => x.status === 'packed' && x.carton !== cid && bs[x.batch] && bs[x.batch].sku === b.sku && bs[x.batch].ctype === b.ctype && String(bs[x.batch].bestBefore) < String(b.bestBefore) && String(bs[x.batch].bestBefore) >= todayIso_());
       if (older.length) {
@@ -469,7 +552,7 @@ function deliveryCancel(tok, id) {
   d.status = 'cancelled'; d.sentBy = u.name; d.sentAt = stamp_(); setRow_('Deliveries', d._row, d); log_(u.name, 'cancel delivery', id, '');
   return { cancelled: true };
 }
-function deliverySend(tok, id) {
+function deliverySend(tok, id, force) {
   FRESH_ = true;
   const u = user_(tok);
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
@@ -478,19 +561,25 @@ function deliverySend(tok, id) {
     if (d.status !== 'open') throw new Error('This delivery is already ' + d.status + '.');
     const cs = rows_('Cartons').filter(c => c.delivery === id && c.status === 'picked');
     if (!cs.length) throw new Error('No cartons scanned yet.');
+    const pre = deliveryInfo_(d, rows_('Cartons'), bmap_());
+    if (!pre.complete && !force) return { short: pre.need.filter(i => i.got !== i.n).map(i => tc_(i.name) + ': ' + i.got + ' of ' + i.n).concat(pre.extra.length ? [pre.extra.length + ' carton(s) not in the order'] : []) };
     cs.forEach(c => { c.status = 'sent'; c.location = d.customer; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c); });
     d.status = 'sent'; d.cartons = cs.length; d.sentBy = u.name; d.sentAt = stamp_(); setRow_('Deliveries', d._row, d);
     const info = deliveryGet(tok, id);
-    const text = ['BEKU delivery 🚚 ' + id, 'Customer: ' + d.customer + (d.ref ? ' · Inv/DO ' + d.ref : '')]
-      .concat(info.lines.map(l => '• ' + tc_(l.name) + ' × ' + l.n + ' ' + l.ctype))
-      .concat(['Total ' + cs.length + ' carton' + (cs.length > 1 ? 's' : ''), 'Sent by ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16), 'Ref: ' + id]).join('\n');
+    const bl = {}; info.lines.forEach(l => l.cartons.forEach(c => { bl[c.batch] = c.bestBefore; }));
+    const uniq = a => a.filter((x, i) => a.indexOf(x) === i);
+    const text = ['📦 *ORDER PACKED & SENT* – ' + (d.invoice || d.ref || id), 'Customer: *' + d.customer + '*' + (info.ddDmy ? '\nDelivery date: ' + info.ddDmy : '')]
+      .concat([''], info.lines.map(l => '• *' + tc_(l.name) + '* × ' + l.n + ' ' + l.ctype + uniq(l.cartons.map(c => c.batch)).map(bt => { const cc = l.cartons.filter(c => c.batch === bt); return '\n   batch ' + bt + ' (BB ' + cc[0].bestBefore + ') – carton ' + cc.map(c => c.carton.split('-').pop()).join(', '); }).join('')))
+      .concat(info.need.length && !info.complete ? ['', '⚠️ Not matching the order: ' + info.need.filter(i => i.got !== i.n).map(i => tc_(i.name) + ' ' + i.got + '/' + i.n).concat(info.extra.length ? [info.extra.length + ' extra carton(s)'] : []).join(', ')] : [])
+      .concat(['', 'Total ' + cs.length + ' carton' + (cs.length > 1 ? 's' : '') + ' · by ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16), 'Ref ' + id]).join('\n');
+    const queued = notify_('delivery', d.invoice || d.ref || id, d.customer, text, cs.map(c => c.carton).join(' '), Object.keys(bl).join(' '));
     log_(u.name, 'send delivery', id, cs.length + ' cartons');
-    return { sent: true, info: info, report: text, wa: 'https://wa.me/' + BEKU_WA + '?text=' + encodeURIComponent(text) };
+    return { sent: true, info: info, report: text, queued: queued, wa: 'https://wa.me/?text=' + encodeURIComponent(text) };
   } finally { lock.releaseLock(); }
 }
 
 /* ---------- web app ---------- */
-const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend };
+const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder };
 function doPost(e) {
   let out;
   try {
