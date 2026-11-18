@@ -2412,7 +2412,27 @@ let S = { tok: localStorage.getItem('beku_tok') || '', name: localStorage.getIte
 /* logo -> back to the CA app the staff came from (back office or staff app) */
 try { if (/\/office\.html/.test(document.referrer)) sessionStorage.setItem('beku_from', 'office.html'); else if (/\/(index\.html)?(\?|#|$)/.test(document.referrer.replace(/^https?:\/\/[^/]+\/chaleur-app/, ''))) sessionStorage.setItem('beku_from', 'index.html'); } catch (e) {}
 function caBack() { try { return sessionStorage.getItem('beku_from') || 'index.html'; } catch (e) { return 'index.html'; } }
+/* speed: read calls answer at once from the last copy on this phone, then refresh in the background and redraw only if something changed */
+const RD = { ordersNew: 1, ordersToPack: 1, deliveries: 1, toMake: 1, checkStatus: 1, stock: 1, batches: 1, deliveryGet: 1, batchGet: 1, transfers: 1, transferGet: 1, prints: 1, checkGet: 1 };
+const RC = (() => { try { return JSON.parse(sessionStorage.getItem('beku_rc') || '{}'); } catch (e) { return {}; } })();
+let rcT = 0; const rcSave = () => { clearTimeout(rcT); rcT = setTimeout(() => { try { sessionStorage.setItem('beku_rc', JSON.stringify(RC)); } catch (e) { for (const k in RC) delete RC[k]; } }, 300); };
+let bgT = 0;
+function bgRedraw() { clearTimeout(bgT); bgT = setTimeout(async () => {
+  const a = document.activeElement; if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
+  if (/^#(scan|carton|print|new|close)/.test(location.hash) || document.querySelector('button[disabled]:not(#sd)')) return;
+  const y = window.scrollY; S.bg = true; try { await route(); } finally { S.bg = false; } window.scrollTo(0, y);
+}, 120); }
 function api(fn, ...args) {
+  if (RD[fn]) {
+    const key = fn + JSON.stringify(args), hit = RC[key], h0 = location.hash;
+    const net = api0(fn, ...args).then(r => { const js = JSON.stringify(r); if (!hit || hit.j !== js) { RC[key] = { j: js, t: Date.now() }; rcSave(); if (hit && !S.bg && location.hash === h0) bgRedraw(); } return r; });
+    if (hit && Date.now() - hit.t < 30 * 60000) { net.catch(() => {}); return Promise.resolve(JSON.parse(hit.j)); }
+    return net;
+  }
+  if (!/^(catalog|login|logout|me|photoData|deliveryPhotoData|monthReport|deliveryHistory|loginCA|printLog)$/.test(fn)) { for (const k in RC) delete RC[k]; rcSave(); }
+  return api0(fn, ...args);
+}
+function api0(fn, ...args) {
   return fetch(API, { method: 'POST', credentials: 'omit', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })
     .then(r => r.json()).then(j => { if (!j.ok) { const e = new Error(j.error || 'Something went wrong.'); e.server = true; throw e; } return j.result; });
 }
@@ -2459,7 +2479,7 @@ window.addEventListener('online', flush); setInterval(flush, 30000);
 async function route(force) {
   const q = new URLSearchParams(location.search), c = q.get('c');
   const h = location.hash.replace(/^#\/?/, ''), [v, a] = h.split('/');
-  window.scrollTo(0, 0);
+  if (!S.bg) window.scrollTo(0, 0);
   try {
     if (!S.tok && !S.caTried) { S.caTried = true; if (await caSignIn()) return route(); }
     if (c && !S.tok) return pub(c);
