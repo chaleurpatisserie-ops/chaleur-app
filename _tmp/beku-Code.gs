@@ -611,6 +611,20 @@ function deliveries(tok) {
   const cust = {}; ds.forEach(d => { if (d.customer) cust[String(d.customer)] = 1; });
   return { list: list, customers: Object.keys(cust).sort() };
 }
+/* sent history: filter by sent date (from/to), customer, and free text (invoice / batch / carton). */
+function deliveryHistory(tok, from, to, customer, q) {
+  user_(tok);
+  const cs = rows_('Cartons'), bs = bmap_(), ds = rows_('Deliveries');
+  to = isoOf_(to) || todayIso_(); from = isoOf_(from) || addDays_(to, -30);
+  customer = String(customer || '').trim().toUpperCase(); q = String(q || '').trim().toUpperCase();
+  const list = ds.filter(d => d.status === 'sent').filter(d => { const day = String(d.sentAt).slice(0, 10); return day >= from && day <= to; })
+    .filter(d => !customer || String(d.customer).toUpperCase() === customer)
+    .map(d => deliveryInfo_(d, cs, bs))
+    .filter(i => !q || [i.customer, i.invoice, i.ref, i.id].concat(...i.lines.map(l => l.cartons.map(c => c.carton + ' ' + c.batch))).join(' ').toUpperCase().indexOf(q) >= 0)
+    .sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
+  const cust = {}; ds.forEach(d => { if (d.status === 'sent' && d.customer) cust[String(d.customer)] = 1; });
+  return { from: from, to: to, list: list.slice(0, 300), more: list.length > 300, deliveries: list.length, cartons: list.reduce((a, i) => a + i.count, 0), customers: Object.keys(cust).sort() };
+}
 function deliveryNew(tok, customer, ref) {
   FRESH_ = true;
   const u = user_(tok); customer = clean_(customer, 80); ref = clean_(ref, 60);
@@ -748,7 +762,7 @@ function deliverySend(tok, id, force) {
 }
 
 /* ---------- web app ---------- */
-const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder, deliveryPhoto: deliveryPhoto, deliveryPhotoData: deliveryPhotoData, checkStatus: checkStatus, checkStart: checkStart, checkGet: checkGet, checkScan: checkScan, checkUnscan: checkUnscan, checkFinish: checkFinish, checkCancel: checkCancel, checkResolve: checkResolve };
+const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder, deliveryPhoto: deliveryPhoto, deliveryPhotoData: deliveryPhotoData, checkStatus: checkStatus, checkStart: checkStart, checkGet: checkGet, checkScan: checkScan, checkUnscan: checkUnscan, checkFinish: checkFinish, checkCancel: checkCancel, checkResolve: checkResolve, deliveryHistory: deliveryHistory };
 function doPost(e) {
   let out;
   try {
