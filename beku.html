@@ -46,6 +46,8 @@ a{color:var(--ink)}
 .chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .chip{min-height:52px;padding:8px 12px;border-radius:16px;border:2px solid var(--hair);background:var(--milk);color:var(--ink);font:500 14px 'DM Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:8px;cursor:pointer}
 .chip .d{width:10px;height:10px;border-radius:99px;flex:none}
+.srch{position:relative;margin:0 0 10px}.srch input{width:100%;box-sizing:border-box;min-height:52px;padding:0 44px 0 46px;border-radius:16px;border:2px solid var(--hair);background:var(--milk);color:var(--ink);font:500 16px 'DM Sans',sans-serif}.srch input:focus{outline:none;border-color:var(--ink)}.srch .si{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);display:flex}.srch .sx{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);font:700 22px 'DM Sans',sans-serif;width:40px;height:40px;cursor:pointer}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.pc{padding:0;border-radius:18px;border:2px solid var(--hair);background:var(--milk);color:var(--ink);text-align:left;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;font:inherit}.pc .ph{aspect-ratio:1/1;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}.pc .ph img{width:100%;height:100%;object-fit:cover;display:block}.pc .ph img.cut{object-fit:contain;padding:10%;box-sizing:border-box}.pc .pn{padding:8px 10px 10px;font:700 14px/1.2 'DM Sans',sans-serif}.pc .pk{display:block;font:500 11px 'DM Sans',sans-serif;color:var(--muted);margin-top:2px;letter-spacing:.04em}.pc.on{border-width:3px}.pc[hidden]{display:none}.pnone{padding:18px;text-align:center;color:var(--muted);font-size:14px}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:999px;background:var(--sugar)}
 .seg button{min-height:44px;border-radius:999px;border:0;background:transparent;font:500 14px 'DM Sans',sans-serif;color:var(--ink);cursor:pointer}
 .seg button.on{background:var(--ink);color:var(--milk);font-weight:700}
@@ -2540,21 +2542,37 @@ async function home() {
 }
 
 /* ---------------- new batch ---------------- */
+/* product photo: HD photo from Canva (beku/img/hd/<sku>.jpg), else the cut-out (beku/img/<sku>.png) */
+function pimg(x) { return '<img src="beku/img/hd/' + x.sku + '.jpg" alt="' + esc(title(x.name)) + '" loading="lazy" onerror="this.onerror=null;this.className=\'cut\';this.src=\'beku/img/' + x.sku + '.png\'">'; }
 async function newBatch() {
-  const c = await cat(); const st = { sku: '', ct: 'CTN', n: 20, made: nowParts().iso };
+  const c = await cat(); const st = { sku: '', ct: 'CTN', n: 20, made: nowParts().iso, q: '' };
   const draw = () => {
     const p = c.find(x => x.sku === st.sku), cts = p ? p.ct : [{ t: 'CTN' }], today = nowParts().iso;
     if (p && !cts.find(x => x.t === st.ct)) st.ct = cts[0].t;
     const ctObj = p ? cts.find(x => x.t === st.ct) : null, changed = st.made !== today;
     app.innerHTML = hdr('new batch', '#') + '<div class="wrap">' +
-      '<div class="eb">1 · Product</div><div class="chips">' + c.map(x => '<button class="chip" data-sku="' + x.sku + '" style="' + (x.sku === st.sku ? 'border-color:' + fc(x.fam, 1) + ';background:' + fc(x.fam, 0) + ';color:' + fc(x.fam, 1) + ';font-weight:700' : '') + '"><span class="d" style="background:' + fc(x.fam, x.sku === st.sku ? 1 : 2) + '"></span>' + esc(title(x.name)) + '</button>').join('') + '</div>' +
+      '<div class="eb">1 · Product</div>' +
+      (p ? '<button class="pc on" id="pchg" style="flex-direction:row;align-items:center;width:100%;margin-bottom:4px;border-color:' + fc(p.fam, 1) + ';background:' + fc(p.fam, 0) + '"><span class="ph" style="width:96px;flex:none;background:#D3F0FF">' + pimg(p) + '</span><span class="pn" style="flex:1;font-size:17px;color:' + fc(p.fam, 1) + '">' + esc(title(p.name)) + '<span class="pk">' + esc(p.sku) + '</span></span><span class="sub" style="padding:0 14px;font-size:13px;font-weight:700">Change</span></button>'
+       : '<div class="srch"><span class="si">' + ic('search', null, 22) + '</span><input id="pq" type="search" placeholder="Search product, e.g. pandan" autocomplete="off" value="' + esc(st.q) + '" aria-label="Search product"><button class="sx" id="pqx" aria-label="Clear search"' + (st.q ? '' : ' hidden') + '>×</button></div>' +
+         '<div class="pgrid" id="pg">' + c.map(x => '<button class="pc" data-sku="' + x.sku + '" data-k="' + esc((x.name + ' ' + x.sku + ' ' + x.code).toLowerCase()) + '"><span class="ph" style="background:#D3F0FF">' + pimg(x) + '</span><span class="pn">' + esc(title(x.name)) + '<span class="pk">' + esc(x.sku) + '</span></span></button>').join('') + '</div><div class="pnone" id="pn0" hidden>No product found. Try another word.</div>') +
       '<div class="eb">2 · Carton type</div><div class="seg">' + cts.map(x => '<button data-ct="' + x.t + '" class="' + (x.t === st.ct ? 'on' : '') + '">' + x.t + (x.pcs ? ' · ' + x.pcs + ' pcs' : '') + '</button>').join('') + (cts.length === 1 ? '<span></span>' : '') + '</div>' +
       (ctObj ? '<div class="sub" style="font-size:13px">' + esc(ctObj.pack) + ' · ' + esc(ctObj.net) + '</div>' : '') +
       '<div class="row"><div class="eb">3 · Cartons</div><div class="stp"><button class="ib" data-n="-1" aria-label="One less">' + ic('minus') + '</button><input id="cn" type="number" inputmode="numeric" min="1" max="200" value="' + st.n + '" aria-label="Number of cartons" style="width:84px;min-height:52px;text-align:center;font:700 28px Fredoka,sans-serif;border-radius:16px;border:2px solid var(--hair);background:var(--milk);color:var(--ink);padding:0"><button class="ib" data-n="1" aria-label="One more">' + ic('plus') + '</button></div></div>' +
       '<div class="line" style="padding:0"><div class="row" style="padding:12px 16px;border-bottom:1px solid var(--hair)"><div><div class="sub" style="font-size:13px">Production date</div><div style="font-weight:700;font-size:16px' + (changed ? ';color:var(--bubblegum-d)' : '') + '">' + (changed ? 'Changed to ' : 'Today · ') + dmy(st.made) + '</div></div><label class="btn s" style="width:auto;min-height:44px;font-size:14px;position:relative">Change<input type="date" id="md" max="' + today + '" value="' + st.made + '" style="position:absolute;inset:0;opacity:0"></label></div>' +
       '<div class="row" style="padding:12px 16px"><div><div class="sub" style="font-size:13px">Best before</div><div style="font-weight:700;font-size:16px">' + dmy(addMonths(st.made, 9)) + '</div></div><span class="spec" style="color:var(--muted)">AUTO · +9 MONTHS</span></div></div>' +
       '<button class="btn" id="mk"' + (p ? '' : ' disabled') + '>' + (p ? 'Make ' + st.n + ' stickers' : 'Pick a product first') + '</button></div>';
-    app.querySelectorAll('[data-sku]').forEach(b => b.onclick = () => { st.sku = b.dataset.sku; draw(); });
+    app.querySelectorAll('[data-sku]').forEach(b => b.onclick = () => { st.sku = b.dataset.sku; draw(); window.scrollTo(0, 0); });
+    const pch = $('#pchg'); if (pch) pch.onclick = () => { st.sku = ''; draw(); const q = $('#pq'); if (q) q.focus(); };
+    const pq = $('#pq'); if (pq) {
+      const filt = () => {
+        const w = st.q.toLowerCase().trim().split(/\s+/).filter(Boolean); let n = 0;
+        app.querySelectorAll('#pg [data-k]').forEach(b => { const ok = w.every(t => b.dataset.k.indexOf(t) >= 0); b.hidden = !ok; if (ok) n++; });
+        $('#pn0').hidden = n > 0; $('#pqx').hidden = !st.q;
+      };
+      pq.oninput = () => { st.q = pq.value; filt(); };
+      $('#pqx').onclick = () => { st.q = ''; pq.value = ''; filt(); pq.focus(); };
+      filt();
+    }
     app.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => { st.ct = b.dataset.ct; draw(); });
     app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { st.n = Math.max(1, Math.min(200, st.n + +b.dataset.n)); draw(); });
     const cn = $('#cn');
