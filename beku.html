@@ -2476,6 +2476,7 @@ async function route(force) {
     if (v === 'send') return a ? deliveryView(decodeURIComponent(a)) : deliveriesView();
     if (v === 'history') return historyView();
     if (v === 'make') return makeView();
+    if (v === 'orders') return ordersView();
     if (v === 'move') return a ? moveView(decodeURIComponent(a)) : movesView();
     if (v === 'report') return reportView(a ? decodeURIComponent(a) : '');
     if (v === 'prints') return printsView();
@@ -2512,6 +2513,7 @@ async function home() {
   app.innerHTML = '<div class="top" style="justify-content:space-between"><a href="' + caBack() + '" aria-label="Switch to the Chaleur Atelier app" title="Switch to Chaleur Atelier" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--muted);font:500 12px DM Sans,sans-serif">' + LOGO + '<span style="border:1px solid currentColor;border-radius:999px;padding:2px 8px">⇄ CA</span></a><div style="display:flex;gap:8px;align-items:center"><button class="ib" style="width:auto;padding:0 14px;font:500 14px DM Sans" onclick="if(confirm(\'Sign out?\'))signOut()">' + esc(first) + '</button><button class="ib" aria-label="Refresh" onclick="route(true)">' + ic('refresh') + '</button></div></div>' +
     '<div class="wrap"><div><h1 class="disp" style="margin:0;font-size:40px;line-height:1">hi ' + esc(first.toLowerCase()) + '.</h1><div style="font-size:15px;color:var(--muted)"><span data-clock>' + nowParts().today + ' · ' + nowParts().now + '</span> · HQ Freezer</div></div>' +
     '<div id="dn"></div><div class="tiles">' +
+    '<a class="tile" id="tord" href="#orders" style="background:var(--bubblegum-l);color:var(--bubblegum-d)">' + ic('check', null, 28) + '<div><div class="st">NEW ORDERS</div><div class="n">Orders</div><small>Check &amp; confirm</small></div></a>' +
     '<a class="tile" href="#new" style="background:var(--pistachio-l);color:var(--pistachio-d)">' + ic('box', null, 28) + '<div><div class="st">STEP 1</div><div class="n">New batch</div><small>Print stickers</small></div></a>' +
     '<a class="tile" href="#scan" style="background:var(--baby-l);color:var(--baby-d)">' + ic('scan', null, 28) + '<div><div class="st">STEP 2</div><div class="n">Scan carton</div><small>Photo while packing</small></div></a>' +
     '<a class="tile" id="tsend" href="#send" style="background:var(--lilac-l);color:var(--lilac-d)">' + ic('truck', null, 28) + '<div><div class="st">STEP 3</div><div class="n">Pick &amp; send</div><small>Deliveries</small></div></a>' +
@@ -2520,6 +2522,7 @@ async function home() {
     '<a class="btn s" href="#prints" style="min-height:48px">' + ic('print') + 'Print history</a>' +
     '<div class="eb">Open batches</div><div id="bl"><div class="card" style="color:var(--muted)">Loading…</div></div></div>';
   cat().catch(() => {});
+  api('ordersNew', S.tok).then(os => { const t = $('#tord'); if (t && os.length) t.insertAdjacentHTML('beforeend', '<span class="bdg">' + os.length + '</span>'); }).catch(() => {});
   api('toMake', S.tok).then(m => { const t = $('#tmake'); if (t && m.cartons) t.insertAdjacentHTML('beforeend', '<span class="bdg">' + m.cartons + '</span>'); }).catch(() => {});
   api('checkStatus', S.tok).then(cs => { const t = $('#tstock'); if (t && (cs.due || cs.open)) t.insertAdjacentHTML('beforeend', '<span class="bdg" style="font-size:12px">' + (cs.open ? 'COUNTING' : 'CHECK DUE') + '</span>'); }).catch(() => {});
   api('ordersToPack', S.tok).then(os => {
@@ -3102,11 +3105,33 @@ async function historyView() {
   $('#hcl').onclick = () => { HF.from = ''; HF.to = ''; HF.cu = ''; HF.q = ''; historyView(); };
 }
 
+/* ---------------- orders (new, to confirm) ---------------- */
+async function ordersView() {
+  app.innerHTML = hdr('orders', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const os = await api('ordersNew', S.tok), today = todayIso();
+  const card = o => '<div class="card" style="display:flex;flex-direction:column;gap:8px' + (o.deliveryDate && o.deliveryDate <= today ? ';box-shadow:inset 4px 0 0 var(--bubblegum-d)' : '') + '">' +
+    '<div class="row"><b style="font-size:16px">' + esc(o.customer) + '</b><span class="spec" style="color:var(--muted)">' + (o.isWeb ? '<span style="background:var(--lilac-l);color:var(--lilac-d);border-radius:999px;padding:1px 8px;margin-right:6px;font-weight:700">WEBSITE</span>' : '') + esc(o.invoice) + '</span></div>' +
+    '<div class="sub" style="font-size:13px">' + (o.ddDmy ? 'Deliver <b>' + esc(o.ddDmy) + '</b>' + (o.deliveryDate === today ? ' · <b style="color:var(--bubblegum-d)">TODAY</b>' : o.deliveryDate < today ? ' · <b style="color:var(--bubblegum-d)">OVERDUE</b>' : '') : 'No delivery date') + '</div>' +
+    (o.lines.length ? '<div class="line tbl" style="padding:0"><div style="font-weight:700"><span>Item</span><b>cartons</b></div>' + o.lines.map(l => '<div><span>' + esc(title(l.name)) + (l.sku ? '' : ' <span style="color:var(--bubblegum-d)">(not matched)</span>') + '</span><b style="color:' + (l.toMake ? 'var(--bubblegum-d)' : 'var(--pistachio-d)') + '">' + l.n + ' ctn · ' + (l.toMake ? (l.fromStock ? l.fromStock + ' stock + ' : '') + l.toMake + ' to make' : 'in stock ✓') + '</b></div>').join('') + '</div>' : '') +
+    o.samples.map(x => '<div style="font-size:13px"><b>Sample box</b> (4 pcs' + (x ? ': ' + esc(x) : '') + ')</div>').join('') +
+    '<button class="btn w" data-ok="' + esc(o.invoice) + '">' + ic('check', '#fff') + 'Confirm order' + (o.toMake ? ' · ' + o.toMake + ' to make' : '') + '</button></div>';
+  app.innerHTML = hdr('orders', '#') + '<div class="wrap">' +
+    '<div class="sub" style="font-size:13px">New paid orders. Check items and date, then tap <b>Confirm order</b>. What we have in the freezer is kept for this order; anything missing goes on <b>To make</b> for the kitchen. Confirmed orders move to Pick &amp; send.</div>' +
+    (os.length ? os.map(card).join('') : '<div class="card" style="color:var(--muted)">No new order to confirm.</div>') +
+    '<a class="btn s" href="#make">' + ic('box') + 'To make</a><a class="btn s" href="#send">' + ic('truck') + 'Pick &amp; send</a></div>';
+  app.querySelectorAll('[data-ok]').forEach(bt => bt.onclick = async () => {
+    bt.disabled = true; bt.textContent = 'Confirming…';
+    try { const r = await api('orderConfirm', S.tok, bt.dataset.ok); toast(r.toMake ? 'Confirmed · ' + r.toMake + ' carton(s) added to To make' : 'Confirmed · all from stock', 3500); ordersView(); }
+    catch (e) { fail(e); bt.disabled = false; bt.textContent = 'Confirm order'; }
+  });
+}
+
 /* ---------------- pick & send ---------------- */
 async function deliveriesView() {
   app.innerHTML = hdr('pick &amp; send', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
-  const [r, ords] = await Promise.all([api('deliveries', S.tok), api('ordersToPack', S.tok).catch(() => [])]);
-  const open = r.list.filter(d => d.status === 'open' && !ords.some(o => o.delivery === d.id)), done = r.list.filter(d => d.status !== 'open');
+  let [r, ords] = await Promise.all([api('deliveries', S.tok), api('ordersToPack', S.tok).catch(() => [])]);
+  const fresh = ords.filter(o => !o.confirmed); ords = ords.filter(o => o.confirmed);
+  const open = r.list.filter(d => d.status === 'open' && !fresh.concat(ords).some(o => o.delivery === d.id)), done = r.list.filter(d => d.status !== 'open');
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: TZ });
   const ord = o => '<button class="card" data-inv="' + esc(o.invoice) + '" style="text-align:left;border:0;width:100%;display:flex;flex-direction:column;gap:4px;font:inherit;color:inherit;cursor:pointer' + (o.deliveryDate && o.deliveryDate <= today ? ';box-shadow:inset 4px 0 0 var(--bubblegum-d)' : '') + '"><div class="row"><b style="font-size:15px">' + esc(o.customer) + '</b><span class="spec" style="color:var(--muted)">' + (o.isWeb ? '<span style="background:var(--lilac-l);color:var(--lilac-d);border-radius:999px;padding:1px 8px;margin-right:6px;font-weight:700">WEBSITE</span>' : '') + esc(o.invoice) + '</span></div>' +
     '<div style="font-size:13px">' + o.items.map(i => i.sample ? '<b>Sample box</b> (4 pcs' + (i.detail ? ': ' + esc(i.detail) : '') + ')' : esc(title(i.name)) + ' × ' + i.n + (i.sku ? '' : ' <span style="color:var(--bubblegum-d)">(?)</span>')).join(' · ') + '</div>' +
@@ -3121,7 +3146,8 @@ async function deliveriesView() {
     g.sort((a, b) => (a.l === 'Overdue' ? -1 : 0) - (b.l === 'Overdue' ? -1 : 0));
     return g.map(x => '<div class="dhd" style="color:' + (x.red ? '#E5484D' : 'var(--muted)') + '"><span>' + esc(x.l) + '</span><span>' + x.os.length + ' deliver' + (x.os.length > 1 ? 'ies' : 'y') + '</span></div>' + x.os.map(ord).join('')).join(''); };
   app.innerHTML = hdr('pick &amp; send', '#') + '<div class="wrap">' +
-    '<div class="eb">Deliveries by date</div>' + (ords.length ? groups(ords) : '<div class="card" style="color:var(--muted)">No order waiting. New orders appear here once the invoice is ready.</div>') +
+    (fresh.length ? '<a class="dnote" href="#orders" style="background:var(--lemon-d)">' + ic('check', '#fff', 26) + '<div>' + fresh.length + ' new order' + (fresh.length > 1 ? 's' : '') + ' to confirm<small>Confirm them on the Orders page first, then they show here to pack</small></div></a>' : '') +
+    '<div class="eb">Confirmed orders by date</div>' + (ords.length ? groups(ords) : '<div class="card" style="color:var(--muted)">No confirmed order waiting. New orders are confirmed on the Orders page.</div>') +
     '<form class="line" id="nf" style="display:flex;flex-direction:column;gap:10px"><div class="eb">Delivery without an order</div><label class="lb">Customer<input type="text" id="cu" list="cul" required autocomplete="off" placeholder="e.g. Kirin Coffee"></label><datalist id="cul">' + r.customers.map(c => '<option value="' + esc(c) + '">').join('') + '</datalist>' +
     '<label class="lb">Bukku invoice / DO no. (optional)<input type="text" id="rf" placeholder="e.g. IV-00123"></label><button class="btn" id="nb">' + ic('plus', '#FFFDFA') + 'Start delivery</button></form>' +
     (open.length ? '<div class="eb">Other open deliveries</div>' + open.map(item).join('') : '') +
