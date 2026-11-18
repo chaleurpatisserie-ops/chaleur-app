@@ -514,6 +514,15 @@ function isoOf_(v) {
   const s = String(v || '').trim(); let m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s); if (m) return m[3] + '-' + ('0' + m[1]).slice(-2) + '-' + ('0' + m[2]).slice(-2);
   m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s); return m ? m[0] : '';
 }
+/* "Name x N ctn; Name x N ctn" and "SAMPLE BOX: 1 x Name, 1 x Name" (pieces, not cartons) */
+function parseItems_(txt) {
+  return String(txt || '').split(/;|\n/).map(x => x.trim()).filter(Boolean).map(x => {
+    const sb = /^sample\s*box\s*:?\s*(.*)$/i.exec(x);
+    if (sb) return { name: 'Sample box', n: 1, sku: '', sample: true, detail: sb[1].trim() };
+    const m = /^(.*?)\s*[x×]\s*(\d+)\s*(ctns?|cartons?|b\s*ctn)?\.?\s*$/i.exec(x); const name = m ? m[1].trim() : x;
+    return { name: name, n: m ? +m[2] : 1, sku: skuFor_(name) };
+  });
+}
 function addDays_(iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
 function orders_() {
   if (MEMO_.orders) return MEMO_.orders;
@@ -523,12 +532,17 @@ function orders_() {
     const sh = SpreadsheetApp.openById(BOT_SS_ID).getSheetByName('Orders');
     const v = sh ? sh.getDataRange().getValues() : []; const h = (v[0] || []).map(x => String(x).trim().toLowerCase());
     const col = re => h.findIndex(x => re.test(x));
-    const cInv = col(/invoice/), cName = col(/business name/), cItems = col(/items/), cDel = col(/delivery date/), cAddr = col(/address/), cTo = col(/whatsapp/), cPay = col(/payment/), cDate = col(/^date$/);
-    if (cInv >= 0) out = v.slice(1).filter(r => String(r[cInv] || '').trim()).map(r => ({
-      invoice: String(r[cInv]).trim(), customer: String(r[cName] || '').trim(), date: isoOf_(r[cDate]), deliveryDate: isoOf_(r[cDel]),
-      address: String(r[cAddr] || '').trim(), group: String(r[cTo] || '').trim(), paid: String(r[cPay] || '').trim(),
-      items: String(r[cItems] || '').split(/;|\n/).map(x => x.trim()).filter(Boolean).map(x => { const m = /^(.*?)\s*[x×]\s*(\d+)\s*$/i.exec(x); const name = m ? m[1].trim() : x; return { name: name, n: m ? +m[2] : 1, sku: skuFor_(name) }; })
-    }));
+    const cInv = col(/invoice/), cName = col(/business name/), cItems = col(/items/), cDel = col(/delivery date/), cAddr = col(/address/), cTo = col(/whatsapp/), cPay = col(/payment/), cDate = col(/^date$/),
+      cNote = col(/^notes?$/), cSrc = col(/^source/), cSt = col(/^status$/);
+    const cell = (r, c) => c >= 0 ? String(r[c] == null ? '' : r[c]).trim() : '';
+    if (cInv >= 0) out = v.slice(1).map(r => {
+      const inv = cell(r, cInv), web = (/WEB ORDER\s+(BKW-[\w-]+)/i.exec(cell(r, cNote)) || [])[1] || '';
+      const isWeb = /^web/i.test(cell(r, cSrc)) || !!web, st = cell(r, cSt), pay = cell(r, cPay);
+      if (/^cancel/i.test(st)) return null;
+      if (!inv && !(isWeb && web && /^paid/i.test(pay))) return null;   // web orders show once paid, even before the Bukku invoice
+      return { invoice: inv || web, web: web, isWeb: isWeb, customer: cell(r, cName), date: isoOf_(r[cDate]), deliveryDate: isoOf_(r[cDel]),
+        address: cell(r, cAddr), group: cell(r, cTo), paid: pay, items: parseItems_(cell(r, cItems)) };
+    }).filter(Boolean);
   } catch (e) { out = []; }
   ch.put('orders_v1', JSON.stringify(out), 60);
   return (MEMO_.orders = out);
@@ -538,19 +552,20 @@ function ordersToPack(tok) {
   user_(tok);
   const ds = rows_('Deliveries').filter(d => d.status !== 'cancelled'), cut = addDays_(todayIso_(), -3), cs = rows_('Cartons');
   return orders_().filter(o => !o.deliveryDate || o.deliveryDate >= cut).map(o => {
-    const d = ds.find(x => String(x.invoice || x.ref) === o.invoice);
+    const d = ds.find(x => { const k = String(x.invoice || x.ref); return k === o.invoice || (o.web && k === o.web); });
     const got = d ? cs.filter(c => c.delivery === d.id && (c.status === 'picked' || c.status === 'sent')).length : 0;
-    return { invoice: o.invoice, customer: o.customer, deliveryDate: o.deliveryDate, ddDmy: o.deliveryDate ? dmy_(o.deliveryDate) : '', items: o.items,
-      need: o.items.reduce((a, i) => a + i.n, 0), got: got, delivery: d ? d.id : '', status: d ? d.status : 'new' };
+    return { invoice: o.invoice, web: o.web, isWeb: o.isWeb, customer: o.customer, deliveryDate: o.deliveryDate, ddDmy: o.deliveryDate ? dmy_(o.deliveryDate) : '', items: o.items,
+      need: o.items.filter(i => !i.sample).reduce((a, i) => a + i.n, 0), samples: o.items.filter(i => i.sample).length, got: got, delivery: d ? d.id : '', status: d ? d.status : 'new' };
   }).filter(o => o.status !== 'sent').sort((a, b) => (a.deliveryDate || '9').localeCompare(b.deliveryDate || '9'));
 }
 function deliveryFromOrder(tok, invoice) {
   FRESH_ = true;
   const u = user_(tok); invoice = clean_(invoice, 40);
-  const o = orders_().find(x => x.invoice === invoice); if (!o) throw new Error('Order ' + invoice + ' not found in the order list.');
+  const o = orders_().find(x => x.invoice === invoice || (x.web && x.web === invoice)); if (!o) throw new Error('Order ' + invoice + ' not found in the order list.');
+  invoice = o.invoice;
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    const ex = rows_('Deliveries').find(x => x.status !== 'cancelled' && String(x.invoice || x.ref) === invoice);
+    const ex = rows_('Deliveries').find(x => x.status !== 'cancelled' && (String(x.invoice || x.ref) === invoice || (o.web && String(x.invoice || x.ref) === o.web)));
     if (ex) return deliveryGet(tok, ex.id);
     const ymd = todayIso_().slice(2).replace(/-/g, ''), pre = 'D' + ymd + '-';
     const n = rows_('Deliveries').filter(d => String(d.id).indexOf(pre) === 0).length + 1, id = pre + ('0' + n).slice(-2);
@@ -578,11 +593,12 @@ function deliveryInfo_(d, cs, bs) {
   const lines = {};
   mine.forEach(c => { const b = bs[c.batch] || {}; const k = b.sku + '|' + b.ctype; if (!lines[k]) lines[k] = { sku: b.sku, name: b.name, ctype: b.ctype, n: 0, cartons: [] }; lines[k].n++; lines[k].cartons.push({ carton: c.carton, batch: c.batch, bestBefore: dmy_(String(b.bestBefore || '')) }); });
   let need = []; try { need = d.need ? JSON.parse(d.need) : []; } catch (e) { need = []; }
+  const samples = need.filter(i => i.sample).map(i => ({ name: i.name, detail: i.detail || '' })); need = need.filter(i => !i.sample);
   need = need.map(i => ({ name: i.name, sku: i.sku, n: +i.n || 0, got: mine.filter(c => i.sku && (bs[c.batch] || {}).sku === i.sku).length }));
   const extra = mine.filter(c => need.length && !need.some(i => i.sku && (bs[c.batch] || {}).sku === i.sku)).map(c => c.carton);
   const complete = need.length ? need.every(i => i.got === i.n) && !extra.length : true;
   return { id: d.id, customer: d.customer, ref: d.ref, invoice: d.invoice || '', deliveryDate: d.deliveryDate ? isoOf_(d.deliveryDate) : '', ddDmy: d.deliveryDate && isoOf_(d.deliveryDate) ? dmy_(isoOf_(d.deliveryDate)) : '', address: d.address || '',
-    status: d.status, createdBy: d.createdBy, createdAt: d.createdAt, sentBy: d.sentBy, sentAt: d.sentAt, note: d.note, count: mine.length, need: need, extra: extra, complete: complete, photo: !!d.photo, photoBy: d.photoBy || '', photoAt: d.photoAt ? String(d.photoAt) : '',
+    status: d.status, createdBy: d.createdBy, createdAt: d.createdAt, sentBy: d.sentBy, sentAt: d.sentAt, note: d.note, count: mine.length, need: need, samples: samples, extra: extra, complete: complete, photo: !!d.photo, photoBy: d.photoBy || '', photoAt: d.photoAt ? String(d.photoAt) : '',
     lines: Object.keys(lines).map(k => lines[k]).sort((a, b) => String(a.sku).localeCompare(String(b.sku))) };
 }
 function bmap_() { const bs = {}; rows_('Batches').forEach(b => { bs[b.batch] = b; }); return bs; }
@@ -705,7 +721,8 @@ function deliverySend(tok, id, force) {
     const d = rows_('Deliveries').find(x => x.id === id); if (!d) throw new Error('Delivery not found.');
     if (d.status !== 'open') throw new Error('This delivery is already ' + d.status + '.');
     const cs = rows_('Cartons').filter(c => c.delivery === id && c.status === 'picked');
-    if (!cs.length) throw new Error('No cartons scanned yet.');
+    const hasSample = String(d.need || '').indexOf('"sample":true') >= 0;
+    if (!cs.length && !hasSample) throw new Error('No cartons scanned yet.');
     if (!d.photo) throw new Error('Take the dispatch photo first.');
     const pre = deliveryInfo_(d, rows_('Cartons'), bmap_());
     if (!pre.complete && !force) return { short: pre.need.filter(i => i.got !== i.n).map(i => tc_(i.name) + ': ' + i.got + ' of ' + i.n).concat(pre.extra.length ? [pre.extra.length + ' carton(s) not in the order'] : []) };
@@ -716,10 +733,12 @@ function deliverySend(tok, id, force) {
     const uniq = a => a.filter((x, i) => a.indexOf(x) === i);
     const text = ['📦 *ORDER PACKED & SENT* – ' + (d.invoice || d.ref || id), 'Customer: *' + d.customer + '*' + (info.ddDmy ? '\nDelivery date: ' + info.ddDmy : '')]
       .concat([''], info.lines.map(l => '• *' + tc_(l.name) + '* × ' + l.n + ' ' + l.ctype + uniq(l.cartons.map(c => c.batch)).map(bt => { const cc = l.cartons.filter(c => c.batch === bt); return '\n   batch ' + bt + ' (BB ' + cc[0].bestBefore + ') – carton ' + cc.map(c => c.carton.split('-').pop()).join(', '); }).join('')))
+      .concat(info.samples.map(x => '• *Sample box* (4 pcs)' + (x.detail ? ': ' + x.detail : '')))
       .concat(info.need.length && !info.complete ? ['', '⚠️ Not matching the order: ' + info.need.filter(i => i.got !== i.n).map(i => tc_(i.name) + ' ' + i.got + '/' + i.n).concat(info.extra.length ? [info.extra.length + ' extra carton(s)'] : []).join(', ')] : [])
-      .concat(['', 'Total ' + cs.length + ' carton' + (cs.length > 1 ? 's' : '') + ' · by ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16), 'Ref ' + id]).join('\n');
+      .concat(['', (cs.length ? 'Total ' + cs.length + ' carton' + (cs.length > 1 ? 's' : '') : 'Sample box only') + ' · by ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16), 'Ref ' + id]).join('\n');
     const cust = ['Hi! Your beku° order' + (d.invoice || d.ref ? ' *' + (d.invoice || d.ref) + '*' : '') + ' is on the way 🚚', '']
       .concat(info.lines.map(l => '• ' + tc_(l.name) + ' × ' + l.n + ' ' + l.ctype))
+      .concat(info.samples.map(x => '• Sample box' + (x.detail ? ': ' + x.detail : '')))
       .concat(['', (info.ddDmy ? 'Delivery date: ' + info.ddDmy + '\n' : '') + 'Photo: your cartons at dispatch (keep frozen at -18°C on arrival).', 'Thank you! – beku°']).join('\n');
     const queued = notify_('delivery', d.invoice || d.ref || id, d.customer, text, cs.map(c => c.carton).join(' '), Object.keys(bl).join(' '), d.photo, d.group ? cust : '', d.group || '');
     log_(u.name, 'send delivery', id, cs.length + ' cartons');
