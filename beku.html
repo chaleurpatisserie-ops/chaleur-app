@@ -2474,6 +2474,8 @@ async function route(force) {
     if (v === 'send') return a ? deliveryView(decodeURIComponent(a)) : deliveriesView();
     if (v === 'history') return historyView();
     if (v === 'make') return makeView();
+    if (v === 'move') return a ? moveView(decodeURIComponent(a)) : movesView();
+    if (v === 'report') return reportView(a ? decodeURIComponent(a) : '');
     if (v === 'prints') return printsView();
     return home();
   } catch (e) { fail(e); }
@@ -2795,6 +2797,15 @@ async function startScanner(box, onHit) {
 }
 async function scanView(target) {
   const del = /^D\d{6}-\d+$/.test(target || '') ? target : '', chk = /^SC\d{6}-\d+$/.test(target || '') ? target : '';
+  const trf = /^T\d{6}-\d+$/.test(target || '') ? target : '';
+  if (trf) {
+    app.innerHTML = hdr('transfer scan', '#move/' + encodeURIComponent(trf)) + '<div class="wrap"><div id="cam"><div class="card" style="color:var(--muted)">Starting camera…</div></div>' +
+      '<div id="sl" class="card txt" style="font-size:14px">Scan each carton, one by one.</div><a class="btn" href="#move/' + encodeURIComponent(trf) + '">Done scanning</a>' +
+      '<label class="lb">Or type the carton number<input type="text" id="cid" placeholder="PG101-261113-A-07" autocapitalize="characters"></label><button class="btn s" id="og">Scan carton</button></div>';
+    const hit = async id => { try { const r = await api('transferScan', S.tok, trf, id); const n = r.info.status === 'loading' ? r.info.count : r.info.received; $('#sl').innerHTML = '<b style="color:var(--pistachio-d);font-size:16px">✓ ' + esc(r.msg) + '</b><br>' + esc(id) + (r.name ? ' · ' + esc(r.name) : '') + '<div class="disp" style="font-size:30px;margin-top:6px">' + n + ' <span style="font-size:18px;color:var(--muted)">' + (r.info.status === 'loading' ? 'loaded' : '/ ' + r.info.count + ' received') + '</span></div>'; toast('✓ ' + id, 1500); } catch (e) { $('#sl').innerHTML = '<span style="color:var(--bubblegum-d)"><b>Not scanned:</b> ' + esc(e.message) + '</span>'; toast(e.message, 5000); if (navigator.vibrate) navigator.vibrate([60, 60, 60]); } return true; };
+    $('#og').onclick = async () => { const v = idFrom($('#cid').value); if (!v) return toast('That is not a carton number.'); $('#cid').value = ''; await hit(v); };
+    startScanner($('#cam'), hit); return;
+  }
   if (chk) {
     app.innerHTML = hdr('stock check', '#check/' + encodeURIComponent(chk)) + '<div class="wrap"><div id="cam"><div class="card" style="color:var(--muted)">Starting camera…</div></div>' +
       '<div id="sl" class="card txt" style="font-size:14px">Scan <b>every carton</b> in the freezer, one by one. Each one is counted once.</div><a class="btn" href="#check/' + encodeURIComponent(chk) + '">Done scanning · see result</a>' +
@@ -2910,12 +2921,15 @@ async function closeView(id) {
 async function stockView() {
   app.innerHTML = hdr('stock', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
   const [st, cs] = await Promise.all([api('stock', S.tok), api('checkStatus', S.tok).catch(() => null)]);
-  const tot = st.reduce((a, p) => a + p.inStock, 0);
-  app.innerHTML = hdr('stock', '#') + '<div class="wrap">' + checkCard(cs) + '<div class="row"><div><div class="disp" style="font-size:32px">' + tot + '</div><div class="sub" style="font-size:14px">cartons in HQ Freezer (packed, not sent)</div></div><a class="btn s" href="#send" style="width:auto">' + ic('truck') + 'Pick &amp; send</a></div>' +
+  const tot = st.reduce((a, p) => a + p.inStock, 0), trn = st.reduce((a, p) => a + (p.transit || 0), 0), byLoc = {};
+  st.forEach(p => p.lots.forEach(l => { byLoc[l.loc] = (byLoc[l.loc] || 0) + l.inStock; }));
+  const multi = Object.keys(byLoc).length > 1 || trn;
+  app.innerHTML = hdr('stock', '#') + '<div class="wrap">' + checkCard(cs) + '<div class="row"><div><div class="disp" style="font-size:32px">' + tot + '</div><div class="sub" style="font-size:14px">cartons in stock (packed, not sent)</div>' + (multi ? '<div class="sub" style="font-size:12.5px">' + Object.keys(byLoc).map(k => esc(k) + ' ' + byLoc[k]).join(' · ') + (trn ? ' · in transit ' + trn : '') + '</div>' : '') + '</div><a class="btn s" href="#send" style="width:auto">' + ic('truck') + 'Pick &amp; send</a></div>' +
     (st.length ? st.map(p => '<div class="card" style="background:' + fc(p.fam, 0) + ';color:' + fc(p.fam, 1) + ';display:flex;flex-direction:column;gap:8px"><div class="row"><b style="font-size:16px">' + esc(title(p.name)) + '</b><span class="disp" style="font-size:24px">' + p.inStock + '</span></div>' +
-      p.lots.map(l => '<div class="row" style="font-size:13px;color:var(--ink);background:var(--milk);border-radius:12px;padding:8px 10px"><span><b>' + esc(l.batch) + '</b> · ' + esc(l.ctype) + '<br><span style="color:' + (l.expired ? 'var(--bubblegum-d)' : l.soon ? 'var(--lemon-d)' : 'var(--muted)') + '">' + (l.expired ? 'EXPIRED ' : l.soon ? 'Expires soon · ' : 'Best before ') + l.bbDmy + '</span></span><span style="text-align:right"><b>' + l.inStock + '</b> in stock' + (l.picked ? '<br>' + l.picked + ' picked' : '') + '</span></div>').join('') + '</div>').join('')
+      p.lots.map(l => '<div class="row" style="font-size:13px;color:var(--ink);background:var(--milk);border-radius:12px;padding:8px 10px"><span><b>' + esc(l.batch) + '</b> · ' + esc(l.ctype) + (multi ? ' · ' + esc(l.loc) : '') + '<br><span style="color:' + (l.expired ? 'var(--bubblegum-d)' : l.soon ? 'var(--lemon-d)' : 'var(--muted)') + '">' + (l.expired ? 'EXPIRED ' : l.soon ? 'Expires soon · ' : 'Best before ') + l.bbDmy + '</span></span><span style="text-align:right"><b>' + l.inStock + '</b> in stock' + (l.picked ? '<br>' + l.picked + ' picked' : '') + '</span></div>').join('') + '</div>').join('')
       : '<div class="card" style="color:var(--muted)">No packed cartons in stock yet.</div>') +
-    '<div class="sub" style="font-size:12px">Oldest best-before is listed first in each product. Send oldest first.</div></div>';
+    '<div class="sub" style="font-size:12px">Oldest best-before is listed first in each product. Send oldest first.</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><a class="btn s" href="#move">' + ic('truck') + 'Move stock</a><a class="btn s" href="#report">' + ic('stack') + 'Monthly report</a></div></div>';
   bindCheckCard();
 }
 
@@ -2991,6 +3005,56 @@ async function makeView() {
       m.orders.map(o => '<a href="#send/' + encodeURIComponent(o.id) + '" class="row" style="font-size:13px;text-decoration:none;color:inherit"><span>' + esc(o.customer) + ' <span class="sub">' + esc(o.key) + '</span></span><span>' + o.n + ' ctn · <b>' + esc(o.dmy || 'no date') + '</b></span></a>').join('') + '</div>').join('')
       : '<div class="alert g">Nothing to make: the freezer stock covers every confirmed order.</div>') +
     (r.samples.length ? '<div class="eb">Sample boxes to prepare</div>' + r.samples.map(x => '<a class="card" href="#send/' + encodeURIComponent(x.id) + '" style="display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit"><div class="row"><b>' + esc(x.customer) + '</b><span class="sub">' + esc(x.dmy) + '</span></div><div style="font-size:13px">' + esc(x.detail || 'any 4 pcs') + '</div></a>').join('') : '') + '</div>';
+}
+/* ---------------- transfers (move stock) ---------------- */
+async function movesView() {
+  app.innerHTML = hdr('move stock', '#stock') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const r = await api('transfers', S.tok);
+  const locs = Array.from(new Set(['HQ Freezer'].concat(r.locations)));
+  const item = t => '<a class="card" href="#move/' + encodeURIComponent(t.id) + '" style="display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit' + (t.status !== 'received' ? ';box-shadow:inset 4px 0 0 var(--lemon-d)' : t.missing.length ? ';box-shadow:inset 4px 0 0 var(--bubblegum-d)' : '') + '"><div class="row"><b style="font-size:15px">' + esc(t.from) + ' → ' + esc(t.to) + '</b><span class="spec" style="color:var(--muted)">' + esc(t.id) + '</span></div>' +
+    '<div class="sub" style="font-size:13px">' + ({ loading: 'LOADING · ' + t.count + ' scanned', sent: 'ON THE WAY · ' + t.received + '/' + (t.count) + ' received', received: 'RECEIVED ' + t.received + ' ctn' + (t.missing.length ? ' · <b style="color:var(--bubblegum-d)">' + t.missing.length + ' missing</b>' : '') })[t.status] + ' · ' + esc((t.sentAt || t.createdAt).slice(0, 16)) + '</div></a>';
+  app.innerHTML = hdr('move stock', '#stock') + '<div class="wrap">' +
+    '<form class="line" id="tf" style="display:flex;flex-direction:column;gap:10px"><div class="eb">New transfer</div>' +
+      '<datalist id="tl">' + locs.map(l => '<option value="' + esc(l) + '">').join('') + '</datalist>' +
+      '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px"><label class="lb" style="min-width:0">From<input type="text" id="tfr" list="tl" value="HQ Freezer" required></label><label class="lb" style="min-width:0">To<input type="text" id="tto" list="tl" placeholder="e.g. Cold room" required></label></div>' +
+      '<button class="btn" id="tgo">' + ic('truck', '#FFFDFA') + 'Start loading</button>' +
+      '<div class="sub" style="font-size:12px">Scan every carton as you load it. At the other end, someone scans every carton in. Anything not scanned in is reported missing.</div></form>' +
+    (r.list.length ? '<div class="eb">Transfers</div>' + r.list.map(item).join('') : '') + '</div>';
+  $('#tf').onsubmit = async e => { e.preventDefault(); $('#tgo').disabled = true; try { const t = await api('transferNew', S.tok, $('#tfr').value, $('#tto').value); location.hash = '#move/' + encodeURIComponent(t.id); } catch (er) { fail(er); $('#tgo').disabled = false; } };
+}
+async function moveView(id) {
+  app.innerHTML = hdr('transfer', '#move') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const t = await api('transferGet', S.tok, id);
+  const st = { loading: 'LOADING at ' + t.from, sent: 'ON THE WAY to ' + t.to, received: 'RECEIVED at ' + t.to }[t.status];
+  app.innerHTML = hdr(esc((t.from + ' → ' + t.to).toLowerCase()), '#move') + '<div class="wrap">' +
+    '<div class="spec" style="color:var(--muted)">' + esc(t.id) + ' · ' + esc(st) + '</div>' +
+    '<div class="row"><div><div class="disp" style="font-size:36px">' + (t.status === 'loading' ? t.count : t.received) + (t.status === 'loading' ? '' : '<span style="font-size:20px;color:var(--muted)"> / ' + (t.status === 'received' ? t.received + t.missing.length : t.count) + '</span>') + '</div><div class="sub" style="font-size:13px">' + (t.status === 'loading' ? 'cartons loaded' : 'cartons received') + '</div></div></div>' +
+    (t.lines.length ? '<div class="line tbl" style="padding:0">' + t.lines.map(l => '<div><span>' + esc(title(l.name)) + ' <span class="sub">' + esc(l.ctype) + '</span></span><b>' + (t.status === 'loading' ? l.n : l.recv + ' / ' + l.n) + '</b></div>').join('') + '</div>' : '<div class="card" style="color:var(--muted)">No cartons yet.</div>') +
+    (t.missing && t.missing.length ? '<div class="alert r"><b>Missing (' + t.missing.length + '):</b> ' + t.missing.map(esc).join(', ') + '<br>These cartons are still marked in transit. Tell the manager.</div>' : '') +
+    (t.status === 'loading' ? '<a class="btn" href="#scan/' + encodeURIComponent(t.id) + '">' + ic('scan', '#FFFDFA') + 'Scan cartons to load</a>' +
+      (t.lines.length ? '<details class="card"><summary style="cursor:pointer;font-size:14px">Loaded cartons (tap to remove one)</summary>' + t.lines.map(l => l.cartons.map(c => '<div class="row" style="font-size:13px;margin-top:6px"><span>' + esc(c.carton) + '</span><button class="ib" style="width:32px;height:32px" data-un="' + esc(c.carton) + '">' + ic('minus') + '</button></div>').join('')).join('') + '</details>' : '') +
+      '<button class="btn w" id="tsd"' + (t.count ? '' : ' disabled') + '>' + ic('truck', '#fff') + 'Loaded · send ' + t.count + ' carton(s)</button>' : '') +
+    (t.status === 'sent' ? '<a class="btn" href="#scan/' + encodeURIComponent(t.id) + '">' + ic('scan', '#FFFDFA') + 'Receive: scan cartons in</a><label class="lb">Note (optional)<input type="text" id="tnote" placeholder="e.g. 1 box wet"></label><button class="btn w" id="tcl">' + ic('check', '#fff') + 'Finish receiving</button>' : '') +
+    (t.status === 'received' ? '<div class="sub" style="font-size:13px">Sent ' + esc(t.sentAt.slice(0, 16)) + ' by ' + esc(title(t.sentBy)) + ' · received ' + esc(t.receivedAt.slice(0, 16)) + ' by ' + esc(title(t.receivedBy)) + (t.note ? '<br>Note: ' + esc(t.note) : '') + '</div>' : '') + '</div>';
+  app.querySelectorAll('[data-un]').forEach(b => b.onclick = async () => { try { await api('transferUnscan', S.tok, id, b.dataset.un); moveView(id); } catch (e) { fail(e); } });
+  const sd = $('#tsd'); if (sd) sd.onclick = async () => { if (!confirm('Send ' + t.count + ' carton(s) to ' + t.to + '?')) return; sd.disabled = true; try { await api('transferSend', S.tok, id); toast('Transfer sent'); moveView(id); } catch (e) { fail(e); sd.disabled = false; } };
+  const cl = $('#tcl'); if (cl) cl.onclick = async () => { const left = t.count - t.received; if (!confirm(left ? left + ' carton(s) not scanned in yet.\n\nOK = finish, they are reported missing. Cancel = keep scanning.' : 'Finish receiving?')) return; cl.disabled = true; try { await api('transferClose', S.tok, id, $('#tnote').value); toast('Transfer received'); moveView(id); } catch (e) { fail(e); cl.disabled = false; } };
+}
+/* ---------------- monthly report ---------------- */
+async function reportView(ym) {
+  app.innerHTML = hdr('monthly report', '#stock') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const r = await api('monthReport', S.tok, ym || '');
+  const sec = (t, arr, unit) => '<div class="line tbl" style="padding:0"><div style="font-weight:700"><span>' + t + '</span><b>' + arr.reduce((a, x) => a + x.n, 0) + ' ' + unit + '</b></div>' + (arr.length ? arr.map(x => '<div><span>' + esc(title(x.name)) + '</span><b>' + x.n + '</b></div>').join('') : '<div><span class="sub">none</span><b></b></div>') + '</div>';
+  app.innerHTML = hdr('monthly report', '#stock') + '<div class="wrap">' +
+    '<label class="lb">Month<input type="month" id="rym" value="' + esc(r.ym) + '" style="width:100%;min-height:52px;border-radius:16px;border:2px solid var(--hair);background:var(--milk);font:500 17px DM Sans,sans-serif;padding:0 14px;box-sizing:border-box"></label>' +
+    '<div class="disp" style="font-size:26px">' + esc(r.label) + '</div>' +
+    sec('Packed', r.packed, 'ctn') + sec('Sent · ' + r.deliveries + ' deliveries', r.sent, 'ctn') +
+    (r.customers.length ? '<div class="line tbl" style="padding:0"><div style="font-weight:700"><span>By customer</span><b>ctn</b></div>' + r.customers.map(x => '<div><span>' + esc(x.name) + '</span><b>' + x.n + '</b></div>').join('') + '</div>' : '') +
+    '<div class="line tbl" style="padding:0"><div style="font-weight:700"><span>Lost / damaged</span><b>' + r.loss.length + '</b></div>' + r.loss.map(x => '<div><span style="font-size:13px">' + esc(x) + '</span><b></b></div>').join('') + '</div>' +
+    sec('In stock now', r.stock, 'ctn') +
+    (r.expired.length ? '<div class="alert r"><b>Expired still in stock:</b> ' + r.expired.map(esc).join(', ') + '</div>' : '') +
+    '<div class="sub" style="font-size:12px">The report for last month is posted to the BEKU ORDER group by itself on the 1st.</div></div>';
+  $('#rym').onchange = () => reportView($('#rym').value);
 }
 /* ---------------- sent history ---------------- */
 const HF = { from: '', to: '', cu: '', q: '' };
