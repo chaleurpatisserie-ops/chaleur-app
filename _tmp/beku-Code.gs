@@ -539,7 +539,8 @@ function orders_() {
       const inv = cell(r, cInv), web = (/WEB ORDER\s+(BKW-[\w-]+)/i.exec(cell(r, cNote)) || [])[1] || '';
       const isWeb = /^web/i.test(cell(r, cSrc)) || !!web, st = cell(r, cSt), pay = cell(r, cPay);
       if (/^cancel/i.test(st)) return null;
-      if (!inv && !(isWeb && web && /^paid/i.test(pay))) return null;   // web orders show once paid, even before the Bukku invoice
+      if (isWeb && !/^paid/i.test(pay)) return null;   // website orders show only once paid (with or without a Bukku invoice no.)
+      if (!inv && !web) return null;
       return { invoice: inv || web, web: web, isWeb: isWeb, customer: cell(r, cName), date: isoOf_(r[cDate]), deliveryDate: isoOf_(r[cDel]),
         address: cell(r, cAddr), group: cell(r, cTo), paid: pay, items: parseItems_(cell(r, cItems)) };
     }).filter(Boolean);
