@@ -40,6 +40,7 @@ const HEAD = {
   Deliveries: ['id', 'customer', 'ref', 'status', 'cartons', 'createdBy', 'createdAt', 'sentBy', 'sentAt', 'note', 'invoice', 'deliveryDate', 'address', 'group', 'need', 'photo', 'photoBy', 'photoAt', 'confirmedBy', 'confirmedAt', 'plan', 'packedAt', 'deliveredBy', 'deliveredAt', 'deliveredNote'],
   Checks: ['id', 'status', 'location', 'startedBy', 'startedAt', 'expected', 'doneBy', 'doneAt', 'report', 'note', 'resolved'],
   CheckScans: ['check', 'carton', 'by', 'at', 'verdict'],
+  Transfers: ['id', 'from', 'to', 'status', 'createdBy', 'createdAt', 'sentBy', 'sentAt', 'receivedBy', 'receivedAt', 'missing', 'note'],
   Log: ['at', 'who', 'action', 'ref', 'detail'],
   Prints: ['at', 'who', 'batch', 'name', 'kind', 'count', 'cartons']
 };
@@ -340,7 +341,7 @@ function closeBatch(tok, id, voidRest) {
     setRow_('Batches', b._row, b);
     const text = report_(b, cs, u.name);
     log_(u.name, 'close batch', id, { packed: packed, voided: b.voided });
-    const queued = notify_('batch', b.batch, '', text, cs.filter(isPk).map(c => c.carton).join(' '), b.batch);
+    const queued = notify_('batch', b.batch, '', text, cs.filter(isPk).map(c => c.carton).join(' '), b.batch, '', '', '', b.sku, b.ctype, packed);
     return { closed: true, packed: packed, report: text, queued: queued, wa: 'https://wa.me/?text=' + encodeURIComponent(text) };
   } finally { lock.releaseLock(); }
 }
@@ -370,19 +371,185 @@ function stock(tok) {
   user_(tok);
   const bs = {}; rows_('Batches').forEach(b => { bs[b.batch] = b; });
   const today = todayIso_(), soon = addMonths_(today, 2);
-  const out = {};
+  const out = {}, LOC = {}, TR = {};
   rows_('Cartons').forEach(c => {
-    if (c.status !== 'packed' && c.status !== 'picked') return;
+    if (c.status !== 'packed' && c.status !== 'picked' && c.status !== 'transit') return;
     const b = bs[c.batch]; if (!b || b.status === 'cancelled') return;
+    if (c.status === 'transit') { TR[b.sku] = (TR[b.sku] || 0) + 1; return; }
+    const ln = locName_(c.location); LOC[ln] = (LOC[ln] || 0) + 1;
     const p = CATALOG.find(x => x.sku === b.sku) || { name: b.name, fam: '' };
     const k = b.sku;
     if (!out[k]) out[k] = { sku: b.sku, code: b.code, name: p.name, fam: p.fam, inStock: 0, picked: 0, lots: {} };
-    const o = out[k], lk = b.batch + '|' + b.ctype;
-    if (!o.lots[lk]) o.lots[lk] = { batch: b.batch, ctype: b.ctype, bestBefore: String(b.bestBefore), bbDmy: dmy_(String(b.bestBefore)), inStock: 0, picked: 0, expired: String(b.bestBefore) < today, soon: String(b.bestBefore) < soon };
+    const o = out[k], lk = b.batch + '|' + b.ctype + '|' + ln;
+    if (!o.lots[lk]) o.lots[lk] = { loc: ln, batch: b.batch, ctype: b.ctype, bestBefore: String(b.bestBefore), bbDmy: dmy_(String(b.bestBefore)), inStock: 0, picked: 0, expired: String(b.bestBefore) < today, soon: String(b.bestBefore) < soon };
     if (c.status === 'packed') { o.inStock++; o.lots[lk].inStock++; } else { o.picked++; o.lots[lk].picked++; }
   });
-  return Object.keys(out).map(k => { const o = out[k]; o.lots = Object.keys(o.lots).map(x => o.lots[x]).sort((a, b) => a.bestBefore.localeCompare(b.bestBefore)); return o; })
+  const list = Object.keys(out).map(k => { const o = out[k]; o.transit = TR[k] || 0; o.lots = Object.keys(o.lots).map(x => o.lots[x]).sort((a, b) => a.bestBefore.localeCompare(b.bestBefore)); return o; })
     .sort((a, b) => a.code.localeCompare(b.code));
+  return list;
+}
+
+/* ---------- daily jobs (run by the first app use each day): expiry alerts, monthly report ---------- */
+const EXPIRY_DAYS = [60, 30];
+function daysBetween_(a, b) { return Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 864e5); }
+function locName_(l) { return String(l || '') || 'HQ Freezer'; }
+function daily_() {
+  const P = props_(), today = todayIso_();
+  if (P.getProperty('daily_run') === today) return;
+  const lock = LockService.getScriptLock(); if (!lock.tryLock(1000)) return;
+  try {
+    if (P.getProperty('daily_run') === today) return;
+    P.setProperty('daily_run', today);
+    try { expiryAlerts_(); } catch (e) { log_('system', 'expiry alert failed', '', String(e && e.message || e)); }
+    try { const prev = addMonths_(today.slice(0, 7) + '-01', -1).slice(0, 7); if (prev >= '2026-11' && !P.getProperty('report_' + prev)) { const r = monthReport_(prev); notify_('report', prev, '', r.text, '', ''); P.setProperty('report_' + prev, today); } } catch (e) { log_('system', 'monthly report failed', '', String(e && e.message || e)); }
+  } finally { lock.releaseLock(); }
+}
+function expiryAlerts_() {
+  const P = props_(), today = todayIso_(), bs = bmap_(), lots = {};
+  rows_('Cartons').forEach(c => {
+    if (c.status !== 'packed' && c.status !== 'picked' && c.status !== 'transit') return;
+    const b = bs[c.batch]; if (!b || b.status === 'cancelled') return;
+    const k = b.batch; const l = lots[k] || (lots[k] = { b: b, n: 0, locs: {} }); l.n++; const ln = c.status === 'transit' ? 'in transit' : locName_(c.location); l.locs[ln] = (l.locs[ln] || 0) + 1;
+  });
+  const lines = { expired: [], 30: [], 60: [] };
+  Object.keys(lots).forEach(k => {
+    const l = lots[k], left = daysBetween_(today, String(l.b.bestBefore));
+    const where = Object.keys(l.locs).map(x => l.locs[x] + ' at ' + x).join(', ');
+    const line = '• ' + tc_(l.b.name) + ' · batch ' + k + ' · BB ' + dmy_(String(l.b.bestBefore)) + ' · ' + l.n + ' ctn (' + where + ')';
+    let t = null; if (left < 0) t = 'expired'; else if (left <= 30) t = 30; else if (left <= 60) t = 60;
+    if (t === null) return;
+    const key = 'exp_' + k + '_' + t; if (P.getProperty(key)) return;
+    P.setProperty(key, today); lines[t].push(line + (t === 'expired' ? '' : ' · ' + left + ' days left'));
+  });
+  if (!lines.expired.length && !lines[30].length && !lines[60].length) return;
+  const text = ['⏰ *BEKU EXPIRY ALERT* – ' + dmy_(today)]
+    .concat(lines.expired.length ? ['', '⛔ *Expired – take out, do not send*'].concat(lines.expired) : [])
+    .concat(lines[30].length ? ['', '🔴 *30 days or less – send these first*'].concat(lines[30]) : [])
+    .concat(lines[60].length ? ['', '🟡 *60 days or less*'].concat(lines[60]) : []).join('\n');
+  notify_('expiry', 'EXP-' + today, '', text, '', Object.keys(lots).filter(k => text.indexOf(k) >= 0).join(' '));
+}
+/* month = yyyy-mm. Counts by product, no money. */
+function monthReport_(ym) {
+  const bs = bmap_(), cs = rows_('Cartons'), ds = rows_('Deliveries'), today = todayIso_();
+  const inM = v => String(v || '').slice(0, 7) === ym;
+  const nm = sku => tc_((CATALOG.find(x => x.sku === sku) || {}).name || sku);
+  const packed = {}, sent = {}, cust = {}, loss = [];
+  cs.forEach(c => { const b = bs[c.batch]; if (!b) return;
+    if (c.status !== 'void' && c.photoAt && inM(c.photoAt) && c.photo1 && c.photo2) packed[b.sku] = (packed[b.sku] || 0) + 1;
+    if ((c.status === 'lost' || c.status === 'damaged') && inM(c.updatedAt)) loss.push(c.carton + ' · ' + nm(b.sku) + ' · ' + c.status);
+  });
+  const sentDs = ds.filter(d => d.status === 'sent' && inM(d.sentAt));
+  sentDs.forEach(d => { cs.filter(c => c.delivery === d.id && c.status === 'sent').forEach(c => { const b = bs[c.batch]; if (!b) return; sent[b.sku] = (sent[b.sku] || 0) + 1; cust[d.customer] = (cust[d.customer] || 0) + 1; }); });
+  const st = {}, exp = []; cs.forEach(c => { const b = bs[c.batch]; if (!b || c.status !== 'packed' || b.status === 'cancelled') return; st[b.sku] = (st[b.sku] || 0) + 1; if (String(b.bestBefore) < today && exp.indexOf(b.batch) < 0) exp.push(b.batch); });
+  const sum = o => Object.keys(o).reduce((a, k) => a + o[k], 0), list = o => Object.keys(o).sort().map(k => '• ' + nm(k) + ': ' + o[k]);
+  const label = ['January','February','March','April','May','June','July','August','September','October','November','December'][+ym.slice(5, 7) - 1] + ' ' + ym.slice(0, 4);
+  const text = ['📊 *BEKU MONTHLY REPORT* – ' + label, '',
+    '*Packed:* ' + sum(packed) + ' cartons'].concat(list(packed))
+    .concat(['', '*Sent:* ' + sum(sent) + ' cartons in ' + sentDs.length + ' deliveries']).concat(list(sent))
+    .concat(Object.keys(cust).length ? ['', '*By customer*'].concat(Object.keys(cust).sort((a, b) => cust[b] - cust[a]).map(k => '• ' + k + ': ' + cust[k] + ' ctn')) : [])
+    .concat(['', '*Lost / damaged:* ' + loss.length]).concat(loss.map(x => '• ' + x))
+    .concat(['', '*In stock now:* ' + sum(st) + ' cartons']).concat(list(st))
+    .concat(exp.length ? ['', '⛔ Expired still in stock: ' + exp.join(', ')] : []).join('\n');
+  return { ym: ym, label: label, packed: packed, sent: sent, customers: cust, loss: loss, stock: st, expired: exp, deliveries: sentDs.length, text: text };
+}
+function monthReport(tok, ym) {
+  user_(tok); ym = /^\d{4}-\d{2}$/.test(String(ym || '')) ? String(ym) : todayIso_().slice(0, 7);
+  const r = monthReport_(ym), nm = sku => tc_((CATALOG.find(x => x.sku === sku) || {}).name || sku), arr = o => Object.keys(o).sort().map(k => ({ name: nm(k), n: o[k] }));
+  return { ym: ym, label: r.label, packed: arr(r.packed), sent: arr(r.sent), customers: Object.keys(r.customers).sort((a, b) => r.customers[b] - r.customers[a]).map(k => ({ name: k, n: r.customers[k] })), loss: r.loss, stock: arr(r.stock), expired: r.expired, deliveries: r.deliveries, text: r.text };
+}
+
+/* ---------- transfers: HQ Freezer ⇄ cold room / outlet. Scan out (cartons in transit), scan in at the other end; missing flagged. ---------- */
+function transfers(tok) {
+  user_(tok);
+  const ts = rows_('Transfers'), cs = rows_('Cartons'), locs = {};
+  cs.forEach(c => { if (c.status === 'packed' || c.status === 'picked') locs[locName_(c.location)] = 1; });
+  ts.forEach(t => { locs[t.from] = 1; locs[t.to] = 1; });
+  return { list: ts.slice().reverse().slice(0, 40).map(t => t.status === 'loading' ? transferInfo_(t, cs) : transferInfo2_(t)), locations: Object.keys(locs).filter(Boolean).sort() };
+}
+function transferInfo_(t, cs) {
+  const mine = cs.filter(c => c.delivery === t.id), bs = bmap_(), lines = {};
+  mine.forEach(c => { const b = bs[c.batch] || {}; const k = b.sku + '|' + b.ctype; const l = lines[k] || (lines[k] = { name: b.name, ctype: b.ctype, n: 0, recv: 0, cartons: [] }); l.n++; if (c.status !== 'transit' && locName_(c.location) === t.to) l.recv++; l.cartons.push({ carton: c.carton, batch: c.batch, status: c.status, here: c.status !== 'transit' && locName_(c.location) === t.to }); });
+  const missing = t.status === 'received' ? String(t.missing || '').split(' ').filter(Boolean) : [];
+  return { id: t.id, from: t.from, to: t.to, status: t.status, createdBy: t.createdBy, createdAt: String(t.createdAt), sentBy: t.sentBy, sentAt: String(t.sentAt || ''), receivedBy: t.receivedBy, receivedAt: String(t.receivedAt || ''), note: t.note || '',
+    count: mine.length, received: mine.filter(c => c.status !== 'transit' && locName_(c.location) === t.to).length, missing: missing, lines: Object.keys(lines).map(k => lines[k]) };
+}
+function transferNew(tok, from, to) {
+  FRESH_ = true;
+  const u = user_(tok); from = locName_(clean_(from, 60)); to = locName_(clean_(to, 60));
+  if (from.toUpperCase() === to.toUpperCase()) throw new Error('From and To are the same place.');
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const ymd = todayIso_().slice(2).replace(/-/g, ''), pre = 'T' + ymd + '-', n = rows_('Transfers').filter(t => String(t.id).indexOf(pre) === 0).length + 1, id = pre + ('0' + n).slice(-2);
+    sheet_('Transfers'); dropRows_('Transfers');
+    sheet_('Transfers').appendRow([id, from, to, 'loading', u.name, stamp_(), '', '', '', '', '', '']);
+    log_(u.name, 'transfer new', id, from + ' → ' + to);
+    return transferGet(tok, id);
+  } finally { lock.releaseLock(); }
+}
+function transferGet(tok, id) { user_(tok); const t = rows_('Transfers').find(x => x.id === id); if (!t) throw new Error('Transfer not found.'); const i = t.status === 'loading' ? transferInfo_(t, rows_('Cartons')) : transferInfo2_(t); if (t.status === 'received') i.missing = String(t.missing || '').split(' ').filter(Boolean); return i; }
+function transferScan(tok, id, cid) {
+  FRESH_ = true;
+  const u = user_(tok); cid = clean_(cid, 40).toUpperCase();
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const t = rows_('Transfers').find(x => x.id === id); if (!t) throw new Error('Transfer not found.');
+    const cs = rows_('Cartons'), c = cs.find(x => x.carton === cid); if (!c) throw new Error('Carton not found: ' + cid);
+    const b = bmap_()[c.batch], name = b ? tc_(b.name) : '';
+    if (t.status === 'loading') {
+      if (c.delivery === id) return { msg: 'Already loaded', carton: cid, name: name, info: transferInfo_(t, cs) };
+      if (c.status !== 'packed') throw new Error(cid + ' is ' + c.status + (c.delivery ? ' (' + c.delivery + ')' : '') + '. Only packed cartons can move.');
+      if (locName_(c.location).toUpperCase() !== String(t.from).toUpperCase()) throw new Error(cid + ' is at ' + locName_(c.location) + ', not at ' + t.from + '.');
+      if (b && String(b.bestBefore) < todayIso_()) throw new Error(cid + ' is past its best-before. Do not move it, take it out.');
+      c.status = 'transit'; c.delivery = id; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c);
+      return { msg: 'Loaded', carton: cid, name: name, info: transferGet(tok, id) };
+    }
+    if (t.status === 'sent') {
+      if (c.delivery !== id) throw new Error(cid + ' is not in this transfer.');
+      if (c.status !== 'transit') return { msg: 'Already received', carton: cid, name: name, info: transferInfo_(t, cs) };
+      c.status = 'packed'; c.location = t.to; c.delivery = ''; c.updatedAt = stamp_();
+      setRow_('Cartons', c._row, c);
+      // keep the link for the record: carton's delivery cleared, Log keeps it
+      log_(u.name, 'transfer receive', id, cid);
+      const ts = transferInfo2_(t); return { msg: 'Received', carton: cid, name: name, info: ts };
+    }
+    throw new Error('This transfer is ' + t.status + '.');
+  } finally { lock.releaseLock(); }
+}
+/* after receiving, cartons no longer carry the transfer id; count from the Log */
+function transferInfo2_(t) {
+  const cs = rows_('Cartons'), got = rows_('Log').filter(l => l.action === 'transfer receive' && l.ref === t.id).map(l => String(l.detail));
+  const info = transferInfo_(t, cs); const bs = bmap_();
+  got.forEach(cid => { const c = cs.find(x => x.carton === cid); if (!c) return; const b = bs[c.batch] || {}; let l = info.lines.find(x => x.name === b.name && x.ctype === b.ctype); if (!l) { l = { name: b.name, ctype: b.ctype, n: 0, recv: 0, cartons: [] }; info.lines.push(l); } l.n++; l.recv++; l.cartons.push({ carton: cid, batch: c.batch, status: c.status, here: true }); });
+  info.count += got.length; info.received = got.length; return info;
+}
+function transferUnscan(tok, id, cid) {
+  FRESH_ = true; const u = user_(tok);
+  const t = rows_('Transfers').find(x => x.id === id); if (!t || t.status !== 'loading') throw new Error('This transfer cannot be changed.');
+  const c = rows_('Cartons').find(x => x.carton === cid && x.delivery === id && x.status === 'transit'); if (!c) throw new Error('Carton not in this transfer.');
+  c.status = 'packed'; c.delivery = ''; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c); log_(u.name, 'transfer unload', id, cid);
+  return transferGet(tok, id);
+}
+function transferSend(tok, id) {
+  FRESH_ = true; const u = user_(tok);
+  const t = rows_('Transfers').find(x => x.id === id); if (!t || t.status !== 'loading') throw new Error('This transfer is already sent.');
+  const info = transferInfo_(t, rows_('Cartons')); if (!info.count) throw new Error('No cartons loaded yet.');
+  t.status = 'sent'; t.sentBy = u.name; t.sentAt = stamp_(); setRow_('Transfers', t._row, t);
+  const text = ['🚚 *STOCK TRANSFER* – ' + id, t.from + ' → *' + t.to + '*', ''].concat(info.lines.map(l => '• ' + tc_(l.name) + ' × ' + l.n + ' ' + l.ctype)).concat(['', info.count + ' cartons · loaded by ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16), 'Receiver: scan every carton in at ' + t.to + '.']).join('\n');
+  notify_('transfer', id, t.to, text, rows_('Cartons').filter(c => c.delivery === id).map(c => c.carton).join(' '), '');
+  log_(u.name, 'transfer send', id, info.count + ' cartons');
+  return transferInfo_(t, rows_('Cartons'));
+}
+function transferClose(tok, id, note) {
+  FRESH_ = true; const u = user_(tok);
+  const t = rows_('Transfers').find(x => x.id === id); if (!t || t.status !== 'sent') throw new Error('Only a sent transfer can be closed.');
+  const cs = rows_('Cartons'), missing = cs.filter(c => c.delivery === id && c.status === 'transit');
+  const info = transferInfo2_(t);
+  t.status = 'received'; t.receivedBy = u.name; t.receivedAt = stamp_(); t.missing = missing.map(c => c.carton).join(' '); t.note = clean_(note || '', 300); setRow_('Transfers', t._row, t);
+  const text = [(missing.length ? '⚠️' : '✅') + ' *TRANSFER RECEIVED* – ' + id, t.from + ' → *' + t.to + '*', info.received + ' of ' + (info.received + missing.length) + ' cartons received by ' + tc_(u.name)]
+    .concat(missing.length ? ['', '❌ *Missing (' + missing.length + ')* – still in transit:'].concat(missing.map(c => '• ' + c.carton)) : []).concat(t.note ? ['Note: ' + t.note] : []).join('\n');
+  notify_('transfer', id, t.to, text, missing.map(c => c.carton).join(' '), '');
+  log_(u.name, 'transfer close', id, missing.length + ' missing');
+  const out = transferInfo2_(t); out.missing = missing.map(c => c.carton); out.status = 'received'; return out;
 }
 
 /* ---------- stock check (HQ Freezer) ---------- */
@@ -406,6 +573,7 @@ function checkSummary_(k, cs, bs, scans) {
 function checkScans_(id) { return rows_('CheckScans').filter(s => s.check === id); }
 function checkStatus(tok) {
   user_(tok);
+  try { daily_(); } catch (e) {}
   const ks = rows_('Checks'), open = ks.find(k => k.status === 'open'), done = ks.filter(k => k.status === 'done').sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
   const last = done[0], lastDay = last ? String(last.doneAt).slice(0, 10) : '';
   const today = todayIso_(), cur = +today.slice(8, 10) >= CHECK_DAY ? the15th_(today, 0) : the15th_(today, -1);
@@ -421,7 +589,7 @@ function checkStart(tok) {
   try {
     const ex = rows_('Checks').find(k => k.status === 'open'); if (ex) return checkGet(tok, ex.id);
     const bs = bmap_();
-    const exp = rows_('Cartons').filter(c => (c.status === 'packed' || c.status === 'picked') && bs[c.batch] && bs[c.batch].status !== 'cancelled').map(c => c.carton);
+    const exp = rows_('Cartons').filter(c => (c.status === 'packed' || c.status === 'picked') && locName_(c.location) === 'HQ Freezer' && bs[c.batch] && bs[c.batch].status !== 'cancelled').map(c => c.carton);
     const ymd = todayIso_().slice(2).replace(/-/g, ''), pre = 'SC' + ymd + '-', n = rows_('Checks').filter(k => String(k.id).indexOf(pre) === 0).length + 1, id = pre + ('0' + n).slice(-2);
     sheet_('Checks'); dropRows_('Checks');
     sheet_('Checks').appendRow([id, 'open', 'HQ Freezer', u.name, stamp_(), exp.join(' '), '', '', '', '', '']);
@@ -497,6 +665,7 @@ function checkResolve(tok, id, cid, kind) {
     if (kind !== 'found') { if (c.status !== 'packed' && c.status !== 'picked') throw new Error('Carton is ' + c.status + ' now.'); c.status = kind; c.location = kind.toUpperCase() + ' (' + id + ')'; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c); }
     const r = k.resolved ? JSON.parse(k.resolved) : {}; r[cid] = { kind: kind, by: u.name, at: stamp_() }; k.resolved = JSON.stringify(r); setRow_('Checks', k._row, k);
     log_(u.name, 'stock check ' + kind, id, cid);
+    if (kind !== 'found') { const b = bmap_()[c.batch] || {}; notify_('writeoff', cid, '', '🗑️ *STOCK WRITE-OFF* – ' + kind.toUpperCase() + '\n' + cid + ' · ' + tc_(b.name || '') + ' · batch ' + c.batch + '\nStock check ' + id + ' · by ' + tc_(u.name), cid, c.batch, '', '', '', b.sku, b.ctype, -1); }
     return checkGet(tok, id);
   } finally { lock.releaseLock(); }
 }
@@ -577,13 +746,16 @@ function deliveryFromOrder(tok, invoice) {
   } finally { lock.releaseLock(); }
 }
 /* queue a message for the BEKU ORDER staff group. The WhatsApp bot (its own 5-min trigger) posts rows whose "Sent at" is empty, then fills Sent at / Error. */
-function notify_(kind, ref, customer, text, cartons, batches, photo, custText, custGroup) {
+function notify_(kind, ref, customer, text, cartons, batches, photo, custText, custGroup, sku, ctype, qty) {
   try {
     const ss = SpreadsheetApp.openById(BOT_SS_ID); let sh = ss.getSheetByName(BOT_TAB);
-    const H = ['Queued', 'Kind', 'Invoice / batch', 'Customer', 'Message', 'Cartons', 'Batches', 'Sent at', 'Error', 'Photo', 'Customer message', 'Customer group', 'Customer sent at'];
+    const H = ['Queued', 'Kind', 'Invoice / batch', 'Customer', 'Message', 'Cartons', 'Batches', 'Sent at', 'Error', 'Photo', 'Customer message', 'Customer group', 'Customer sent at', 'SKU', 'Carton type', 'Qty'];
     if (!sh) { sh = ss.insertSheet(BOT_TAB); sh.appendRow(H); sh.setFrozenRows(1); }
-    else H.forEach((h, i) => { if (i >= 9 && String(sh.getRange(1, i + 1).getValue()) !== h) sh.getRange(1, i + 1).setValue(h); });
-    sh.appendRow([stamp_(), kind, ref, customer || '', text, cartons || '', batches || '', '', '', photo || '', custText || '', custGroup || '', '']);
+    else {
+      if (sh.getMaxColumns() < H.length) sh.insertColumnsAfter(sh.getMaxColumns(), H.length - sh.getMaxColumns());
+      H.forEach((h, i) => { if (i >= 9 && String(sh.getRange(1, i + 1).getValue()) !== h) sh.getRange(1, i + 1).setValue(h); });
+    }
+    sh.appendRow([stamp_(), kind, ref, customer || '', text, cartons || '', batches || '', '', '', photo || '', custText || '', custGroup || '', '', sku || '', ctype || '', qty === undefined || qty === '' ? '' : qty]);
     return true;
   } catch (e) { try { log_('system', 'notify failed', ref, String(e && e.message || e)); } catch (x) {} return false; }
 }
@@ -843,7 +1015,7 @@ function deliverySend(tok, id, force) {
 }
 
 /* ---------- web app ---------- */
-const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder, deliveryPhoto: deliveryPhoto, deliveryPhotoData: deliveryPhotoData, checkStatus: checkStatus, checkStart: checkStart, checkGet: checkGet, checkScan: checkScan, checkUnscan: checkUnscan, checkFinish: checkFinish, checkCancel: checkCancel, checkResolve: checkResolve, deliveryHistory: deliveryHistory, deliveryConfirm: deliveryConfirm, deliveryDelivered: deliveryDelivered, toMake: toMake };
+const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder, deliveryPhoto: deliveryPhoto, deliveryPhotoData: deliveryPhotoData, checkStatus: checkStatus, checkStart: checkStart, checkGet: checkGet, checkScan: checkScan, checkUnscan: checkUnscan, checkFinish: checkFinish, checkCancel: checkCancel, checkResolve: checkResolve, deliveryHistory: deliveryHistory, deliveryConfirm: deliveryConfirm, deliveryDelivered: deliveryDelivered, toMake: toMake, monthReport: monthReport, transfers: transfers, transferNew: transferNew, transferGet: transferGet, transferScan: transferScan, transferUnscan: transferUnscan, transferSend: transferSend, transferClose: transferClose };
 function doPost(e) {
   let out;
   try {
