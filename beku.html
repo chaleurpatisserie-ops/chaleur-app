@@ -2473,6 +2473,7 @@ async function route(force) {
     if (v === 'check') return checkView(decodeURIComponent(a));
     if (v === 'send') return a ? deliveryView(decodeURIComponent(a)) : deliveriesView();
     if (v === 'history') return historyView();
+    if (v === 'make') return makeView();
     if (v === 'prints') return printsView();
     return home();
   } catch (e) { fail(e); }
@@ -2510,10 +2511,12 @@ async function home() {
     '<a class="tile" href="#new" style="background:var(--pistachio-l);color:var(--pistachio-d)">' + ic('box', null, 28) + '<div><div class="st">STEP 1</div><div class="n">New batch</div><small>Print stickers</small></div></a>' +
     '<a class="tile" href="#scan" style="background:var(--baby-l);color:var(--baby-d)">' + ic('scan', null, 28) + '<div><div class="st">STEP 2</div><div class="n">Scan carton</div><small>Photo while packing</small></div></a>' +
     '<a class="tile" id="tsend" href="#send" style="background:var(--lilac-l);color:var(--lilac-d)">' + ic('truck', null, 28) + '<div><div class="st">STEP 3</div><div class="n">Pick &amp; send</div><small>Deliveries</small></div></a>' +
-    '<a class="tile" id="tstock" href="#stock" style="background:var(--cocoa-l);color:var(--cocoa-d)">' + ic('stack', null, 28) + '<div><div class="st">ANYTIME</div><div class="n">Stock</div><small>HQ Freezer</small></div></a></div>' +
+    '<a class="tile" id="tstock" href="#stock" style="background:var(--cocoa-l);color:var(--cocoa-d)">' + ic('stack', null, 28) + '<div><div class="st">ANYTIME</div><div class="n">Stock</div><small>HQ Freezer</small></div></a>' +
+    '<a class="tile" id="tmake" href="#make" style="background:var(--lemon-l);color:var(--lemon-d)">' + ic('box', null, 28) + '<div><div class="st">KITCHEN</div><div class="n">To make</div><small>for confirmed orders</small></div></a></div>' +
     '<a class="btn s" href="#prints" style="min-height:48px">' + ic('print') + 'Print history</a>' +
     '<div class="eb">Open batches</div><div id="bl"><div class="card" style="color:var(--muted)">Loading…</div></div></div>';
   cat().catch(() => {});
+  api('toMake', S.tok).then(m => { const t = $('#tmake'); if (t && m.cartons) t.insertAdjacentHTML('beforeend', '<span class="bdg">' + m.cartons + '</span>'); }).catch(() => {});
   api('checkStatus', S.tok).then(cs => { const t = $('#tstock'); if (t && (cs.due || cs.open)) t.insertAdjacentHTML('beforeend', '<span class="bdg" style="font-size:12px">' + (cs.open ? 'COUNTING' : 'CHECK DUE') + '</span>'); }).catch(() => {});
   api('ordersToPack', S.tok).then(os => {
     const t = todayIso(), today = os.filter(o => o.deliveryDate === t), late = os.filter(o => o.deliveryDate && o.deliveryDate < t), n = today.length + late.length;
@@ -2977,6 +2980,18 @@ async function countInto(chk, id, say) {
   } catch (e) { say('<span style="color:var(--bubblegum-d)"><b>Not counted:</b> ' + esc(e.message) + '</span>'); toast(e.message, 5000); }
 }
 
+/* ---------------- to make (production list for confirmed orders) ---------------- */
+async function makeView() {
+  app.innerHTML = hdr('to make', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const r = await api('toMake', S.tok);
+  app.innerHTML = hdr('to make', '#') + '<div class="wrap">' +
+    '<div class="row"><div><div class="disp" style="font-size:36px">' + r.cartons + '</div><div class="sub" style="font-size:13px">cartons to make for confirmed orders</div></div></div>' +
+    '<div class="sub" style="font-size:12.5px">Stock in the freezer goes to the earliest delivery first. This list is what the stock can\'t cover. It updates by itself when you pack new cartons.</div>' +
+    (r.make.length ? r.make.map(m => '<div class="card" style="display:flex;flex-direction:column;gap:6px"><div class="row"><b style="font-size:16px">' + esc(title(m.name)) + '</b><span class="disp" style="font-size:24px">' + m.n + ' <span style="font-size:14px">ctn</span></span></div>' +
+      m.orders.map(o => '<a href="#send/' + encodeURIComponent(o.id) + '" class="row" style="font-size:13px;text-decoration:none;color:inherit"><span>' + esc(o.customer) + ' <span class="sub">' + esc(o.key) + '</span></span><span>' + o.n + ' ctn · <b>' + esc(o.dmy || 'no date') + '</b></span></a>').join('') + '</div>').join('')
+      : '<div class="alert g">Nothing to make: the freezer stock covers every confirmed order.</div>') +
+    (r.samples.length ? '<div class="eb">Sample boxes to prepare</div>' + r.samples.map(x => '<a class="card" href="#send/' + encodeURIComponent(x.id) + '" style="display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit"><div class="row"><b>' + esc(x.customer) + '</b><span class="sub">' + esc(x.dmy) + '</span></div><div style="font-size:13px">' + esc(x.detail || 'any 4 pcs') + '</div></a>').join('') : '') + '</div>';
+}
 /* ---------------- sent history ---------------- */
 const HF = { from: '', to: '', cu: '', q: '' };
 async function historyView() {
@@ -3013,7 +3028,7 @@ async function deliveriesView() {
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: TZ });
   const ord = o => '<button class="card" data-inv="' + esc(o.invoice) + '" style="text-align:left;border:0;width:100%;display:flex;flex-direction:column;gap:4px;font:inherit;color:inherit;cursor:pointer' + (o.deliveryDate && o.deliveryDate <= today ? ';box-shadow:inset 4px 0 0 var(--bubblegum-d)' : '') + '"><div class="row"><b style="font-size:15px">' + esc(o.customer) + '</b><span class="spec" style="color:var(--muted)">' + (o.isWeb ? '<span style="background:var(--lilac-l);color:var(--lilac-d);border-radius:999px;padding:1px 8px;margin-right:6px;font-weight:700">WEBSITE</span>' : '') + esc(o.invoice) + '</span></div>' +
     '<div style="font-size:13px">' + o.items.map(i => i.sample ? '<b>Sample box</b> (4 pcs' + (i.detail ? ': ' + esc(i.detail) : '') + ')' : esc(title(i.name)) + ' × ' + i.n + (i.sku ? '' : ' <span style="color:var(--bubblegum-d)">(?)</span>')).join(' · ') + '</div>' +
-    '<div class="sub" style="font-size:12.5px">' + (o.ddDmy ? 'Deliver ' + o.ddDmy + (o.deliveryDate === today ? ' · <b>TODAY</b>' : '') : 'No delivery date') + ' · ' + (o.status === 'open' ? '<b>' + o.got + '/' + o.need + ' scanned</b>' : (o.need ? o.need + ' carton(s)' : '') + (o.need && o.samples ? ' + ' : '') + (o.samples ? 'sample box' : '') + ', not started') + '</div></button>';
+    '<div class="sub" style="font-size:12.5px">' + (o.ddDmy ? 'Deliver ' + o.ddDmy + (o.deliveryDate === today ? ' · <b>TODAY</b>' : '') : 'No delivery date') + ' · ' + (o.status === 'open' && !o.confirmed ? '<b style="color:var(--lemon-d)">NEW · tap to confirm</b>' : o.status === 'open' ? (o.packed ? '<b style="color:var(--pistachio-d)">PACKED</b>' : '<b>CONFIRMED · ' + o.got + '/' + o.need + ' scanned</b>') : '<b style="color:var(--lemon-d)">NEW · tap to confirm</b> · ' + (o.need ? o.need + ' carton(s)' : '') + (o.need && o.samples ? ' + ' : '') + (o.samples ? 'sample box' : '')) + '</div></button>';
 
   const item = d => '<a class="card" href="#send/' + encodeURIComponent(d.id) + '" style="text-decoration:none;display:flex;flex-direction:column;gap:4px"><div class="row"><b style="font-size:15px">' + esc(d.customer) + '</b><span class="spec" style="color:var(--muted)">' + esc(d.id) + '</span></div><div class="sub" style="font-size:13px">' +
     (d.status === 'open' ? d.count + ' carton(s) scanned · by ' + esc(title(d.createdBy)) : (d.status === 'sent' ? 'Sent ' : 'Cancelled ') + esc(String(d.sentAt).slice(0, 16)) + ' · ' + d.count + ' carton(s)') + (d.ref ? ' · Inv/DO ' + esc(d.ref) : '') + '</div></a>';
@@ -3036,24 +3051,34 @@ async function deliveriesView() {
 async function deliveryView(id) {
   app.innerHTML = hdr('delivery', '#send') + '<div class="wrap"><div class="card">Loading…</div></div>';
   const d = await api('deliveryGet', S.tok, id), open = d.status === 'open';
+  const needConf = open && d.isOrder && !d.confirmedAt;
+  const step = (on, label, at) => '<div style="flex:1;text-align:center;font-size:11.5px;line-height:1.25;color:' + (on ? 'var(--pistachio-d)' : 'var(--muted)') + '"><div style="width:26px;height:26px;border-radius:13px;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-weight:700;background:' + (on ? 'var(--pistachio-l)' : 'var(--hair)') + '">' + (on ? '✓' : '·') + '</div><b>' + label + '</b>' + (at ? '<br>' + esc(String(at).slice(8, 10) + '/' + String(at).slice(5, 7) + ' ' + String(at).slice(11, 16)) : '') + '</div>';
+  const steps = d.isOrder ? '<div class="card" style="display:flex;gap:4px;padding:12px 8px">' + step(!!d.confirmedAt, 'Confirmed', d.confirmedAt) + step(!!d.packedAt || d.status === 'sent', 'Packed', d.packedAt) + step(d.status === 'sent', 'Sent', d.status === 'sent' ? d.sentAt : '') + step(!!d.deliveredAt, 'Delivered', d.deliveredAt) + '</div>' : '';
+  const planRows = (d.plan || []).filter(p => p.need);
+  const planHtml = planRows.length ? '<div class="line tbl" style="padding:0"><div style="font-weight:700"><span>' + (needConf ? 'If you confirm now' : 'Stock plan') + '</span><b>from stock · to make</b></div>' + planRows.map(p => '<div><span>' + esc(title(p.name)) + '</span><b style="color:' + (p.toMake ? 'var(--bubblegum-d)' : 'var(--pistachio-d)') + '">' + (p.fromStock + p.picked) + ' · ' + (p.toMake ? p.toMake + ' to make' : '0') + '</b></div>').join('') + '</div>' : '';
+  const confCard = '<div class="card" style="display:flex;flex-direction:column;gap:10px;box-shadow:inset 4px 0 0 var(--lemon-d)"><b style="font-size:16px">New order — check it, then confirm</b><div class="sub" style="font-size:13px">Check the items and the delivery date. Confirming tells the customer the order is being prepared and puts anything we don\'t have in stock on the <b>To make</b> list for the kitchen.</div><button class="btn w" id="cf">' + ic('check', '#fff') + 'Confirm order</button></div>';
+  const delivHtml = d.isOrder && d.status === 'sent' ? (d.deliveredAt ? '<div class="alert g"><b>Delivered</b> ' + esc(d.deliveredAt.slice(0, 16)) + ' by ' + esc(title(d.deliveredBy)) + (d.deliveredNote ? '<br>' + esc(d.deliveredNote) : '') + '</div>' :
+    '<div class="card" style="display:flex;flex-direction:column;gap:10px"><b style="font-size:15px">Arrived at the customer?</b><label class="lb">Note (optional)<input type="text" id="dvn" placeholder="e.g. received by Naz, put in freezer"></label><button class="btn w" id="dv">' + ic('check', '#fff') + 'Mark delivered</button></div>') : '';
   app.innerHTML = hdr(esc(d.customer.toLowerCase()), '#send') + '<div class="wrap">' +
     '<div class="spec" style="color:var(--muted)">' + esc(d.id) + (d.ref ? ' · INV/DO ' + esc(d.ref) : '') + ' · ' + (open ? 'OPEN' : d.status.toUpperCase() + ' ' + esc(String(d.sentAt).slice(0, 16))) + '</div>' +
     (d.ddDmy || d.address ? '<div class="sub" style="font-size:13px">' + (d.ddDmy ? 'Deliver <b>' + esc(d.ddDmy) + '</b>' : '') + (d.address ? ' · ' + esc(d.address) : '') + '</div>' : '') +
+    steps +
     (d.need && d.need.length ? '<div class="line tbl" style="padding:0"><div style="font-weight:700"><span>Order ' + esc(d.invoice || d.ref) + '</span><b>scanned / need</b></div>' + d.need.map(i => '<div><span>' + esc(title(i.name)) + (i.sku ? '' : ' <span style="color:var(--bubblegum-d)">(not matched)</span>') + '</span><b style="color:' + (i.got === i.n ? 'var(--pistachio-d)' : i.got > i.n ? 'var(--bubblegum-d)' : 'var(--ink)') + '">' + (i.got === i.n ? '✓ ' : '') + i.got + ' / ' + i.n + '</b></div>').join('') + (d.extra.length ? '<div><span style="color:var(--bubblegum-d)">Not in the order</span><b style="color:var(--bubblegum-d)">' + d.extra.length + '</b></div>' : '') + '</div>' +
       (open ? (d.complete && (d.count || !d.need.length) ? '<div class="alert g">All cartons scanned.' + (d.samples.length ? ' Pack the sample box too.' : '') + ' Then take the dispatch photo.</div>' : '') : '') : '') +
     (d.samples && d.samples.length ? '<div class="card" style="display:flex;flex-direction:column;gap:6px;box-shadow:inset 4px 0 0 var(--lilac-d)"><b style="font-size:15px">Sample box to pack (4 pcs, no carton scan)</b>' + d.samples.map(x => '<div style="font-size:14px">' + esc(x.detail || 'any 4 pcs') + '</div>').join('') + '</div>' : '') +
+    planHtml +
     '<div class="row"><span class="disp" style="font-size:32px">' + d.count + '</span><span class="sub" style="font-size:14px">cartons ' + (open ? 'scanned' : d.status) + '</span></div>' +
     (d.lines.length ? d.lines.map(l => '<div class="line" style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>' + esc(title(l.name)) + '</b><span>× ' + l.n + ' ' + esc(l.ctype) + '</span></div>' +
       l.cartons.map(c => '<div class="row" style="font-size:13px"><span>' + esc(c.carton) + ' <span style="color:var(--muted)">· BB ' + esc(c.bestBefore) + '</span></span>' + (open ? '<button class="ib" style="width:32px;height:32px" data-un="' + esc(c.carton) + '" aria-label="Remove ' + esc(c.carton) + '">' + ic('minus', null, 16) + '</button>' : '') + '</div>').join('') + '</div>').join('')
       : '<div class="card" style="color:var(--muted)">No cartons yet. Tap Scan cartons.</div>') +
-    (open ? '<a class="btn" href="#scan/' + encodeURIComponent(d.id) + '">' + ic('scan', '#FFFDFA') + 'Scan cartons</a>' +
+    (open ? (needConf ? confCard : '' + '<a class="btn" href="#scan/' + encodeURIComponent(d.id) + '">' + ic('scan', '#FFFDFA') + 'Scan cartons</a>' +
       '<div class="eb">Dispatch photo (required)</div><label class="slot' + (d.photo ? ' done' : '') + '" style="min-height:160px"><span class="num">' + ic('cam', '#fff', 14) + '</span>' +
         (d.photo ? '<img class="dpv" alt="Dispatch photo" style="position:relative;z-index:2;background:#eee;min-height:120px"><b style="font-size:14px">✓ Uploaded</b><span style="font-size:12px;color:var(--muted)">Tap photo to enlarge · tap here to retake</span>' : '<b style="font-size:14px">All cartons loaded, label side visible</b><span style="font-size:12px;color:var(--muted)">' + (d.count || (d.samples && d.samples.length) ? 'Tap to take the photo' : 'Scan the cartons first') + '</span>' + ic('cam', 'var(--ink)', 30)) +
         '<input type="file" accept="image/*" capture="environment" id="dpi"></label>' +
       '<label class="btn s" style="min-height:40px;font-size:13px;position:relative;overflow:hidden">Camera not opening? Choose from gallery<input type="file" accept="image/*" id="dpg" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0"></label>' +
-      '<button class="btn w" id="sd"' + ((d.count || (d.samples && d.samples.length)) && d.photo ? '' : ' disabled') + '>' + ic('truck', '#fff') + 'Mark sent · ' + (d.count ? d.count + ' carton(s)' : '') + (d.count && d.samples && d.samples.length ? ' + ' : '') + (d.samples && d.samples.length ? 'sample box' : '') + '</button>' + ((d.count || (d.samples && d.samples.length)) && !d.photo ? '<div class="sub" style="font-size:13px;text-align:center">Take the dispatch photo to unlock Mark sent.</div>' : '') +
+      '<button class="btn w" id="sd"' + ((d.count || (d.samples && d.samples.length)) && d.photo ? '' : ' disabled') + '>' + ic('truck', '#fff') + 'Mark sent · ' + (d.count ? d.count + ' carton(s)' : '') + (d.count && d.samples && d.samples.length ? ' + ' : '') + (d.samples && d.samples.length ? 'sample box' : '') + '</button>' + ((d.count || (d.samples && d.samples.length)) && !d.photo ? '<div class="sub" style="font-size:13px;text-align:center">Take the dispatch photo to unlock Mark sent.</div>' : '') + '') +
       '<button class="btn s" id="ed" style="min-height:44px;font-size:14px">Edit customer / invoice no.</button>' +
-      '<button class="btn s" id="cx" style="min-height:44px;font-size:14px;color:var(--bubblegum-d)">Cancel this delivery</button>' : (d.photo ? '<div class="eb">Dispatch photo</div><img class="dpv" alt="Dispatch photo" style="width:100%;max-height:260px;object-fit:cover;border-radius:16px;background:#eee;min-height:160px"><div class="sub" style="font-size:13px">by ' + esc(title(d.photoBy)) + ' · ' + esc(d.photoAt.slice(0, 16)) + '</div>' : '') + '<div id="rep"></div>') +
+      '<button class="btn s" id="cx" style="min-height:44px;font-size:14px;color:var(--bubblegum-d)">Cancel this delivery</button>' : (d.photo ? '<div class="eb">Dispatch photo</div><img class="dpv" alt="Dispatch photo" style="width:100%;max-height:260px;object-fit:cover;border-radius:16px;background:#eee;min-height:160px"><div class="sub" style="font-size:13px">by ' + esc(title(d.photoBy)) + ' · ' + esc(d.photoAt.slice(0, 16)) + '</div>' : '') + delivHtml + '<div id="rep"></div>') +
     '</div>';
   app.querySelectorAll('[data-un]').forEach(bt => bt.onclick = async () => { if (!confirm('Take ' + bt.dataset.un + ' out of this delivery? Put it back in the freezer.')) return; try { await api('unpick', S.tok, id, bt.dataset.un); deliveryView(id); } catch (e) { fail(e); } });
   const dpv = $('.dpv'); if (dpv) { const k = 'D_' + id + '_' + d.photoAt; const show = src => { dpv.src = src; dpv.style.minHeight = ''; dpv.onclick = e => { e.preventDefault(); e.stopPropagation(); showPhoto(src, d.customer + ' · dispatch'); }; };
@@ -3063,6 +3088,8 @@ async function deliveryView(id) {
     toast('Uploading photo…', 8000);
     try { const data = await compress(f); await api('deliveryPhoto', S.tok, id, data); PV['D_' + id + '_up'] = data; toast('Dispatch photo saved'); deliveryView(id); } catch (e) { fail(e); }
   }; });
+  const cfb = $('#cf'); if (cfb) cfb.onclick = async () => { if (!confirm('Confirm order ' + (d.invoice || d.ref) + ' for ' + d.customer + '?')) return; cfb.disabled = true; try { await api('deliveryConfirm', S.tok, id); toast('Order confirmed'); deliveryView(id); } catch (e) { fail(e); cfb.disabled = false; } };
+  const dvb = $('#dv'); if (dvb) dvb.onclick = async () => { if (!confirm('Mark ' + d.customer + ' as delivered?')) return; dvb.disabled = true; try { await api('deliveryDelivered', S.tok, id, $('#dvn').value); toast('Marked delivered'); deliveryView(id); } catch (e) { fail(e); dvb.disabled = false; } };
   const ed = $('#ed'); if (ed) ed.onclick = async () => { const cu = prompt('Customer:', d.customer); if (cu === null) return; const rf = prompt('Bukku invoice / DO no.:', d.ref || ''); if (rf === null) return; try { await api('deliveryEdit', S.tok, id, cu, rf); deliveryView(id); } catch (e) { fail(e); } };
   const cx = $('#cx'); if (cx) cx.onclick = async () => { if (!confirm('Cancel this delivery? Scanned cartons go back to stock.')) return; try { await api('deliveryCancel', S.tok, id); location.hash = '#send'; } catch (e) { fail(e); } };
   const sd = $('#sd'); if (sd) sd.onclick = async () => {
