@@ -37,7 +37,7 @@ function sheet_(name) {
 const HEAD = {
   Batches: ['batch', 'sku', 'code', 'name', 'ctype', 'pcs', 'cartons', 'made', 'bestBefore', 'run', 'status', 'createdBy', 'createdAt', 'closedBy', 'closedAt', 'packed', 'voided', 'madeChanged'],
   Cartons: ['carton', 'batch', 'n', 'of', 'status', 'photo1', 'photo2', 'photoBy', 'photoAt', 'location', 'updatedAt', 'delivery'],
-  Deliveries: ['id', 'customer', 'ref', 'status', 'cartons', 'createdBy', 'createdAt', 'sentBy', 'sentAt', 'note', 'invoice', 'deliveryDate', 'address', 'group', 'need', 'photo', 'photoBy', 'photoAt'],
+  Deliveries: ['id', 'customer', 'ref', 'status', 'cartons', 'createdBy', 'createdAt', 'sentBy', 'sentAt', 'note', 'invoice', 'deliveryDate', 'address', 'group', 'need', 'photo', 'photoBy', 'photoAt', 'confirmedBy', 'confirmedAt', 'plan', 'packedAt', 'deliveredBy', 'deliveredAt', 'deliveredNote'],
   Checks: ['id', 'status', 'location', 'startedBy', 'startedAt', 'expected', 'doneBy', 'doneAt', 'report', 'note', 'resolved'],
   CheckScans: ['check', 'carton', 'by', 'at', 'verdict'],
   Log: ['at', 'who', 'action', 'ref', 'detail'],
@@ -556,7 +556,7 @@ function ordersToPack(tok) {
     const d = ds.find(x => { const k = String(x.invoice || x.ref); return k === o.invoice || (o.web && k === o.web); });
     const got = d ? cs.filter(c => c.delivery === d.id && (c.status === 'picked' || c.status === 'sent')).length : 0;
     return { invoice: o.invoice, web: o.web, isWeb: o.isWeb, customer: o.customer, deliveryDate: o.deliveryDate, ddDmy: o.deliveryDate ? dmy_(o.deliveryDate) : '', items: o.items,
-      need: o.items.filter(i => !i.sample).reduce((a, i) => a + i.n, 0), samples: o.items.filter(i => i.sample).length, got: got, delivery: d ? d.id : '', status: d ? d.status : 'new' };
+      need: o.items.filter(i => !i.sample).reduce((a, i) => a + i.n, 0), samples: o.items.filter(i => i.sample).length, confirmed: !!(d && d.confirmedAt), packed: !!(d && d.packedAt), got: got, delivery: d ? d.id : '', status: d ? d.status : 'new' };
   }).filter(o => o.status !== 'sent').sort((a, b) => (a.deliveryDate || '9').localeCompare(b.deliveryDate || '9'));
 }
 function deliveryFromOrder(tok, invoice) {
@@ -599,7 +599,7 @@ function deliveryInfo_(d, cs, bs) {
   const extra = mine.filter(c => need.length && !need.some(i => i.sku && (bs[c.batch] || {}).sku === i.sku)).map(c => c.carton);
   const complete = need.length ? need.every(i => i.got === i.n) && !extra.length : true;
   return { id: d.id, customer: d.customer, ref: d.ref, invoice: d.invoice || '', deliveryDate: d.deliveryDate ? isoOf_(d.deliveryDate) : '', ddDmy: d.deliveryDate && isoOf_(d.deliveryDate) ? dmy_(isoOf_(d.deliveryDate)) : '', address: d.address || '',
-    status: d.status, createdBy: d.createdBy, createdAt: d.createdAt, sentBy: d.sentBy, sentAt: d.sentAt, note: d.note, count: mine.length, need: need, samples: samples, extra: extra, complete: complete, photo: !!d.photo, photoBy: d.photoBy || '', photoAt: d.photoAt ? String(d.photoAt) : '',
+    status: d.status, createdBy: d.createdBy, createdAt: d.createdAt, sentBy: d.sentBy, sentAt: d.sentAt, note: d.note, count: mine.length, need: need, samples: samples, extra: extra, complete: complete, photo: !!d.photo, photoBy: d.photoBy || '', photoAt: d.photoAt ? String(d.photoAt) : '', confirmedBy: d.confirmedBy || '', confirmedAt: d.confirmedAt ? String(d.confirmedAt) : '', packedAt: d.packedAt ? String(d.packedAt) : '', deliveredBy: d.deliveredBy || '', deliveredAt: d.deliveredAt ? String(d.deliveredAt) : '', deliveredNote: d.deliveredNote || '', isOrder: !!d.need,
     lines: Object.keys(lines).map(k => lines[k]).sort((a, b) => String(a.sku).localeCompare(String(b.sku))) };
 }
 function bmap_() { const bs = {}; rows_('Batches').forEach(b => { bs[b.batch] = b; }); return bs; }
@@ -612,6 +612,78 @@ function deliveries(tok) {
   return { list: list, customers: Object.keys(cust).sort() };
 }
 /* sent history: filter by sent date (from/to), customer, and free text (invoice / batch / carton). */
+/* ---------- order status flow: confirm → packed → (sent) → delivered; production plan ---------- */
+/* Stock is given to confirmed open orders by earliest delivery date; what stock can't cover is "to make". */
+function planAll_(ds, cs, bs) {
+  const today = todayIso_(), supply = {};
+  cs.forEach(c => { const b = bs[c.batch]; if (c.status === 'packed' && b && b.status !== 'cancelled' && String(b.bestBefore) >= today) supply[b.sku] = (supply[b.sku] || 0) + 1; });
+  const open = ds.filter(d => d.status === 'open' && d.confirmedAt).sort((a, b) => (isoOf_(a.deliveryDate) || '9').localeCompare(isoOf_(b.deliveryDate) || '9') || String(a.confirmedAt).localeCompare(String(b.confirmedAt)));
+  const per = {}, make = {};
+  open.forEach(d => {
+    let need = []; try { need = d.need ? JSON.parse(d.need) : []; } catch (e) {}
+    const got = sku => cs.filter(c => c.delivery === d.id && c.status === 'picked' && bs[c.batch] && bs[c.batch].sku === sku).length;
+    per[d.id] = need.filter(i => !i.sample).map(i => {
+      const left = Math.max(0, (+i.n || 0) - (i.sku ? got(i.sku) : 0));
+      const fromStock = i.sku ? Math.min(left, supply[i.sku] || 0) : 0; if (i.sku) supply[i.sku] = (supply[i.sku] || 0) - fromStock;
+      const toMake = left - fromStock;
+      if (toMake > 0) { const k = i.sku || i.name; const m = make[k] || (make[k] = { sku: i.sku, name: i.name, n: 0, orders: [] }); m.n += toMake; m.orders.push({ id: d.id, customer: d.customer, key: d.invoice || d.ref, date: isoOf_(d.deliveryDate), n: toMake }); }
+      return { sku: i.sku, name: i.name, need: +i.n || 0, picked: (+i.n || 0) - left, fromStock: fromStock, toMake: toMake };
+    });
+  });
+  const samples = open.map(d => { let need = []; try { need = d.need ? JSON.parse(d.need) : []; } catch (e) {} return need.filter(i => i.sample).map(i => ({ id: d.id, customer: d.customer, key: d.invoice || d.ref, date: isoOf_(d.deliveryDate), detail: i.detail || '' })); }).reduce((a, b) => a.concat(b), []);
+  return { per: per, make: Object.keys(make).map(k => make[k]).sort((a, b) => String(a.orders[0].date || '9').localeCompare(String(b.orders[0].date || '9'))), samples: samples };
+}
+function deliveryConfirm(tok, id) {
+  FRESH_ = true;
+  const u = user_(tok), lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const d = rows_('Deliveries').find(x => x.id === id); if (!d) throw new Error('Delivery not found.');
+    if (d.status !== 'open') throw new Error('This delivery is already ' + d.status + '.');
+    if (d.confirmedAt) return deliveryGet(tok, id);
+    d.confirmedBy = u.name; d.confirmedAt = stamp_(); setRow_('Deliveries', d._row, d);
+    const cs = rows_('Cartons'), bs = bmap_(), plan = (planAll_(rows_('Deliveries'), cs, bs).per[id]) || [];
+    d.plan = JSON.stringify(plan); setRow_('Deliveries', d._row, d);
+    const info = deliveryInfo_(d, cs, bs);
+    const text = ['✅ *ORDER CONFIRMED* – ' + (d.invoice || d.ref || id), 'Customer: *' + d.customer + '*' + (info.ddDmy ? '\nDelivery date: ' + info.ddDmy : ''), '']
+      .concat(plan.map(p => '• ' + tc_(p.name) + ' × ' + p.need + ' ctn' + (p.toMake ? ' — ' + (p.fromStock + p.picked) + ' from stock, *' + p.toMake + ' to make*' : ' — from stock')))
+      .concat(info.samples.map(x => '• Sample box (4 pcs)' + (x.detail ? ': ' + x.detail : '')))
+      .concat(['', 'Confirmed by ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16)]).join('\n');
+    notify_('confirm', d.invoice || d.ref || id, d.customer, text, '', '');
+    log_(u.name, 'confirm order', id, d.invoice || d.ref || '');
+    return deliveryInfo_(d, cs, bs);
+  } finally { lock.releaseLock(); }
+}
+/* all needed cartons scanned for the first time → Kind packed (once per delivery) */
+function maybePacked_(d, u) {
+  if (d.packedAt || !d.need) return;
+  const info = deliveryInfo_(d, rows_('Cartons'), bmap_());
+  if (!info.need.length || !info.complete) return;
+  d.packedAt = stamp_(); setRow_('Deliveries', d._row, d);
+  const text = ['📦 *ORDER PACKED* – ' + (d.invoice || d.ref || d.id), 'Customer: *' + d.customer + '*' + (info.ddDmy ? '\nDelivery date: ' + info.ddDmy : ''), '']
+    .concat(info.lines.map(l => '• ' + tc_(l.name) + ' × ' + l.n + ' ' + l.ctype)).concat(info.samples.map(x => '• Sample box (4 pcs)'))
+    .concat(['', 'Ready to dispatch · ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16)]).join('\n');
+  notify_('packed', d.invoice || d.ref || d.id, d.customer, text, info.lines.map(l => l.cartons.map(c => c.carton).join(' ')).join(' '), '');
+}
+function deliveryDelivered(tok, id, note) {
+  FRESH_ = true;
+  const u = user_(tok), lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const d = rows_('Deliveries').find(x => x.id === id); if (!d) throw new Error('Delivery not found.');
+    if (d.status !== 'sent') throw new Error('Mark it sent first.');
+    if (d.deliveredAt) return deliveryGet(tok, id);
+    d.deliveredBy = u.name; d.deliveredAt = stamp_(); d.deliveredNote = clean_(note || '', 300); setRow_('Deliveries', d._row, d);
+    const text = ['🏁 *DELIVERED* – ' + (d.invoice || d.ref || id), 'Customer: *' + d.customer + '*', 'Delivered by ' + tc_(u.name) + ' · ' + stamp_().slice(0, 16)].concat(d.deliveredNote ? ['Note: ' + d.deliveredNote] : []).join('\n');
+    notify_('delivered', d.invoice || d.ref || id, d.customer, text, '', '', '', '', d.group || '');
+    log_(u.name, 'delivered', id, d.deliveredNote);
+    return deliveryGet(tok, id);
+  } finally { lock.releaseLock(); }
+}
+function toMake(tok) {
+  user_(tok);
+  const p = planAll_(rows_('Deliveries'), rows_('Cartons'), bmap_());
+  return { make: p.make.map(m => ({ sku: m.sku, name: m.name, n: m.n, first: m.orders[0].date || '', orders: m.orders.map(o => ({ customer: o.customer, key: o.key, id: o.id, date: o.date, dmy: o.date ? dmy_(o.date) : '', n: o.n })) })),
+    samples: p.samples.map(s => ({ customer: s.customer, key: s.key, id: s.id, dmy: s.date ? dmy_(s.date) : '', detail: s.detail })), cartons: p.make.reduce((a, m) => a + m.n, 0) };
+}
 function deliveryHistory(tok, from, to, customer, q) {
   user_(tok);
   const cs = rows_('Cartons'), bs = bmap_(), ds = rows_('Deliveries');
@@ -643,7 +715,12 @@ function deliveryNew(tok, customer, ref) {
 function deliveryGet(tok, id) {
   user_(tok);
   const d = rows_('Deliveries').find(x => x.id === id); if (!d) throw new Error('Delivery not found.');
-  return deliveryInfo_(d, rows_('Cartons'), bmap_());
+  const cs = rows_('Cartons'), bs = bmap_(), info = deliveryInfo_(d, cs, bs);
+  if (d.status === 'open' && d.need) {
+    if (d.confirmedAt) info.plan = planAll_(rows_('Deliveries'), cs, bs).per[id] || [];
+    else { const ds = rows_('Deliveries').map(x => x.id === id ? Object.assign({}, x, { confirmedAt: '9999' }) : x); info.plan = planAll_(ds, cs, bs).per[id] || []; }
+  }
+  return info;
 }
 function deliveryEdit(tok, id, customer, ref) {
   FRESH_ = true;
@@ -661,6 +738,7 @@ function pick(tok, id, cid, force) {
   try {
     const d = rows_('Deliveries').find(x => x.id === id); if (!d) throw new Error('Delivery not found.');
     if (d.status !== 'open') throw new Error('This delivery is already ' + d.status + '.');
+    if (d.need && !d.confirmedAt) throw new Error('Confirm the order first.');
     const cs = rows_('Cartons'), bs = bmap_();
     const c = cs.find(x => x.carton === cid); if (!c) throw new Error('Carton not found: ' + cid);
     const b = bs[c.batch];
@@ -685,6 +763,7 @@ function pick(tok, id, cid, force) {
     }
     c.status = 'picked'; c.delivery = id; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c);
     log_(u.name, 'pick', id, cid + (force ? ' (newer first, confirmed)' : ''));
+    try { dropRows_('Cartons'); maybePacked_(d, u); } catch (e) {}
     return { picked: cid, name: tc_(b.name), info: deliveryGet(tok, id) };
   } finally { lock.releaseLock(); }
 }
@@ -739,8 +818,10 @@ function deliverySend(tok, id, force) {
     const hasSample = String(d.need || '').indexOf('"sample":true') >= 0;
     if (!cs.length && !hasSample) throw new Error('No cartons scanned yet.');
     if (!d.photo) throw new Error('Take the dispatch photo first.');
+    if (d.need && !d.confirmedAt) throw new Error('Confirm the order first.');
     const pre = deliveryInfo_(d, rows_('Cartons'), bmap_());
     if (!pre.complete && !force) return { short: pre.need.filter(i => i.got !== i.n).map(i => tc_(i.name) + ': ' + i.got + ' of ' + i.n).concat(pre.extra.length ? [pre.extra.length + ' carton(s) not in the order'] : []) };
+    if (!d.packedAt) d.packedAt = stamp_();
     cs.forEach(c => { c.status = 'sent'; c.location = d.customer; c.updatedAt = stamp_(); setRow_('Cartons', c._row, c); });
     d.status = 'sent'; d.cartons = cs.length; d.sentBy = u.name; d.sentAt = stamp_(); setRow_('Deliveries', d._row, d);
     const info = deliveryGet(tok, id);
@@ -762,7 +843,7 @@ function deliverySend(tok, id, force) {
 }
 
 /* ---------- web app ---------- */
-const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder, deliveryPhoto: deliveryPhoto, deliveryPhotoData: deliveryPhotoData, checkStatus: checkStatus, checkStart: checkStart, checkGet: checkGet, checkScan: checkScan, checkUnscan: checkUnscan, checkFinish: checkFinish, checkCancel: checkCancel, checkResolve: checkResolve, deliveryHistory: deliveryHistory };
+const API_FNS = { login: login, logout: logout, me: me, catalog: catalog, newBatch: newBatch, batchGet: batchGet, batches: batches, carton: carton, photo: photo, photoData: photoData, voidCartons: voidCartons, reopenCarton: reopenCarton, closeBatch: closeBatch, printLog: printLog, prints: prints, cancelBatch: cancelBatch, loginCA: loginCA, stock: stock, deliveries: deliveries, deliveryNew: deliveryNew, deliveryGet: deliveryGet, deliveryEdit: deliveryEdit, pick: pick, unpick: unpick, deliveryCancel: deliveryCancel, deliverySend: deliverySend, ordersToPack: ordersToPack, deliveryFromOrder: deliveryFromOrder, deliveryPhoto: deliveryPhoto, deliveryPhotoData: deliveryPhotoData, checkStatus: checkStatus, checkStart: checkStart, checkGet: checkGet, checkScan: checkScan, checkUnscan: checkUnscan, checkFinish: checkFinish, checkCancel: checkCancel, checkResolve: checkResolve, deliveryHistory: deliveryHistory, deliveryConfirm: deliveryConfirm, deliveryDelivered: deliveryDelivered, toMake: toMake };
 function doPost(e) {
   let out;
   try {
