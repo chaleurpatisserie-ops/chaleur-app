@@ -51,7 +51,7 @@ a{color:var(--ink)}
 .seg button.on{background:var(--ink);color:var(--milk);font-weight:700}
 .stp{display:flex;align-items:center;gap:12px}
 .stp input::-webkit-outer-spin-button,.stp input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.stp input{-moz-appearance:textfield}.stp span{font-family:'Fredoka',sans-serif;font-weight:700;font-size:32px;min-width:56px;text-align:center}
-input[type=tel],input[type=password],input[type=text],input[type=date],input[type=number]{width:100%;min-height:52px;border-radius:16px;border:2px solid var(--hair);background:var(--milk);font:500 17px 'DM Sans',sans-serif;padding:0 14px;color:var(--ink)}
+select,input[type=tel],input[type=password],input[type=text],input[type=date],input[type=number]{width:100%;min-width:0;box-sizing:border-box;min-height:52px;border-radius:16px;border:2px solid var(--hair);background:var(--milk);font:500 17px 'DM Sans',sans-serif;padding:0 14px;color:var(--ink)}
 label.lb{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-weight:500}
 .grid{display:grid;gap:8px}
 .cell{height:52px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:14px;text-decoration:none;color:var(--muted);background:var(--sugar)}
@@ -2399,7 +2399,7 @@ const I = {
   back: '<path d="M15 18l-6-6 6-6"/>', refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>', box: '<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>',
   scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/>', truck: '<path d="M3 6h11v10H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
   stack: '<path d="M4 6h16M4 12h16M4 18h16"/>', check: '<path d="M5 12l5 5 9-10"/>', print: '<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>',
-  cam: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', share: '<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v7h14v-7"/>', plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>', wa: '<path d="M4 20l1.5-4A8 8 0 1 1 8 18.5z"/>'
+  cam: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', share: '<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v7h14v-7"/>', plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>', clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>', wa: '<path d="M4 20l1.5-4A8 8 0 1 1 8 18.5z"/>'
 };
 const ic = (k, c, s) => '<svg viewBox="0 0 24 24" width="' + (s || 22) + '" height="' + (s || 22) + '" fill="none" stroke="' + (c || 'currentColor') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[k] + '</svg>';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -2472,6 +2472,7 @@ async function route(force) {
     if (v === 'stock') return stockView();
     if (v === 'check') return checkView(decodeURIComponent(a));
     if (v === 'send') return a ? deliveryView(decodeURIComponent(a)) : deliveriesView();
+    if (v === 'history') return historyView();
     if (v === 'prints') return printsView();
     return home();
   } catch (e) { fail(e); }
@@ -2976,6 +2977,34 @@ async function countInto(chk, id, say) {
   } catch (e) { say('<span style="color:var(--bubblegum-d)"><b>Not counted:</b> ' + esc(e.message) + '</span>'); toast(e.message, 5000); }
 }
 
+/* ---------------- sent history ---------------- */
+const HF = { from: '', to: '', cu: '', q: '' };
+async function historyView() {
+  const t = todayIso();
+  if (!HF.to) HF.to = t;
+  if (!HF.from) { const d = new Date(t + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 30); HF.from = d.toISOString().slice(0, 10); }
+  app.innerHTML = hdr('sent history', '#send') + '<div class="wrap"><div class="card">Loading…</div></div>';
+  const r = await api('deliveryHistory', S.tok, HF.from, HF.to, HF.cu, HF.q);
+  const day = {}; r.list.forEach(i => { const k = String(i.sentAt).slice(0, 10); (day[k] = day[k] || []).push(i); });
+  const card = i => '<a class="card" href="#send/' + encodeURIComponent(i.id) + '" style="display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit">' +
+    '<div class="row"><b style="font-size:15px">' + esc(i.customer) + '</b><span class="spec" style="color:var(--muted)">' + esc(i.invoice || i.ref || i.id) + '</span></div>' +
+    i.lines.map(l => '<div style="font-size:13px"><b>' + esc(title(l.name)) + '</b> × ' + l.n + ' ' + esc(l.ctype) + '<br><span class="sub">' +
+      l.cartons.map(c => c.batch).filter((x, k, a) => a.indexOf(x) === k).map(b => 'batch ' + esc(b) + ' · carton ' + l.cartons.filter(c => c.batch === b).map(c => esc(c.carton.split('-').pop())).join(', ')).join('<br>') + '</span></div>').join('') +
+    (i.samples && i.samples.length ? '<div style="font-size:13px"><b>Sample box</b> (4 pcs)</div>' : '') +
+    '<div class="sub" style="font-size:12.5px">' + esc(String(i.sentAt).slice(11, 16)) + ' · by ' + esc(title(i.sentBy || '')) + ' · ' + i.count + ' carton(s)' + (i.photo ? ' · 📷 photo' : '') + ' · ' + esc(i.id) + '</div></a>';
+  app.innerHTML = hdr('sent history', '#send') + '<div class="wrap">' +
+    '<form id="hf" class="line" style="display:flex;flex-direction:column;gap:10px">' +
+      '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px"><label class="lb" style="min-width:0">From<input type="date" id="hfr" value="' + esc(HF.from) + '"></label><label class="lb" style="min-width:0">To<input type="date" id="hto" value="' + esc(HF.to) + '"></label></div>' +
+      '<label class="lb">Customer<select id="hcu"><option value="">All customers</option>' + r.customers.map(c => '<option' + (c.toUpperCase() === HF.cu.toUpperCase() ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></label>' +
+      '<label class="lb">Search invoice, batch or carton no.<input type="text" id="hq" value="' + esc(HF.q) + '" placeholder="e.g. INV-2611016 or PG105-261110-A" autocapitalize="characters"></label>' +
+      '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px"><button class="btn" id="hgo">' + ic('search', '#FFFDFA') + 'Show</button><button class="btn s" type="button" id="hcl">Clear</button></div></form>' +
+    '<div class="row"><div><div class="disp" style="font-size:30px">' + r.deliveries + '</div><div class="sub" style="font-size:13px">deliveries sent</div></div><div style="text-align:right"><div class="disp" style="font-size:30px">' + r.cartons + '</div><div class="sub" style="font-size:13px">cartons</div></div></div>' +
+    (r.list.length ? Object.keys(day).sort().reverse().map(k => '<div class="dhd" style="color:var(--muted)"><span>' + esc(dmyIso(k)) + '</span><span>' + day[k].length + ' deliver' + (day[k].length > 1 ? 'ies' : 'y') + '</span></div>' + day[k].map(card).join('')).join('') : '<div class="card" style="color:var(--muted)">Nothing sent in this period' + (HF.cu || HF.q ? ' for this filter' : '') + '.</div>') +
+    (r.more ? '<div class="sub" style="font-size:12px">Showing the latest 300. Narrow the dates to see older ones.</div>' : '') + '</div>';
+  $('#hf').onsubmit = e => { e.preventDefault(); HF.from = $('#hfr').value; HF.to = $('#hto').value; HF.cu = $('#hcu').value; HF.q = $('#hq').value.trim(); historyView(); };
+  $('#hcl').onclick = () => { HF.from = ''; HF.to = ''; HF.cu = ''; HF.q = ''; historyView(); };
+}
+
 /* ---------------- pick & send ---------------- */
 async function deliveriesView() {
   app.innerHTML = hdr('pick &amp; send', '#') + '<div class="wrap"><div class="card">Loading…</div></div>';
@@ -2999,7 +3028,8 @@ async function deliveriesView() {
     '<form class="line" id="nf" style="display:flex;flex-direction:column;gap:10px"><div class="eb">Delivery without an order</div><label class="lb">Customer<input type="text" id="cu" list="cul" required autocomplete="off" placeholder="e.g. Kirin Coffee"></label><datalist id="cul">' + r.customers.map(c => '<option value="' + esc(c) + '">').join('') + '</datalist>' +
     '<label class="lb">Bukku invoice / DO no. (optional)<input type="text" id="rf" placeholder="e.g. IV-00123"></label><button class="btn" id="nb">' + ic('plus', '#FFFDFA') + 'Start delivery</button></form>' +
     (open.length ? '<div class="eb">Other open deliveries</div>' + open.map(item).join('') : '') +
-    (done.length ? '<div class="eb">Recent</div>' + done.map(item).join('') : '') + '</div>';
+    '<a class="btn s" href="#history">' + ic('clock') + 'Sent history · find any delivery, batch or carton</a>' +
+    (done.length ? '<div class="eb">Recent</div>' + done.slice(0, 5).map(item).join('') : '') + '</div>';
   app.querySelectorAll('[data-inv]').forEach(bt => bt.onclick = async () => { bt.disabled = true; try { const d = await api('deliveryFromOrder', S.tok, bt.dataset.inv); location.hash = '#send/' + encodeURIComponent(d.id); } catch (e) { fail(e); bt.disabled = false; } });
   $('#nf').onsubmit = async e => { e.preventDefault(); $('#nb').disabled = true; try { const d = await api('deliveryNew', S.tok, $('#cu').value, $('#rf').value); location.hash = '#send/' + encodeURIComponent(d.id); } catch (er) { fail(er); $('#nb').disabled = false; } };
 }
