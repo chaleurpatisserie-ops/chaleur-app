@@ -1074,6 +1074,8 @@ function limitsOn(p,iso){if(!p) return null; const L=limitsOf(p), i=dow(iso), ou
   return any?out:null;}
 /* The range for one cake on one date, or null (whole cakes, or nothing set that day). */
 /* v23.12: a cake's own number at this place (Cake Numbers page): wd = Mon–Thu, we = Fri–Sun; null = none */
+/* v23.14 (Alfred 23 Nov: "outlet max varieties"): partner.fsOnly = list of cake ids that go on Fri-Sun drops only (no Mon-Thu drop). Same Fri/Sat/Sun rule as cakeMinOf. Empty or missing = no change. */
+function fsOnlyHere(p,id,iso){ return !!(p&&Array.isArray(p.fsOnly)&&p.fsOnly.includes(id)&&iso&&![5,6,0].includes(dow(iso))); }
 function cakeMinOf(p,id,iso){ const v=p&&p.cakeMin&&p.cakeMin[id]; if(!v||!iso) return null; const x=[5,6,0].includes(dow(iso))?v.we:v.wd; if(x===""||x==null) return null; const n=Math.round(+x); return isFinite(n)&&n>=0?Math.min(n,99):null; }
 function limitFor(p,id,iso){const k=limKindOf(id); if(!k) return null; const L=limitsOn(p,iso), R=L&&L[k]?L[k]:null, own=cakeMinOf(p,id,iso);
   if(own==null) return R; /* v23.12 */ return Object.assign({label:(LIM_KINDS.find(x=>x[0]===k)||[])[1],one:LIM_ONE[k],day:WD[dow(iso)]},R||{},{min:own,max:R&&R.max!=null?Math.max(R.max,own):null,own:true}); }
@@ -2721,8 +2723,8 @@ function planOutlet(pid,taken){
        gets 1 on the counter instead of the outlet's minimum; back to the minimum when it sells again. Needs attention asks Keep at 1 / Stop sending here. */
     const slowCut=!p.internal&&!own&&wasteful&&counter>1&&!(fullTrial(p,d1)&&!dead)?counter:0; /* v23.12: never below the cake's own number */ if(slowCut) counter=1; /* v23.04 full-counter trial */
     let target=Math.max(need,counter); /* v22.72 */ if(maxCap!=null) target=Math.min(target,Math.max(maxCap,counter));
-    let suggest=Math.max(0,target-usable); const gapF=Math.max(0,target-usableF);
-    const notes=[]; if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
+    const fso=fsOnlyHere(p,id,d1); if(fso){ target=0; counter=0; } let suggest=Math.max(0,target-usable); const gapF=Math.max(0,target-usableF);
+    const notes=[]; if(fso) notes.push("Fri–Sun drops only at this outlet (Mon–Thu: none)"); if(f.source!=="history") notes.push(f.source==="starting par"?`no sales yet — using starting par ${p.parDay||3}/day`:`only ${f.n} days of data`);
     if(p.internal){ const nf=(hist[id]||[]).filter(x=>x.fm).length; if(nf) notes.push(`HQ sales from FeedMe on ${nf} of ${(hist[id]||[]).length} days`); }
     if(neverSold&&counter&&!dead) notes.push(`not sold here yet — min ${counter} kept`);
     if(slowCut) notes.push(`slow here: ${waste14} wasted, ${sold14} sold in 14 days (${Math.round(wr14*100)}%) — 1 on the counter, not ${slowCut}`); else if(dead) notes.push(`sold ${sold14} in 14 days here — min ${counter} kept (drop list)`); else if(wasteful) notes.push(`waste ${Math.round(wr14*100)}% in 14 days — no buffer, min ${counter} kept${fullTrial(p,d1)?` (full-counter trial until ${nice(p.fullUntil)})`:""}`); else if(f.wr>.15) notes.push(`waste ${Math.round(f.wr*100)}% — no buffer`);
