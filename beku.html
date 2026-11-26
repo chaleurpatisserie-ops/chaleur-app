@@ -2871,8 +2871,11 @@ async function pickInto(del, id, say) {
   try {
     let r = await api('pick', S.tok, del, id, false);
     if (r.warn) { if (!confirm(r.warn + '\n\nOK = add it anyway. Cancel = skip it.')) { say('Skipped ' + esc(id) + '. Scan an older carton.'); toast('Skipped ' + id); return; } r = await api('pick', S.tok, del, id, true); }
-    const n = r.info ? r.info.count : 0;
-    say(r.already ? esc(id) + ' is already in this delivery. <b>' + n + '</b> cartons.' : '✓ Added <b>' + esc(id) + '</b> (' + esc(r.name || '') + '). <b>' + n + '</b> cartons so far.');
+    const n = r.info ? r.info.count : 0, inf = r.info || {};
+    const prog = (inf.need || []).map(i => '<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0"><span>' + esc(i.name) + '</span><b style="color:' + (i.got === i.n ? 'var(--pistachio-d)' : 'inherit') + '">' + i.got + ' / ' + i.n + (i.got === i.n ? ' ✓' : '') + '</b></div>').join('');
+    const list = (inf.lines || []).map(l => l.cartons.slice().reverse().map(c => '<div style="padding:5px 0;border-top:1px solid rgba(0,0,0,.08)">✓ <b>' + esc(c.carton) + '</b> <span style="color:var(--muted)">· ' + esc(l.name) + (c.bestBefore ? ' · BB ' + esc(c.bestBefore) : '') + '</span></div>').join('')).join('');
+    const head = r.already ? '<div class="alert y"><b>' + esc(id) + '</b> is already in this delivery.</div>' : '<div class="alert g" style="font-size:16px"><b>✓ Added ' + esc(id) + '</b><br><span style="font-size:13px">' + esc(r.name || '') + '</span></div>';
+    say(head + '<div style="margin-top:10px;font-size:14px"><b>' + n + '</b> carton' + (n === 1 ? '' : 's') + ' scanned' + (inf.complete && (inf.need || []).length ? ' · <b style="color:var(--pistachio-d)">order complete ✓</b>' : '') + '</div>' + (prog ? '<div style="margin-top:4px;font-size:14px">' + prog + '</div>' : '') + (list ? '<div style="margin-top:6px;font-size:13px">' + list + '</div>' : ''));
     toast(r.already ? 'Already added' : '✓ ' + id);
   } catch (e) { say('<span style="color:var(--bubblegum-d)"><b>Not added:</b> ' + esc(e.message) + '</span>'); toast(e.message, 5000); if (navigator.vibrate) navigator.vibrate([60, 60, 60]); }
 }
