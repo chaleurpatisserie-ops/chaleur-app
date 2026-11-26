@@ -2806,6 +2806,39 @@ window.addEventListener('hashchange', stopCam);
 function idFrom(txt) { const m = /[?&]c=([^&#]+)/.exec(txt); const v = decodeURIComponent(m ? m[1] : txt).trim().toUpperCase(); return /^[A-Z]+\d+-\d{6}-[A-Z]-\d{2,3}$/.test(v) ? v : ''; }
 let JQ = null;
 function loadJQ() { return JQ ? Promise.resolve(JQ) : new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'beku/jsqr.js'; sc.onload = () => { JQ = window.jsQR; res(JQ); }; sc.onerror = () => rej(new Error('Could not load the scanner. Check internet.')); document.head.appendChild(sc); }); }
+/* Focus helpers: ask for continuous autofocus; tap the picture to refocus (phones that cannot choose a point still re-run autofocus). */
+function camFocus(trk) {
+  try {
+    const cap = trk.getCapabilities ? trk.getCapabilities() : {}, adv = [];
+    if (cap.focusMode && cap.focusMode.indexOf('continuous') >= 0) adv.push({ focusMode: 'continuous' });
+    if (cap.exposureMode && cap.exposureMode.indexOf('continuous') >= 0) adv.push({ exposureMode: 'continuous' });
+    if (adv.length) trk.applyConstraints({ advanced: adv }).catch(() => {});
+  } catch (e) {}
+}
+function camTap(box, v, trk) {
+  const hint = document.createElement('div');
+  hint.textContent = 'Blurry? Tap the picture to focus';
+  hint.style.cssText = 'position:absolute;left:8px;right:8px;bottom:8px;text-align:center;font-size:12px;color:#fff;background:rgba(0,0,0,.45);border-radius:10px;padding:4px 8px;pointer-events:none';
+  box.appendChild(hint); setTimeout(() => { hint.style.transition = 'opacity .6s'; hint.style.opacity = '0'; }, 6000);
+  v.style.touchAction = 'manipulation';
+  v.addEventListener('click', async ev => {
+    const r = v.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
+    const ring = document.createElement('div');
+    ring.style.cssText = 'position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.35);pointer-events:none;transition:all .35s;left:' + (ev.clientX - box.getBoundingClientRect().left) + 'px;top:' + (ev.clientY - box.getBoundingClientRect().top) + 'px';
+    box.appendChild(ring); setTimeout(() => { ring.style.transform = 'scale(.7)'; ring.style.opacity = '.4'; }, 30); setTimeout(() => ring.remove(), 900);
+    try {
+      const cap = trk.getCapabilities ? trk.getCapabilities() : {}, fm = cap.focusMode || [];
+      const pt = { pointsOfInterest: [{ x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) }] };
+      if (fm.indexOf('single-shot') >= 0) {
+        await trk.applyConstraints({ advanced: [Object.assign({ focusMode: 'single-shot' }, pt)] });
+        setTimeout(() => camFocus(trk), 1500);
+      } else if (fm.indexOf('continuous') >= 0) {
+        await trk.applyConstraints({ advanced: [Object.assign({ focusMode: 'manual' }, pt)] }).catch(() => {});
+        await trk.applyConstraints({ advanced: [Object.assign({ focusMode: 'continuous' }, pt)] });
+      }
+    } catch (e) {}
+  });
+}
 /* Camera scanner. Uses the phone's built-in reader where it has one (Android Chrome), else jsQR (iPhone). onHit(id) returns true to keep scanning. */
 async function startScanner(box, onHit) {
   stopCam();
@@ -2813,9 +2846,10 @@ async function startScanner(box, onHit) {
   try { if ('BarcodeDetector' in window && (await BarcodeDetector.getSupportedFormats()).indexOf('qr_code') >= 0) det = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) {}
   try {
     const jq = det ? null : await loadJQ();
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    const trk = stream.getVideoTracks()[0]; camFocus(trk);
     const v = document.createElement('video'); v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); v.muted = true; v.autoplay = true; v.srcObject = stream;
-    box.innerHTML = ''; box.appendChild(v); await v.play();
+    box.innerHTML = ''; box.style.position = 'relative'; box.appendChild(v); await v.play(); camTap(box, v, trk);
     const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true });
     let last = '', lastAt = 0;
     const tick = async () => {
