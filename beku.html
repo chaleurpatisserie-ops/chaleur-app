@@ -3234,13 +3234,13 @@ async function pub(id) {
   app.innerHTML = '<div class="top"><div class="t">' + LOGO + '</div></div><div class="wrap"><div class="card">Loading…</div></div>';
   let c; try { c = await api('carton', id); } catch (e) { app.innerHTML = '<div class="top"><div class="t">' + LOGO + '</div></div><div class="wrap"><div class="alert r">' + esc(e.message) + '</div></div>'; return; }
   document.title = 'beku · ' + title(c.name);
-  app.innerHTML = '<div class="pub"><div class="top" style="justify-content:space-between"><div>' + LOGO + '</div><span class="temp"><i></i>-18°C</span></div>' +
+  app.innerHTML = '<div class="pub"><div class="top" style="justify-content:space-between"><div>' + LOGO + '</div>' + (c.ambient ? '' : '<span class="temp"><i></i>-18°C</span>') + '</div>' +
     '<div class="hero" style="background:' + fc(c.fam, 0) + ';color:' + fc(c.fam, 1) + '"><div style="flex:1;min-width:0"><div class="disp" style="font-size:32px;line-height:1">' + esc(c.name.toLowerCase()) + '</div><div class="spec" style="margin-top:6px">' + esc(c.sku) + ' · ' + esc(c.pack) + '</div></div><img src="beku/img/' + c.sku + '.png" alt="' + esc(title(c.name)) + '"></div>' +
     '<div class="wrap" style="margin-top:16px">' + (c.void ? '<div class="alert r">This carton number is not valid.</div>' : '') +
     '<div class="kv"><div><small>Batch</small><b>' + esc(c.batch) + '</b></div><div><small>Carton</small><b>' + String(c.n).padStart(2, '0') + ' of ' + c.of + '</b></div><div><small>Made</small><b>' + c.made + '</b></div><div><small>Best before</small><b>' + c.bestBefore + '</b></div></div>' +
     '<div><div class="eb">Ingredients</div><div class="txt">' + esc(c.ing || '—') + '</div></div>' +
-    '<div><div class="eb">Allergens</div><div class="txt">' + (c.contains ? '<b>Contains:</b> ' + esc(c.contains) + '. ' : '') + 'May contain traces of ' + esc(c.may) + '.</div></div>' +
-    '<div><div class="eb">To serve</div><div class="txt">Keep frozen at -18°C. ' + esc(c.serve) + ' Do not refreeze.</div></div>' +
+    '<div><div class="eb">Allergens</div><div class="txt">' + (c.contains ? '<b>Contains:</b> ' + esc(c.contains) + '. ' : '') + (c.handles ? 'Made in a kitchen that also handles ' + esc(c.handles) + '.' : 'May contain traces of ' + esc(c.may) + '.') + '</div></div>' +
+    '<div><div class="eb">' + (c.ambient ? 'Storage' : 'To serve') + '</div><div class="txt">' + (c.ambient ? 'Store in a cool, dry place, away from sunlight. ' + esc(c.serve) : 'Keep frozen at -18°C. ' + esc(c.serve) + ' Do not refreeze.') + '</div></div>' +
     '<div class="sub" style="font-size:11.5px;line-height:1.45;border-top:1px solid var(--hair);padding-top:14px">Manufactured by Chaleur Atelier F&amp;B Sdn. Bhd. (202501028873) · 01-03, Zennith Suites Service Apartments, Jalan Kebun Teh 2, Larkin, 80250 Johor Bahru, Johor · Product of Malaysia</div></div></div>';
 }
 
