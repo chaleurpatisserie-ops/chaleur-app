@@ -3139,8 +3139,8 @@ async function ordersView() {
     o.samples.map(x => '<div style="font-size:13px"><b>Sample box</b> (4 pcs' + (x ? ': ' + esc(x) : '') + ')</div>').join('') +
     '<button class="btn w" data-ok="' + esc(o.invoice) + '">' + ic('check', '#fff') + 'Confirm order' + (o.toMake ? ' · ' + o.toMake + ' to make' : '') + '</button></div>';
   app.innerHTML = hdr('orders', '#') + '<div class="wrap">' +
-    '<div class="sub" style="font-size:13px">New paid orders. Check items and date, then tap <b>Confirm order</b>. What we have in the freezer is kept for this order; anything missing goes on <b>To make</b> for the kitchen. Confirmed orders move to Pick &amp; send.</div>' +
-    (os.length ? os.map(card).join('') : '<div class="card" style="color:var(--muted)">No new order to confirm.</div>') +
+    '<div class="sub" style="font-size:13px">An invoice in Bukku is an order. It confirms itself: what we have in the freezer is kept for it, anything missing goes on <b>To make</b> for the kitchen, then it moves to Pick &amp; send. Void or edit the invoice and this follows.</div>' +
+    (os.length ? os.map(card).join('') : '<div class="card" style="color:var(--muted)">Nothing waiting. All orders are confirmed.</div>') +
     '<a class="btn s" href="#make">' + ic('box') + 'To make</a><a class="btn s" href="#send">' + ic('truck') + 'Pick &amp; send</a></div>';
   app.querySelectorAll('[data-ok]').forEach(bt => bt.onclick = async () => {
     bt.disabled = true; bt.textContent = 'Confirming…';
